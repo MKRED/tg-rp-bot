@@ -1,0 +1,24 @@
+# Зависимости
+node_modules/
+
+# Сборки
+dist/
+*.tsbuildinfo
+
+# Логи
+logs/
+*.log
+
+# Переменные окружения (секреты)
+.env
+.env.*
+!.env.example
+
+# Редакторы / ОС
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Тесты
+coverage/
