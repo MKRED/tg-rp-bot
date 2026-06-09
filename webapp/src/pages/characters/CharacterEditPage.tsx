@@ -52,14 +52,14 @@ export function CharacterEditPage() {
 
   if (loading) {
     return (
-      <div className="characters-page__center">
+      <div className="characters-page__fullcenter">
         <Spinner size="m" />
       </div>
     );
   }
 
   if (error || (id !== undefined && !character)) {
-    return <div className="characters-page__center">Персонаж не найден</div>;
+    return <div className="characters-page__fullcenter">Персонаж не найден</div>;
   }
 
   return (

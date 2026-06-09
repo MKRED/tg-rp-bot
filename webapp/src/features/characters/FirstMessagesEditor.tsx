@@ -61,6 +61,7 @@ export function FirstMessagesEditor({ messages, onChange }: FirstMessagesEditorP
       <Button
         size="s"
         mode="outline"
+        className="char-firsts__add"
         disabled={items.length >= MAX_FIRST_MESSAGES}
         onClick={add}
       >

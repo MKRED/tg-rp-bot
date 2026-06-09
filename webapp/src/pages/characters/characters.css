@@ -17,6 +17,17 @@
   color: var(--tgui--hint_color, #7d8b99);
 }
 
+/* Полноэкранное центрирование — для спиннера загрузки и состояния «не найден»
+   на экране редактирования (нет списка, центрируем по всему вьюпорту). */
+.characters-page__fullcenter {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100dvh;
+  padding: 16px;
+  color: var(--tgui--hint_color, #7d8b99);
+}
+
 /* --- Кнопка создания под списком --- */
 .characters-page__create {
   padding: 12px 16px 0;
@@ -29,16 +40,20 @@
   color: var(--tgui--hint_color, #7d8b99);
 }
 
-/* --- Форма персонажа --- */
+/* --- Форма персонажа ---
+   Горизонтальных отступов у формы нет: поля telegram-ui (FormInput) сами имеют
+   внутренний gutter 22px, и именно он задаёт сетку. Кнопки, заголовки и подписи
+   выравниваем по тем же 22px, иначе stretched-кнопки оказываются шире полей. */
 .char-form {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 8px 16px;
+  padding: 8px 0;
 }
 
 .char-form__section-title {
   margin-top: 8px;
+  padding: 0 22px;
   font-weight: 600;
   color: var(--tgui--text_color, #000);
 }
@@ -48,6 +63,7 @@
   flex-direction: column;
   gap: 12px;
   margin-top: 8px;
+  padding: 0 22px;
 }
 
 /* Поле с подписью токенов (промпт, варианты сообщений) */
@@ -60,7 +76,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 4px 0;
+  padding: 4px 22px 0;
 }
 
 .char-field__tokens {
@@ -73,7 +89,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 8px 4px 0;
+  padding: 8px 22px 0;
 }
 
 /* --- Варианты первого сообщения --- */
@@ -86,6 +102,11 @@
 .char-firsts__item {
   display: flex;
   flex-direction: column;
+}
+
+/* Кнопка «добавить вариант» выравнивается по тем же 22px, что и поля. */
+.char-firsts__add {
+  margin: 0 22px;
 }
 
 .char-firsts__remove {
