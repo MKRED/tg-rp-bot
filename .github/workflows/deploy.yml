@@ -1,0 +1,49 @@
+name: Deploy
+
+# Пуш в ветку deploy → автодеплой. Сборка идёт на ДЕМОНЕ СЕРВЕРА через docker context
+# (SSH), реестр (GHCR) не используется. Тот же паттерн, что у других ботов на этом сервере.
+on:
+  push:
+    branches: [deploy]
+  workflow_dispatch: {}   # можно запустить вручную из вкладки Actions
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Код репозитория — на раннер (отсюда берётся build-контекст).
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. SSH-ключ деплоя (root-ключ сервера) в ssh-agent.
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_CICD }}
+
+      # 3. Доверяем хосту сервера.
+      - name: Add known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p 2222 home.aoshiloli.ru >> ~/.ssh/known_hosts
+
+      # 4. docker context → демон сервера по SSH. Дальше docker build идёт НА СЕРВЕРЕ.
+      - name: Create Docker context
+        run: |
+          docker context create remote-server --docker "host=ssh://root@home.aoshiloli.ru:2222"
+          docker context use remote-server
+
+      # 5. Сборка образа на сервере. Монорепо: Dockerfile в bot/, контекст — корень.
+      - name: Build Docker image
+        run: |
+          DOCKER_BUILDKIT=1 docker build -f bot/Dockerfile -t kvach_tg_rp_bot .
+
+      # 6. Перезапуск контейнера из готового образа + чистка dangling-образов.
+      - name: Run docker compose
+        run: |
+          ssh -T -p 2222 root@home.aoshiloli.ru << 'EOF'
+            cd /mnt/ssd/docker/kvach_tg_rp_bot || { echo 'Папка не найдена'; exit 1; }
+            [ -f docker-compose.yml ] || { echo 'docker-compose.yml не найден!'; exit 1; }
+            docker compose up -d --force-recreate bot
+            docker image prune -f --filter "dangling=true"
+          EOF

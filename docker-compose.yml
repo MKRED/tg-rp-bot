@@ -1,0 +1,35 @@
+# ============================================================================
+# docker-compose для tg-rp-bot. Лежит на сервере в /mnt/ssd/docker/kvach_tg_rp_bot/
+# рядом с файлом .env (секреты). Образ kvach_tg_rp_bot собирает CI (docker context),
+# поэтому здесь НЕТ секции build — compose только запускает готовый образ.
+#
+# Ручная сборка (если без CI):
+#   docker build -f bot/Dockerfile -t kvach_tg_rp_bot .   # из корня репозитория
+#   docker compose up -d --force-recreate bot
+#
+# Один сервис: бот раздаёт и API, и статику Mini App (webapp вшит в образ).
+# Порт на хост НЕ публикуем — edge-nginx достаёт бота по имени контейнера
+# в общей сети nginx-network (proxy_pass http://kvach_tg_rp_bot:3000).
+# ============================================================================
+
+services:
+  bot:
+    container_name: kvach_tg_rp_bot
+    image: kvach_tg_rp_bot:latest
+    restart: unless-stopped
+    env_file:
+      # .env лежит в этой же папке на сервере (НЕ из репозитория, см. bot/.env.example).
+      - .env
+    networks:
+      - postgres-network   # доступ к контейнеру postgres (DATABASE_URL)
+      - vpn-network        # доступ к VultrProxy:2080 (TELEGRAM_PROXY_URL)
+      - nginx-network      # edge-nginx проксирует сюда miniapp.aoshi.ru
+
+# Все три сети уже существуют на сервере (созданы другими compose-проектами).
+networks:
+  postgres-network:
+    external: true
+  vpn-network:
+    external: true
+  nginx-network:
+    external: true
