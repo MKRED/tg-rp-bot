@@ -8,6 +8,13 @@
       "when": 1780906903683,
       "tag": "0000_magical_forge",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1781017743351,
+      "tag": "0001_fantastic_champions",
+      "breakpoints": true
     }
   ]
 }

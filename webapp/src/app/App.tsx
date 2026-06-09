@@ -2,6 +2,8 @@ import { AppRoot } from "@telegram-apps/telegram-ui";
 import { miniApp, useSignal } from "@telegram-apps/sdk-react";
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import { HomePage } from "../pages/home/HomePage";
+import { CharactersListPage } from "../pages/characters/CharactersListPage";
+import { CharacterEditPage } from "../pages/characters/CharacterEditPage";
 import { RpChat } from "../features/rp-chat/RpChat";
 import { getPlatform } from "../shared/telegram/platform";
 import { BackButtonBridge } from "./BackButtonBridge";
@@ -34,6 +36,10 @@ export function App() {
         <Routes>
           <Route path={ROUTES.home} element={<HomePage />} />
           <Route path={ROUTES.chat} element={<RpChat />} />
+          <Route path={ROUTES.characters} element={<CharactersListPage />} />
+          {/* Статический /characters/new стоит раньше /characters/:id — react-router отдаёт ему приоритет. */}
+          <Route path={ROUTES.characterNew} element={<CharacterEditPage />} />
+          <Route path={ROUTES.characterEdit} element={<CharacterEditPage />} />
           {/*
             Любой неизвестный путь → главная. Важно для Telegram Web: launch-параметры
             прилетают в hash (#tgWebAppData=…); init() их уже считал, а роутеру этот hash

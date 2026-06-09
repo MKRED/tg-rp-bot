@@ -49,6 +49,12 @@ export function HomePage() {
           {/* Групповой режим и настройки появятся следующими шагами. */}
           <Cell subtitle="Скоро">Группа персонажей</Cell>
         </Section>
+
+        <Section header="Библиотека">
+          <Cell subtitle="Ваши персонажи" onClick={() => navigate(ROUTES.characters)}>
+            Персонажи
+          </Cell>
+        </Section>
       </List>
     </div>
   );

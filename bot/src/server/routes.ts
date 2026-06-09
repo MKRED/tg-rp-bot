@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import logger from "../logger.js";
+import { createCharacterRoutes } from "./characters.js";
 import { type AppVariables, requireInitData } from "./initData.js";
 import { getProfilePhotoDataUrl } from "./profilePhoto.js";
 
@@ -33,6 +34,9 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
       return c.json({ dataUrl: null });
     }
   });
+
+  // CRUD персонажей (sub-app наследует requireInitData выше).
+  api.route("/characters", createCharacterRoutes());
 
   // TODO: api.post("/chat", ...) → chatCompletion(...) из ../llm
 

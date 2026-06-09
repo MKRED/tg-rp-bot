@@ -7,4 +7,13 @@ export const ROUTES = {
   home: "/",
   /** RP-чат «один на один». */
   chat: "/chat",
+  /** Список персонажей пользователя. */
+  characters: "/characters",
+  /** Форма создания нового персонажа. */
+  characterNew: "/characters/new",
+  /** Форма редактирования персонажа по id (react-router v6: статический `new` приоритетнее `:id`). */
+  characterEdit: "/characters/:id",
 } as const;
+
+/** Путь к редактированию конкретного персонажа. */
+export const characterEditPath = (id: number): string => `/characters/${id}`;
