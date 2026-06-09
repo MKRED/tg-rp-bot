@@ -7,7 +7,10 @@ type FetchConfig = NonNullable<
   NonNullable<ConstructorParameters<typeof Bot>[1]>["client"]
 >["baseFetchConfig"];
 
-const agent = createTelegramProxyAgent();
+// Прокси-агент Telegram. Экспортируем, чтобы скачивание файлов (фото профиля) шло через
+// тот же прокси и тот же агент — без повторного создания/логирования на каждый запрос.
+export const telegramProxyAgent = createTelegramProxyAgent();
+const agent = telegramProxyAgent;
 
 // Страховочный таймаут запроса для node-fetch@2 (мс). Long polling grammY ждёт по умолчанию
 // до 30с, поэтому берём с запасом — 50с. Назначение: зависший сокет (наблюдалось на первом
