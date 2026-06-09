@@ -20,6 +20,9 @@ Telegram-бот для ролевой игры (RP) с упором на **Teleg
 ```
 tg-rp-bot/
 ├─ package.json        # корень workspaces + сквозные скрипты
+├─ Dockerfile          # единый образ: бот + API + статика Mini App (контекст сборки — корень)
+├─ docker-compose.yml  # запуск контейнера на сервере (справочная копия; рабочая лежит на сервере)
+├─ .github/workflows/  # deploy.yml — автодеплой по пушу в ветку deploy
 ├─ bot/                # Telegram-бот + HTTP API для Mini App
 │  ├─ src/
 │  │  ├─ index.ts      # точка входа: регистрация хендлеров, старт сервера и бота
@@ -30,7 +33,7 @@ tg-rp-bot/
 │  │  ├─ db/           # drizzle: schema + клиент
 │  │  ├─ llm/          # клиент OpenRouter
 │  │  ├─ handlers/     # обработчики команд (/start …)
-│  │  ├─ server/       # Hono HTTP API (/health, /api) + seam валидации initData
+│  │  ├─ server/       # Hono HTTP API (/health, /api) + раздача статики Mini App + seam initData
 │  │  └─ utils/        # retry и пр.
 │  └─ drizzle/         # SQL-миграции
 └─ webapp/             # Mini App (React + Vite)
@@ -73,3 +76,22 @@ yarn workspace bot drizzle-kit migrate      # применить миграци�
 ## Переменные окружения
 
 См. [`bot/.env.example`](bot/.env.example). Обязательные: `BOT_TOKEN`, `DATABASE_URL`.
+
+## Деплой
+
+Прод — **один Docker-контейнер** на сервере (`https://miniapp.aoshi.ru`): один процесс Node раздаёт
+и HTTP API, и собранную статику Mini App (webapp вшит в образ при сборке). TLS терминирует edge-nginx
+сервера и проксирует поддомен в контейнер.
+
+- **Образ** собирается из [`Dockerfile`](Dockerfile) в корне (multi-stage: ставит зависимости монорепо,
+  собирает `bot` через `tsc` и `webapp` через `vite`, кладёт статику в `bot/public`).
+- **CI/CD:** пуш в ветку **`deploy`** запускает GitHub Action ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)),
+  который собирает образ **на демоне сервера** через docker context (SSH, без реестра) и перезапускает
+  контейнер по серверному `docker-compose.yml`.
+
+Ручная сборка из корня репозитория:
+
+```bash
+docker build -f Dockerfile -t kvach_tg_rp_bot .
+docker compose up -d --force-recreate bot
+```

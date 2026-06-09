@@ -33,10 +33,10 @@ jobs:
           docker context create remote-server --docker "host=ssh://root@home.aoshiloli.ru:2222"
           docker context use remote-server
 
-      # 5. Сборка образа на сервере. Монорепо: Dockerfile в bot/, контекст — корень.
+      # 5. Сборка образа на сервере. Монорепо: Dockerfile в корне, контекст — тоже корень.
       - name: Build Docker image
         run: |
-          DOCKER_BUILDKIT=1 docker build -f bot/Dockerfile -t kvach_tg_rp_bot .
+          DOCKER_BUILDKIT=1 docker build -f Dockerfile -t kvach_tg_rp_bot .
 
       # 6. Перезапуск контейнера из готового образа + чистка dangling-образов.
       - name: Run docker compose

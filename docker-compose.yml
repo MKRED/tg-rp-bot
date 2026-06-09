@@ -4,7 +4,7 @@
 # поэтому здесь НЕТ секции build — compose только запускает готовый образ.
 #
 # Ручная сборка (если без CI):
-#   docker build -f bot/Dockerfile -t kvach_tg_rp_bot .   # из корня репозитория
+#   docker build -f Dockerfile -t kvach_tg_rp_bot .   # из корня репозитория
 #   docker compose up -d --force-recreate bot
 #
 # Один сервис: бот раздаёт и API, и статику Mini App (webapp вшит в образ).

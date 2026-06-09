@@ -44,6 +44,7 @@ bot/src/
   llm/          — OpenRouter client (client/types/constants) — серверно, ключ не уходит в браузер
   handlers/     — обработчики команд (index = registerHandlers, start.ts …)
   server/       — Hono HTTP API (index=startServer, routes.ts, initData.ts seam)
+                  + раздача собранной статики Mini App из ./public (SPA-fallback) — один процесс
   utils/        — retry и пр.
 
 webapp/src/
@@ -68,6 +69,30 @@ webapp/src/
 Ключ OpenRouter — **только серверно** (`bot/src/llm`), в браузер не попадает. RP-генерация идёт через
 HTTP API бота (`server/`), а не напрямую из webapp. Запросы webapp → `/api/*` должны проходить валидацию
 Telegram `initData` (сейчас seam-заглушка в `server/initData.ts`, реальную подпись добавить до публичного запуска).
+
+## Деплой
+
+Прод — **один Docker-контейнер** на сервере (`https://miniapp.aoshi.ru`): тот же процесс Node раздаёт
+и HTTP API, и собранную статику Mini App (webapp вшит в образ). `Dockerfile` лежит **в корне**, контекст
+сборки — корень монорепо (`docker build -f Dockerfile .`).
+
+**CI/CD:** пуш в ветку **`deploy`** запускает GitHub Action (`.github/workflows/deploy.yml`), который
+собирает образ **на демоне сервера** через docker context (SSH), без реестра (GHCR не используется),
+и перезапускает контейнер по `docker-compose.yml` (он лежит на сервере, в репо — справочная копия).
+Подробности инфраструктуры сервера — в auto-memory `server-deploy-setup`.
+
+### Команда «Задеплой»
+Когда пользователь пишет «Задеплой» (или просит задеплоить) — выполни строго по шагам:
+1. **Проверки.** Из корня: `yarn test`, затем `yarn build`. Если хоть что-то упало — **СТОП**, не пушим,
+   показать ошибку пользователю.
+2. **Запомнить исходную ветку:** `git branch --show-current` — с неё деплоим и на неё вернёмся в конце.
+3. **Залить на `deploy` и запушить:** `git checkout deploy` → `git merge --ff-only <исходная>` →
+   `git push origin deploy`. Пуш в `deploy` триггерит автодеплой на сервер.
+4. **Вернуться на исходную ветку:** `git checkout <исходная>`.
+
+Изменения должны быть **закоммичены** на исходной ветке до деплоя — `--ff-only` переносит на `deploy`
+именно коммиты. Если fast-forward невозможен (ветки разошлись) — не делать merge-коммит молча,
+сообщить пользователю и спросить, как поступить.
 
 ## Структура и размер файлов — mandatory
 Чтобы файлы не разрастались и проект оставался читаемым/масштабируемым:
@@ -138,22 +163,11 @@ Test runner is **vitest** (`yarn test` = `vitest run`, `yarn test:watch` = watch
 
 ## Keeping docs up to date
 
-### README.md
-Update `README.md` whenever:
-- A new external dependency or service is added (API, DB extension, package)
-- Setup steps change (new env vars, new migration, new required tool)
-- A major feature is added that a new developer would need to know about
-- Something in the stack section becomes outdated
-
-### CLAUDE.md (this file)
-Update this file whenever:
-- A new architectural pattern is established (new module type, new convention)
-- A new external API or model is introduced
-- A code convention is agreed upon or changed in conversation
-- A new mandatory rule is introduced (logging, error handling, etc.)
-- The project structure changes significantly (new directories, new key files)
-
-Both files should reflect the **current state** of the project, not its history. If something is removed — remove it from the docs too.
+Оба файла отражают **текущее состояние** проекта, не историю: что убрали из кода — убираем и из доков.
+- **README.md** — при изменениях, важных новому разработчику: новая внешняя зависимость/сервис, новые
+  шаги установки (env-переменные, миграции, требуемый тулинг), крупная фича, устаревший раздел стека.
+- **CLAUDE.md** (этот файл) — при изменениях процесса/конвенций: новый архитектурный паттерн или тип
+  модуля, новый внешний API/модель, новое mandatory-правило, значимое изменение структуры проекта.
 
 ## Key patterns
 
