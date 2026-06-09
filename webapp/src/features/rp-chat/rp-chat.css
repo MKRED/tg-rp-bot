@@ -10,6 +10,23 @@
   --rp-accent: var(--tgui--button_color, #5288c1);
   --rp-accent-text: var(--tgui--button_text_color, #ffffff);
 
+  /*
+    Safe-area для Full Screen (Mini Apps v8.0+). viewport.bindCssVars() из @telegram-apps/sdk
+    выставляет переменные с префиксом --tg-viewport-*. Суммируем две зоны:
+      safe-area-inset         — аппаратная (чёлка, статус-бар, home-indicator);
+      content-safe-area-inset — оверлей Telegram (кнопки-меню/крестик в полноэкранном режиме).
+    Обе нужны: в полноэкранном режиме контент иначе уезжает под плавающую шапку Telegram.
+    Вне Telegram (dev-браузер) переменные не заданы — фоллбэк на env()/0px, отступы нулевые.
+  */
+  --rp-safe-top: calc(
+    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
+  --rp-safe-bottom: calc(
+    var(--tg-viewport-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-bottom, 0px)
+  );
+
   display: flex;
   flex-direction: column;
   height: 100dvh;
@@ -25,7 +42,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  padding-top: max(10px, var(--tg-safe-area-inset-top, env(safe-area-inset-top)));
+  padding-top: calc(10px + var(--rp-safe-top));
   background: var(--rp-secondary-bg);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
   z-index: 2;
@@ -156,7 +173,7 @@
   align-items: flex-end;
   gap: 8px;
   padding: 10px 12px;
-  padding-bottom: max(10px, var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom)));
+  padding-bottom: calc(10px + var(--rp-safe-bottom));
   background: var(--rp-secondary-bg);
 }
 

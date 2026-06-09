@@ -43,16 +43,24 @@ bot/src/
   db/           — drizzle: schema.ts + клиент (postgres.js, ленивое подключение)
   llm/          — OpenRouter client (client/types/constants) — серверно, ключ не уходит в браузер
   handlers/     — обработчики команд (index = registerHandlers, start.ts …)
-  server/       — Hono HTTP API (index=startServer, routes.ts, initData.ts seam)
+  server/       — Hono HTTP API (index=startServer, routes.ts, initData.ts — валидация подписи)
                   + раздача собранной статики Mini App из ./public (SPA-fallback) — один процесс
   utils/        — retry и пр.
 
 webapp/src/
-  main.tsx      — точка входа + initTelegram()
-  init.ts       — инициализация @telegram-apps SDK (защищённая)
-  App.tsx       — AppRoot (тема Telegram)
-  features/rp-chat/  — экран RP-чата (компоненты + стили + mock)
+  main.tsx      — точка входа: initTelegram() + рендер <App/>
+  init.ts       — инициализация @telegram-apps SDK (защищённая) + initData.restore()
+  app/          — оболочка: App.tsx (AppRoot + HashRouter), routes.ts, BackButtonBridge
+  pages/        — экраны-маршруты (один на маршрут): home/ …
+  shared/       — кросс-каттинг: telegram/ (доступ к initData), api/ (client с Authorization)
+  features/rp-chat/  — экран RP-чата (компоненты + стили + mock), маршрутизируется как /chat
 ```
+
+### Структура webapp — pages vs features
+- **`pages/<screen>/`** — цель маршрута, по одной на `ROUTES.*`. Тонкая обёртка, собирающая фичи.
+- **`features/<feature>/`** — самодостаточный доменный модуль (UI + логика): `rp-chat`, далее `characters`, `prompts`, `translator`.
+- **`shared/`** — только переиспользуемое: `api/client.ts` (граница к `/api`), `telegram/` (доступ к SDK). Новую папку заводим, когда сущность реально появилась, а не заранее.
+- **Роутер — `HashRouter`** (react-router-dom): маршрут в hash переживает reload и оставляет задел под deep-link через `start_param`. Нативная кнопка «Назад» Telegram связана с роутером в `app/BackButtonBridge.tsx` (`navigate(-1)`). Catch-all `*` → главная: на Telegram Web launch-параметры приходят в hash, и без редиректа роутер показал бы пустой экран.
 
 ### Прокси для Telegram — invariant
 Прокси (`TELEGRAM_PROXY_URL`) задаётся `https-proxy-agent` (`HttpsProxyAgent`) и подключается **только**
@@ -67,8 +75,17 @@ webapp/src/
 
 ### Mini App API — boundary
 Ключ OpenRouter — **только серверно** (`bot/src/llm`), в браузер не попадает. RP-генерация идёт через
-HTTP API бота (`server/`), а не напрямую из webapp. Запросы webapp → `/api/*` должны проходить валидацию
-Telegram `initData` (сейчас seam-заглушка в `server/initData.ts`, реальную подпись добавить до публичного запуска).
+HTTP API бота (`server/`), а не напрямую из webapp.
+
+Запросы webapp → `/api/*` несут подписанный Telegram `initData` в заголовке `Authorization: tma <initData>`
+(webapp: `shared/api/client.ts`). Сервер (`server/initData.ts`) **проверяет HMAC-подпись** по `BOT_TOKEN`
+через **`@tma.js/init-data-node`** (`validate` бросает при подделке/просрочке, `parse` достаёт юзера в
+`c.get("tgUser")`). Без подписи: в проде → 401, в dev → пропускаем (отладка webapp из браузера).
+
+⚠️ Серверный пакет — **`@tma.js/init-data-node`**, НЕ `@telegram-apps/init-data-node` (последний deprecated).
+Это противоположно выбору org для **webapp** (там `@telegram-apps/*` — см. README/стек): не «чинить» ради
+единообразия. По умолчанию `validate` считает initData просроченным через сутки (`expiresIn` = 86400) —
+учесть, когда у `apiFetch` появятся реальные вызовы (долгая сессия webview даст 401).
 
 ## Деплой
 

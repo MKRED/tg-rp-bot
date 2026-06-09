@@ -12,7 +12,8 @@ Telegram-бот для ролевой игры (RP) с упором на **Teleg
 | БД | Postgres + [drizzle-orm](https://orm.drizzle.team) / drizzle-kit |
 | LLM | OpenRouter (OpenAI-совместимый API) |
 | Логи | pino (+ pino-roll, pino-pretty) |
-| Mini App | React 19 + Vite + `@telegram-apps/sdk-react` + `@telegram-apps/telegram-ui` |
+| Mini App | React 19 + Vite + `@telegram-apps/sdk-react` + `@telegram-apps/telegram-ui` + `react-router-dom` (HashRouter) |
+| initData | подпись проверяется серверно через `@tma.js/init-data-node` |
 | Тесты | vitest |
 
 ## Структура
@@ -39,8 +40,11 @@ tg-rp-bot/
 └─ webapp/             # Mini App (React + Vite)
    └─ src/
       ├─ main.tsx      # точка входа + init Telegram SDK
-      ├─ App.tsx       # AppRoot (тема Telegram)
-      └─ features/rp-chat/  # экран RP-чата
+      ├─ init.ts       # инициализация SDK + restore initData
+      ├─ app/          # оболочка: App (AppRoot + HashRouter), routes, BackButton-мост
+      ├─ pages/        # экраны-маршруты (home/ …)
+      ├─ shared/       # api/client (граница к /api), telegram/ (доступ к initData)
+      └─ features/rp-chat/  # экран RP-чата (маршрут /chat)
 ```
 
 ## Прокси для Telegram

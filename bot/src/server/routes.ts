@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { requireInitData } from "./initData.js";
+import { type AppVariables, requireInitData } from "./initData.js";
 
 /**
  * Маршруты Mini App API под префиксом /api.
@@ -8,14 +8,14 @@ import { requireInitData } from "./initData.js";
  * НИКОГДА не попадает в браузер, поэтому RP-генерация идёт только через этот сервер,
  * а не напрямую из webapp.
  */
-export function createApiRoutes(): Hono {
-  const api = new Hono();
+export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
+  const api = new Hono<{ Variables: AppVariables }>();
 
-  // Все /api/* требуют Telegram initData (пока seam-заглушка, см. initData.ts)
+  // Все /api/* требуют валидный Telegram initData (проверка подписи, см. initData.ts)
   api.use("*", requireInitData);
 
-  // Заглушка: профиль текущего пользователя. Реальные данные появятся после валидации initData.
-  api.get("/me", (c) => c.json({ ok: true, user: null }));
+  // Профиль текущего пользователя — из проверенного initData (в dev без подписи будет undefined).
+  api.get("/me", (c) => c.json({ ok: true, user: c.get("tgUser") ?? null }));
 
   // TODO: api.post("/chat", ...) → chatCompletion(...) из ../llm
 
