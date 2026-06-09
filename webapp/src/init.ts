@@ -1,4 +1,5 @@
 import { init, initData, miniApp, themeParams, viewport } from "@telegram-apps/sdk-react";
+import { isMobilePlatform } from "./shared/telegram/platform";
 
 /**
  * Инициализация Telegram Mini App SDK.
@@ -34,9 +35,10 @@ export function initTelegram(): void {
       .mount()
       .then(() => {
         viewport.bindCssVars();
-        // Full Screen (Mini Apps v8.0+): доступен не во всех клиентах (например, на десктопе нет),
-        // потому гейтим через isAvailable и тихо игнорируем отказ — приложение работает и без него.
-        if (viewport.requestFullscreen.isAvailable()) {
+        // Full Screen (Mini Apps v8.0+) — только на мобильных клиентах: на десктопе метод
+        // тоже доступен, но лишь растягивает окно на весь экран, что не нужно. Гейтим
+        // и по платформе, и по isAvailable; отказ тихо игнорируем — приложение работает без него.
+        if (isMobilePlatform() && viewport.requestFullscreen.isAvailable()) {
           viewport.requestFullscreen().catch(() => {});
         }
       })

@@ -13,4 +13,13 @@ body,
 body {
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
+  /*
+    Заливаем фон webview цветом темы Telegram. Без этого незакрашенные области
+    (например, главная: .home прозрачна) показывают чёрную подложку webview —
+    особенно заметно при перерисовке в Full Screen после сворачивания/разворачивания.
+    --tg-bg-color ставит miniApp.bindCssVars(), --tg-theme-bg-color — themeParams.bindCssVars()
+    (обе на :root, в отличие от --tgui--bg_color, который живёт только на <AppRoot>).
+    Статический #17212b — фоллбэк вне Telegram, чтобы фон не был чисто чёрным.
+  */
+  background: var(--tg-bg-color, var(--tg-theme-bg-color, #17212b));
 }
