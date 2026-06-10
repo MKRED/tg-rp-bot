@@ -1,5 +1,5 @@
-import { apiFetch } from "../../shared/api/client";
-import type { Character, CharacterInput, CharacterListItem } from "./types";
+import { apiFetch } from "../../../shared/api/client";
+import type { Character, CharacterInput, CharacterListItem } from "../types/character";
 
 /** Обёртки над apiFetch для CRUD персонажей. Граница webapp → /api/characters. */
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { listPresets } from "./presets-api";
-import type { PresetListItem } from "./types";
+import { listPresets } from "../api/presets-api";
+import type { PresetListItem } from "../types/preset";
 
 interface PresetsState {
   items: PresetListItem[];

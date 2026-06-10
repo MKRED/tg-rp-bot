@@ -1,4 +1,4 @@
-import type { Character, RpMessage } from "./types";
+import type { Character, RpMessage } from "../types/chat";
 
 /** Демонстрационный персонаж сцены. */
 export const MOCK_CHARACTER: Character = {

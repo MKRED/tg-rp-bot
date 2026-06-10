@@ -5,7 +5,7 @@ import {
   SAMPLING_SPECS,
   type SamplingKey,
   type SamplingState,
-} from "./param-specs";
+} from "../lib/param-specs";
 import { PromptOrderEditor } from "./PromptOrderEditor";
 import { PromptsSection } from "./PromptsSection";
 import { ReasoningSection } from "./ReasoningSection";
@@ -15,7 +15,7 @@ import {
   type PresetInput,
   type PromptOrderItem,
   type ReasoningEffort,
-} from "./types";
+} from "../types/preset";
 
 interface PresetFormProps {
   /** Начальные значения (режим редактирования); отсутствуют — режим создания. */

@@ -53,14 +53,30 @@ webapp/src/
   app/          — оболочка: App.tsx (AppRoot + HashRouter), routes.ts, BackButtonBridge
   pages/        — экраны-маршруты (один на маршрут): home/ …
   shared/       — кросс-каттинг: telegram/ (доступ к initData), api/ (client с Authorization)
-  features/rp-chat/  — экран RP-чата (компоненты + стили + mock), маршрутизируется как /chat
+  features/<feature>/  — доменный модуль, разложенный по подпапкам-категориям + barrel index.ts:
+                  index.ts    — публичная поверхность фичи (то, что нужно страницам)
+                  api/        — обёртки над apiFetch (граница к /api)
+                  hooks/      — React-хуки фичи
+                  components/ — .tsx-компоненты (+ фичевый .css рядом, если есть)
+                  types/      — типы фичи (один файл с доменным именем, напр. character.ts)
+                  lib/        — чистые хелперы и данные (форматтеры, спеки, mock)
+                  (категории без файлов не заводим: у rp-chat нет api/ и hooks/)
 ```
 
 ### Структура webapp — pages vs features
 - **`pages/<screen>/`** — цель маршрута, по одной на `ROUTES.*`. Тонкая обёртка, собирающая фичи.
-- **`features/<feature>/`** — самодостаточный доменный модуль (UI + логика): `rp-chat`, далее `characters`, `prompts`, `translator`.
-- **`shared/`** — только переиспользуемое: `api/client.ts` (граница к `/api`), `telegram/` (доступ к SDK). Новую папку заводим, когда сущность реально появилась, а не заранее.
-- **Роутер — `HashRouter`** (react-router-dom): маршрут в hash переживает reload и оставляет задел под deep-link через `start_param`. Нативная кнопка «Назад» Telegram связана с роутером в `app/BackButtonBridge.tsx` (`navigate(-1)`). Catch-all `*` → главная: на Telegram Web launch-параметры приходят в hash, и без редиректа роутер показал бы пустой экран.
+- **`features/<feature>/`** — самодостаточный доменный модуль (UI + логика): `characters`, `generation-presets`,
+  `rp-chat`, далее `prompts`, `translator`.
+- **Раскладка фичи по категориям — mandatory.** Внутри фичи файлы лежат в подпапках `api/ hooks/ components/
+  types/ lib/` (см. дерево выше), а не россыпью в корне. Категории без файлов не создаём.
+- **Barrel `index.ts` на фичу.** У каждой фичи `index.ts` реэкспортирует **только публичную поверхность**
+  (то, что потребляют страницы/`App`); внутренние под-компоненты в barrel не выносим. Потребители импортируют
+  фичу как модуль: `import { CharacterForm, useCharacter } from "../../features/characters"`.
+- **Внутрифичевые импорты — напрямую к файлам, НЕ через свой barrel** (`../types/character`, `../api/...`):
+  импорт собственного `index.ts` создаёт цикл, который компилируется, но даёт `undefined` в рантайме.
+- **`shared/`** — только переиспользуемое между фичами: `api/client.ts` (граница к `/api`), `telegram/`
+  (доступ к SDK), `text/` (`estimateTokens`). Новую папку заводим, когда сущность реально появилась, а не заранее.
+- **Роутер — `HashRouter`** (react-router-dom): маршрут в hash переживает reload и оставляет задел под deep-link через `start_param`. Нативная кнопка «Назад» Telegram связана с роутером в `app/BackButtonBridge.tsx` (`navigate(parentPath(...))` — вверх по иерархии, а не по истории). Catch-all `*` → главная: на Telegram Web launch-параметры приходят в hash, и без редиректа роутер показал бы пустой экран.
 
 ### Прокси для Telegram — invariant
 Прокси (`TELEGRAM_PROXY_URL`) задаётся `https-proxy-agent` (`HttpsProxyAgent`) и подключается **только**

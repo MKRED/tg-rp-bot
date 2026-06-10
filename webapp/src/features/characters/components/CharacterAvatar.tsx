@@ -1,6 +1,6 @@
 import { Avatar } from "@telegram-apps/telegram-ui";
-import { characterInitials } from "./initials";
-import { useCharacterImage } from "./useCharacterImage";
+import { characterInitials } from "../lib/initials";
+import { useCharacterImage } from "../hooks/useCharacterImage";
 
 interface CharacterAvatarProps {
   id: number;

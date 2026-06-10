@@ -1,7 +1,7 @@
 import { Avatar, Button, FileInput } from "@telegram-apps/telegram-ui";
 import { type ChangeEvent, useState } from "react";
-import { fileToAvatarDataUrl } from "./image";
-import { characterInitials } from "./initials";
+import { fileToAvatarDataUrl } from "../lib/image";
+import { characterInitials } from "../lib/initials";
 
 interface AvatarPickerProps {
   /** Текущий аватар (data URL) или null. */

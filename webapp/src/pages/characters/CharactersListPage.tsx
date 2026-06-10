@@ -1,9 +1,11 @@
 import { Button, Caption, Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
 import { useNavigate } from "react-router-dom";
 import { ROUTES, characterEditPath } from "../../app/routes";
-import { CharacterAvatar } from "../../features/characters/CharacterAvatar";
-import { useCharacters } from "../../features/characters/useCharacters";
-import { MAX_CHARACTERS_PER_USER } from "../../features/characters/types";
+import {
+  CharacterAvatar,
+  useCharacters,
+  MAX_CHARACTERS_PER_USER,
+} from "../../features/characters";
 import "./characters.css";
 
 /** Русское склонение слова «приветствие» по числу (1 приветствие, 2 приветствия, 5 приветствий). */

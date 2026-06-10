@@ -1,4 +1,4 @@
-import type { Character } from "./types";
+import type { Character } from "../types/chat";
 
 interface ChatHeaderProps {
   character: Character;

@@ -1,4 +1,4 @@
-import { SAMPLING_SPECS, type SamplingKey, type SamplingState } from "./param-specs";
+import { SAMPLING_SPECS, type SamplingKey, type SamplingState } from "../lib/param-specs";
 import { SamplingSlider } from "./SamplingSlider";
 
 interface SamplingSectionProps {

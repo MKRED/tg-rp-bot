@@ -2,14 +2,14 @@ import { Spinner } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ROUTES } from "../../app/routes";
-import { PresetForm } from "../../features/generation-presets/PresetForm";
 import {
+  PresetForm,
   createPreset,
   removePreset,
   updatePreset,
-} from "../../features/generation-presets/presets-api";
-import { usePreset } from "../../features/generation-presets/usePreset";
-import type { PresetInput } from "../../features/generation-presets/types";
+  usePreset,
+  type PresetInput,
+} from "../../features/generation-presets";
 import { confirmAction } from "../../shared/telegram/confirm";
 import "./presets.css";
 

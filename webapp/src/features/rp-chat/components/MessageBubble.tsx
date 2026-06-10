@@ -1,4 +1,4 @@
-import type { RpMessage } from "./types";
+import type { RpMessage } from "../types/chat";
 
 interface MessageBubbleProps {
   message: RpMessage;

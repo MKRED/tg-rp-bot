@@ -3,7 +3,7 @@ import {
   PROMPT_COMPONENT_LABELS,
   UNIMPLEMENTED_COMPONENTS,
   type PromptOrderItem,
-} from "./types";
+} from "../types/preset";
 
 interface PromptOrderEditorProps {
   order: PromptOrderItem[];

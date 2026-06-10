@@ -1,19 +1,19 @@
 import { useEffect, useState } from "react";
-import { getCharacter } from "./characters-api";
-import type { Character } from "./types";
+import { getPreset } from "../api/presets-api";
+import type { Preset } from "../types/preset";
 
-interface CharacterState {
-  character: Character | undefined;
+interface PresetState {
+  preset: Preset | undefined;
   loading: boolean;
   error: boolean;
 }
 
 /**
- * Хук одного персонажа по id — для формы редактирования.
+ * Хук одного пресета по id — для формы редактирования.
  * id === undefined (режим создания) → ничего не грузим, loading=false.
  */
-export function useCharacter(id: number | undefined): CharacterState {
-  const [character, setCharacter] = useState<Character>();
+export function usePreset(id: number | undefined): PresetState {
+  const [preset, setPreset] = useState<Preset>();
   const [loading, setLoading] = useState(id !== undefined);
   const [error, setError] = useState(false);
 
@@ -25,9 +25,9 @@ export function useCharacter(id: number | undefined): CharacterState {
     let cancelled = false;
     setLoading(true);
     setError(false);
-    getCharacter(id)
+    getPreset(id)
       .then((res) => {
-        if (!cancelled) setCharacter(res.character);
+        if (!cancelled) setPreset(res.preset);
       })
       .catch(() => {
         if (!cancelled) setError(true);
@@ -40,5 +40,5 @@ export function useCharacter(id: number | undefined): CharacterState {
     };
   }, [id]);
 
-  return { character, loading, error };
+  return { preset, loading, error };
 }

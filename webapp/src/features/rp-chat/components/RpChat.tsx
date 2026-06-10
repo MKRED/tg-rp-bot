@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { ChatHeader } from "./ChatHeader";
 import { Composer } from "./Composer";
 import { MessageBubble } from "./MessageBubble";
-import { INITIAL_MESSAGES, MOCK_CHARACTER, mockCharacterReply } from "./mock";
-import type { RpMessage } from "./types";
+import { INITIAL_MESSAGES, MOCK_CHARACTER, mockCharacterReply } from "../lib/mock";
+import type { RpMessage } from "../types/chat";
 import "./rp-chat.css";
 
 let idCounter = 0;

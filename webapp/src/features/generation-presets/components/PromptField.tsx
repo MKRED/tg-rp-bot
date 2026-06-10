@@ -1,5 +1,5 @@
 import { Textarea } from "@telegram-apps/telegram-ui";
-import { estimateTokens } from "../../shared/text/tokens";
+import { estimateTokens } from "../../../shared/text/tokens";
 
 interface PromptFieldProps {
   label: string;

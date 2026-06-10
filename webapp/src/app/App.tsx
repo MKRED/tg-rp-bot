@@ -6,7 +6,7 @@ import { CharactersListPage } from "../pages/characters/CharactersListPage";
 import { CharacterEditPage } from "../pages/characters/CharacterEditPage";
 import { PresetsListPage } from "../pages/generation-presets/PresetsListPage";
 import { PresetEditPage } from "../pages/generation-presets/PresetEditPage";
-import { RpChat } from "../features/rp-chat/RpChat";
+import { RpChat } from "../features/rp-chat";
 import { getPlatform } from "../shared/telegram/platform";
 import { BackButtonBridge } from "./BackButtonBridge";
 import { ROUTES } from "./routes";

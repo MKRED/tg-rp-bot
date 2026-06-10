@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiFetch } from "../../shared/api/client";
+import { apiFetch } from "../../../shared/api/client";
 
 /**
  * Аватар персонажа как data URL (или undefined, пока грузится / нет картинки).

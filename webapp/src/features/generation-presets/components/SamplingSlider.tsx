@@ -1,5 +1,5 @@
 import { Slider, Switch } from "@telegram-apps/telegram-ui";
-import type { SamplingSpec } from "./param-specs";
+import type { SamplingSpec } from "../lib/param-specs";
 
 interface SamplingSliderProps {
   spec: SamplingSpec;

@@ -3,8 +3,8 @@ import { useState } from "react";
 import { AvatarPicker } from "./AvatarPicker";
 import { FirstMessagesEditor } from "./FirstMessagesEditor";
 import { TagsInput } from "./TagsInput";
-import { estimateTokens } from "../../shared/text/tokens";
-import type { CharacterInput } from "./types";
+import { estimateTokens } from "../../../shared/text/tokens";
+import type { CharacterInput } from "../types/character";
 
 interface CharacterFormProps {
   /** Начальные значения (режим редактирования); отсутствуют — режим создания. */

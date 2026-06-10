@@ -1,10 +1,12 @@
 import { Button, Caption, Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
 import { useNavigate } from "react-router-dom";
 import { ROUTES, presetEditPath } from "../../app/routes";
-import { usePresets } from "../../features/generation-presets/usePresets";
-import { PresetMonogram } from "../../features/generation-presets/PresetMonogram";
-import { presetSummary } from "../../features/generation-presets/preset-summary";
-import { MAX_PRESETS_PER_USER } from "../../features/generation-presets/types";
+import {
+  usePresets,
+  PresetMonogram,
+  presetSummary,
+  MAX_PRESETS_PER_USER,
+} from "../../features/generation-presets";
 import "./presets.css";
 
 /** Экран «Настройки ответа ИИ»: список пресетов генерации + кнопка создания. */

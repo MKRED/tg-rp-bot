@@ -1,5 +1,5 @@
-import { apiFetch } from "../../shared/api/client";
-import type { Preset, PresetInput, PresetListItem } from "./types";
+import { apiFetch } from "../../../shared/api/client";
+import type { Preset, PresetInput, PresetListItem } from "../types/preset";
 
 /** Обёртки над apiFetch для CRUD пресетов. Граница webapp → /api/presets. */
 

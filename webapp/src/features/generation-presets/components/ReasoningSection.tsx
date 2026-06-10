@@ -1,6 +1,6 @@
 import { Select } from "@telegram-apps/telegram-ui";
 import { SwitchRow } from "./SwitchRow";
-import { REASONING_EFFORTS, REASONING_EFFORT_LABELS, type ReasoningEffort } from "./types";
+import { REASONING_EFFORTS, REASONING_EFFORT_LABELS, type ReasoningEffort } from "../types/preset";
 
 interface ReasoningSectionProps {
   requestReasoning: boolean;

@@ -1,5 +1,5 @@
-import { REASONING_EFFORT_LABELS } from "./types";
-import type { PresetListItem } from "./types";
+import { REASONING_EFFORT_LABELS } from "../types/preset";
+import type { PresetListItem } from "../types/preset";
 
 /**
  * Компактная сводка пресета под названием в списке: ключевые поля через « · ».

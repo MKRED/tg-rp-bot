@@ -2,14 +2,15 @@ import { Spinner } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ROUTES } from "../../app/routes";
-import { CharacterForm } from "../../features/characters/CharacterForm";
 import {
+  CharacterForm,
   createCharacter,
   removeCharacter,
   updateCharacter,
-} from "../../features/characters/characters-api";
-import { useCharacter } from "../../features/characters/useCharacter";
-import type { Character, CharacterInput } from "../../features/characters/types";
+  useCharacter,
+  type Character,
+  type CharacterInput,
+} from "../../features/characters";
 import { confirmAction } from "../../shared/telegram/confirm";
 import "./characters.css";
 

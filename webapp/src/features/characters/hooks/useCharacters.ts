@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { listCharacters } from "./characters-api";
-import type { CharacterListItem } from "./types";
+import { listCharacters } from "../api/characters-api";
+import type { CharacterListItem } from "../types/character";
 
 interface CharactersState {
   items: CharacterListItem[];

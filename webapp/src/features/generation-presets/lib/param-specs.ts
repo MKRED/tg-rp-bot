@@ -1,4 +1,4 @@
-import type { PresetInput } from "./types";
+import type { PresetInput } from "../types/preset";
 
 /** Ключи параметров сэмплинга в PresetInput (все они `number | null`). */
 export type SamplingKey =
