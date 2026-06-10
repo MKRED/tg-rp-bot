@@ -129,6 +129,13 @@
   display: inline-flex;
 }
 
+/* Нативные <option> выпадашки: на ПК их попап рисует Chromium системно-белым.
+   Задаём фон и цвет по теме, чтобы текст читался и в тёмной теме. */
+.preset-select option {
+  color: var(--tgui--text_color, #000);
+  background-color: var(--tgui--bg_color, #fff);
+}
+
 /* --- Параметры сэмплинга (слайдеры) --- */
 .preset-sampling {
   display: flex;

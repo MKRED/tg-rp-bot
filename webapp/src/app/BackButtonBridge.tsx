@@ -1,14 +1,15 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { backButton } from "@telegram-apps/sdk-react";
-import { ROUTES } from "./routes";
+import { ROUTES, parentPath } from "./routes";
 
 /**
  * Мост нативной кнопки «Назад» Telegram ↔ роутер.
  *
- * На вложенных экранах показываем кнопку, по нажатию делаем navigate(-1) (шаг назад
- * по истории роутера); на главной — прячем. Все вызовы SDK обёрнуты в isAvailable(),
- * т.к. вне Telegram (dev-браузер) кнопки нет — тогда мост просто ничего не делает.
+ * На вложенных экранах показываем кнопку, по нажатию уходим к родительскому маршруту
+ * (parentPath — вверх по иерархии, а не по истории), на главной — прячем. Навигация вверх,
+ * а не navigate(-1): иначе после удаления пресета «Назад» вернул бы на его (уже мёртвый) URL.
+ * Все вызовы SDK обёрнуты в isAvailable(): вне Telegram (dev-браузер) кнопки нет — мост молчит.
  */
 export function BackButtonBridge() {
   const navigate = useNavigate();
@@ -22,11 +23,12 @@ export function BackButtonBridge() {
     };
   }, []);
 
-  // Подписка на нажатие: уводим на шаг назад по истории.
+  // Подписка на нажатие: уводим к родителю текущего экрана. Пересоздаём подписку при
+  // смене пути, чтобы в замыкании был актуальный pathname (от него зависит родитель).
   useEffect(() => {
     if (!backButton.onClick.isAvailable()) return;
-    return backButton.onClick(() => navigate(-1));
-  }, [navigate]);
+    return backButton.onClick(() => navigate(parentPath(location.pathname)));
+  }, [navigate, location.pathname]);
 
   // Показ/скрытие в зависимости от текущего маршрута.
   useEffect(() => {

@@ -25,17 +25,21 @@ export function ReasoningSection({
         onChange={onRequestReasoning}
       />
       {requestReasoning && (
-        <Select
-          header="Уровень рассуждения"
-          value={reasoningEffort}
-          onChange={(e) => onReasoningEffort(e.target.value as ReasoningEffort)}
-        >
-          {REASONING_EFFORTS.map((effort) => (
-            <option key={effort} value={effort}>
-              {REASONING_EFFORT_LABELS[effort]}
-            </option>
-          ))}
-        </Select>
+        // Обёртка-класс нужна, чтобы задать фон/цвет нативным <option>: на ПК (webview Telegram
+        // Desktop) попап выпадашки рисует Chromium системно-белым, и светлый текст на нём не виден.
+        <div className="preset-select">
+          <Select
+            header="Уровень рассуждения"
+            value={reasoningEffort}
+            onChange={(e) => onReasoningEffort(e.target.value as ReasoningEffort)}
+          >
+            {REASONING_EFFORTS.map((effort) => (
+              <option key={effort} value={effort}>
+                {REASONING_EFFORT_LABELS[effort]}
+              </option>
+            ))}
+          </Select>
+        </div>
       )}
     </>
   );

@@ -26,3 +26,15 @@ export const characterEditPath = (id: number): string => `/characters/${id}`;
 
 /** Путь к редактированию конкретного пресета. */
 export const presetEditPath = (id: number): string => `/presets/${id}`;
+
+/**
+ * Родительский маршрут для кнопки «Назад» — возврат вверх по иерархии, а не по истории.
+ * Так после, например, удаления пресета (→ список) «Назад» ведёт на главную, а не на
+ * только что удалённый пресет. Вложенные экраны (`/characters/:id`, `/presets/new` …)
+ * возвращают к своему списку; списки и чат — на главную.
+ */
+export function parentPath(pathname: string): string {
+  if (pathname.startsWith("/characters/")) return ROUTES.characters;
+  if (pathname.startsWith("/presets/")) return ROUTES.presets;
+  return ROUTES.home;
+}
