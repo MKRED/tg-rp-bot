@@ -31,17 +31,38 @@ export type PresetInput = {
   promptOrder: PromptOrderItem[];
 };
 
-/** Лёгкая строка списка: только id и название (тексты/параметры не тянем). */
+/**
+ * Лёгкая строка списка: id, название и несколько скалярных полей для сводки под названием
+ * (температура, лимиты, стриминг, рассуждение). Тексты промптов и остальной сэмплинг не тянем —
+ * они нужны только в форме правки.
+ */
 export type PresetListItem = {
   id: number;
   name: string;
+  temperature: number | null;
+  contextUnlimited: boolean;
+  contextSize: number | null;
+  maxTokens: number | null;
+  streaming: boolean;
+  requestReasoning: boolean;
+  reasoningEffort: string | null;
 };
 
 /** Список пресетов пользователя — свежие сверху. */
 export async function listPresets(userId: number): Promise<PresetListItem[]> {
   const t0 = Date.now();
   const rows = await db
-    .select({ id: schema.generationPresets.id, name: schema.generationPresets.name })
+    .select({
+      id: schema.generationPresets.id,
+      name: schema.generationPresets.name,
+      temperature: schema.generationPresets.temperature,
+      contextUnlimited: schema.generationPresets.contextUnlimited,
+      contextSize: schema.generationPresets.contextSize,
+      maxTokens: schema.generationPresets.maxTokens,
+      streaming: schema.generationPresets.streaming,
+      requestReasoning: schema.generationPresets.requestReasoning,
+      reasoningEffort: schema.generationPresets.reasoningEffort,
+    })
     .from(schema.generationPresets)
     .where(eq(schema.generationPresets.userId, userId))
     .orderBy(desc(schema.generationPresets.updatedAt));

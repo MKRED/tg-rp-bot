@@ -27,6 +27,21 @@
   color: var(--tgui--hint_color, #7d8b99);
 }
 
+/* Монограм пресета в строке списка: цветной кружок с первой буквой (цвет задаётся инлайн по id). */
+.preset-monogram {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+}
+
 .presets-page__create {
   padding: 12px 16px 0;
 }
@@ -106,6 +121,12 @@
 
 .preset-switchrow__label {
   color: var(--tgui--text_color, #000);
+}
+
+/* Обёртка переключателя: фиксированный размер, чтобы текст слева его не ужимал. */
+.preset-switch {
+  flex-shrink: 0;
+  display: inline-flex;
 }
 
 /* --- Параметры сэмплинга (слайдеры) --- */

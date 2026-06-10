@@ -29,7 +29,10 @@ export function SamplingSlider({ spec, value, enabled, onValue, onEnabled }: Sam
         <span className="preset-slider__value">
           {enabled ? formatValue(value, spec.step) : "—"}
         </span>
-        <Switch checked={enabled} onChange={(e) => onEnabled(e.target.checked)} />
+        {/* Обёртка с flex-shrink:0 — чтобы Switch не сжимался рядом с подписью/значением. */}
+        <span className="preset-switch">
+          <Switch checked={enabled} onChange={(e) => onEnabled(e.target.checked)} />
+        </span>
       </div>
       <Slider
         min={spec.min}

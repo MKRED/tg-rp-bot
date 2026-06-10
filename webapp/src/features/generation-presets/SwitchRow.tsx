@@ -16,7 +16,10 @@ export function SwitchRow({ label, hint, checked, disabled, onChange }: SwitchRo
         <span className="preset-switchrow__label">{label}</span>
         {hint && <span className="preset-field__hint">{hint}</span>}
       </div>
-      <Switch checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
+      {/* Обёртка с flex-shrink:0 — иначе длинный текст слева ужимает Switch и ломает его вид. */}
+      <span className="preset-switch">
+        <Switch checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
+      </span>
     </div>
   );
 }

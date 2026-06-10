@@ -88,10 +88,17 @@ export interface Preset extends PresetInput {
   updatedAt: string;
 }
 
-/** Лёгкая строка списка (GET /presets) — только id и название. */
+/** Лёгкая строка списка (GET /presets): id, название + поля для сводки под названием. */
 export interface PresetListItem {
   id: number;
   name: string;
+  temperature: number | null;
+  contextUnlimited: boolean;
+  contextSize: number | null;
+  maxTokens: number | null;
+  streaming: boolean;
+  requestReasoning: boolean;
+  reasoningEffort: ReasoningEffort | null;
 }
 
 /** Мягкий лимит — дублирует серверный (bot/src/server/presets.ts), блокирует UI заранее. */
