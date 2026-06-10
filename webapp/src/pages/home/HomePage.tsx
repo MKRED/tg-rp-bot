@@ -54,6 +54,9 @@ export function HomePage() {
           <Cell subtitle="Ваши персонажи" onClick={() => navigate(ROUTES.characters)}>
             Персонажи
           </Cell>
+          <Cell subtitle="Пресеты параметров генерации" onClick={() => navigate(ROUTES.presets)}>
+            Настройки ответа ИИ
+          </Cell>
         </Section>
       </List>
     </div>

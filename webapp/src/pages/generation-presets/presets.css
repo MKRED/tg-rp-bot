@@ -1,0 +1,189 @@
+.presets-page {
+  min-height: 100dvh;
+  /* Верхний отступ под Full Screen — тот же приём, что в characters.css. */
+  padding-top: calc(
+    8px +
+    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
+  padding-bottom: 24px;
+}
+
+.presets-page__center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 32px 16px;
+  color: var(--tgui--hint_color, #7d8b99);
+}
+
+/* Полноэкранное центрирование — для спиннера загрузки и состояния «не найден». */
+.presets-page__fullcenter {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100dvh;
+  padding: 16px;
+  color: var(--tgui--hint_color, #7d8b99);
+}
+
+.presets-page__create {
+  padding: 12px 16px 0;
+}
+
+.presets-page__limit {
+  display: block;
+  margin-top: 8px;
+  text-align: center;
+  color: var(--tgui--hint_color, #7d8b99);
+}
+
+/* --- Форма пресета ---
+   Горизонтальных отступов у формы нет: поля telegram-ui (FormInput) сами имеют внутренний
+   gutter 22px, и именно он задаёт сетку. Все прочие элементы выравниваем по тем же 22px. */
+.preset-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.preset-form__section-title {
+  margin-top: 8px;
+  padding: 0 22px;
+  font-weight: 600;
+  color: var(--tgui--text_color, #000);
+}
+
+.preset-form__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 0 22px;
+}
+
+/* --- Поле с подсказкой/счётчиком (промпты, числовые лимиты) --- */
+.preset-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.preset-field__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 22px 0;
+}
+
+.preset-field__hint {
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--tgui--hint_color, #7d8b99);
+}
+
+.preset-field__tokens {
+  font-size: 13px;
+  white-space: nowrap;
+  color: var(--tgui--hint_color, #7d8b99);
+}
+
+/* --- Строка-галочка (Switch) --- */
+.preset-switchrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 22px;
+}
+
+.preset-switchrow__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.preset-switchrow__label {
+  color: var(--tgui--text_color, #000);
+}
+
+/* --- Параметры сэмплинга (слайдеры) --- */
+.preset-sampling {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.preset-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 22px;
+}
+
+.preset-slider__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.preset-slider__label {
+  flex: 1;
+  color: var(--tgui--text_color, #000);
+}
+
+.preset-slider__value {
+  min-width: 3ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--tgui--hint_color, #7d8b99);
+}
+
+/* --- Порядок промптов (кнопки ↑/↓) --- */
+.preset-order {
+  display: flex;
+  flex-direction: column;
+  padding: 0 22px;
+}
+
+.preset-order__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.preset-order__buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.preset-order__btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--tgui--text_color, #000);
+  background: var(--tgui--secondary_fill, rgba(127, 139, 153, 0.12));
+}
+
+.preset-order__btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.preset-order__label {
+  flex: 1;
+  color: var(--tgui--text_color, #000);
+}
+
+.preset-order__soon {
+  font-size: 13px;
+  color: var(--tgui--hint_color, #7d8b99);
+}

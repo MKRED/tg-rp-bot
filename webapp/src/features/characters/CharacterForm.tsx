@@ -3,7 +3,7 @@ import { useState } from "react";
 import { AvatarPicker } from "./AvatarPicker";
 import { FirstMessagesEditor } from "./FirstMessagesEditor";
 import { TagsInput } from "./TagsInput";
-import { estimateTokens } from "./tokens";
+import { estimateTokens } from "../../shared/text/tokens";
 import type { CharacterInput } from "./types";
 
 interface CharacterFormProps {

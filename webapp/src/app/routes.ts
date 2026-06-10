@@ -13,7 +13,16 @@ export const ROUTES = {
   characterNew: "/characters/new",
   /** Форма редактирования персонажа по id (react-router v6: статический `new` приоритетнее `:id`). */
   characterEdit: "/characters/:id",
+  /** Список пресетов «Настройки ответа ИИ». */
+  presets: "/presets",
+  /** Форма создания нового пресета. */
+  presetNew: "/presets/new",
+  /** Форма редактирования пресета по id (статический `new` приоритетнее `:id`). */
+  presetEdit: "/presets/:id",
 } as const;
 
 /** Путь к редактированию конкретного персонажа. */
 export const characterEditPath = (id: number): string => `/characters/${id}`;
+
+/** Путь к редактированию конкретного пресета. */
+export const presetEditPath = (id: number): string => `/presets/${id}`;

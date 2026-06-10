@@ -1,5 +1,5 @@
 import { Button, Textarea } from "@telegram-apps/telegram-ui";
-import { estimateTokens } from "./tokens";
+import { estimateTokens } from "../../shared/text/tokens";
 import { MAX_FIRST_MESSAGES } from "./types";
 
 interface FirstMessagesEditorProps {

@@ -1,8 +1,11 @@
 import { and, desc, eq, sql } from "drizzle-orm";
-import type { TgUser } from "../server/initData.js";
 import logger from "../logger.js";
 import { db, schema } from "./index.js";
 import type { Character } from "./schema.js";
+
+// ensureUser вынесен в общий db/users.ts (нужен и пресетам) — реэкспорт сохраняет
+// прежнюю точку импорта `../db/characters.js` для server/characters.ts.
+export { ensureUser } from "./users.js";
 
 /**
  * Поля персонажа, которые приходят из формы Mini App (без серверных id/timestamps).
@@ -27,35 +30,6 @@ export type CharacterListItem = {
   firstMessageCount: number;
   hasImage: boolean;
 };
-
-/**
- * Upsert пользователя перед созданием персонажа: строка в users заводится только на /start
- * (см. handlers/start.ts), а Mini App можно открыть, не нажав /start. Без этого FK
- * characters.user_id → users.id упадёт. Паттерн upsert повторяет /start.
- */
-export async function ensureUser(user: NonNullable<TgUser>): Promise<void> {
-  const t0 = Date.now();
-  await db
-    .insert(schema.users)
-    .values({
-      id: user.id,
-      username: user.username,
-      firstName: user.first_name,
-      lastName: user.last_name,
-      languageCode: user.language_code,
-    })
-    .onConflictDoUpdate({
-      target: schema.users.id,
-      set: {
-        username: user.username,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        languageCode: user.language_code,
-        updatedAt: new Date(),
-      },
-    });
-  logger.debug({ durationMs: Date.now() - t0, userId: user.id }, "User ensured for character op");
-}
 
 /** Список персонажей пользователя (метаданные, без image) — свежие сверху. */
 export async function listCharacters(userId: number): Promise<CharacterListItem[]> {
