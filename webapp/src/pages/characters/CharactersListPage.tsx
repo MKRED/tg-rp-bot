@@ -1,6 +1,7 @@
 import { Button, Caption, Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
 import { useNavigate } from "react-router-dom";
 import { ROUTES, characterEditPath } from "../../app/routes";
+import { CharacterAvatar } from "../../features/characters/CharacterAvatar";
 import { useCharacters } from "../../features/characters/useCharacters";
 import { MAX_CHARACTERS_PER_USER } from "../../features/characters/types";
 import "./characters.css";
@@ -52,6 +53,7 @@ export function CharactersListPage() {
             items.map((c) => (
               <Cell
                 key={c.id}
+                before={<CharacterAvatar id={c.id} hasImage={c.hasImage} name={c.name} />}
                 subtitle={subtitleOf(c.tags, c.firstMessageCount)}
                 onClick={() => navigate(characterEditPath(c.id))}
               >

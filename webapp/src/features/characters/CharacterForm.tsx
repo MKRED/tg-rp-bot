@@ -1,5 +1,6 @@
 import { Button, Input, Textarea } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
+import { AvatarPicker } from "./AvatarPicker";
 import { FirstMessagesEditor } from "./FirstMessagesEditor";
 import { TagsInput } from "./TagsInput";
 import { estimateTokens } from "./tokens";
@@ -17,6 +18,7 @@ interface CharacterFormProps {
 /** Форма создания/редактирования персонажа. Состояние держим локально (паттерн Composer). */
 export function CharacterForm({ initial, submitting, onSubmit, onDelete }: CharacterFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
+  const [image, setImage] = useState<string | null>(initial?.image ?? null);
   const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
   const [prompt, setPrompt] = useState(initial?.prompt ?? "");
   const [firstMessages, setFirstMessages] = useState<string[]>(initial?.firstMessages ?? []);
@@ -27,6 +29,7 @@ export function CharacterForm({ initial, submitting, onSubmit, onDelete }: Chara
     if (!canSubmit) return;
     onSubmit({
       name: name.trim(),
+      image,
       tags,
       prompt,
       // отбрасываем пустые варианты первого сообщения
@@ -36,6 +39,8 @@ export function CharacterForm({ initial, submitting, onSubmit, onDelete }: Chara
 
   return (
     <div className="char-form">
+      <AvatarPicker image={image} name={name} onChange={setImage} />
+
       <Input
         header="Название"
         placeholder="Имя персонажа"

@@ -15,7 +15,13 @@ import "./characters.css";
 
 /** Маппинг полного персонажа в значения формы. */
 function toInput(c: Character): CharacterInput {
-  return { name: c.name, tags: c.tags, prompt: c.prompt, firstMessages: c.firstMessages };
+  return {
+    name: c.name,
+    image: c.image,
+    tags: c.tags,
+    prompt: c.prompt,
+    firstMessages: c.firstMessages,
+  };
 }
 
 /**

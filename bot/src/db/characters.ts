@@ -6,21 +6,26 @@ import type { Character } from "./schema.js";
 
 /**
  * Поля персонажа, которые приходят из формы Mini App (без серверных id/timestamps).
- * image пока не принимаем из webapp (UI загрузки отложен) — колонка остаётся под будущее.
+ * image — аватар как data URL (или null, если не задан/удалён).
  */
 export type CharacterInput = {
   name: string;
   tags: string[];
   prompt: string;
   firstMessages: string[];
+  image: string | null;
 };
 
-/** Лёгкая проекция для списка: без image и без полного текста промпта/сообщений. */
+/**
+ * Лёгкая проекция для списка: без самого image (он может весить сотни КБ base64), вместо него
+ * только флаг hasImage — саму картинку список грузит построчно через GET /characters/:id/image.
+ */
 export type CharacterListItem = {
   id: number;
   name: string;
   tags: string[];
   firstMessageCount: number;
+  hasImage: boolean;
 };
 
 /**
@@ -62,6 +67,8 @@ export async function listCharacters(userId: number): Promise<CharacterListItem[
       tags: schema.characters.tags,
       // длина jsonb-массива первых сообщений считается на стороне БД — список не тянет тексты
       firstMessageCount: sql<number>`jsonb_array_length(${schema.characters.firstMessages})`,
+      // только наличие аватара (не сами байты) — картинку список грузит отдельным запросом
+      hasImage: sql<boolean>`${schema.characters.image} is not null`,
     })
     .from(schema.characters)
     .where(eq(schema.characters.userId, userId))
@@ -91,6 +98,22 @@ export async function getCharacter(userId: number, id: number): Promise<Characte
   return rows[0];
 }
 
+/**
+ * Только аватар персонажа (тянем одну колонку, без промпта/сообщений) для построчной загрузки
+ * картинки в списке. Возвращает: undefined — персонажа нет/не его; null — есть, но без картинки;
+ * string — data URL аватара.
+ */
+export async function getCharacterImage(
+  userId: number,
+  id: number,
+): Promise<string | null | undefined> {
+  const rows = await db
+    .select({ image: schema.characters.image })
+    .from(schema.characters)
+    .where(and(eq(schema.characters.id, id), eq(schema.characters.userId, userId)));
+  return rows[0]?.image;
+}
+
 /** Создаёт персонажа и возвращает созданную строку. */
 export async function createCharacter(userId: number, input: CharacterInput): Promise<Character> {
   const t0 = Date.now();
@@ -102,6 +125,7 @@ export async function createCharacter(userId: number, input: CharacterInput): Pr
       tags: input.tags,
       prompt: input.prompt,
       firstMessages: input.firstMessages,
+      image: input.image,
     })
     .returning();
   const created = rows[0]!; // insert ... returning всегда отдаёт одну строку
@@ -126,6 +150,7 @@ export async function updateCharacter(
       tags: input.tags,
       prompt: input.prompt,
       firstMessages: input.firstMessages,
+      image: input.image,
     })
     .where(and(eq(schema.characters.id, id), eq(schema.characters.userId, userId)))
     .returning();

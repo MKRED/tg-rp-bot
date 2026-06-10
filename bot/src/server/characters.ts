@@ -6,6 +6,7 @@ import {
   deleteCharacter,
   ensureUser,
   getCharacter,
+  getCharacterImage,
   listCharacters,
   updateCharacter,
 } from "../db/characters.js";
@@ -15,6 +16,9 @@ import type { AppVariables } from "./initData.js";
 // Мягкие лимиты (дублируются в webapp для блокировки UI — здесь последняя линия защиты).
 const MAX_CHARACTERS_PER_USER = 50;
 const MAX_FIRST_MESSAGES = 10;
+// Потолок размера аватара (data URL). ~900 КБ строки ≈ ~675 КБ бинарных данных — последняя
+// линия защиты: webapp и так даунскейлит картинку до 512px JPEG перед отправкой.
+const MAX_IMAGE_CHARS = 900_000;
 
 /**
  * Разбирает тело запроса в CharacterInput с ручной валидацией (без отдельной зависимости).
@@ -39,12 +43,25 @@ function parseCharacterInput(body: unknown): { input: CharacterInput } | { error
     return { error: `Too many first messages (max ${MAX_FIRST_MESSAGES})` };
   }
 
+  // image опционален: отсутствует/null → нет аватара; строка обязана быть data:image/*-URL.
+  let image: string | null = null;
+  if (b.image !== undefined && b.image !== null) {
+    if (typeof b.image !== "string" || !b.image.startsWith("data:image/")) {
+      return { error: "Image must be a data:image/* URL" };
+    }
+    if (b.image.length > MAX_IMAGE_CHARS) {
+      return { error: "Image too large" };
+    }
+    image = b.image;
+  }
+
   return {
     input: {
       name,
       prompt,
       tags: b.tags as string[],
       firstMessages: b.firstMessages as string[],
+      image,
     },
   };
 }
@@ -81,6 +98,24 @@ export function createCharacterRoutes(): Hono<{ Variables: AppVariables }> {
       return c.json({ character });
     } catch (err) {
       logger.error({ err, userId: user.id, id }, "Failed to get character");
+      return c.json({ error: "Internal error" }, 500);
+    }
+  });
+
+  // Аватар персонажа как data URL (или null) — отдельным запросом, чтобы список не тянул base64
+  // всех персонажей. Форма редактирования картинку отдельно НЕ грузит: GET /:id уже отдаёт image.
+  // Путь /:id/image не конфликтует с /:id — Hono матчит посегментно. Само изображение не логируем.
+  api.get("/:id/image", async (c) => {
+    const user = c.get("tgUser");
+    if (!user) return c.json({ error: "Auth required" }, 401);
+    const id = Number(c.req.param("id"));
+    if (!Number.isInteger(id)) return c.json({ error: "Invalid id" }, 400);
+    try {
+      const image = await getCharacterImage(user.id, id);
+      if (image === undefined) return c.json({ error: "Not found" }, 404);
+      return c.json({ dataUrl: image }); // image: string | null
+    } catch (err) {
+      logger.error({ err, userId: user.id, id }, "Failed to get character image");
       return c.json({ error: "Internal error" }, 500);
     }
   });
