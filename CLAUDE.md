@@ -75,7 +75,8 @@ webapp/src/
 - **Внутрифичевые импорты — напрямую к файлам, НЕ через свой barrel** (`../types/character`, `../api/...`):
   импорт собственного `index.ts` создаёт цикл, который компилируется, но даёт `undefined` в рантайме.
 - **`shared/`** — только переиспользуемое между фичами: `api/client.ts` (граница к `/api`), `telegram/`
-  (доступ к SDK), `text/` (`estimateTokens`). Новую папку заводим, когда сущность реально появилась, а не заранее.
+  (доступ к SDK), `text/` (`estimateTokens`, `initials`), `image/` (`fileToAvatarDataUrl` — кроп/даунскейл аватара),
+  `components/` (`AvatarPicker` — выбор/превью/удаление аватара). Новую папку заводим, когда сущность реально появилась, а не заранее.
 - **Роутер — `HashRouter`** (react-router-dom): маршрут в hash переживает reload и оставляет задел под deep-link через `start_param`. Нативная кнопка «Назад» Telegram связана с роутером в `app/BackButtonBridge.tsx` (`navigate(parentPath(...))` — вверх по иерархии, а не по истории). Catch-all `*` → главная: на Telegram Web launch-параметры приходят в hash, и без редиректа роутер показал бы пустой экран.
 
 ### Прокси для Telegram — invariant

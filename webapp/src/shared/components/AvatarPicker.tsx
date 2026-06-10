@@ -1,7 +1,8 @@
 import { Avatar, Button, FileInput } from "@telegram-apps/telegram-ui";
 import { type ChangeEvent, useState } from "react";
-import { fileToAvatarDataUrl } from "../lib/image";
-import { characterInitials } from "../lib/initials";
+import { fileToAvatarDataUrl } from "../image";
+import { nameInitials } from "../text/initials";
+import "./AvatarPicker.css";
 
 interface AvatarPickerProps {
   /** Текущий аватар (data URL) или null. */
@@ -12,8 +13,8 @@ interface AvatarPickerProps {
 }
 
 /**
- * Выбор аватара персонажа: превью + загрузка файла (квадратный кроп/даунскейл в image.ts) +
- * удаление. Картинка хранится как data URL прямо в персонаже (поле image).
+ * Выбор аватара: превью + загрузка файла (квадратный кроп/даунскейл) + удаление.
+ * Картинка хранится как data URL прямо в объекте (поле image).
  */
 export function AvatarPicker({ image, name, onChange }: AvatarPickerProps) {
   const [busy, setBusy] = useState(false);
@@ -34,9 +35,9 @@ export function AvatarPicker({ image, name, onChange }: AvatarPickerProps) {
   };
 
   return (
-    <div className="char-avatar">
-      <Avatar size={96} src={image ?? undefined} acronym={characterInitials(name)} />
-      <div className="char-avatar__actions">
+    <div className="avatar-picker">
+      <Avatar size={96} src={image ?? undefined} acronym={nameInitials(name)} />
+      <div className="avatar-picker__actions">
         <FileInput
           accept="image/*"
           disabled={busy}

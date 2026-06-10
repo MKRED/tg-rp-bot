@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import logger from "../logger.js";
 import { createCharacterRoutes } from "./characters.js";
 import { type AppVariables, requireInitData } from "./initData.js";
+import { createPersonaRoutes } from "./personas.js";
 import { createPresetRoutes } from "./presets.js";
 import { getProfilePhotoDataUrl } from "./profilePhoto.js";
 
@@ -38,6 +39,9 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
 
   // CRUD персонажей (sub-app наследует requireInitData выше).
   api.route("/characters", createCharacterRoutes());
+
+  // CRUD персон пользователя (sub-app наследует requireInitData выше).
+  api.route("/personas", createPersonaRoutes());
 
   // CRUD пресетов настроек генерации (sub-app наследует requireInitData выше).
   api.route("/presets", createPresetRoutes());

@@ -6,6 +6,8 @@ import { CharactersListPage } from "../pages/characters/CharactersListPage";
 import { CharacterEditPage } from "../pages/characters/CharacterEditPage";
 import { PresetsListPage } from "../pages/generation-presets/PresetsListPage";
 import { PresetEditPage } from "../pages/generation-presets/PresetEditPage";
+import { PersonasListPage } from "../pages/personas/PersonasListPage";
+import { PersonaEditPage } from "../pages/personas/PersonaEditPage";
 import { RpChat } from "../features/rp-chat";
 import { getPlatform } from "../shared/telegram/platform";
 import { BackButtonBridge } from "./BackButtonBridge";
@@ -46,6 +48,10 @@ export function App() {
           {/* Статический /presets/new стоит раньше /presets/:id — react-router отдаёт ему приоритет. */}
           <Route path={ROUTES.presetNew} element={<PresetEditPage />} />
           <Route path={ROUTES.presetEdit} element={<PresetEditPage />} />
+          <Route path={ROUTES.personas} element={<PersonasListPage />} />
+          {/* Статический /personas/new стоит раньше /personas/:id — react-router отдаёт ему приоритет. */}
+          <Route path={ROUTES.personaNew} element={<PersonaEditPage />} />
+          <Route path={ROUTES.personaEdit} element={<PersonaEditPage />} />
           {/*
             Любой неизвестный путь → главная. Важно для Telegram Web: launch-параметры
             прилетают в hash (#tgWebAppData=…); init() их уже считал, а роутеру этот hash

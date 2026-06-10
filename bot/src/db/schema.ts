@@ -62,6 +62,29 @@ export const characters = pgTable("characters", {
 export type Character = typeof characters.$inferSelect;
 export type NewCharacter = typeof characters.$inferInsert;
 
+/**
+ * Персоны пользователя — личность, под которой он выступает в RP-чате.
+ * footnote хранится только в UI (не передаётся в LLM).
+ */
+export const personas = pgTable("personas", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  userId: bigint("user_id", { mode: "number" })
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  image: text("image"),
+  footnote: text("footnote"),
+  prompt: text("prompt").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export type Persona = typeof personas.$inferSelect;
+export type NewPersona = typeof personas.$inferInsert;
+
 /** Компонент запроса к нейросети, чей порядок и включённость настраиваются в пресете. */
 export type PromptComponentId =
   | "system"
