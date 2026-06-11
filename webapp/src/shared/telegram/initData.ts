@@ -6,6 +6,8 @@ import { initData } from "@telegram-apps/sdk-react";
  */
 export interface TgUserInfo {
   id: number;
+  /** Только имя (first_name) — для приветствий. */
+  firstName: string;
   /** Имя + фамилия одной строкой (фамилия может отсутствовать). */
   fullName: string;
   username?: string;
@@ -28,6 +30,7 @@ export function getTgUser(): TgUserInfo | undefined {
   const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ");
   return {
     id: user.id,
+    firstName: user.first_name,
     fullName,
     username: user.username,
     photoUrl: user.photo_url,

@@ -29,3 +29,31 @@
 .home__handle {
   color: var(--tgui--hint_color, #7d8b99);
 }
+
+/* --- Иконки ячеек --- */
+.home__icon {
+  color: var(--tgui--accent_text_color, #3390ec);
+  flex-shrink: 0;
+}
+
+.home__icon--muted {
+  color: var(--tgui--hint_color, #7d8b99);
+}
+
+/* --- Ячейка «Скоро» --- */
+.home__cell--soon {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.home__soon-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  background-color: var(--tgui--secondary_bg_color, #f0f0f0);
+  color: var(--tgui--hint_color, #7d8b99);
+  white-space: nowrap;
+}

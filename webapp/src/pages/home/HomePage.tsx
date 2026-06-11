@@ -1,11 +1,13 @@
 import { Avatar, Caption, Cell, List, Section, Title } from "@telegram-apps/telegram-ui";
+import { MessageCircle, Users, User, Smile, SlidersHorizontal } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getTgUser } from "../../shared/telegram/initData";
 import { useProfilePhoto } from "../../shared/telegram/useProfilePhoto";
 import { ROUTES } from "../../app/routes";
+import { randomGreeting } from "./greetings";
 import "./home.css";
 
-/** Инициалы для заглушки аватара: первые буквы имени и фамилии. */
 function initialsOf(fullName: string): string {
   return fullName
     .split(/\s+/)
@@ -15,18 +17,14 @@ function initialsOf(fullName: string): string {
     .join("");
 }
 
-/**
- * Главная — экран, на который попадаем при открытии приложения.
- * Показывает профиль пользователя (из initData) и точки входа в режимы игры.
- */
 export function HomePage() {
   const navigate = useNavigate();
   const user = getTgUser();
-  // Фото грузится серверно: initData при запуске кнопкой/меню его не содержит.
   const photoUrl = useProfilePhoto();
+  // Приветствие фиксируется при монтировании — одно на сессию, не мигает при ре-рендерах.
+  const [greeting] = useState(() => randomGreeting());
 
-  // Вне Telegram (dev-браузер) initData пустой — показываем нейтральную заглушку.
-  const displayName = user?.fullName ?? "Гость";
+  const displayName = user?.firstName ?? "Гость";
   const handle = user?.username ? `@${user.username}` : "не в Telegram";
 
   return (
@@ -34,7 +32,7 @@ export function HomePage() {
       <header className="home__greeting">
         <Avatar size={96} src={photoUrl} acronym={user ? initialsOf(user.fullName) : undefined} />
         <Title level="1" weight="2" className="home__name">
-          {displayName}
+          {greeting}, {displayName}!
         </Title>
         <Caption level="1" className="home__handle">
           {handle}
@@ -43,21 +41,43 @@ export function HomePage() {
 
       <List>
         <Section header="Режим игры">
-          <Cell subtitle="Диалог с одним персонажем" onClick={() => navigate(ROUTES.chat)}>
-            Один на один
+          <Cell
+            before={<MessageCircle size={24} className="home__icon" />}
+            subtitle="Диалог с одним персонажем"
+            onClick={() => navigate(ROUTES.chat)}
+          >
+            Ролевой чат
           </Cell>
-          {/* Групповой режим и настройки появятся следующими шагами. */}
-          <Cell subtitle="Скоро">Группа персонажей</Cell>
+          <Cell
+            before={<Users size={24} className="home__icon home__icon--muted" />}
+            subtitle="В разработке"
+            after={<span className="home__soon-badge">Скоро</span>}
+            className="home__cell--soon"
+          >
+            Группа персонажей
+          </Cell>
         </Section>
 
         <Section header="Библиотека">
-          <Cell subtitle="Ваши персонажи" onClick={() => navigate(ROUTES.characters)}>
+          <Cell
+            before={<User size={24} className="home__icon" />}
+            subtitle="Ваши персонажи"
+            onClick={() => navigate(ROUTES.characters)}
+          >
             Персонажи
           </Cell>
-          <Cell subtitle="Ваши персоны (от чьего лица вы играете)" onClick={() => navigate(ROUTES.personas)}>
+          <Cell
+            before={<Smile size={24} className="home__icon" />}
+            subtitle="Ваши персоны (от чьего лица вы играете)"
+            onClick={() => navigate(ROUTES.personas)}
+          >
             Персоны
           </Cell>
-          <Cell subtitle="Пресеты параметров генерации" onClick={() => navigate(ROUTES.presets)}>
+          <Cell
+            before={<SlidersHorizontal size={24} className="home__icon" />}
+            subtitle="Пресеты параметров генерации"
+            onClick={() => navigate(ROUTES.presets)}
+          >
             Настройки ответа ИИ
           </Cell>
         </Section>
