@@ -72,7 +72,7 @@ export function decryptField(value: string | null, key: Buffer): string | null {
 }
 
 /**
- * Читает ENCRYPTION_KEY из env, выводит финальный ключ через HKDF(envKey, CODE_SALT).
+ * Читает ENCRYPTION_KEY из env, выводит мастер-ключ через HKDF(envKey, CODE_SALT).
  * Бросает, если переменная не задана или имеет неверную длину.
  */
 export function getEncryptionKey(): Buffer {
@@ -86,6 +86,21 @@ export function getEncryptionKey(): Buffer {
       `ENCRYPTION_KEY должна быть 64-символьной hex-строкой (32 байта), получено ${envKey.length} байт`,
     );
   }
-  // HKDF комбинирует env-ключ и code-salt в один 32-байтный ключ для AES
+  // HKDF комбинирует env-ключ и code-salt в один 32-байтный мастер-ключ
   return Buffer.from(hkdfSync("sha256", envKey, CODE_SALT, "tg-rp-bot-encryption-v1", 32));
+}
+
+/**
+ * Выводит ключ, специфичный для конкретного пользователя.
+ * Финальный ключ = HKDF(masterKey, ∅, "tg-rp-bot-user-<userId>").
+ * Данные разных пользователей не могут быть расшифрованы одним ключом —
+ * попытка GCM-расшифровки падает с ошибкой аутентификации (не просто даёт мусор).
+ * Изоляция криптографическая, но НЕ защита от утечки мастер-ключа:
+ * зная ENCRYPTION_KEY, можно вывести ключ любого пользователя.
+ */
+export function getUserEncryptionKey(userId: number): Buffer {
+  const masterKey = getEncryptionKey();
+  return Buffer.from(
+    hkdfSync("sha256", masterKey, Buffer.alloc(0), `tg-rp-bot-user-${userId}`, 32),
+  );
 }

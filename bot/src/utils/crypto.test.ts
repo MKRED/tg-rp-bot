@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
-import { describe, expect, it } from "vitest";
-import { decrypt, decryptField, encrypt, encryptField } from "./crypto.js";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { decrypt, decryptField, encrypt, encryptField, getUserEncryptionKey } from "./crypto.js";
 
 const KEY = randomBytes(32);
 
@@ -38,6 +38,43 @@ describe("encrypt / decrypt", () => {
   it("шифрует длинный текст (промпт)", () => {
     const long = "А".repeat(5000);
     expect(decrypt(encrypt(long, KEY), KEY)).toBe(long);
+  });
+});
+
+describe("getUserEncryptionKey", () => {
+  const TEST_KEY = randomBytes(32).toString("hex");
+
+  beforeEach(() => {
+    process.env.ENCRYPTION_KEY = TEST_KEY;
+  });
+
+  afterEach(() => {
+    delete process.env.ENCRYPTION_KEY;
+  });
+
+  it("одинаковый userId → одинаковый ключ (детерминированность)", () => {
+    const k1 = getUserEncryptionKey(42);
+    const k2 = getUserEncryptionKey(42);
+    expect(k1.equals(k2)).toBe(true);
+  });
+
+  it("разные userId → разные ключи", () => {
+    const k1 = getUserEncryptionKey(1);
+    const k2 = getUserEncryptionKey(2);
+    expect(k1.equals(k2)).toBe(false);
+  });
+
+  it("ключ пользователя A не расшифровывает данные пользователя B", () => {
+    const keyA = getUserEncryptionKey(1);
+    const keyB = getUserEncryptionKey(2);
+    const token = encrypt("секрет", keyA);
+    expect(() => decrypt(token, keyB)).toThrow();
+  });
+
+  it("round-trip с пользовательским ключом", () => {
+    const key = getUserEncryptionKey(123);
+    const plain = "промпт персонажа";
+    expect(decrypt(encrypt(plain, key), key)).toBe(plain);
   });
 });
 
