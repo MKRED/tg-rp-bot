@@ -55,7 +55,7 @@ export function CharactersListPage() {
             items.map((c) => (
               <Cell
                 key={c.id}
-                before={<CharacterAvatar id={c.id} hasImage={c.hasImage} name={c.name} />}
+                before={<CharacterAvatar id={c.id} hasImage={c.hasImage} name={c.name} enlargeable />}
                 subtitle={subtitleOf(c.tags, c.firstMessageCount)}
                 onClick={() => navigate(characterEditPath(c.id))}
               >
