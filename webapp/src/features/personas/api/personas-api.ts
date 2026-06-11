@@ -1,4 +1,5 @@
 import { apiFetch } from "../../../shared/api/client";
+import { invalidateImage } from "../lib/imageCache";
 import type { Persona, PersonaInput, PersonaListItem } from "../types/persona";
 
 export function listPersonas(): Promise<{ personas: PersonaListItem[] }> {
@@ -16,13 +17,18 @@ export function createPersona(input: PersonaInput): Promise<{ persona: Persona }
   });
 }
 
-export function updatePersona(id: number, input: PersonaInput): Promise<{ persona: Persona }> {
-  return apiFetch<{ persona: Persona }>(`/personas/${id}`, {
+export async function updatePersona(id: number, input: PersonaInput): Promise<{ persona: Persona }> {
+  const res = await apiFetch<{ persona: Persona }>(`/personas/${id}`, {
     method: "PUT",
     body: JSON.stringify(input),
   });
+  // Аватар мог смениться или быть удалён — кэш устарел
+  invalidateImage(id);
+  return res;
 }
 
-export function removePersona(id: number): Promise<{ ok: true }> {
-  return apiFetch<{ ok: true }>(`/personas/${id}`, { method: "DELETE" });
+export async function removePersona(id: number): Promise<{ ok: true }> {
+  const res = await apiFetch<{ ok: true }>(`/personas/${id}`, { method: "DELETE" });
+  invalidateImage(id);
+  return res;
 }
