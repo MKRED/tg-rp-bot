@@ -47,13 +47,39 @@ export function decrypt(token: string, key: Buffer): string {
 }
 
 /**
- * Читает ENCRYPTION_KEY из env, выводит финальный ключ через HKDF(envKey, CODE_SALT).
- * Возвращает undefined, если переменная не задана.
- * Бросает, если задана с неверной длиной.
+ * Шифрует строку, null → null.
+ * Перегрузки сохраняют точный тип: string → string, string|null → string|null.
  */
-export function getEncryptionKey(): Buffer | undefined {
+export function encryptField(value: string, key: Buffer): string;
+export function encryptField(value: string | null, key: Buffer): string | null;
+export function encryptField(value: string | null, key: Buffer): string | null {
+  if (value === null || value === undefined) return null;
+  return encrypt(value, key);
+}
+
+/**
+ * Расшифровывает поле из БД с поддержкой legacy-значений (plaintext до шифрования).
+ * Если значение начинается с "v1:" — расшифровывает; иначе — возвращает как есть.
+ * null → null.
+ */
+export function decryptField(value: string, key: Buffer): string;
+export function decryptField(value: string | null, key: Buffer): string | null;
+export function decryptField(value: string | null, key: Buffer): string | null {
+  if (value === null || value === undefined) return null;
+  // Legacy plaintext: ещё не перешифровано — возвращаем как есть
+  if (!value.startsWith(VERSION_PREFIX)) return value;
+  return decrypt(value, key);
+}
+
+/**
+ * Читает ENCRYPTION_KEY из env, выводит финальный ключ через HKDF(envKey, CODE_SALT).
+ * Бросает, если переменная не задана или имеет неверную длину.
+ */
+export function getEncryptionKey(): Buffer {
   const raw = process.env.ENCRYPTION_KEY;
-  if (!raw) return undefined;
+  if (!raw) {
+    throw new Error("ENCRYPTION_KEY не задана — необходима для работы с зашифрованными полями");
+  }
   const envKey = Buffer.from(raw, "hex");
   if (envKey.length !== 32) {
     throw new Error(

@@ -1,5 +1,6 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import logger from "../logger.js";
+import { decryptField, encryptField, getEncryptionKey } from "../utils/index.js";
 import { db, schema } from "./index.js";
 import type { Character } from "./schema.js";
 
@@ -69,7 +70,9 @@ export async function getCharacter(userId: number, id: number): Promise<Characte
     .select()
     .from(schema.characters)
     .where(and(eq(schema.characters.id, id), eq(schema.characters.userId, userId)));
-  return rows[0];
+  const row = rows[0];
+  if (!row) return undefined;
+  return decryptCharacterRow(row);
 }
 
 /**
@@ -91,20 +94,21 @@ export async function getCharacterImage(
 /** Создаёт персонажа и возвращает созданную строку. */
 export async function createCharacter(userId: number, input: CharacterInput): Promise<Character> {
   const t0 = Date.now();
+  const key = getEncryptionKey();
   const rows = await db
     .insert(schema.characters)
     .values({
       userId,
       name: input.name,
       tags: input.tags,
-      prompt: input.prompt,
-      firstMessages: input.firstMessages,
+      prompt: encryptField(input.prompt, key),
+      firstMessages: input.firstMessages.map((msg) => encryptField(msg, key)),
       image: input.image,
     })
     .returning();
   const created = rows[0]!; // insert ... returning всегда отдаёт одну строку
   logger.info({ durationMs: Date.now() - t0, userId, id: created.id }, "Character created");
-  return created;
+  return decryptCharacterRow(created);
 }
 
 /**
@@ -117,13 +121,14 @@ export async function updateCharacter(
   input: CharacterInput,
 ): Promise<Character | undefined> {
   const t0 = Date.now();
+  const key = getEncryptionKey();
   const rows = await db
     .update(schema.characters)
     .set({
       name: input.name,
       tags: input.tags,
-      prompt: input.prompt,
-      firstMessages: input.firstMessages,
+      prompt: encryptField(input.prompt, key),
+      firstMessages: input.firstMessages.map((msg) => encryptField(msg, key)),
       image: input.image,
     })
     .where(and(eq(schema.characters.id, id), eq(schema.characters.userId, userId)))
@@ -133,7 +138,7 @@ export async function updateCharacter(
     { durationMs: Date.now() - t0, userId, id, found: Boolean(updated) },
     "Character update attempted",
   );
-  return updated;
+  return updated ? decryptCharacterRow(updated) : undefined;
 }
 
 /** Удаляет персонажа (только своего). true — если строка была удалена. */
@@ -146,4 +151,14 @@ export async function deleteCharacter(userId: number, id: number): Promise<boole
   const deleted = rows.length > 0;
   logger.info({ durationMs: Date.now() - t0, userId, id, deleted }, "Character delete attempted");
   return deleted;
+}
+
+/** Расшифровывает зашифрованные поля строки персонажа. */
+function decryptCharacterRow(row: Character): Character {
+  const key = getEncryptionKey();
+  return {
+    ...row,
+    prompt: decryptField(row.prompt, key),
+    firstMessages: row.firstMessages.map((msg) => decryptField(msg, key)),
+  };
 }

@@ -1,5 +1,6 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import logger from "../logger.js";
+import { decryptField, encryptField, getEncryptionKey } from "../utils/index.js";
 import { db, schema } from "./index.js";
 import type { Persona } from "./schema.js";
 
@@ -41,7 +42,8 @@ export async function listPersonas(userId: number): Promise<PersonaListItem[]> {
     .where(eq(schema.personas.userId, userId))
     .orderBy(desc(schema.personas.updatedAt));
   logger.debug({ durationMs: Date.now() - t0, userId, count: rows.length }, "Personas listed");
-  return rows;
+  const key = getEncryptionKey();
+  return rows.map((row) => ({ ...row, footnote: decryptField(row.footnote, key) }));
 }
 
 /** Сколько персон у пользователя (для проверки мягкого лимита). */
@@ -59,7 +61,9 @@ export async function getPersona(userId: number, id: number): Promise<Persona | 
     .select()
     .from(schema.personas)
     .where(and(eq(schema.personas.id, id), eq(schema.personas.userId, userId)));
-  return rows[0];
+  const row = rows[0];
+  if (!row) return undefined;
+  return decryptPersonaRow(row);
 }
 
 /**
@@ -80,19 +84,20 @@ export async function getPersonaImage(
 /** Создаёт персону и возвращает созданную строку. */
 export async function createPersona(userId: number, input: PersonaInput): Promise<Persona> {
   const t0 = Date.now();
+  const key = getEncryptionKey();
   const rows = await db
     .insert(schema.personas)
     .values({
       userId,
       name: input.name,
-      prompt: input.prompt,
-      footnote: input.footnote,
+      prompt: encryptField(input.prompt, key),
+      footnote: encryptField(input.footnote, key),
       image: input.image,
     })
     .returning();
   const created = rows[0]!;
   logger.info({ durationMs: Date.now() - t0, userId, id: created.id }, "Persona created");
-  return created;
+  return decryptPersonaRow(created);
 }
 
 /**
@@ -105,12 +110,13 @@ export async function updatePersona(
   input: PersonaInput,
 ): Promise<Persona | undefined> {
   const t0 = Date.now();
+  const key = getEncryptionKey();
   const rows = await db
     .update(schema.personas)
     .set({
       name: input.name,
-      prompt: input.prompt,
-      footnote: input.footnote,
+      prompt: encryptField(input.prompt, key),
+      footnote: encryptField(input.footnote, key),
       image: input.image,
     })
     .where(and(eq(schema.personas.id, id), eq(schema.personas.userId, userId)))
@@ -120,7 +126,7 @@ export async function updatePersona(
     { durationMs: Date.now() - t0, userId, id, found: Boolean(updated) },
     "Persona update attempted",
   );
-  return updated;
+  return updated ? decryptPersonaRow(updated) : undefined;
 }
 
 /** Удаляет персону (только свою). true — если строка была удалена. */
@@ -133,4 +139,14 @@ export async function deletePersona(userId: number, id: number): Promise<boolean
   const deleted = rows.length > 0;
   logger.info({ durationMs: Date.now() - t0, userId, id, deleted }, "Persona delete attempted");
   return deleted;
+}
+
+/** Расшифровывает зашифрованные поля строки персоны. */
+function decryptPersonaRow(row: Persona): Persona {
+  const key = getEncryptionKey();
+  return {
+    ...row,
+    prompt: decryptField(row.prompt, key),
+    footnote: decryptField(row.footnote, key),
+  };
 }

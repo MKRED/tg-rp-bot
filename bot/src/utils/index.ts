@@ -1,2 +1,2 @@
 export { retry } from "./retry.js";
-export { decrypt, encrypt, getEncryptionKey } from "./crypto.js";
+export { decrypt, decryptField, encrypt, encryptField, getEncryptionKey } from "./crypto.js";
