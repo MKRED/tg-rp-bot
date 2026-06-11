@@ -25,7 +25,7 @@ export function ImageLightbox({ src, onClose }: ImageLightboxProps) {
   return createPortal(
     <motion.div
       className="image-lightbox"
-      onClick={onClose}
+      onClick={(e) => { e.stopPropagation(); onClose(); }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

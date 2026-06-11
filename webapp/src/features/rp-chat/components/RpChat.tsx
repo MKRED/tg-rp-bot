@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PageTransition } from "../../../shared/components/PageTransition";
 import { ChatHeader } from "./ChatHeader";
 import { Composer } from "./Composer";
 import { MessageBubble } from "./MessageBubble";
@@ -35,6 +36,7 @@ export function RpChat() {
   };
 
   return (
+    <PageTransition>
     <div className="rp-screen">
       <ChatHeader character={MOCK_CHARACTER} typing={typing} />
 
@@ -54,5 +56,6 @@ export function RpChat() {
 
       <Composer disabled={typing} onSend={handleSend} />
     </div>
+    </PageTransition>
   );
 }

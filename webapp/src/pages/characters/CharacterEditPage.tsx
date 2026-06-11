@@ -1,7 +1,9 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { ROUTES } from "../../app/routes";
+import { useTransitionNavigate } from "../../app/useTransitionNavigate";
+import { PageTransition } from "../../shared/components/PageTransition";
 import {
   CharacterForm,
   createCharacter,
@@ -31,7 +33,7 @@ function toInput(c: Character): CharacterInput {
  * возвращает к списку.
  */
 export function CharacterEditPage() {
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   const params = useParams();
   // /characters/new → id отсутствует (создание); /characters/:id → строка с числом.
   const id = params.id ? Number(params.id) : undefined;
@@ -59,24 +61,32 @@ export function CharacterEditPage() {
 
   if (loading) {
     return (
-      <div className="characters-page__fullcenter">
-        <Spinner size="m" />
-      </div>
+      <PageTransition>
+        <div className="characters-page__fullcenter">
+          <Spinner size="m" />
+        </div>
+      </PageTransition>
     );
   }
 
   if (error || (id !== undefined && !character)) {
-    return <div className="characters-page__fullcenter">Персонаж не найден</div>;
+    return (
+      <PageTransition>
+        <div className="characters-page__fullcenter">Персонаж не найден</div>
+      </PageTransition>
+    );
   }
 
   return (
-    <div className="characters-page">
-      <CharacterForm
-        initial={character ? toInput(character) : undefined}
-        submitting={submitting}
-        onSubmit={handleSubmit}
-        onDelete={id === undefined ? undefined : handleDelete}
-      />
-    </div>
+    <PageTransition>
+      <div className="characters-page">
+        <CharacterForm
+          initial={character ? toInput(character) : undefined}
+          submitting={submitting}
+          onSubmit={handleSubmit}
+          onDelete={id === undefined ? undefined : handleDelete}
+        />
+      </div>
+    </PageTransition>
   );
 }

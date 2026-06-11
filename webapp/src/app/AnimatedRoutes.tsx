@@ -1,0 +1,81 @@
+import { AnimatePresence } from "framer-motion";
+import { lazy, Suspense } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { HomePage } from "../pages/home/HomePage";
+import { ROUTES } from "./routes";
+
+// HomePage грузится вместе с основным бандлом — это первый экран, blank flash недопустим.
+// Остальные страницы — ленивые чанки; startTransition в useTransitionNavigate
+// удерживает текущий UI до готовности чанка, поэтому Suspense fallback=null не мелькает.
+const CharactersListPage = lazy(() =>
+  import("../pages/characters/CharactersListPage").then((m) => ({
+    default: m.CharactersListPage,
+  }))
+);
+const CharacterEditPage = lazy(() =>
+  import("../pages/characters/CharacterEditPage").then((m) => ({
+    default: m.CharacterEditPage,
+  }))
+);
+const PresetsListPage = lazy(() =>
+  import("../pages/generation-presets/PresetsListPage").then((m) => ({
+    default: m.PresetsListPage,
+  }))
+);
+const PresetEditPage = lazy(() =>
+  import("../pages/generation-presets/PresetEditPage").then((m) => ({
+    default: m.PresetEditPage,
+  }))
+);
+const PersonasListPage = lazy(() =>
+  import("../pages/personas/PersonasListPage").then((m) => ({
+    default: m.PersonasListPage,
+  }))
+);
+const PersonaEditPage = lazy(() =>
+  import("../pages/personas/PersonaEditPage").then((m) => ({
+    default: m.PersonaEditPage,
+  }))
+);
+const RpChat = lazy(() =>
+  import("../features/rp-chat").then((m) => ({ default: m.RpChat }))
+);
+
+/**
+ * Маршруты приложения с анимированными переходами.
+ * Вынесены из App в отдельный компонент: useLocation() требует нахождения внутри Router,
+ * а App рендерит HashRouter сам — поэтому хук нельзя вызвать прямо в App.
+ * Suspense fallback=null: startTransition в useTransitionNavigate удерживает старую страницу,
+ * пока чанк не загружен, поэтому пустой fallback не нужен.
+ */
+export function AnimatedRoutes() {
+  const location = useLocation();
+  return (
+    <Suspense fallback={null}>
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          <Route path={ROUTES.home} element={<HomePage />} />
+          <Route path={ROUTES.chat} element={<RpChat />} />
+          <Route path={ROUTES.characters} element={<CharactersListPage />} />
+          {/* Статический /characters/new стоит раньше /characters/:id — react-router отдаёт ему приоритет. */}
+          <Route path={ROUTES.characterNew} element={<CharacterEditPage />} />
+          <Route path={ROUTES.characterEdit} element={<CharacterEditPage />} />
+          <Route path={ROUTES.presets} element={<PresetsListPage />} />
+          {/* Статический /presets/new стоит раньше /presets/:id — react-router отдаёт ему приоритет. */}
+          <Route path={ROUTES.presetNew} element={<PresetEditPage />} />
+          <Route path={ROUTES.presetEdit} element={<PresetEditPage />} />
+          <Route path={ROUTES.personas} element={<PersonasListPage />} />
+          {/* Статический /personas/new стоит раньше /personas/:id — react-router отдаёт ему приоритет. */}
+          <Route path={ROUTES.personaNew} element={<PersonaEditPage />} />
+          <Route path={ROUTES.personaEdit} element={<PersonaEditPage />} />
+          {/*
+            Любой неизвестный путь → главная. Важно для Telegram Web: launch-параметры
+            прилетают в hash (#tgWebAppData=…); init() их уже считал, а роутеру этот hash
+            маршрутом не является — редирект уводит на главную вместо пустого экрана.
+          */}
+          <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
+        </Routes>
+      </AnimatePresence>
+    </Suspense>
+  );
+}

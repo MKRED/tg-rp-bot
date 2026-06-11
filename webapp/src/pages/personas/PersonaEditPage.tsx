@@ -1,7 +1,9 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { ROUTES } from "../../app/routes";
+import { useTransitionNavigate } from "../../app/useTransitionNavigate";
+import { PageTransition } from "../../shared/components/PageTransition";
 import {
   PersonaForm,
   createPersona,
@@ -30,7 +32,7 @@ function toInput(p: Persona): PersonaInput {
  * возвращает к списку.
  */
 export function PersonaEditPage() {
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   const params = useParams();
   const id = params.id ? Number(params.id) : undefined;
 
@@ -56,24 +58,32 @@ export function PersonaEditPage() {
 
   if (loading) {
     return (
-      <div className="personas-page__fullcenter">
-        <Spinner size="m" />
-      </div>
+      <PageTransition>
+        <div className="personas-page__fullcenter">
+          <Spinner size="m" />
+        </div>
+      </PageTransition>
     );
   }
 
   if (error || (id !== undefined && !persona)) {
-    return <div className="personas-page__fullcenter">Персона не найдена</div>;
+    return (
+      <PageTransition>
+        <div className="personas-page__fullcenter">Персона не найдена</div>
+      </PageTransition>
+    );
   }
 
   return (
-    <div className="personas-page">
-      <PersonaForm
-        initial={persona ? toInput(persona) : undefined}
-        submitting={submitting}
-        onSubmit={handleSubmit}
-        onDelete={id === undefined ? undefined : handleDelete}
-      />
-    </div>
+    <PageTransition>
+      <div className="personas-page">
+        <PersonaForm
+          initial={persona ? toInput(persona) : undefined}
+          submitting={submitting}
+          onSubmit={handleSubmit}
+          onDelete={id === undefined ? undefined : handleDelete}
+        />
+      </div>
+    </PageTransition>
   );
 }

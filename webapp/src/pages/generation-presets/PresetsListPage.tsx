@@ -1,6 +1,8 @@
 import { Button, Caption, Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
-import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { ROUTES, presetEditPath } from "../../app/routes";
+import { useTransitionNavigate } from "../../app/useTransitionNavigate";
+import { PageTransition } from "../../shared/components/PageTransition";
 import {
   usePresets,
   PresetMonogram,
@@ -11,57 +13,65 @@ import "./presets.css";
 
 /** Экран «Настройки ответа ИИ»: список пресетов генерации + кнопка создания. */
 export function PresetsListPage() {
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   const { items, loading, error } = usePresets();
 
   const atLimit = items.length >= MAX_PRESETS_PER_USER;
 
   return (
-    <div className="presets-page">
-      <List>
-        <Section header="Настройки ответа ИИ">
-          {loading && (
-            <div className="presets-page__center">
-              <Spinner size="m" />
-            </div>
-          )}
+    <PageTransition>
+      <div className="presets-page">
+        <List>
+          <Section header="Настройки ответа ИИ">
+            {loading && (
+              <div className="presets-page__center">
+                <Spinner size="m" />
+              </div>
+            )}
 
-          {!loading && error && <Cell subtitle="Не удалось загрузить список">Ошибка</Cell>}
+            {!loading && error && <Cell subtitle="Не удалось загрузить список">Ошибка</Cell>}
 
-          {!loading && !error && items.length === 0 && (
-            <Cell subtitle="Пока нет пресетов — создайте первый">Пусто</Cell>
-          )}
+            {!loading && !error && items.length === 0 && (
+              <Cell subtitle="Пока нет пресетов — создайте первый">Пусто</Cell>
+            )}
 
-          {!loading &&
-            !error &&
-            items.map((p) => (
-              <Cell
-                key={p.id}
-                before={<PresetMonogram id={p.id} name={p.name} />}
-                subtitle={presetSummary(p)}
-                onClick={() => navigate(presetEditPath(p.id))}
-              >
-                {p.name}
-              </Cell>
-            ))}
-        </Section>
+            {!loading &&
+              !error &&
+              items.map((p, i) => (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05, duration: 0.2, ease: "easeOut" }}
+                >
+                  <Cell
+                    before={<PresetMonogram id={p.id} name={p.name} />}
+                    subtitle={presetSummary(p)}
+                    onClick={() => navigate(presetEditPath(p.id))}
+                  >
+                    {p.name}
+                  </Cell>
+                </motion.div>
+              ))}
+          </Section>
 
-        <div className="presets-page__create">
-          <Button
-            size="l"
-            stretched
-            disabled={atLimit}
-            onClick={() => navigate(ROUTES.presetNew)}
-          >
-            + Создать пресет
-          </Button>
-          {atLimit && (
-            <Caption level="1" className="presets-page__limit">
-              Достигнут лимит в {MAX_PRESETS_PER_USER} пресетов
-            </Caption>
-          )}
-        </div>
-      </List>
-    </div>
+          <div className="presets-page__create">
+            <Button
+              size="l"
+              stretched
+              disabled={atLimit}
+              onClick={() => navigate(ROUTES.presetNew)}
+            >
+              + Создать пресет
+            </Button>
+            {atLimit && (
+              <Caption level="1" className="presets-page__limit">
+                Достигнут лимит в {MAX_PRESETS_PER_USER} пресетов
+              </Caption>
+            )}
+          </div>
+        </List>
+      </div>
+    </PageTransition>
   );
 }

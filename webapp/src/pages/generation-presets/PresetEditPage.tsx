@@ -1,7 +1,9 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { ROUTES } from "../../app/routes";
+import { useTransitionNavigate } from "../../app/useTransitionNavigate";
+import { PageTransition } from "../../shared/components/PageTransition";
 import {
   PresetForm,
   createPreset,
@@ -19,7 +21,7 @@ import "./presets.css";
  * возвращает к списку. Preset включает все поля PresetInput, поэтому передаётся в форму напрямую.
  */
 export function PresetEditPage() {
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   const params = useParams();
   const id = params.id ? Number(params.id) : undefined;
 
@@ -45,24 +47,32 @@ export function PresetEditPage() {
 
   if (loading) {
     return (
-      <div className="presets-page__fullcenter">
-        <Spinner size="m" />
-      </div>
+      <PageTransition>
+        <div className="presets-page__fullcenter">
+          <Spinner size="m" />
+        </div>
+      </PageTransition>
     );
   }
 
   if (error || (id !== undefined && !preset)) {
-    return <div className="presets-page__fullcenter">Пресет не найден</div>;
+    return (
+      <PageTransition>
+        <div className="presets-page__fullcenter">Пресет не найден</div>
+      </PageTransition>
+    );
   }
 
   return (
-    <div className="presets-page">
-      <PresetForm
-        initial={preset}
-        submitting={submitting}
-        onSubmit={handleSubmit}
-        onDelete={id === undefined ? undefined : handleDelete}
-      />
-    </div>
+    <PageTransition>
+      <div className="presets-page">
+        <PresetForm
+          initial={preset}
+          submitting={submitting}
+          onSubmit={handleSubmit}
+          onDelete={id === undefined ? undefined : handleDelete}
+        />
+      </div>
+    </PageTransition>
   );
 }

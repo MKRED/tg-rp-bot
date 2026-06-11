@@ -1,17 +1,9 @@
 import { AppRoot } from "@telegram-apps/telegram-ui";
 import { miniApp, useSignal } from "@telegram-apps/sdk-react";
-import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
-import { HomePage } from "../pages/home/HomePage";
-import { CharactersListPage } from "../pages/characters/CharactersListPage";
-import { CharacterEditPage } from "../pages/characters/CharacterEditPage";
-import { PresetsListPage } from "../pages/generation-presets/PresetsListPage";
-import { PresetEditPage } from "../pages/generation-presets/PresetEditPage";
-import { PersonasListPage } from "../pages/personas/PersonasListPage";
-import { PersonaEditPage } from "../pages/personas/PersonaEditPage";
-import { RpChat } from "../features/rp-chat";
+import { HashRouter } from "react-router-dom";
 import { getPlatform } from "../shared/telegram/platform";
+import { AnimatedRoutes } from "./AnimatedRoutes";
 import { BackButtonBridge } from "./BackButtonBridge";
-import { ROUTES } from "./routes";
 
 // Платформа сессии не меняется — маппим в стиль telegram-ui один раз.
 // Маки/айфоны → "ios" (iOS-оформление), всё прочее (включая dev-браузер) → "base".
@@ -37,28 +29,7 @@ export function App() {
       <HashRouter>
         {/* Мост нативной кнопки «Назад» — внутри роутера, т.к. использует navigate/location. */}
         <BackButtonBridge />
-        <Routes>
-          <Route path={ROUTES.home} element={<HomePage />} />
-          <Route path={ROUTES.chat} element={<RpChat />} />
-          <Route path={ROUTES.characters} element={<CharactersListPage />} />
-          {/* Статический /characters/new стоит раньше /characters/:id — react-router отдаёт ему приоритет. */}
-          <Route path={ROUTES.characterNew} element={<CharacterEditPage />} />
-          <Route path={ROUTES.characterEdit} element={<CharacterEditPage />} />
-          <Route path={ROUTES.presets} element={<PresetsListPage />} />
-          {/* Статический /presets/new стоит раньше /presets/:id — react-router отдаёт ему приоритет. */}
-          <Route path={ROUTES.presetNew} element={<PresetEditPage />} />
-          <Route path={ROUTES.presetEdit} element={<PresetEditPage />} />
-          <Route path={ROUTES.personas} element={<PersonasListPage />} />
-          {/* Статический /personas/new стоит раньше /personas/:id — react-router отдаёт ему приоритет. */}
-          <Route path={ROUTES.personaNew} element={<PersonaEditPage />} />
-          <Route path={ROUTES.personaEdit} element={<PersonaEditPage />} />
-          {/*
-            Любой неизвестный путь → главная. Важно для Telegram Web: launch-параметры
-            прилетают в hash (#tgWebAppData=…); init() их уже считал, а роутеру этот hash
-            маршрутом не является — редирект уводит на главную вместо пустого экрана.
-          */}
-          <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
-        </Routes>
+        <AnimatedRoutes />
       </HashRouter>
     </AppRoot>
   );

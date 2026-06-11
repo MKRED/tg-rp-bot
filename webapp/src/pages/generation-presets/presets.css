@@ -29,15 +29,15 @@
 
 /* Монограм пресета в строке списка: цветной кружок с первой буквой (цвет задаётся инлайн по id). */
 .preset-monogram {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   color: #fff;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   line-height: 1;
 }

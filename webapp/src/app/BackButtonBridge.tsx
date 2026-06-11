@@ -1,7 +1,8 @@
 import { useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { backButton } from "@telegram-apps/sdk-react";
 import { ROUTES, parentPath } from "./routes";
+import { useTransitionNavigate } from "./useTransitionNavigate";
 
 /**
  * Мост нативной кнопки «Назад» Telegram ↔ роутер.
@@ -12,7 +13,7 @@ import { ROUTES, parentPath } from "./routes";
  * Все вызовы SDK обёрнуты в isAvailable(): вне Telegram (dev-браузер) кнопки нет — мост молчит.
  */
 export function BackButtonBridge() {
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   const location = useLocation();
 
   // Монтируем кнопку один раз за время жизни приложения.

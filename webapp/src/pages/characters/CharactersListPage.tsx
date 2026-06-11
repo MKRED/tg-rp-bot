@@ -1,6 +1,8 @@
 import { Button, Caption, Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
-import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { ROUTES, characterEditPath } from "../../app/routes";
+import { useTransitionNavigate } from "../../app/useTransitionNavigate";
+import { PageTransition } from "../../shared/components/PageTransition";
 import {
   CharacterAvatar,
   useCharacters,
@@ -27,59 +29,67 @@ function subtitleOf(tags: string[], firstMessageCount: number): string {
 
 /** Экран «Персонажи»: список созданных персонажей + кнопка создания. */
 export function CharactersListPage() {
-  const navigate = useNavigate();
+  const navigate = useTransitionNavigate();
   const { items, loading, error } = useCharacters();
 
   const atLimit = items.length >= MAX_CHARACTERS_PER_USER;
 
   return (
-    <div className="characters-page">
-      <List>
-        <Section header="Персонажи">
-          {loading && (
-            <div className="characters-page__center">
-              <Spinner size="m" />
-            </div>
-          )}
+    <PageTransition>
+      <div className="characters-page">
+        <List>
+          <Section header="Персонажи">
+            {loading && (
+              <div className="characters-page__center">
+                <Spinner size="m" />
+              </div>
+            )}
 
-          {!loading && error && (
-            <Cell subtitle="Не удалось загрузить список">Ошибка</Cell>
-          )}
+            {!loading && error && (
+              <Cell subtitle="Не удалось загрузить список">Ошибка</Cell>
+            )}
 
-          {!loading && !error && items.length === 0 && (
-            <Cell subtitle="Пока нет персонажей — создайте первого">Пусто</Cell>
-          )}
+            {!loading && !error && items.length === 0 && (
+              <Cell subtitle="Пока нет персонажей — создайте первого">Пусто</Cell>
+            )}
 
-          {!loading &&
-            !error &&
-            items.map((c) => (
-              <Cell
-                key={c.id}
-                before={<CharacterAvatar id={c.id} hasImage={c.hasImage} name={c.name} enlargeable />}
-                subtitle={subtitleOf(c.tags, c.firstMessageCount)}
-                onClick={() => navigate(characterEditPath(c.id))}
-              >
-                {c.name}
-              </Cell>
-            ))}
-        </Section>
+            {!loading &&
+              !error &&
+              items.map((c, i) => (
+                <motion.div
+                  key={c.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05, duration: 0.2, ease: "easeOut" }}
+                >
+                  <Cell
+                    before={<CharacterAvatar id={c.id} hasImage={c.hasImage} name={c.name} size={48} enlargeable />}
+                    subtitle={subtitleOf(c.tags, c.firstMessageCount)}
+                    onClick={() => navigate(characterEditPath(c.id))}
+                  >
+                    {c.name}
+                  </Cell>
+                </motion.div>
+              ))}
+          </Section>
 
-        <div className="characters-page__create">
-          <Button
-            size="l"
-            stretched
-            disabled={atLimit}
-            onClick={() => navigate(ROUTES.characterNew)}
-          >
-            + Создать персонажа
-          </Button>
-          {atLimit && (
-            <Caption level="1" className="characters-page__limit">
-              Достигнут лимит в {MAX_CHARACTERS_PER_USER} персонажей
-            </Caption>
-          )}
-        </div>
-      </List>
-    </div>
+          <div className="characters-page__create">
+            <Button
+              size="l"
+              stretched
+              disabled={atLimit}
+              onClick={() => navigate(ROUTES.characterNew)}
+            >
+              + Создать персонажа
+            </Button>
+            {atLimit && (
+              <Caption level="1" className="characters-page__limit">
+                Достигнут лимит в {MAX_CHARACTERS_PER_USER} персонажей
+              </Caption>
+            )}
+          </div>
+        </List>
+      </div>
+    </PageTransition>
   );
 }
