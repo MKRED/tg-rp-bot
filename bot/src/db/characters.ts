@@ -48,11 +48,17 @@ export async function listCharacters(userId: number): Promise<CharacterListItem[
     .from(schema.characters)
     .where(eq(schema.characters.userId, userId))
     .orderBy(desc(schema.characters.updatedAt));
+  // listCharacters не проходит через decryptCharacterRow — расшифровываем теги здесь
+  const key = getUserEncryptionKey(userId);
+  const result = rows.map((row) => ({
+    ...row,
+    tags: row.tags.map((tag) => decryptField(tag, key)),
+  }));
   logger.debug(
-    { durationMs: Date.now() - t0, userId, count: rows.length },
+    { durationMs: Date.now() - t0, userId, count: result.length },
     "Characters listed",
   );
-  return rows;
+  return result;
 }
 
 /** Сколько персонажей у пользователя (для проверки мягкого лимита). */
@@ -100,7 +106,7 @@ export async function createCharacter(userId: number, input: CharacterInput): Pr
     .values({
       userId,
       name: input.name,
-      tags: input.tags,
+      tags: input.tags.map((tag) => encryptField(tag, key)),
       prompt: encryptField(input.prompt, key),
       firstMessages: input.firstMessages.map((msg) => encryptField(msg, key)),
       image: input.image,
@@ -126,7 +132,7 @@ export async function updateCharacter(
     .update(schema.characters)
     .set({
       name: input.name,
-      tags: input.tags,
+      tags: input.tags.map((tag) => encryptField(tag, key)),
       prompt: encryptField(input.prompt, key),
       firstMessages: input.firstMessages.map((msg) => encryptField(msg, key)),
       image: input.image,
@@ -158,6 +164,7 @@ function decryptCharacterRow(row: Character, userId: number): Character {
   const key = getUserEncryptionKey(userId);
   return {
     ...row,
+    tags: row.tags.map((tag) => decryptField(tag, key)),
     prompt: decryptField(row.prompt, key),
     firstMessages: row.firstMessages.map((msg) => decryptField(msg, key)),
   };

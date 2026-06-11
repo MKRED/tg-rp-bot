@@ -142,7 +142,7 @@ export const generationPresets = pgTable("generation_presets", {
   reasoningEffort: text("reasoning_effort"),
 
   // Порядок и включённость компонентов запроса. Дефолт — канонический порядок;
-  // userDescription выключен (компонент ещё не реализован).
+  // userDescription выключен (пользователь включает вручную, когда нужна персона).
   promptOrder: jsonb("prompt_order")
     .$type<PromptOrderItem[]>()
     .notNull()

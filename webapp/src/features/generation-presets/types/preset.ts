@@ -42,9 +42,9 @@ export const PROMPT_COMPONENT_LABELS: Record<PromptComponentId, string> = {
 };
 
 /** Компоненты, ещё не реализованные как часть запроса — строку показываем неактивной. */
-export const UNIMPLEMENTED_COMPONENTS: PromptComponentId[] = ["userDescription"];
+export const UNIMPLEMENTED_COMPONENTS: PromptComponentId[] = [];
 
-/** Дефолтный порядок и включённость (userDescription выключен — компонент ещё не реализован). */
+/** Дефолтный порядок и включённость (userDescription выключен — пользователь включает вручную). */
 export const DEFAULT_PROMPT_ORDER: PromptOrderItem[] = [
   { id: "system", enabled: true },
   { id: "characterDescription", enabled: true },
