@@ -1,6 +1,8 @@
 import {
   Background,
   Controls,
+  Handle,
+  Position,
   ReactFlow,
   type Edge,
   type Node,
@@ -32,10 +34,12 @@ function ChatNode({ data }: NodeProps<Node<ChatNodeData>>) {
 
   return (
     <div className={`rp-chat-graph-node${node.isOnActivePath ? " rp-chat-graph-node--active" : ""}`}>
+      <Handle type="target" position={Position.Top} className="rp-chat-graph-node__handle" />
       <div className="rp-chat-graph-node__role">
         {node.role === "assistant" ? "ИИ" : "Игрок"}
       </div>
       <div className="rp-chat-graph-node__text">{preview}</div>
+      <Handle type="source" position={Position.Bottom} className="rp-chat-graph-node__handle" />
     </div>
   );
 }
@@ -132,6 +136,7 @@ export function RpChatGraphPage() {
               nodesConnectable={false}
               fitView
               fitViewOptions={{ duration: 800, padding: 0.2 }}
+              proOptions={{ hideAttribution: true }}
             >
               <Background color="var(--tg-theme-hint-color, #ccc)" gap={20} size={1} />
               <Controls showInteractive={false} />

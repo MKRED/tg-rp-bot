@@ -1,6 +1,7 @@
 import { streamSSE } from "hono/streaming";
 import type { Context } from "hono";
 import {
+  deleteMessage,
   getChatSettings,
   getMessage,
   getChat,
@@ -210,6 +211,24 @@ export async function handleSwitchBranch(c: Ctx) {
   if (!msg || msg.chatId !== chatId) return c.json({ error: "Message not found" }, 404);
 
   await updateActiveMessage(chatId, msgId);
+  return c.json({ ok: true });
+}
+
+/** DELETE /:id/messages/:msgId — удаляет сообщение и всё его поддерево. */
+export async function handleDeleteMessage(c: Ctx) {
+  const userId = c.get("tgUser")!.id;
+  const chatId = Number(c.req.param("id"));
+  const msgId = Number(c.req.param("msgId"));
+
+  // Проверяем принадлежность чата пользователю
+  const chat = await getChat(userId, chatId);
+  if (!chat) return c.json({ error: "Chat not found" }, 404);
+
+  const t0 = Date.now();
+  const deleted = await deleteMessage(chatId, msgId);
+  if (!deleted) return c.json({ error: "Message not found" }, 404);
+
+  logger.info({ durationMs: Date.now() - t0, userId, chatId, msgId }, "Message deleted via API");
   return c.json({ ok: true });
 }
 

@@ -12,6 +12,7 @@ import { getCharacter } from "../db/characters.js";
 import logger from "../logger.js";
 import type { AppVariables } from "./initData.js";
 import {
+  handleDeleteMessage,
   handleEditMessage,
   handleRegenerateMessage,
   handleSendMessage,
@@ -127,6 +128,7 @@ export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
   // ─── Сообщения (делегируем в messageHandlers) ─────────────────────────────
 
   app.post("/:id/messages", handleSendMessage);
+  app.delete("/:id/messages/:msgId", handleDeleteMessage);
   app.post("/:id/messages/:msgId/edit", handleEditMessage);
   app.post("/:id/messages/:msgId/regenerate", handleRegenerateMessage);
   app.post("/:id/messages/:msgId/branch", handleSwitchBranch);

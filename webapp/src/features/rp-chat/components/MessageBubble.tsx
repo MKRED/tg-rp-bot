@@ -1,5 +1,5 @@
 import { Avatar } from "@telegram-apps/telegram-ui";
-import { ChevronLeft, ChevronRight, Globe, Pencil, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Globe, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { CharacterAvatar } from "../../characters/components/CharacterAvatar";
 import { getTgUser } from "../../../shared/telegram/initData";
@@ -18,6 +18,7 @@ interface MessageBubbleProps {
   onTranslate: (messageId: number, targetLang: string) => Promise<string>;
   onEdit: (messageId: number) => void;
   onRegenerate: (messageId: number) => void;
+  onDelete: (messageId: number) => void;
 }
 
 export function MessageBubble({
@@ -30,6 +31,7 @@ export function MessageBubble({
   onTranslate,
   onEdit,
   onRegenerate,
+  onDelete,
 }: MessageBubbleProps) {
   const [showTranslation, setShowTranslation] = useState(false);
   const [translating, setTranslating] = useState(false);
@@ -142,6 +144,14 @@ export function MessageBubble({
               <RefreshCw size={14} />
             </button>
           )}
+          <button
+            className="message-bubble__action-btn message-bubble__action-btn--danger"
+            onClick={() => onDelete(message.id)}
+            type="button"
+            aria-label="Удалить"
+          >
+            <Trash2 size={14} />
+          </button>
         </div>
       </div>
 

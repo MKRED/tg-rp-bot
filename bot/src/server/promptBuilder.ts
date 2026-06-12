@@ -22,8 +22,20 @@ export type BuildMessagesOptions = {
 };
 
 /**
+ * Заменяет плейсхолдеры {{char}} и {{user}} на имена персонажа и персоны.
+ * Регистронезависимо: {{Char}}, {{CHAR}}, {{User}}, {{USER}} и т.д.
+ * Если персона не задана — подставляется "User".
+ */
+export function replacePlaceholders(text: string, charName: string, userName: string): string {
+  return text
+    .replace(/\{\{char\}\}/gi, charName)
+    .replace(/\{\{user\}\}/gi, userName);
+}
+
+/**
  * Собирает массив ChatMessage[] для отправки в OpenRouter.
  * Порядок компонентов определяется preset.promptOrder; отключённые компоненты пропускаются.
+ * Во всех текстах автоматически заменяются {{char}} и {{user}} на имена персонажа/персоны.
  *
  * Каждый компонент — один ChatMessage (или массив для history):
  *   system          → role:"system", preset.systemPrompt
@@ -37,6 +49,9 @@ export type BuildMessagesOptions = {
  */
 export function buildMessages(opts: BuildMessagesOptions): ChatMessage[] {
   const { preset, character, persona, history, userMessage } = opts;
+  const charName = character.name;
+  const userName = persona?.name ?? "User";
+  const sub = (text: string) => replacePlaceholders(text, charName, userName);
   const result: ChatMessage[] = [];
 
   for (const item of preset.promptOrder) {
@@ -45,44 +60,44 @@ export function buildMessages(opts: BuildMessagesOptions): ChatMessage[] {
     switch (item.id) {
       case "system":
         if (preset.systemPrompt) {
-          result.push({ role: "system", content: preset.systemPrompt });
+          result.push({ role: "system", content: sub(preset.systemPrompt) });
         }
         break;
 
       case "characterDescription":
         if (character.prompt) {
-          result.push({ role: "system", content: character.prompt });
+          result.push({ role: "system", content: sub(character.prompt) });
         }
         break;
 
       case "userDescription":
         // Включён явно пользователем — показываем персону, если задана
         if (persona?.prompt) {
-          result.push({ role: "system", content: persona.prompt });
+          result.push({ role: "system", content: sub(persona.prompt) });
         }
         break;
 
       case "auxiliary":
         if (preset.auxiliarySystemPrompt) {
-          result.push({ role: "system", content: preset.auxiliarySystemPrompt });
+          result.push({ role: "system", content: sub(preset.auxiliarySystemPrompt) });
         }
         break;
 
       case "history":
         for (const msg of history) {
-          result.push({ role: msg.role, content: msg.content });
+          result.push({ role: msg.role, content: sub(msg.content) });
         }
         break;
 
       case "postHistory":
         if (preset.postHistoryInstruction) {
-          result.push({ role: "user", content: preset.postHistoryInstruction });
+          result.push({ role: "user", content: sub(preset.postHistoryInstruction) });
         }
         break;
     }
   }
 
-  result.push({ role: "user", content: userMessage });
+  result.push({ role: "user", content: sub(userMessage) });
   return result;
 }
 

@@ -91,6 +91,12 @@ export async function regenerateMessage(
   await readChatSSE(`/chats/${chatId}/messages/${messageId}/regenerate`, {}, events);
 }
 
+// ─── Удаление ─────────────────────────────────────────────────────────────────
+
+export async function deleteMessage(chatId: number, messageId: number): Promise<void> {
+  await apiFetch(`/chats/${chatId}/messages/${messageId}`, { method: "DELETE" });
+}
+
 // ─── Ветвление ────────────────────────────────────────────────────────────────
 
 export async function switchBranch(chatId: number, messageId: number): Promise<void> {

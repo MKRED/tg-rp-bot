@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildMessages } from "./promptBuilder.js";
+import { buildMessages, replacePlaceholders } from "./promptBuilder.js";
 import type { BuildMessagesOptions } from "./promptBuilder.js";
 import type { GenerationPreset } from "../db/schema.js";
 
@@ -51,6 +51,27 @@ function makeOpts(overrides: Partial<BuildMessagesOptions> = {}): BuildMessagesO
     ...overrides,
   };
 }
+
+describe("replacePlaceholders", () => {
+  it("заменяет {{char}} и {{user}}", () => {
+    expect(replacePlaceholders("Привет, {{char}}!", "Алиса", "Иван")).toBe("Привет, Алиса!");
+    expect(replacePlaceholders("{{user}} говорит {{char}}", "Боб", "Мария")).toBe("Мария говорит Боб");
+  });
+
+  it("регистронезависимо: {{Char}}, {{CHAR}}, {{User}}, {{USER}}", () => {
+    expect(replacePlaceholders("{{Char}} и {{User}}", "X", "Y")).toBe("X и Y");
+    expect(replacePlaceholders("{{CHAR}} и {{USER}}", "X", "Y")).toBe("X и Y");
+  });
+
+  it("заменяет все вхождения", () => {
+    expect(replacePlaceholders("{{char}} — {{char}}", "Алиса", "")).toBe("Алиса — Алиса");
+  });
+
+  it("не трогает текст без плейсхолдеров", () => {
+    const text = "Обычный текст без замен.";
+    expect(replacePlaceholders(text, "X", "Y")).toBe(text);
+  });
+});
 
 describe("buildMessages", () => {
   it("включает system + characterDescription + auxiliary + postHistory + userMessage", () => {

@@ -388,6 +388,65 @@ export async function updateActiveMessage(chatId: number, messageId: number): Pr
     .where(eq(schema.chats.id, chatId));
 }
 
+/**
+ * Удаляет сообщение и всё его поддерево (рекурсивно).
+ * Если activeMessageId указывал на удаляемый узел/потомка — переключает на родителя
+ * (или null, если удалялся корень).
+ */
+export async function deleteMessage(chatId: number, messageId: number): Promise<boolean> {
+  const t0 = Date.now();
+
+  const msg = await getMessage(messageId);
+  if (!msg || msg.chatId !== chatId) return false;
+
+  const chatRows = await db
+    .select({ activeMessageId: schema.chats.activeMessageId })
+    .from(schema.chats)
+    .where(eq(schema.chats.id, chatId));
+  const chat = chatRows[0];
+  if (!chat) return false;
+
+  // Собираем все ID удаляемого поддерева
+  const descendantRows = await db.execute(sql`
+    WITH RECURSIVE descendants AS (
+      SELECT id FROM messages WHERE id = ${messageId} AND chat_id = ${chatId}
+      UNION ALL
+      SELECT m.id FROM messages m JOIN descendants d ON m.parent_id = d.id WHERE m.chat_id = ${chatId}
+    )
+    SELECT id FROM descendants
+  `);
+  const descendantIds = new Set(
+    (descendantRows as unknown as { id: number }[]).map((r) => r.id),
+  );
+  const needsActiveUpdate = chat.activeMessageId != null && descendantIds.has(chat.activeMessageId);
+
+  // Обнуляем курсор заранее, чтобы не было висящего FK при удалении
+  if (needsActiveUpdate) {
+    await db.update(schema.chats).set({ activeMessageId: null }).where(eq(schema.chats.id, chatId));
+  }
+
+  // Удаляем поддерево одним запросом
+  await db.execute(sql`
+    WITH RECURSIVE descendants AS (
+      SELECT id FROM messages WHERE id = ${messageId} AND chat_id = ${chatId}
+      UNION ALL
+      SELECT m.id FROM messages m JOIN descendants d ON m.parent_id = d.id WHERE m.chat_id = ${chatId}
+    )
+    DELETE FROM messages WHERE id IN (SELECT id FROM descendants)
+  `);
+
+  // Переключаем на родителя (findLeaf найдёт лист среди оставшихся потомков)
+  if (needsActiveUpdate && msg.parentId != null) {
+    await updateActiveMessage(chatId, msg.parentId);
+  }
+
+  logger.info(
+    { durationMs: Date.now() - t0, chatId, messageId, deletedCount: descendantIds.size },
+    "Message and descendants deleted",
+  );
+  return true;
+}
+
 /** Кэширует перевод сообщения: сливает новую запись в jsonb-объект translations. */
 export async function saveTranslation(
   messageId: number,
@@ -396,7 +455,7 @@ export async function saveTranslation(
 ): Promise<void> {
   await db.execute(sql`
     UPDATE messages
-    SET translations = COALESCE(translations, '{}'::jsonb) || jsonb_build_object(${lang}, ${text})
+    SET translations = COALESCE(translations, '{}'::jsonb) || jsonb_build_object(${lang}::text, ${text}::text)
     WHERE id = ${messageId}
   `);
 }

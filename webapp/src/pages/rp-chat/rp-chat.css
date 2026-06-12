@@ -159,6 +159,10 @@
   background: var(--tg-theme-secondary-bg-color, #f4f4f5);
 }
 
+.chat-header__icon-btn--danger {
+  color: #e53935;
+}
+
 /* ─── Пузыри сообщений ───────────────────────────────────────────────────────── */
 
 .message-bubble {
@@ -290,6 +294,10 @@
   color: var(--tg-theme-link-color, #2481cc);
 }
 
+.message-bubble__action-btn--danger:active {
+  color: #e53935;
+}
+
 /* ─── Инпут ──────────────────────────────────────────────────────────────────── */
 
 .chat-input {
@@ -397,4 +405,44 @@
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+}
+
+/* Хэндлы соединений — делаем невидимыми, линии всё равно рисуются */
+.rp-chat-graph-node__handle {
+  background: transparent !important;
+  border: none !important;
+  width: 1px !important;
+  height: 1px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+
+/* Controls: адаптация под тему Telegram */
+.react-flow__controls {
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5) !important;
+  border: 1px solid var(--tg-theme-hint-color, #999) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+  box-shadow: none !important;
+}
+
+.react-flow__controls-button {
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5) !important;
+  border-bottom: 1px solid var(--tg-theme-hint-color, #999) !important;
+  fill: var(--tg-theme-text-color, #000) !important;
+  color: var(--tg-theme-text-color, #000) !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+
+.react-flow__controls-button:hover {
+  background: var(--tg-theme-bg-color, #fff) !important;
+}
+
+.react-flow__controls-button svg {
+  fill: var(--tg-theme-text-color, #000) !important;
+  max-width: 14px;
+  max-height: 14px;
 }
