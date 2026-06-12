@@ -9,6 +9,7 @@ import {
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 
 /**
  * Пользователи бота. id — это Telegram user id (помещается в безопасный диапазон integer).
@@ -159,3 +160,78 @@ export const generationPresets = pgTable("generation_presets", {
 
 export type GenerationPreset = typeof generationPresets.$inferSelect;
 export type NewGenerationPreset = typeof generationPresets.$inferInsert;
+
+/**
+ * RP-чаты: один чат = один персонаж + опциональная персона + пресет ИИ.
+ * activeMessageId — «курсор» активной ветки (лист дерева сообщений).
+ * Намеренно НЕ FK: chats ↔ messages образуют цикл, Drizzle/Postgres требовал бы deferrable.
+ * Целостность гарантируется кодом (DAO).
+ */
+export const chats = pgTable("chats", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  userId: bigint("user_id", { mode: "number" })
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  characterId: bigint("character_id", { mode: "number" })
+    .notNull()
+    .references(() => characters.id),
+  personaId: bigint("persona_id", { mode: "number" }).references(() => personas.id),
+  presetId: bigint("preset_id", { mode: "number" }).references(() => generationPresets.id),
+  activeMessageId: bigint("active_message_id", { mode: "number" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export type Chat = typeof chats.$inferSelect;
+export type NewChat = typeof chats.$inferInsert;
+
+/**
+ * Сообщения чата в виде дерева (parentId = null → корень ветки).
+ * Несколько детей одного родителя — «альтернативы»; активный путь отслеживается через
+ * chats.activeMessageId (курсор на листе).
+ * translations — JSON-кэш переводов: { "ru": "...", "en": "..." }.
+ */
+export const messages = pgTable("messages", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  chatId: bigint("chat_id", { mode: "number" })
+    .notNull()
+    .references(() => chats.id, { onDelete: "cascade" }),
+  parentId: bigint("parent_id", { mode: "number" }).references(
+    (): AnyPgColumn => messages.id,
+    { onDelete: "cascade" },
+  ),
+  role: text("role").$type<"user" | "assistant">().notNull(),
+  content: text("content").notNull(),
+  translations: jsonb("translations").$type<Record<string, string>>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type Message = typeof messages.$inferSelect;
+export type NewMessage = typeof messages.$inferInsert;
+
+/**
+ * Настройки перевода для конкретного чата.
+ * translateScope определяет, на каких сообщениях показывать кнопку Globe:
+ *   "all" = на всех, "assistant" = только ИИ-ответы, "user" = только реплики игрока.
+ */
+export const chatSettings = pgTable("chat_settings", {
+  chatId: bigint("chat_id", { mode: "number" })
+    .primaryKey()
+    .references(() => chats.id, { onDelete: "cascade" }),
+  translateEnabled: boolean("translate_enabled").notNull().default(false),
+  translateTargetLang: text("translate_target_lang").notNull().default("ru"),
+  translateScope: text("translate_scope")
+    .$type<"all" | "assistant" | "user">()
+    .notNull()
+    .default("assistant"),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export type ChatSettings = typeof chatSettings.$inferSelect;
+export type NewChatSettings = typeof chatSettings.$inferInsert;

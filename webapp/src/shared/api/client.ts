@@ -20,6 +20,17 @@ export class ApiError extends Error {
   }
 }
 
+/** Базовый URL API — нужен для ручного fetch (SSE-поток). */
+export function getApiBase(): string {
+  return API_BASE;
+}
+
+/** Заголовок Authorization — нужен для ручного fetch (SSE-поток). */
+export function getAuthHeader(): string {
+  const raw = initData.raw();
+  return raw ? `tma ${raw}` : "";
+}
+
 /** Типизированный fetch к /api/* с автоматической подстановкой initData. */
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const raw = initData.raw();

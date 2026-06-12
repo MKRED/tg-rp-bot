@@ -25,11 +25,10 @@ export function useAllChats(): AllChatsState {
     setLoading(true);
     setError(false);
     listAllChats(page, PAGE_SIZE)
-      .then((res) => {
+      .then(({ items: newItems, total }) => {
         if (!cancelled) {
-          setItems(res);
-          // Если вернулось меньше PAGE_SIZE — следующей страницы нет
-          setHasMore(res.length === PAGE_SIZE);
+          setItems(newItems);
+          setHasMore(page * PAGE_SIZE < total);
         }
       })
       .catch(() => {

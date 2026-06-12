@@ -26,17 +26,17 @@ function formatChatTime(iso: string): string {
 export function ChatCard({ chat, onClick }: ChatCardProps) {
   const subtitle = chat.lastMessage
     ? chat.lastMessage
-    : chat.personaName
-      ? `Персона: ${chat.personaName}`
+    : chat.persona?.name
+      ? `Персона: ${chat.persona.name}`
       : "Нет сообщений";
 
   return (
     <Cell
       before={
         <CharacterAvatar
-          id={chat.characterId}
-          hasImage={chat.characterHasImage}
-          name={chat.characterName}
+          id={chat.character.id}
+          hasImage={chat.character.hasImage}
+          name={chat.character.name}
           size={48}
         />
       }
@@ -48,7 +48,7 @@ export function ChatCard({ chat, onClick }: ChatCardProps) {
       }
       onClick={onClick}
     >
-      {chat.characterName}
+      {chat.character.name}
     </Cell>
   );
 }

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import logger from "../logger.js";
 import { createCharacterRoutes } from "./characters.js";
+import { createChatRoutes } from "./chats.js";
 import { type AppVariables, requireInitData } from "./initData.js";
 import { createPersonaRoutes } from "./personas.js";
 import { createPresetRoutes } from "./presets.js";
@@ -46,7 +47,8 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
   // CRUD пресетов настроек генерации (sub-app наследует requireInitData выше).
   api.route("/presets", createPresetRoutes());
 
-  // TODO: api.post("/chat", ...) → chatCompletion(...) из ../llm
+  // RP-чаты: CRUD + стриминговая генерация + ветвление + перевод.
+  api.route("/chats", createChatRoutes());
 
   return api;
 }

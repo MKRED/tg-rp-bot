@@ -49,6 +49,12 @@ const RpChatsAllPage = lazy(() =>
 const RpChatPage = lazy(() =>
   import("../pages/rp-chat/RpChatPage").then((m) => ({ default: m.RpChatPage }))
 );
+const RpChatSettingsPage = lazy(() =>
+  import("../pages/rp-chat/RpChatSettingsPage").then((m) => ({ default: m.RpChatSettingsPage }))
+);
+const RpChatGraphPage = lazy(() =>
+  import("../pages/rp-chat/RpChatGraphPage").then((m) => ({ default: m.RpChatGraphPage }))
+);
 
 /**
  * Маршруты приложения с анимированными переходами.
@@ -68,6 +74,9 @@ export function AnimatedRoutes() {
           <Route path={ROUTES.chats} element={<RpChatsPage />} />
           <Route path={ROUTES.chatNew} element={<RpChatNewPage />} />
           <Route path={ROUTES.chatAll} element={<RpChatsAllPage />} />
+          {/* Статические /chats/:id/settings и /chats/:id/graph стоят раньше /chats/:id */}
+          <Route path={ROUTES.chatSettings} element={<RpChatSettingsPage />} />
+          <Route path={ROUTES.chatGraph} element={<RpChatGraphPage />} />
           <Route path={ROUTES.chatView} element={<RpChatPage />} />
           <Route path={ROUTES.characters} element={<CharactersListPage />} />
           {/* Статический /characters/new стоит раньше /characters/:id — react-router отдаёт ему приоритет. */}

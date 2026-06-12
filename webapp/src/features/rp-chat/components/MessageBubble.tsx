@@ -1,0 +1,156 @@
+import { Avatar } from "@telegram-apps/telegram-ui";
+import { ChevronLeft, ChevronRight, Globe, Pencil, RefreshCw } from "lucide-react";
+import { useState } from "react";
+import { CharacterAvatar } from "../../characters/components/CharacterAvatar";
+import { getTgUser } from "../../../shared/telegram/initData";
+import type { MessageInPath } from "../types/chat";
+
+interface MessageBubbleProps {
+  message: MessageInPath;
+  character: { id: number; name: string; hasImage: boolean };
+  /** Показывать кнопку перевода на этом сообщении (на основе settings.translateScope). */
+  showTranslateButton: boolean;
+  /** Язык перевода из настроек. */
+  targetLang: string;
+  /** Это последнее assistant-сообщение в чате (для кнопки регенерации). */
+  isLastAssistant: boolean;
+  onSwitchBranch: (siblingId: number) => void;
+  onTranslate: (messageId: number, targetLang: string) => Promise<string>;
+  onEdit: (messageId: number) => void;
+  onRegenerate: (messageId: number) => void;
+}
+
+export function MessageBubble({
+  message,
+  character,
+  showTranslateButton,
+  targetLang,
+  isLastAssistant,
+  onSwitchBranch,
+  onTranslate,
+  onEdit,
+  onRegenerate,
+}: MessageBubbleProps) {
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [translating, setTranslating] = useState(false);
+  const isAssistant = message.role === "assistant";
+  const user = getTgUser();
+
+  const displayText =
+    showTranslation && message.translations?.[targetLang]
+      ? message.translations[targetLang]
+      : message.content;
+
+  const handleTranslateToggle = async () => {
+    if (showTranslation) {
+      setShowTranslation(false);
+      return;
+    }
+    // Если перевод уже есть в кэше — просто показываем
+    if (message.translations?.[targetLang]) {
+      setShowTranslation(true);
+      return;
+    }
+    // Запрашиваем перевод
+    setTranslating(true);
+    try {
+      await onTranslate(message.id, targetLang);
+      setShowTranslation(true);
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const prevSiblingId =
+    message.siblingCount > 1 && message.siblingIndex > 0
+      ? message.siblings[message.siblingIndex - 1]
+      : null;
+  const nextSiblingId =
+    message.siblingCount > 1 && message.siblingIndex < message.siblingCount - 1
+      ? message.siblings[message.siblingIndex + 1]
+      : null;
+
+  return (
+    <div className={`message-bubble message-bubble--${message.role}`}>
+      {isAssistant && (
+        <CharacterAvatar
+          id={character.id}
+          hasImage={character.hasImage}
+          name={character.name}
+          size={28}
+        />
+      )}
+
+      <div className="message-bubble__body">
+        <p className="message-bubble__text">{displayText}</p>
+
+        {/* Строка сиблингов: стрелки ← N/M → */}
+        {message.siblingCount > 1 && (
+          <div className="message-bubble__siblings">
+            <button
+              className="message-bubble__sibling-btn"
+              onClick={() => prevSiblingId != null && onSwitchBranch(prevSiblingId)}
+              disabled={prevSiblingId == null}
+              type="button"
+              aria-label="Предыдущий вариант"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <span className="message-bubble__sibling-count">
+              {message.siblingIndex + 1}/{message.siblingCount}
+            </span>
+            <button
+              className="message-bubble__sibling-btn"
+              onClick={() => nextSiblingId != null && onSwitchBranch(nextSiblingId)}
+              disabled={nextSiblingId == null}
+              type="button"
+              aria-label="Следующий вариант"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        )}
+
+        {/* Действия: перевод, редактирование, регенерация */}
+        <div className="message-bubble__actions">
+          {showTranslateButton && (
+            <button
+              className={`message-bubble__action-btn${showTranslation ? " message-bubble__action-btn--active" : ""}`}
+              onClick={handleTranslateToggle}
+              disabled={translating}
+              type="button"
+              aria-label="Перевести"
+            >
+              <Globe size={14} />
+            </button>
+          )}
+          <button
+            className="message-bubble__action-btn"
+            onClick={() => onEdit(message.id)}
+            type="button"
+            aria-label="Редактировать"
+          >
+            <Pencil size={14} />
+          </button>
+          {isAssistant && isLastAssistant && (
+            <button
+              className="message-bubble__action-btn"
+              onClick={() => onRegenerate(message.id)}
+              type="button"
+              aria-label="Регенерировать"
+            >
+              <RefreshCw size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {!isAssistant && (
+        <Avatar
+          size={28}
+          acronym={user?.firstName?.charAt(0).toUpperCase() ?? "?"}
+        />
+      )}
+    </div>
+  );
+}

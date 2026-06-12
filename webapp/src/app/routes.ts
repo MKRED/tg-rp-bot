@@ -25,6 +25,10 @@ export const ROUTES = {
   presetNew: "/presets/new",
   /** Форма редактирования пресета по id (статический `new` приоритетнее `:id`). */
   presetEdit: "/presets/:id",
+  /** Настройки конкретного чата (перевод и др.). */
+  chatSettings: "/chats/:id/settings",
+  /** Граф веток конкретного чата. */
+  chatGraph: "/chats/:id/graph",
   /** Список персон пользователя. */
   personas: "/personas",
   /** Форма создания новой персоны. */
@@ -35,6 +39,12 @@ export const ROUTES = {
 
 /** Путь к конкретному чату. */
 export const chatViewPath = (id: number): string => `/chats/${id}`;
+
+/** Путь к настройкам конкретного чата. */
+export const chatSettingsPath = (id: number): string => `/chats/${id}/settings`;
+
+/** Путь к графу конкретного чата. */
+export const chatGraphPath = (id: number): string => `/chats/${id}/graph`;
 
 /** Путь к редактированию конкретного персонажа. */
 export const characterEditPath = (id: number): string => `/characters/${id}`;
@@ -55,6 +65,11 @@ export function parentPath(pathname: string): string {
   if (pathname.startsWith("/characters/")) return ROUTES.characters;
   if (pathname.startsWith("/presets/")) return ROUTES.presets;
   if (pathname.startsWith("/personas/")) return ROUTES.personas;
+  if (/^\/chats\/\d+\/(settings|graph)$/.test(pathname)) {
+    // Настройки и граф → назад к чату
+    const id = pathname.split("/")[2];
+    return `/chats/${id}`;
+  }
   if (pathname.startsWith("/chats/")) return ROUTES.chats;
   return ROUTES.home;
 }
