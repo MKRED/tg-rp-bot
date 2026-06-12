@@ -1,7 +1,9 @@
 import { Avatar, Button, FileInput } from "@telegram-apps/telegram-ui";
+import { AnimatePresence } from "framer-motion";
 import { type ChangeEvent, useState } from "react";
 import { fileToAvatarDataUrl } from "../image";
 import { nameInitials } from "../text/initials";
+import { ImageLightbox } from "./ImageLightbox";
 import "./AvatarPicker.css";
 
 interface AvatarPickerProps {
@@ -18,6 +20,7 @@ interface AvatarPickerProps {
  */
 export function AvatarPicker({ image, name, onChange }: AvatarPickerProps) {
   const [busy, setBusy] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const handleFile = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -36,7 +39,17 @@ export function AvatarPicker({ image, name, onChange }: AvatarPickerProps) {
 
   return (
     <div className="avatar-picker">
-      <Avatar size={96} src={image ?? undefined} acronym={nameInitials(name)} />
+      {image ? (
+        <button
+          type="button"
+          className="avatar-picker__zoom"
+          onClick={() => setLightboxOpen(true)}
+        >
+          <Avatar size={96} src={image} acronym={nameInitials(name)} />
+        </button>
+      ) : (
+        <Avatar size={96} acronym={nameInitials(name)} />
+      )}
       <div className="avatar-picker__actions">
         <FileInput
           accept="image/*"
@@ -50,6 +63,9 @@ export function AvatarPicker({ image, name, onChange }: AvatarPickerProps) {
           </Button>
         )}
       </div>
+      <AnimatePresence>
+        {lightboxOpen && image && <ImageLightbox src={image} onClose={() => setLightboxOpen(false)} />}
+      </AnimatePresence>
     </div>
   );
 }

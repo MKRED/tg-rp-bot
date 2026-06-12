@@ -42,7 +42,7 @@ export function PersonasListPage() {
                   transition={{ delay: i * 0.05, duration: 0.2, ease: "easeOut" }}
                 >
                   <Cell
-                    before={<PersonaAvatar id={p.id} hasImage={p.hasImage} name={p.name} size={48} />}
+                    before={<PersonaAvatar id={p.id} hasImage={p.hasImage} name={p.name} size={48} enlargeable />}
                     subtitle={p.footnote ?? undefined}
                     onClick={() => navigate(personaEditPath(p.id))}
                   >
