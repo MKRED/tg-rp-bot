@@ -199,17 +199,84 @@ export async function getChat(
       ORDER BY p.created_at ASC
     `);
 
-    messages = (pathRows as Record<string, unknown>[]).map((r) => ({
-      id: r.id as number,
-      parentId: r.parent_id as number | null,
-      role: r.role as "user" | "assistant",
-      content: r.content as string,
-      translations: (r.translations as Record<string, string> | null) ?? null,
-      createdAt: String(r.created_at),
-      siblingIndex: r.sibling_index as number,
-      siblingCount: r.sibling_count as number,
-      siblings: r.siblings as number[],
-    }));
+    // Если путь пуст — active_message_id указывает на удалённое сообщение (повреждённое состояние).
+    // Самовосстановление: найти последний лист дерева и переключить на него.
+    if ((pathRows as Record<string, unknown>[]).length === 0) {
+      const leafRows = await db.execute(sql`
+        SELECT id FROM messages
+        WHERE chat_id = ${chatId}
+          AND id NOT IN (
+            SELECT DISTINCT parent_id FROM messages
+            WHERE parent_id IS NOT NULL AND chat_id = ${chatId}
+          )
+        ORDER BY created_at DESC
+        LIMIT 1
+      `);
+      const leafId = (leafRows as unknown as { id: unknown }[])[0]?.id;
+      if (leafId) {
+        const newLeaf = Number(leafId);
+        await db
+          .update(schema.chats)
+          .set({ activeMessageId: newLeaf })
+          .where(eq(schema.chats.id, chatId));
+        // Повторяем запрос пути с новым activeMessageId
+        const retryRows = await db.execute(sql`
+          WITH RECURSIVE path AS (
+            SELECT * FROM messages WHERE id = ${newLeaf}
+            UNION ALL
+            SELECT m.* FROM messages m JOIN path p ON m.id = p.parent_id
+          ),
+          sibling_info AS (
+            SELECT
+              id,
+              COALESCE(parent_id, -1)                                        AS group_key,
+              COUNT(*)   OVER (PARTITION BY COALESCE(parent_id, -1))::int    AS sibling_count,
+              (ROW_NUMBER() OVER (PARTITION BY COALESCE(parent_id, -1)
+                                  ORDER BY created_at) - 1)::int             AS sibling_index
+            FROM messages WHERE chat_id = ${chatId}
+          ),
+          sibling_arrays AS (
+            SELECT
+              COALESCE(parent_id, -1)            AS group_key,
+              ARRAY_AGG(id ORDER BY created_at)  AS siblings
+            FROM messages
+            WHERE chat_id = ${chatId}
+            GROUP BY COALESCE(parent_id, -1)
+          )
+          SELECT
+            p.id, p.parent_id, p.role, p.content, p.translations, p.created_at,
+            s.sibling_count, s.sibling_index, sa.siblings
+          FROM path p
+          JOIN sibling_info s  ON s.id        = p.id
+          JOIN sibling_arrays sa ON sa.group_key = COALESCE(p.parent_id, -1)
+          ORDER BY p.created_at ASC
+        `);
+        messages = (retryRows as Record<string, unknown>[]).map((r) => ({
+          id: Number(r.id),
+          parentId: r.parent_id != null ? Number(r.parent_id) : null,
+          role: r.role as "user" | "assistant",
+          content: r.content as string,
+          translations: (r.translations as Record<string, string> | null) ?? null,
+          createdAt: String(r.created_at),
+          siblingIndex: r.sibling_index as number,
+          siblingCount: r.sibling_count as number,
+          siblings: (r.siblings as unknown[]).map(Number),
+        }));
+      }
+      // Если leafId нет — чат пуст, messages остаётся []
+    } else {
+      messages = (pathRows as Record<string, unknown>[]).map((r) => ({
+        id: r.id as number,
+        parentId: r.parent_id as number | null,
+        role: r.role as "user" | "assistant",
+        content: r.content as string,
+        translations: (r.translations as Record<string, string> | null) ?? null,
+        createdAt: String(r.created_at),
+        siblingIndex: r.sibling_index as number,
+        siblingCount: r.sibling_count as number,
+        siblings: r.siblings as number[],
+      }));
+    }
   }
 
   logger.debug(
@@ -264,7 +331,7 @@ export async function getChatTree(userId: number, chatId: number): Promise<TreeN
       )
       SELECT id FROM path
     `);
-    activePath = new Set((pathRows as unknown as { id: number }[]).map((r) => r.id));
+    activePath = new Set((pathRows as unknown as { id: unknown }[]).map((r) => Number(r.id)));
   }
 
   const allRows = await db
@@ -415,8 +482,10 @@ export async function deleteMessage(chatId: number, messageId: number): Promise<
     )
     SELECT id FROM descendants
   `);
+  // Number() нужен: db.execute() возвращает bigint-столбцы как BigInt (или строку),
+  // а Drizzle ORM через .select() — как number. Без каста Set.has() всегда false.
   const descendantIds = new Set(
-    (descendantRows as unknown as { id: number }[]).map((r) => r.id),
+    (descendantRows as unknown as { id: unknown }[]).map((r) => Number(r.id)),
   );
   const needsActiveUpdate = chat.activeMessageId != null && descendantIds.has(chat.activeMessageId);
 
