@@ -157,19 +157,26 @@ export async function handleEditMessage(c: Ctx) {
   });
 }
 
-/** POST /:id/messages/:msgId/regenerate — генерирует новый ответ ИИ для родительского user-msg. */
+/** POST /:id/messages/:msgId/regenerate — генерирует новый ответ ИИ.
+ *  Принимает ID assistant-сообщения (перегенерация) или user-сообщения (первый ответ на него). */
 export async function handleRegenerateMessage(c: Ctx) {
   const userId = c.get("tgUser")!.id;
   const chatId = Number(c.req.param("id"));
   const msgId = Number(c.req.param("msgId"));
 
   const original = await getMessage(msgId);
-  if (!original || original.chatId !== chatId || original.role !== "assistant") {
-    return c.json({ error: "Message not found or not an assistant message" }, 404);
+  if (!original || original.chatId !== chatId) {
+    return c.json({ error: "Message not found" }, 404);
   }
 
-  // Получаем user-родителя для правильного контекста
-  const parentUserMsg = original.parentId ? await getMessage(original.parentId) : null;
+  // Если передан user-msg — отвечаем на него напрямую;
+  // если assistant-msg — берём его родительский user-msg (перегенерация).
+  const parentUserMsg =
+    original.role === "user"
+      ? original
+      : original.parentId
+        ? await getMessage(original.parentId)
+        : null;
   if (!parentUserMsg) return c.json({ error: "Parent user message not found" }, 404);
 
   // Переключаемся на родительский user-msg, чтобы getChat вернул путь без старого ответа

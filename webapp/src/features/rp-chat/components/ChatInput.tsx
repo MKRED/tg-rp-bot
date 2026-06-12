@@ -1,32 +1,35 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
-import { SendHorizontal } from "lucide-react";
+import { SendHorizontal, Sparkles } from "lucide-react";
 import { useRef, useState } from "react";
 
 interface ChatInputProps {
   onSend: (content: string) => void;
+  /** Вызывается при нажатии кнопки с пустым полем — запрашивает ответ ИИ. */
+  onGetResponse?: () => void;
   disabled: boolean;
 }
 
-export function ChatInput({ onSend, disabled }: ChatInputProps) {
+export function ChatInput({ onSend, onGetResponse, disabled }: ChatInputProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const submit = () => {
+    if (disabled) return;
     const trimmed = value.trim();
-    if (!trimmed || disabled) return;
-    onSend(trimmed);
-    setValue("");
-    // Сбрасываем высоту textarea
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
+    if (trimmed) {
+      onSend(trimmed);
+      setValue("");
+      if (textareaRef.current) textareaRef.current.style.height = "auto";
+    } else {
+      onGetResponse?.();
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Enter = отправить, Shift+Enter = новая строка
+    // Enter = отправить, Shift+Enter = новая строка; пустой Enter ничего не делает
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      submit();
+      if (value.trim()) submit();
     }
   };
 
@@ -53,11 +56,11 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
       <button
         className="chat-input__send"
         onClick={submit}
-        disabled={disabled || !value.trim()}
+        disabled={disabled}
         type="button"
-        aria-label="Отправить"
+        aria-label={value.trim() ? "Отправить" : "Получить ответ"}
       >
-        {disabled ? <Spinner size="s" /> : <SendHorizontal size={20} />}
+        {disabled ? <Spinner size="s" /> : value.trim() ? <SendHorizontal size={20} /> : <Sparkles size={20} />}
       </button>
     </div>
   );

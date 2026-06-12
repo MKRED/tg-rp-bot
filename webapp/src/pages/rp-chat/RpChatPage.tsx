@@ -31,9 +31,15 @@ export function RpChatPage() {
     ? (chat?.messages.find((m) => m.id === editingId) ?? null)
     : null;
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDone = useCallback((_u: MessageInPath | null, _a: MessageInPath) => { refresh(); setEditingId(null); }, [refresh]);
-  const { send, edit, regenerate, sending, streamingText } = useSendMessage(chatId, handleDone);
+
+  // Добавляем сообщение пользователя в список сразу при получении SSE-события,
+  // не дожидаясь завершения генерации и refresh().
+  const handleOptimisticUserMessage = useCallback((msg: MessageInPath) => {
+    setChat((prev) => prev ? { ...prev, messages: [...prev.messages, msg] } : prev);
+  }, [setChat]);
+
+  const { send, edit, regenerate, sending, streamingText } = useSendMessage(chatId, handleDone, handleOptimisticUserMessage);
 
   // Скролл вниз при новых сообщениях и стриминге
   useEffect(() => {
@@ -64,6 +70,17 @@ export function RpChatPage() {
     return translation;
   };
 
+  // Убираем регенерируемое assistant-сообщение оптимистично — оно заменится
+  // новым после завершения генерации и refresh(). User-сообщения не трогаем.
+  const handleRegenerate = useCallback((msgId: number) => {
+    if (sending) return;
+    const msg = chat?.messages.find((m) => m.id === msgId);
+    if (msg?.role === "assistant") {
+      setChat((prev) => prev ? { ...prev, messages: prev.messages.filter((m) => m.id !== msgId) } : prev);
+    }
+    regenerate(msgId);
+  }, [chat, regenerate, sending, setChat]);
+
   const handleDeleteMessage = async (messageId: number) => {
     await deleteMessage(chatId, messageId);
     refresh();
@@ -75,6 +92,11 @@ export function RpChatPage() {
   };
 
   const lastAssistantId = [...(chat?.messages ?? [])].reverse().find((m) => m.role === "assistant")?.id;
+
+  // Запрашивает ответ ИИ на текущий activeMessageId (может быть user или assistant).
+  const handleGetResponse = useCallback(() => {
+    if (chat?.activeMessageId) handleRegenerate(chat.activeMessageId);
+  }, [chat?.activeMessageId, handleRegenerate]);
 
   return (
     <PageTransition>
@@ -126,7 +148,7 @@ export function RpChatPage() {
                   onSwitchBranch={handleSwitchBranch}
                   onTranslate={handleTranslate}
                   onEdit={(msgId) => setEditingId(msgId)}
-                  onRegenerate={(msgId) => regenerate(msgId)}
+                  onRegenerate={handleRegenerate}
                   onDelete={handleDeleteMessage}
                 />
               </motion.div>
@@ -166,7 +188,7 @@ export function RpChatPage() {
               </button>
             </div>
           )}
-          <ChatInput onSend={handleSend} disabled={sending} />
+          <ChatInput onSend={handleSend} onGetResponse={handleGetResponse} disabled={sending} />
         </div>
       </div>
     </PageTransition>

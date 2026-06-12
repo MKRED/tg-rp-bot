@@ -4,7 +4,11 @@ import type { MessageInPath } from "../types/chat";
 
 type OnDoneCallback = (userMsg: MessageInPath | null, assistantMsg: MessageInPath) => void;
 
-export function useSendMessage(chatId: number, onDone: OnDoneCallback) {
+export function useSendMessage(
+  chatId: number,
+  onDone: OnDoneCallback,
+  onOptimisticUserMessage?: (msg: MessageInPath) => void,
+) {
   const [sending, setSending] = useState(false);
   const [streamingText, setStreamingText] = useState<string | null>(null);
 
@@ -17,7 +21,7 @@ export function useSendMessage(chatId: number, onDone: OnDoneCallback) {
 
       try {
         await sendMessage(chatId, content, {
-          onUserMessage: (msg) => { userMsg = msg; },
+          onUserMessage: (msg) => { userMsg = msg; onOptimisticUserMessage?.(msg); },
           onToken: (text) => setStreamingText((prev) => (prev ?? "") + text),
           onDone: (assistantMsg) => {
             setStreamingText(null);
@@ -42,7 +46,7 @@ export function useSendMessage(chatId: number, onDone: OnDoneCallback) {
 
       try {
         await editMessage(chatId, messageId, content, {
-          onUserMessage: (msg) => { userMsg = msg; },
+          onUserMessage: (msg) => { userMsg = msg; onOptimisticUserMessage?.(msg); },
           onToken: (text) => setStreamingText((prev) => (prev ?? "") + text),
           onDone: (assistantMsg) => {
             setStreamingText(null);
