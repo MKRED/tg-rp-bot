@@ -350,6 +350,19 @@
 
 /* ─── Страница настроек чата ─────────────────────────────────────────────────── */
 
+/* Заглушка-кружок с иконкой для персоны/пресета без аватара */
+.rp-chat-settings-page__icon-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tg-theme-hint-color, #999);
+  flex-shrink: 0;
+}
+
 .rp-chat-settings-page {
   min-height: 100dvh;
   padding-top: calc(

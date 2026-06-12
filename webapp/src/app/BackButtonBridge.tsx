@@ -26,10 +26,13 @@ export function BackButtonBridge() {
 
   // Подписка на нажатие: уводим к родителю текущего экрана. Пересоздаём подписку при
   // смене пути, чтобы в замыкании был актуальный pathname (от него зависит родитель).
+  // Если в state.returnTo передан явный путь возврата (напр. из настроек чата → редактирование
+  // персонажа) — используем его вместо статического parentPath.
   useEffect(() => {
     if (!backButton.onClick.isAvailable()) return;
-    return backButton.onClick(() => navigate(parentPath(location.pathname)));
-  }, [navigate, location.pathname]);
+    const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
+    return backButton.onClick(() => navigate(returnTo ?? parentPath(location.pathname)));
+  }, [navigate, location.pathname, location.state]);
 
   // Показ/скрытие в зависимости от текущего маршрута.
   useEffect(() => {

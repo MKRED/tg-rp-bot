@@ -166,6 +166,7 @@ export function MessageBubble({
             className="message-bubble__action-btn message-bubble__action-btn--danger"
             onClick={async () => {
               const ok = await confirmAction("Удалить сообщение? Это действие необратимо.", {
+                title: "Удаление сообщения",
                 confirmText: "Удалить",
               });
               if (ok) onDelete(message.id);
