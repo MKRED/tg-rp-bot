@@ -2,12 +2,15 @@ import { Avatar } from "@telegram-apps/telegram-ui";
 import { Check, ChevronLeft, ChevronRight, Copy, Globe, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { CharacterAvatar } from "../../characters/components/CharacterAvatar";
+import { PersonaAvatar } from "../../personas/components/PersonaAvatar";
 import { getTgUser } from "../../../shared/telegram/initData";
+import { confirmAction } from "../../../shared/telegram/confirm";
 import type { MessageInPath } from "../types/chat";
 
 interface MessageBubbleProps {
   message: MessageInPath;
   character: { id: number; name: string; hasImage: boolean };
+  persona: { id: number; name: string; hasImage: boolean } | null;
   /** Показывать кнопку перевода на этом сообщении (на основе settings.translateScope). */
   showTranslateButton: boolean;
   /** Язык перевода из настроек. */
@@ -24,6 +27,7 @@ interface MessageBubbleProps {
 export function MessageBubble({
   message,
   character,
+  persona,
   showTranslateButton,
   targetLang,
   isLastAssistant,
@@ -160,7 +164,12 @@ export function MessageBubble({
           )}
           <button
             className="message-bubble__action-btn message-bubble__action-btn--danger"
-            onClick={() => onDelete(message.id)}
+            onClick={async () => {
+              const ok = await confirmAction("Удалить сообщение? Это действие необратимо.", {
+                confirmText: "Удалить",
+              });
+              if (ok) onDelete(message.id);
+            }}
             type="button"
             aria-label="Удалить"
           >
@@ -170,10 +179,9 @@ export function MessageBubble({
       </div>
 
       {!isAssistant && (
-        <Avatar
-          size={28}
-          acronym={user?.firstName?.charAt(0).toUpperCase() ?? "?"}
-        />
+        persona
+          ? <PersonaAvatar id={persona.id} hasImage={persona.hasImage} name={persona.name} size={28} />
+          : <Avatar size={28} acronym={user?.firstName?.charAt(0).toUpperCase() ?? "?"} />
       )}
     </div>
   );

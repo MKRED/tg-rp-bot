@@ -6,8 +6,7 @@ import { chatGraphPath, chatSettingsPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { useChat, useChatSettings, useSendMessage } from "../../features/rp-chat";
-import { deleteChat, deleteMessage, switchBranch, translateMessage } from "../../features/rp-chat/api/index";
-import { ROUTES } from "../../app/routes";
+import { deleteMessage, switchBranch, translateMessage } from "../../features/rp-chat/api/index";
 import { ChatHeader } from "../../features/rp-chat/components/ChatHeader";
 import { ChatInput } from "../../features/rp-chat/components/ChatInput";
 import { MessageBubble } from "../../features/rp-chat/components/MessageBubble";
@@ -99,11 +98,6 @@ export function RpChatPage() {
     refresh();
   };
 
-  const handleDeleteChat = async () => {
-    await deleteChat(chatId);
-    navigate(ROUTES.chats);
-  };
-
   const lastAssistantId = [...(chat?.messages ?? [])].reverse().find((m) => m.role === "assistant")?.id;
 
   // Запрашивает ответ ИИ на текущий activeMessageId (может быть user или assistant).
@@ -119,7 +113,6 @@ export function RpChatPage() {
             character={chat.character}
             onSettingsClick={() => navigate(chatSettingsPath(chatId))}
             onGraphClick={() => navigate(chatGraphPath(chatId))}
-            onDeleteChat={handleDeleteChat}
           />
         )}
 
@@ -155,6 +148,7 @@ export function RpChatPage() {
                 <MessageBubble
                   message={msg}
                   character={chat.character}
+                  persona={chat.persona}
                   showTranslateButton={showTranslateButton}
                   targetLang={settings.translateTargetLang}
                   isLastAssistant={msg.id === lastAssistantId}
