@@ -176,19 +176,26 @@ export async function getChat(
       sibling_info AS (
         SELECT
           id,
-          COALESCE(parent_id, -1)                                              AS group_key,
-          COUNT(*)     OVER (PARTITION BY COALESCE(parent_id, -1))::int        AS sibling_count,
+          COALESCE(parent_id, -1)                                        AS group_key,
+          COUNT(*)   OVER (PARTITION BY COALESCE(parent_id, -1))::int    AS sibling_count,
           (ROW_NUMBER() OVER (PARTITION BY COALESCE(parent_id, -1)
-                              ORDER BY created_at) - 1)::int                   AS sibling_index,
-          ARRAY_AGG(id ORDER BY created_at)
-                       OVER (PARTITION BY COALESCE(parent_id, -1))             AS siblings
+                              ORDER BY created_at) - 1)::int             AS sibling_index
         FROM messages WHERE chat_id = ${chatId}
+      ),
+      sibling_arrays AS (
+        SELECT
+          COALESCE(parent_id, -1)            AS group_key,
+          ARRAY_AGG(id ORDER BY created_at)  AS siblings
+        FROM messages
+        WHERE chat_id = ${chatId}
+        GROUP BY COALESCE(parent_id, -1)
       )
       SELECT
         p.id, p.parent_id, p.role, p.content, p.translations, p.created_at,
-        s.sibling_count, s.sibling_index, s.siblings
+        s.sibling_count, s.sibling_index, sa.siblings
       FROM path p
-      JOIN sibling_info s ON s.id = p.id
+      JOIN sibling_info s  ON s.id        = p.id
+      JOIN sibling_arrays sa ON sa.group_key = COALESCE(p.parent_id, -1)
       ORDER BY p.created_at ASC
     `);
 
