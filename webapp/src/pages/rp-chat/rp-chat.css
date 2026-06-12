@@ -1,4 +1,10 @@
 .rp-chats-page {
+  min-height: 100dvh;
+  padding-top: calc(
+    8px +
+    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
   padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
@@ -18,6 +24,12 @@
 
 /* Форма создания нового чата */
 .rp-chat-new-page {
+  min-height: 100dvh;
+  padding-top: calc(
+    8px +
+    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
   padding-bottom: calc(env(safe-area-inset-bottom, 0) + 16px);
 }
 
@@ -33,6 +45,12 @@
 
 /* Список всех чатов */
 .rp-chats-all-page {
+  min-height: 100dvh;
+  padding-top: calc(
+    8px +
+    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
   padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
