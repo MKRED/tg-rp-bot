@@ -5,8 +5,14 @@
 export const ROUTES = {
   /** Главная — экран, на который попадаем при открытии приложения. */
   home: "/",
-  /** RP-чат «один на один». */
-  chat: "/chat",
+  /** Хаб ролевых чатов: последние 5 + кнопки «Все чаты» и «Новый чат». */
+  chats: "/chats",
+  /** Форма создания нового чата (выбор персонажа, персоны, пресета). */
+  chatNew: "/chats/new",
+  /** Полный список чатов с пагинацией. */
+  chatAll: "/chats/all",
+  /** Экран конкретного чата по id. */
+  chatView: "/chats/:id",
   /** Список персонажей пользователя. */
   characters: "/characters",
   /** Форма создания нового персонажа. */
@@ -27,6 +33,9 @@ export const ROUTES = {
   personaEdit: "/personas/:id",
 } as const;
 
+/** Путь к конкретному чату. */
+export const chatViewPath = (id: number): string => `/chats/${id}`;
+
 /** Путь к редактированию конкретного персонажа. */
 export const characterEditPath = (id: number): string => `/characters/${id}`;
 
@@ -46,5 +55,6 @@ export function parentPath(pathname: string): string {
   if (pathname.startsWith("/characters/")) return ROUTES.characters;
   if (pathname.startsWith("/presets/")) return ROUTES.presets;
   if (pathname.startsWith("/personas/")) return ROUTES.personas;
+  if (pathname.startsWith("/chats/")) return ROUTES.chats;
   return ROUTES.home;
 }

@@ -1,5 +1,5 @@
-/**
- * Публичная поверхность фичи RP-чата — то, что монтирует роутер (App).
- * Внутрифичевые модули импортируют друг друга напрямую по файлам, НЕ через этот barrel.
- */
-export { RpChat } from "./components/RpChat";
+export { ChatCard } from "./components/ChatCard";
+export { useRecentChats } from "./hooks/useRecentChats";
+export { useAllChats } from "./hooks/useAllChats";
+export { createChat } from "./api/index";
+export type { ChatListItem, ChatInput, ChatCreated } from "./types/chat";

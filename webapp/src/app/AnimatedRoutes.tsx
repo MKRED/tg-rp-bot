@@ -37,8 +37,17 @@ const PersonaEditPage = lazy(() =>
     default: m.PersonaEditPage,
   }))
 );
-const RpChat = lazy(() =>
-  import("../features/rp-chat").then((m) => ({ default: m.RpChat }))
+const RpChatsPage = lazy(() =>
+  import("../pages/rp-chat/RpChatsPage").then((m) => ({ default: m.RpChatsPage }))
+);
+const RpChatNewPage = lazy(() =>
+  import("../pages/rp-chat/RpChatNewPage").then((m) => ({ default: m.RpChatNewPage }))
+);
+const RpChatsAllPage = lazy(() =>
+  import("../pages/rp-chat/RpChatsAllPage").then((m) => ({ default: m.RpChatsAllPage }))
+);
+const RpChatPage = lazy(() =>
+  import("../pages/rp-chat/RpChatPage").then((m) => ({ default: m.RpChatPage }))
 );
 
 /**
@@ -55,7 +64,11 @@ export function AnimatedRoutes() {
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route path={ROUTES.home} element={<HomePage />} />
-          <Route path={ROUTES.chat} element={<RpChat />} />
+          {/* Хаб чатов. Статические /chats/new и /chats/all стоят раньше /chats/:id. */}
+          <Route path={ROUTES.chats} element={<RpChatsPage />} />
+          <Route path={ROUTES.chatNew} element={<RpChatNewPage />} />
+          <Route path={ROUTES.chatAll} element={<RpChatsAllPage />} />
+          <Route path={ROUTES.chatView} element={<RpChatPage />} />
           <Route path={ROUTES.characters} element={<CharactersListPage />} />
           {/* Статический /characters/new стоит раньше /characters/:id — react-router отдаёт ему приоритет. */}
           <Route path={ROUTES.characterNew} element={<CharacterEditPage />} />

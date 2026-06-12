@@ -56,7 +56,7 @@ export function HomePage() {
               <Cell
                 before={<MessageCircle size={24} className="home__icon" />}
                 subtitle="Диалог с одним персонажем"
-                onClick={() => navigate(ROUTES.chat)}
+                onClick={() => navigate(ROUTES.chats)}
               >
                 Ролевой чат
               </Cell>
