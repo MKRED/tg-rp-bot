@@ -1,5 +1,5 @@
 import { Avatar } from "@telegram-apps/telegram-ui";
-import { ChevronLeft, ChevronRight, Globe, Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, Globe, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { CharacterAvatar } from "../../characters/components/CharacterAvatar";
 import { getTgUser } from "../../../shared/telegram/initData";
@@ -35,6 +35,7 @@ export function MessageBubble({
 }: MessageBubbleProps) {
   const [showTranslation, setShowTranslation] = useState(false);
   const [translating, setTranslating] = useState(false);
+  const [copied, setCopied] = useState(false);
   const isAssistant = message.role === "assistant";
   const user = getTgUser();
 
@@ -96,7 +97,7 @@ export function MessageBubble({
               type="button"
               aria-label="Предыдущий вариант"
             >
-              <ChevronLeft size={14} />
+              <ChevronLeft size={16} />
             </button>
             <span className="message-bubble__sibling-count">
               {message.siblingIndex + 1}/{message.siblingCount}
@@ -108,13 +109,26 @@ export function MessageBubble({
               type="button"
               aria-label="Следующий вариант"
             >
-              <ChevronRight size={14} />
+              <ChevronRight size={16} />
             </button>
           </div>
         )}
 
-        {/* Действия: перевод, редактирование, регенерация */}
+        {/* Действия: перевод, копирование, редактирование, регенерация */}
         <div className="message-bubble__actions">
+          <button
+            className="message-bubble__action-btn"
+            onClick={() => {
+              navigator.clipboard.writeText(displayText).then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1500);
+              });
+            }}
+            type="button"
+            aria-label="Скопировать"
+          >
+            {copied ? <Check size={16} /> : <Copy size={16} />}
+          </button>
           {showTranslateButton && (
             <button
               className={`message-bubble__action-btn${showTranslation ? " message-bubble__action-btn--active" : ""}`}
@@ -123,7 +137,7 @@ export function MessageBubble({
               type="button"
               aria-label="Перевести"
             >
-              <Globe size={14} />
+              <Globe size={16} />
             </button>
           )}
           <button
@@ -132,7 +146,7 @@ export function MessageBubble({
             type="button"
             aria-label="Редактировать"
           >
-            <Pencil size={14} />
+            <Pencil size={16} />
           </button>
           {isAssistant && isLastAssistant && (
             <button
@@ -141,7 +155,7 @@ export function MessageBubble({
               type="button"
               aria-label="Регенерировать"
             >
-              <RefreshCw size={14} />
+              <RefreshCw size={16} />
             </button>
           )}
           <button
@@ -150,7 +164,7 @@ export function MessageBubble({
             type="button"
             aria-label="Удалить"
           >
-            <Trash2 size={14} />
+            <Trash2 size={16} />
           </button>
         </div>
       </div>

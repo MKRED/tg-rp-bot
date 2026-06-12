@@ -41,12 +41,13 @@ export function useSendMessage(
     async (messageId: number, content: string) => {
       if (sending) return;
       setSending(true);
-      setStreamingText("");
+      // StreamingBubble не показываем сразу — для assistant-редактирования токенов не будет.
+      // Устанавливаем "" только когда приходит userMessage (т.е. редактируем user-сообщение).
       let userMsg: MessageInPath | null = null;
 
       try {
         await editMessage(chatId, messageId, content, {
-          onUserMessage: (msg) => { userMsg = msg; onOptimisticUserMessage?.(msg); },
+          onUserMessage: (msg) => { setStreamingText(""); userMsg = msg; onOptimisticUserMessage?.(msg); },
           onToken: (text) => setStreamingText((prev) => (prev ?? "") + text),
           onDone: (assistantMsg) => {
             setStreamingText(null);

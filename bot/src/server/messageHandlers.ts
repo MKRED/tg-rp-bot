@@ -123,10 +123,12 @@ export async function handleEditMessage(c: Ctx) {
   if (!original || original.chatId !== chatId) return c.json({ error: "Message not found" }, 404);
 
   if (original.role === "assistant") {
-    // Просто создаём сиблинга и переключаемся на него
+    // Создаём сиблинга и возвращаем через SSE — клиент ожидает event:done, не JSON
     const newMsg = await insertMessage(chatId, original.parentId, "assistant", content);
     await updateActiveMessage(chatId, newMsg.id);
-    return c.json({ assistantMessage: newMsg });
+    return streamSSE(c, async (stream) => {
+      await stream.writeSSE({ event: "done", data: JSON.stringify(newMsg) });
+    });
   }
 
   // role="user": создаём нового user-сиблинга, потом перегенерируем ответ ИИ

@@ -47,7 +47,20 @@ export function RpChatPage() {
   }, [chat?.messages.length, streamingText]);
 
   const handleSend = (content: string) => {
-    if (editingId != null) { edit(editingId, content); } else { send(content); }
+    if (editingId != null) {
+      // Оптимистично срезаем список с позиции редактируемого сообщения:
+      // для user-сообщений — освобождаем место под новый сиблинг + ответ ИИ;
+      // для assistant-сообщений — убираем само сообщение (вернётся после refresh).
+      setChat((prev) => {
+        if (!prev) return prev;
+        const idx = prev.messages.findIndex((m) => m.id === editingId);
+        if (idx === -1) return prev;
+        return { ...prev, messages: prev.messages.slice(0, idx) };
+      });
+      edit(editingId, content);
+    } else {
+      send(content);
+    }
   };
 
   const handleSwitchBranch = async (targetMessageId: number) => {
