@@ -43,6 +43,18 @@
   padding: 16px 0;
 }
 
+.rp-chat-new-page__icon {
+  color: var(--tg-theme-link-color, #2481cc);
+}
+
+.rp-chat-new-page__icon--hint {
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.rp-chat-new-page__chevron {
+  color: var(--tg-theme-hint-color, #999);
+}
+
 /* Список всех чатов */
 .rp-chats-all-page {
   min-height: 100dvh;

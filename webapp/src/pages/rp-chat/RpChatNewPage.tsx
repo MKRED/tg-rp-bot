@@ -1,4 +1,5 @@
-import { Button, Cell, List, Radio, Section, Spinner } from "@telegram-apps/telegram-ui";
+import { Button, Cell, List, Modal, Section, Spinner } from "@telegram-apps/telegram-ui";
+import { ChevronRight, SlidersHorizontal, Smile, User } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { ROUTES, chatViewPath } from "../../app/routes";
@@ -6,23 +7,17 @@ import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { CharacterAvatar, useCharacters } from "../../features/characters";
 import { PersonaAvatar, usePersonas } from "../../features/personas";
-import {
-  presetSummary,
-  usePresets,
-} from "../../features/generation-presets";
+import { presetSummary, usePresets } from "../../features/generation-presets";
 import { createChat } from "../../features/rp-chat";
 import "./rp-chat.css";
 
-const SECTION_VARIANTS = {
-  initial: { opacity: 0, y: 8 },
-  animate: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.07, duration: 0.2, ease: "easeOut" as const },
-  }),
-};
+// null = ещё не выбрано (блокирует сабмит); "none"/"default" = явный выбор «без»
+type PersonaChoice = number | "none" | null;
+type PresetChoice = number | "default" | null;
 
-/** Форма создания нового чата: выбор персонажа (обязательно), персоны, пресета ИИ. */
+const ITEM_TRANSITION = { duration: 0.2, ease: "easeOut" as const };
+
+/** Форма создания нового чата: три обязательных поля — персонаж, персона, пресет ИИ. */
 export function RpChatNewPage() {
   const navigate = useTransitionNavigate();
 
@@ -30,19 +25,36 @@ export function RpChatNewPage() {
   const { items: personas, loading: personasLoading } = usePersonas();
   const { items: presets, loading: presetsLoading } = usePresets();
 
-  const [selectedCharId, setSelectedCharId] = useState<number | null>(null);
-  const [selectedPersonaId, setSelectedPersonaId] = useState<number | null>(null);
-  const [selectedPresetId, setSelectedPresetId] = useState<number | null>(null);
+  const [charId, setCharId] = useState<number | null>(null);
+  const [personaChoice, setPersonaChoice] = useState<PersonaChoice>(null);
+  const [presetChoice, setPresetChoice] = useState<PresetChoice>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const [charOpen, setCharOpen] = useState(false);
+  const [personaOpen, setPersonaOpen] = useState(false);
+  const [presetOpen, setPresetOpen] = useState(false);
+
+  const selectedChar = characters.find((c) => c.id === charId) ?? null;
+  const selectedPersona =
+    typeof personaChoice === "number"
+      ? (personas.find((p) => p.id === personaChoice) ?? null)
+      : null;
+  const selectedPreset =
+    typeof presetChoice === "number"
+      ? (presets.find((p) => p.id === presetChoice) ?? null)
+      : null;
+
+  const canSubmit =
+    charId !== null && personaChoice !== null && presetChoice !== null && !submitting;
+
   const handleSubmit = async () => {
-    if (!selectedCharId) return;
+    if (!canSubmit) return;
     setSubmitting(true);
     try {
       const chat = await createChat({
-        characterId: selectedCharId,
-        personaId: selectedPersonaId,
-        presetId: selectedPresetId,
+        characterId: charId!,
+        personaId: typeof personaChoice === "number" ? personaChoice : null,
+        presetId: typeof presetChoice === "number" ? presetChoice : null,
       });
       navigate(chatViewPath(chat.id));
     } catch {
@@ -57,101 +69,233 @@ export function RpChatNewPage() {
     <PageTransition>
       <div className="rp-chat-new-page">
         <List>
-          {/* Секция выбора персонажа */}
-          <motion.div custom={0} variants={SECTION_VARIANTS} initial="initial" animate="animate">
-            <Section header="Персонаж" footer="Обязательно для создания чата">
-              {charsLoading && (
-                <div className="rp-chat-new-page__center">
-                  <Spinner size="s" />
-                </div>
-              )}
-              {!charsLoading && characters.length === 0 && (
-                <Cell subtitle="Сначала создайте персонажа">Нет персонажей</Cell>
-              )}
-              {characters.map((c) => (
-                <Cell
-                  key={c.id}
-                  before={
-                    <CharacterAvatar id={c.id} hasImage={c.hasImage} name={c.name} size={40} />
-                  }
-                  after={<Radio checked={selectedCharId === c.id} readOnly />}
-                  subtitle={c.tags.length > 0 ? c.tags.join(", ") : undefined}
-                  onClick={() => setSelectedCharId(c.id)}
-                >
-                  {c.name}
-                </Cell>
-              ))}
-            </Section>
-          </motion.div>
-
-          {/* Секция выбора персоны */}
-          <motion.div custom={1} variants={SECTION_VARIANTS} initial="initial" animate="animate">
-            <Section header="Персона" footer="Необязательно">
+          <Section header="Новый чат">
+            {/* Персонаж */}
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...ITEM_TRANSITION, delay: 0 }}
+            >
               <Cell
-                after={<Radio checked={selectedPersonaId === null} readOnly />}
-                onClick={() => setSelectedPersonaId(null)}
+                before={
+                  selectedChar ? (
+                    <CharacterAvatar
+                      id={selectedChar.id}
+                      hasImage={selectedChar.hasImage}
+                      name={selectedChar.name}
+                      size={40}
+                    />
+                  ) : (
+                    <User size={24} className="rp-chat-new-page__icon rp-chat-new-page__icon--hint" />
+                  )
+                }
+                after={<ChevronRight size={20} className="rp-chat-new-page__chevron" />}
+                subtitle={
+                  selectedChar
+                    ? selectedChar.tags.length > 0
+                      ? selectedChar.tags.join(", ")
+                      : "Персонаж"
+                    : "Обязательно"
+                }
+                onClick={() => setCharOpen(true)}
               >
-                Без персоны
+                {selectedChar?.name ?? "Выберите персонажа"}
               </Cell>
-              {personasLoading && (
-                <div className="rp-chat-new-page__center">
-                  <Spinner size="s" />
-                </div>
-              )}
-              {personas.map((p) => (
-                <Cell
-                  key={p.id}
-                  before={
-                    <PersonaAvatar id={p.id} hasImage={p.hasImage} name={p.name} size={40} />
-                  }
-                  after={<Radio checked={selectedPersonaId === p.id} readOnly />}
-                  subtitle={p.footnote ?? undefined}
-                  onClick={() => setSelectedPersonaId(p.id)}
-                >
-                  {p.name}
-                </Cell>
-              ))}
-            </Section>
-          </motion.div>
+            </motion.div>
 
-          {/* Секция выбора пресета ИИ */}
-          <motion.div custom={2} variants={SECTION_VARIANTS} initial="initial" animate="animate">
-            <Section header="Настройки ИИ" footer="Необязательно">
+            {/* Персона */}
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...ITEM_TRANSITION, delay: 0.07 }}
+            >
               <Cell
-                after={<Radio checked={selectedPresetId === null} readOnly />}
-                onClick={() => setSelectedPresetId(null)}
+                before={
+                  selectedPersona ? (
+                    <PersonaAvatar
+                      id={selectedPersona.id}
+                      hasImage={selectedPersona.hasImage}
+                      name={selectedPersona.name}
+                      size={40}
+                    />
+                  ) : (
+                    <Smile
+                      size={24}
+                      className={`rp-chat-new-page__icon${personaChoice === null ? " rp-chat-new-page__icon--hint" : ""}`}
+                    />
+                  )
+                }
+                after={<ChevronRight size={20} className="rp-chat-new-page__chevron" />}
+                subtitle={
+                  personaChoice === null
+                    ? "Обязательно"
+                    : personaChoice === "none"
+                      ? "Играть без персоны"
+                      : (selectedPersona?.footnote ?? "Персона")
+                }
+                onClick={() => setPersonaOpen(true)}
               >
-                По умолчанию
+                {personaChoice === null
+                  ? "Выберите персону"
+                  : personaChoice === "none"
+                    ? "Без персоны"
+                    : (selectedPersona?.name ?? "Персона")}
               </Cell>
-              {presetsLoading && (
-                <div className="rp-chat-new-page__center">
-                  <Spinner size="s" />
-                </div>
-              )}
-              {presets.map((p) => (
-                <Cell
-                  key={p.id}
-                  after={<Radio checked={selectedPresetId === p.id} readOnly />}
-                  subtitle={presetSummary(p)}
-                  onClick={() => setSelectedPresetId(p.id)}
-                >
-                  {p.name}
-                </Cell>
-              ))}
-            </Section>
-          </motion.div>
+            </motion.div>
+
+            {/* Пресет ИИ */}
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...ITEM_TRANSITION, delay: 0.14 }}
+            >
+              <Cell
+                before={
+                  <SlidersHorizontal
+                    size={24}
+                    className={`rp-chat-new-page__icon${presetChoice === null ? " rp-chat-new-page__icon--hint" : ""}`}
+                  />
+                }
+                after={<ChevronRight size={20} className="rp-chat-new-page__chevron" />}
+                subtitle={
+                  presetChoice === null
+                    ? "Обязательно"
+                    : presetChoice === "default"
+                      ? "Стандартные параметры"
+                      : (selectedPreset ? presetSummary(selectedPreset) : "Пресет ИИ")
+                }
+                onClick={() => setPresetOpen(true)}
+              >
+                {presetChoice === null
+                  ? "Выберите настройки ИИ"
+                  : presetChoice === "default"
+                    ? "По умолчанию"
+                    : (selectedPreset?.name ?? "Пресет")}
+              </Cell>
+            </motion.div>
+          </Section>
         </List>
 
-        <div className="rp-chat-new-page__submit">
-          <Button
-            size="l"
-            stretched
-            disabled={!selectedCharId || submitting}
-            onClick={handleSubmit}
-          >
-            Начать чат
+        <motion.div
+          className="rp-chat-new-page__submit"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...ITEM_TRANSITION, delay: 0.21 }}
+        >
+          <Button size="l" stretched disabled={!canSubmit} onClick={handleSubmit}>
+            {submitting ? <Spinner size="s" /> : "Начать чат"}
           </Button>
-        </div>
+        </motion.div>
+
+        {/* Модал выбора персонажа */}
+        <Modal
+          open={charOpen}
+          onOpenChange={setCharOpen}
+          header={<Modal.Header>Персонаж</Modal.Header>}
+        >
+          {charsLoading && (
+            <div className="rp-chat-new-page__center">
+              <Spinner size="m" />
+            </div>
+          )}
+          {!charsLoading && characters.length === 0 && (
+            <Cell subtitle="Сначала создайте персонажа">Нет персонажей</Cell>
+          )}
+          <List>
+            {characters.map((c) => (
+              <Cell
+                key={c.id}
+                before={
+                  <CharacterAvatar id={c.id} hasImage={c.hasImage} name={c.name} size={40} />
+                }
+                subtitle={c.tags.length > 0 ? c.tags.join(", ") : undefined}
+                onClick={() => {
+                  setCharId(c.id);
+                  setCharOpen(false);
+                }}
+              >
+                {c.name}
+              </Cell>
+            ))}
+          </List>
+        </Modal>
+
+        {/* Модал выбора персоны */}
+        <Modal
+          open={personaOpen}
+          onOpenChange={setPersonaOpen}
+          header={<Modal.Header>Персона</Modal.Header>}
+        >
+          <List>
+            <Cell
+              before={<Smile size={24} className="rp-chat-new-page__icon rp-chat-new-page__icon--hint" />}
+              subtitle="Играть без персоны"
+              onClick={() => {
+                setPersonaChoice("none");
+                setPersonaOpen(false);
+              }}
+            >
+              Без персоны
+            </Cell>
+            {personasLoading && (
+              <div className="rp-chat-new-page__center">
+                <Spinner size="m" />
+              </div>
+            )}
+            {personas.map((p) => (
+              <Cell
+                key={p.id}
+                before={
+                  <PersonaAvatar id={p.id} hasImage={p.hasImage} name={p.name} size={40} />
+                }
+                subtitle={p.footnote ?? undefined}
+                onClick={() => {
+                  setPersonaChoice(p.id);
+                  setPersonaOpen(false);
+                }}
+              >
+                {p.name}
+              </Cell>
+            ))}
+          </List>
+        </Modal>
+
+        {/* Модал выбора пресета ИИ */}
+        <Modal
+          open={presetOpen}
+          onOpenChange={setPresetOpen}
+          header={<Modal.Header>Настройки ИИ</Modal.Header>}
+        >
+          <List>
+            <Cell
+              before={<SlidersHorizontal size={24} className="rp-chat-new-page__icon rp-chat-new-page__icon--hint" />}
+              subtitle="Стандартные параметры генерации"
+              onClick={() => {
+                setPresetChoice("default");
+                setPresetOpen(false);
+              }}
+            >
+              По умолчанию
+            </Cell>
+            {presetsLoading && (
+              <div className="rp-chat-new-page__center">
+                <Spinner size="m" />
+              </div>
+            )}
+            {presets.map((p) => (
+              <Cell
+                key={p.id}
+                subtitle={presetSummary(p)}
+                onClick={() => {
+                  setPresetChoice(p.id);
+                  setPresetOpen(false);
+                }}
+              >
+                {p.name}
+              </Cell>
+            ))}
+          </List>
+        </Modal>
       </div>
     </PageTransition>
   );
