@@ -106,6 +106,7 @@ export function RpChatGraphPage() {
       id: `${n.parentId}-${n.id}`,
       source: String(n.parentId),
       target: String(n.id),
+      type: "smoothstep",
       style: { stroke: "var(--tg-theme-hint-color, #999)", strokeWidth: 1.5 },
     }));
 
@@ -136,6 +137,7 @@ export function RpChatGraphPage() {
               nodesConnectable={false}
               fitView
               fitViewOptions={{ duration: 800, padding: 0.2 }}
+              minZoom={0.1}
               proOptions={{ hideAttribution: true }}
             >
               <Background color="var(--tg-theme-hint-color, #ccc)" gap={20} size={1} />
