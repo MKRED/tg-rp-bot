@@ -13,9 +13,21 @@ import {
 import logger from "../logger.js";
 import type { AppVariables } from "./initData.js";
 
-/** Проверяет, является ли ошибка нарушением FK-ограничения PostgreSQL (SQLSTATE 23503). */
-const isFkViolation = (err: unknown): boolean =>
-  typeof err === "object" && err !== null && "code" in err && err.code === "23503";
+/** Проверяет, является ли ошибка нарушением FK-ограничения PostgreSQL (SQLSTATE 23503).
+ *  DrizzleQueryError оборачивает нативный PostgresError (postgres.js) в поле .cause,
+ *  поэтому проверяем оба уровня — иначе code === "23503" не находится на верхнем уровне. */
+const isFkViolation = (err: unknown): boolean => {
+  if (typeof err !== "object" || err === null) return false;
+  const e = err as Record<string, unknown>;
+  if (e.code === "23503") return true;
+  const cause = e.cause;
+  return (
+    typeof cause === "object" &&
+    cause !== null &&
+    "code" in (cause as object) &&
+    (cause as Record<string, unknown>).code === "23503"
+  );
+};
 
 // Мягкие лимиты (дублируются в webapp для блокировки UI — здесь последняя линия защиты).
 const MAX_CHARACTERS_PER_USER = 50;
