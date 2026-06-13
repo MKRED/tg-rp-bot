@@ -46,12 +46,19 @@ function ChatNode({ data }: NodeProps<Node<ChatNodeData>>) {
 
 const nodeTypes = { chatNode: ChatNode };
 
-// ─── BFS-layout для позиций узлов ────────────────────────────────────────────
+// ─── Layout: двухпроходный алгоритм с центрированием узла над поддеревом ──────
 
 const NODE_W = 220;
 const NODE_H = 80;
-const H_GAP = 60;
+const H_GAP = 40;
 const V_GAP = 100;
+
+// Рекурсивно считает ширину поддерева в «слотах» (листья = 1 слот каждый).
+function subtreeWidth(id: number, childrenOf: Map<number | null, number[]>): number {
+  const children = childrenOf.get(id) ?? [];
+  if (children.length === 0) return 1;
+  return children.reduce((sum, cid) => sum + subtreeWidth(cid, childrenOf), 0);
+}
 
 function layoutNodes(treeNodes: TreeNode[]): Map<number, { x: number; y: number }> {
   const positions = new Map<number, { x: number; y: number }>();
@@ -63,21 +70,26 @@ function layoutNodes(treeNodes: TreeNode[]): Map<number, { x: number; y: number 
     childrenOf.get(pid)!.push(n.id);
   }
 
-  // BFS по уровням
-  const queue: Array<{ id: number; depth: number; col: number }> = [];
-  const roots = childrenOf.get(null) ?? [];
-  roots.forEach((id, i) => queue.push({ id, depth: 0, col: i }));
-
-  const colCountAtDepth = new Map<number, number>();
-
-  while (queue.length > 0) {
-    const { id, depth, col } = queue.shift()!;
-    positions.set(id, { x: col * (NODE_W + H_GAP), y: depth * (NODE_H + V_GAP) });
-
+  // Рекурсивно расставляет узел и его поддерево начиная с левой границы x (в слотах).
+  function place(id: number, depth: number, slotX: number): void {
     const children = childrenOf.get(id) ?? [];
-    const start = colCountAtDepth.get(depth + 1) ?? col;
-    colCountAtDepth.set(depth + 1, start + children.length);
-    children.forEach((cid, i) => queue.push({ id: cid, depth: depth + 1, col: start + i }));
+    const width = subtreeWidth(id, childrenOf);
+    // Узел центрируется над своим поддеревом
+    const cx = (slotX + (width - 1) / 2) * (NODE_W + H_GAP);
+    positions.set(id, { x: cx, y: depth * (NODE_H + V_GAP) });
+
+    let childSlot = slotX;
+    for (const cid of children) {
+      place(cid, depth + 1, childSlot);
+      childSlot += subtreeWidth(cid, childrenOf);
+    }
+  }
+
+  const roots = childrenOf.get(null) ?? [];
+  let rootSlot = 0;
+  for (const rid of roots) {
+    place(rid, 0, rootSlot);
+    rootSlot += subtreeWidth(rid, childrenOf);
   }
 
   return positions;
@@ -106,7 +118,6 @@ export function RpChatGraphPage() {
       id: `${n.parentId}-${n.id}`,
       source: String(n.parentId),
       target: String(n.id),
-      type: "smoothstep",
       style: { stroke: "var(--tg-theme-hint-color, #999)", strokeWidth: 1.5 },
     }));
 
