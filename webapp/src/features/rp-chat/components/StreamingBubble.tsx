@@ -1,4 +1,5 @@
 import { CharacterAvatar } from "../../characters/components/CharacterAvatar";
+import { RpText } from "./RpText";
 
 interface StreamingBubbleProps {
   text: string;
@@ -16,7 +17,7 @@ export function StreamingBubble({ text, character }: StreamingBubbleProps) {
         size={28}
       />
       <div className="message-bubble__body">
-        <p className="message-bubble__text message-bubble__text--streaming">{text}</p>
+        <p className="message-bubble__text message-bubble__text--streaming"><RpText text={text} /></p>
       </div>
     </div>
   );

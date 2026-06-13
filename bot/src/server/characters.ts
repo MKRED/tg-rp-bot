@@ -13,6 +13,10 @@ import {
 import logger from "../logger.js";
 import type { AppVariables } from "./initData.js";
 
+/** Проверяет, является ли ошибка нарушением FK-ограничения PostgreSQL (SQLSTATE 23503). */
+const isFkViolation = (err: unknown): boolean =>
+  typeof err === "object" && err !== null && "code" in err && err.code === "23503";
+
 // Мягкие лимиты (дублируются в webapp для блокировки UI — здесь последняя линия защиты).
 const MAX_CHARACTERS_PER_USER = 50;
 const MAX_FIRST_MESSAGES = 10;
@@ -173,6 +177,8 @@ export function createCharacterRoutes(): Hono<{ Variables: AppVariables }> {
       if (!deleted) return c.json({ error: "Not found" }, 404);
       return c.json({ ok: true });
     } catch (err) {
+      // FK нарушение (23503): персонаж привязан к чату — возвращаем 409 вместо 500.
+      if (isFkViolation(err)) return c.json({ error: "in_use" }, 409);
       logger.error({ err, userId: user.id, id }, "Failed to delete character");
       return c.json({ error: "Internal error" }, 500);
     }

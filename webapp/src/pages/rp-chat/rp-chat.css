@@ -165,6 +165,18 @@
 
 /* ─── Пузыри сообщений ───────────────────────────────────────────────────────── */
 
+/* RP-нотация: переменные адаптируются к фону пузыря — light/accent.
+   Каскадируют вниз к .rp-token--* в RpText.css */
+.message-bubble--assistant {
+  --rp-action-color: var(--tg-theme-hint-color, #999);
+  --rp-thought-color: var(--tg-theme-link-color, #2481cc);
+}
+.message-bubble--user {
+  --rp-action-color: rgba(255, 255, 255, 0.62);
+  --rp-thought-color: rgba(255, 255, 255, 0.88);
+}
+
+
 .message-bubble {
   display: flex;
   align-items: flex-end;

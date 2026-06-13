@@ -6,6 +6,7 @@ import { PersonaAvatar } from "../../personas/components/PersonaAvatar";
 import { getTgUser } from "../../../shared/telegram/initData";
 import { confirmAction } from "../../../shared/telegram/confirm";
 import type { MessageInPath } from "../types/chat";
+import { RpText } from "./RpText";
 
 interface MessageBubbleProps {
   message: MessageInPath;
@@ -89,7 +90,7 @@ export function MessageBubble({
       )}
 
       <div className="message-bubble__body">
-        <p className="message-bubble__text">{displayText}</p>
+        <p className="message-bubble__text"><RpText text={displayText} /></p>
 
         {/* Строка сиблингов: стрелки ← N/M → */}
         {message.siblingCount > 1 && (

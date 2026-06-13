@@ -1,6 +1,6 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { ROUTES } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
@@ -13,7 +13,8 @@ import {
   type Character,
   type CharacterInput,
 } from "../../features/characters";
-import { confirmAction } from "../../shared/telegram/confirm";
+import { ApiError } from "../../shared/api/client";
+import { confirmAction, showAlert } from "../../shared/telegram/confirm";
 import "./characters.css";
 
 /** Маппинг полного персонажа в значения формы. */
@@ -35,8 +36,11 @@ function toInput(c: Character): CharacterInput {
 export function CharacterEditPage() {
   const navigate = useTransitionNavigate();
   const params = useParams();
+  const location = useLocation();
   // /characters/new → id отсутствует (создание); /characters/:id → строка с числом.
   const id = params.id ? Number(params.id) : undefined;
+  // Если открыто из настроек чата — returnTo хранит путь обратно в настройки.
+  const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
 
   const { character, loading, error } = useCharacter(id);
   const [submitting, setSubmitting] = useState(false);
@@ -44,7 +48,7 @@ export function CharacterEditPage() {
   const handleSubmit = (input: CharacterInput) => {
     setSubmitting(true);
     const op = id === undefined ? createCharacter(input) : updateCharacter(id, input);
-    op.then(() => navigate(ROUTES.characters))
+    op.then(() => navigate(returnTo ?? ROUTES.characters))
       .catch(() => setSubmitting(false));
   };
 
@@ -56,7 +60,13 @@ export function CharacterEditPage() {
     setSubmitting(true);
     removeCharacter(id)
       .then(() => navigate(ROUTES.characters))
-      .catch(() => setSubmitting(false));
+      .catch(async (err) => {
+        setSubmitting(false);
+        // 409 — FK нарушение: персонаж привязан к чату, сервер блокирует удаление.
+        if (err instanceof ApiError && err.status === 409) {
+          await showAlert("Персонаж используется в чате. Сначала удалите чат.", "Нельзя удалить");
+        }
+      });
   };
 
   if (loading) {

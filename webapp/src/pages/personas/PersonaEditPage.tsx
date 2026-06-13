@@ -1,6 +1,6 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { ROUTES } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
@@ -13,7 +13,8 @@ import {
   type Persona,
   type PersonaInput,
 } from "../../features/personas";
-import { confirmAction } from "../../shared/telegram/confirm";
+import { ApiError } from "../../shared/api/client";
+import { confirmAction, showAlert } from "../../shared/telegram/confirm";
 import "./personas.css";
 
 /** Маппинг полной персоны в значения формы. */
@@ -34,7 +35,9 @@ function toInput(p: Persona): PersonaInput {
 export function PersonaEditPage() {
   const navigate = useTransitionNavigate();
   const params = useParams();
+  const location = useLocation();
   const id = params.id ? Number(params.id) : undefined;
+  const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
 
   const { persona, loading, error } = usePersona(id);
   const [submitting, setSubmitting] = useState(false);
@@ -42,7 +45,7 @@ export function PersonaEditPage() {
   const handleSubmit = (input: PersonaInput) => {
     setSubmitting(true);
     const op = id === undefined ? createPersona(input) : updatePersona(id, input);
-    op.then(() => navigate(ROUTES.personas))
+    op.then(() => navigate(returnTo ?? ROUTES.personas))
       .catch(() => setSubmitting(false));
   };
 
@@ -53,7 +56,12 @@ export function PersonaEditPage() {
     setSubmitting(true);
     removePersona(id)
       .then(() => navigate(ROUTES.personas))
-      .catch(() => setSubmitting(false));
+      .catch(async (err) => {
+        setSubmitting(false);
+        if (err instanceof ApiError && err.status === 409) {
+          await showAlert("Персона используется в чате. Сначала удалите чат.", "Нельзя удалить");
+        }
+      });
   };
 
   if (loading) {

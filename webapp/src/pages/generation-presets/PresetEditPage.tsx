@@ -1,6 +1,6 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { ROUTES } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
@@ -12,7 +12,8 @@ import {
   usePreset,
   type PresetInput,
 } from "../../features/generation-presets";
-import { confirmAction } from "../../shared/telegram/confirm";
+import { ApiError } from "../../shared/api/client";
+import { confirmAction, showAlert } from "../../shared/telegram/confirm";
 import "./presets.css";
 
 /**
@@ -23,7 +24,9 @@ import "./presets.css";
 export function PresetEditPage() {
   const navigate = useTransitionNavigate();
   const params = useParams();
+  const location = useLocation();
   const id = params.id ? Number(params.id) : undefined;
+  const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
 
   const { preset, loading, error } = usePreset(id);
   const [submitting, setSubmitting] = useState(false);
@@ -31,7 +34,7 @@ export function PresetEditPage() {
   const handleSubmit = (input: PresetInput) => {
     setSubmitting(true);
     const op = id === undefined ? createPreset(input) : updatePreset(id, input);
-    op.then(() => navigate(ROUTES.presets)).catch(() => setSubmitting(false));
+    op.then(() => navigate(returnTo ?? ROUTES.presets)).catch(() => setSubmitting(false));
   };
 
   const handleDelete = async () => {
@@ -42,7 +45,12 @@ export function PresetEditPage() {
     setSubmitting(true);
     removePreset(id)
       .then(() => navigate(ROUTES.presets))
-      .catch(() => setSubmitting(false));
+      .catch(async (err) => {
+        setSubmitting(false);
+        if (err instanceof ApiError && err.status === 409) {
+          await showAlert("Пресет используется в чате. Сначала удалите чат.", "Нельзя удалить");
+        }
+      });
   };
 
   if (loading) {

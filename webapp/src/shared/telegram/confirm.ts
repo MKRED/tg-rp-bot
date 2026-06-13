@@ -13,6 +13,22 @@ interface ConfirmOptions {
  * используем popup.show из SDK. Вне Telegram (dev-браузер) попап недоступен — откатываемся
  * на window.confirm, чтобы отладка из браузера продолжала работать.
  */
+/**
+ * Показывает информационный попап с единственной кнопкой «ОК».
+ * Используется для не-деструктивных уведомлений (ошибки, предупреждения).
+ */
+export async function showAlert(message: string, title = ""): Promise<void> {
+  if (popup.show.isAvailable()) {
+    await popup.show({
+      title,
+      message,
+      buttons: [{ id: "ok", type: "close" }],
+    });
+    return;
+  }
+  window.alert(message);
+}
+
 export async function confirmAction(
   message: string,
   { title = "", confirmText = "Удалить" }: ConfirmOptions = {},

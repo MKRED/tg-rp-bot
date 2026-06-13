@@ -1,0 +1,15 @@
+/* RP-текст: стили токенов. Цвет задаётся CSS-переменными,
+   которые определяются на уровне пузыря (.message-bubble--assistant/user в rp-chat.css),
+   поэтому один набор классов работает на любом фоне. */
+
+.rp-token--action {
+  font-style: italic;
+  color: var(--rp-action-color, var(--tg-theme-hint-color, #999));
+}
+
+/* speech: явно не задаём — наследует всё от родителя */
+
+.rp-token--thought {
+  font-style: italic;
+  color: var(--rp-thought-color, var(--tg-theme-link-color, #2481cc));
+}
