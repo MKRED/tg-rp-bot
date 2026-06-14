@@ -26,6 +26,10 @@ export function RpChatPage() {
   // Первый скролл к низу при загрузке чата — мгновенный (без видимой долгой прокрутки),
   // далее новые сообщения/стриминг скроллим плавно.
   const didInitialScroll = useRef(false);
+  // Сообщения, для которых mount-анимация уже отыграла. Анимируем только реально новые
+  // пузыри: иначе ремоунт хвоста (переключение ветки/правка) на длинной истории упирался
+  // в delay = индекс × 30мс (до ~3с на 100 сообщениях) перед появлением.
+  const animatedIds = useRef<Set<number>>(new Set());
   // Хранит ID сообщений, которые уже были видны — чтобы авто-переводить только новые.
   const seenMessageIds = useRef<Set<number>>(new Set());
   // Подавляет авто-перевод при смене ветки (сообщения исторические, не новые).
@@ -58,6 +62,12 @@ export function RpChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior });
     didInitialScroll.current = true;
   }, [chat?.messages.length, streamingText]);
+
+  // После коммита помечаем все текущие сообщения как «отанимированные», чтобы при
+  // следующем рендере новыми считались только реально добавленные пузыри.
+  useEffect(() => {
+    for (const m of chat?.messages ?? []) animatedIds.current.add(m.id);
+  }, [chat?.messages]);
 
   const handlePickSuggestion = (text: string) => {
     chatInputRef.current?.setDraft(text);
@@ -159,6 +169,11 @@ export function RpChatPage() {
     if (chat?.activeMessageId) handleRegenerate(chat.activeMessageId);
   }, [chat?.activeMessageId, handleRegenerate]);
 
+  // Индекс первого ещё не анимированного сообщения — от него отсчитываем каскад
+  // (с потолком), чтобы новые пузыри появлялись быстро независимо от длины истории.
+  const messages = chat?.messages ?? [];
+  const firstNewIdx = messages.findIndex((m) => !animatedIds.current.has(m.id));
+
   return (
     <PageTransition>
       <div className="rp-chat-page">
@@ -187,7 +202,7 @@ export function RpChatPage() {
             </div>
           )}
 
-          {chat?.messages.map((msg: MessageInPath, i: number) => {
+          {messages.map((msg: MessageInPath, i: number) => {
             const showTranslateButton =
               settings.translateEnabled &&
               (settings.translateScope === "all" || settings.translateScope === msg.role);
@@ -195,18 +210,21 @@ export function RpChatPage() {
               settings.translateEnabled &&
               settings.autoTranslateScope !== "none" &&
               (settings.autoTranslateScope === "all" || settings.autoTranslateScope === msg.role);
+            // Новый пузырь анимируется; каскад от первого нового, потолок 0.3с.
+            const isNew = firstNewIdx >= 0 && !animatedIds.current.has(msg.id);
+            const delay = isNew ? Math.min((i - firstNewIdx) * 0.03, 0.3) : 0;
             return (
               <motion.div
                 key={msg.id}
-                initial={{ opacity: 0, y: 12 }}
+                initial={isNew ? { opacity: 0, y: 12 } : false}
                 animate={{ opacity: 1, y: 0 }}
-                // Stagger только при первой загрузке (loading только что стало false)
-                transition={{ ...MSG_TRANSITION, delay: i * 0.03 }}
+                transition={{ ...MSG_TRANSITION, delay }}
               >
                 <MessageBubble
                   message={msg}
-                  character={chat.character}
-                  persona={chat.persona}
+                  // messages непуст только при существующем chat (см. messages = chat?.messages ?? [])
+                  character={chat!.character}
+                  persona={chat!.persona}
                   showTranslateButton={showTranslateButton}
                   targetLang={settings.translateTargetLang}
                   autoShowTranslation={autoShowTranslation}
