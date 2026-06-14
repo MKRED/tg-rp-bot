@@ -112,6 +112,7 @@ export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
       translateEnabled?: unknown;
       translateTargetLang?: unknown;
       translateScope?: unknown;
+      autoTranslateScope?: unknown;
     };
 
     const patch: Record<string, unknown> = {};
@@ -119,6 +120,9 @@ export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
     if (typeof body.translateTargetLang === "string") patch.translateTargetLang = body.translateTargetLang;
     if (["all", "assistant", "user"].includes(body.translateScope as string)) {
       patch.translateScope = body.translateScope;
+    }
+    if (["none", "all", "assistant", "user"].includes(body.autoTranslateScope as string)) {
+      patch.autoTranslateScope = body.autoTranslateScope;
     }
 
     const settings = await upsertChatSettings(chatId, patch);

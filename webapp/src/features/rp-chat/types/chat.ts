@@ -48,6 +48,7 @@ export interface ChatSettings {
   translateEnabled: boolean;
   translateTargetLang: string;
   translateScope: "all" | "assistant" | "user";
+  autoTranslateScope: "none" | "all" | "assistant" | "user";
 }
 
 export interface TreeNode {

@@ -30,6 +30,13 @@ const SCOPE_OPTIONS: { value: "all" | "assistant" | "user"; label: string }[] = 
   { value: "user", label: "Только мои сообщения" },
 ];
 
+const AUTO_SCOPE_OPTIONS: { value: "none" | "all" | "assistant" | "user"; label: string }[] = [
+  { value: "none", label: "Отключён" },
+  { value: "all", label: "Все сообщения" },
+  { value: "assistant", label: "Ответы ИИ" },
+  { value: "user", label: "Мои сообщения" },
+];
+
 export function RpChatSettingsPage() {
   const { id } = useParams<{ id: string }>();
   const chatId = Number(id);
@@ -39,6 +46,7 @@ export function RpChatSettingsPage() {
   const [deleting, setDeleting] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [scopeOpen, setScopeOpen] = useState(false);
+  const [autoScopeOpen, setAutoScopeOpen] = useState(false);
 
   // returnTo передаётся в state при навигации к редактированию персонажа/персоны/пресета,
   // чтобы кнопка «Назад» Telegram вернула именно сюда (BackButtonBridge читает state.returnTo).
@@ -61,6 +69,7 @@ export function RpChatSettingsPage() {
 
   const currentLangLabel = LANG_OPTIONS.find((o) => o.value === settings.translateTargetLang)?.label ?? "";
   const currentScopeLabel = SCOPE_OPTIONS.find((o) => o.value === settings.translateScope)?.label ?? "";
+  const currentAutoScopeLabel = AUTO_SCOPE_OPTIONS.find((o) => o.value === settings.autoTranslateScope)?.label ?? "";
 
   return (
     <PageTransition>
@@ -270,6 +279,55 @@ export function RpChatSettingsPage() {
                               key={o.value}
                               onClick={() => { update({ translateScope: o.value }); setScopeOpen(false); }}
                               after={settings.translateScope === o.value ? <Check size={16} /> : null}
+                              style={{ paddingLeft: 32 }}
+                            >
+                              {o.label}
+                            </Cell>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Авто-перевод новых сообщений */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ ...ITEM_T, delay: 0.21 }}
+                    >
+                      <Cell
+                        onClick={() => { setAutoScopeOpen((v) => !v); setLangOpen(false); setScopeOpen(false); }}
+                        after={
+                          <div style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--tg-theme-hint-color)" }}>
+                            <span style={{ fontSize: 14 }}>{currentAutoScopeLabel}</span>
+                            <ChevronDown
+                              size={16}
+                              style={{
+                                transition: "transform 0.2s",
+                                transform: autoScopeOpen ? "rotate(180deg)" : "rotate(0deg)",
+                              }}
+                            />
+                          </div>
+                        }
+                        subtitle="Переводить входящие сообщения сразу"
+                      >
+                        Авто-перевод
+                      </Cell>
+                    </motion.div>
+
+                    <AnimatePresence>
+                      {autoScopeOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={ITEM_T}
+                          style={{ overflow: "hidden" }}
+                        >
+                          {AUTO_SCOPE_OPTIONS.map((o) => (
+                            <Cell
+                              key={o.value}
+                              onClick={() => { update({ autoTranslateScope: o.value }); setAutoScopeOpen(false); }}
+                              after={settings.autoTranslateScope === o.value ? <Check size={16} /> : null}
                               style={{ paddingLeft: 32 }}
                             >
                               {o.label}

@@ -25,14 +25,6 @@ export function ChatInput({ onSend, onGetResponse, disabled }: ChatInputProps) {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Enter = отправить, Shift+Enter = новая строка; пустой Enter ничего не делает
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      if (value.trim()) submit();
-    }
-  };
-
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setValue(e.target.value);
     // Авторазмер: сбрасываем до auto, потом ставим по scrollHeight
@@ -48,8 +40,7 @@ export function ChatInput({ onSend, onGetResponse, disabled }: ChatInputProps) {
         className="chat-input__textarea"
         value={value}
         onChange={handleInput}
-        onKeyDown={handleKeyDown}
-        placeholder="Написать сообщение…"
+placeholder="Написать сообщение…"
         disabled={disabled}
         rows={1}
       />

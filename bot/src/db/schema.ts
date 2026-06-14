@@ -227,6 +227,10 @@ export const chatSettings = pgTable("chat_settings", {
     .$type<"all" | "assistant" | "user">()
     .notNull()
     .default("assistant"),
+  autoTranslateScope: text("auto_translate_scope")
+    .$type<"none" | "all" | "assistant" | "user">()
+    .notNull()
+    .default("none"),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow()

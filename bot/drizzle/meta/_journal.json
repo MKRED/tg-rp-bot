@@ -36,6 +36,13 @@
       "when": 1781288144415,
       "tag": "0004_shallow_mole_man",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1781425780706,
+      "tag": "0005_striped_preak",
+      "breakpoints": true
     }
   ]
 }

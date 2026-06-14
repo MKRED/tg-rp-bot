@@ -21,6 +21,10 @@ export function RpChatPage() {
   const chatId = Number(id);
   const navigate = useTransitionNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  // Хранит ID сообщений, которые уже были видны — чтобы авто-переводить только новые.
+  const seenMessageIds = useRef<Set<number>>(new Set());
+  // Подавляет авто-перевод при смене ветки (сообщения исторические, не новые).
+  const suppressNextAutoTranslate = useRef(false);
 
   const { chat, loading, error, refresh, setChat } = useChat(chatId);
   const { settings } = useChatSettings(chatId);
@@ -63,24 +67,28 @@ export function RpChatPage() {
   };
 
   const handleSwitchBranch = async (targetMessageId: number) => {
+    // Сообщения новой ветки — историческими, авто-переводить не нужно.
+    suppressNextAutoTranslate.current = true;
     await switchBranch(chatId, targetMessageId);
     refresh();
   };
 
-  const handleTranslate = async (messageId: number, lang: string): Promise<string> => {
+  const handleTranslate = useCallback(async (messageId: number, lang: string): Promise<string> => {
     const translation = await translateMessage(chatId, messageId, lang);
-    if (chat) {
-      setChat({
-        ...chat,
-        messages: chat.messages.map((m) =>
-          m.id === messageId
-            ? { ...m, translations: { ...(m.translations ?? {}), [lang]: translation } }
-            : m,
-        ),
-      });
-    }
+    setChat((prev) =>
+      prev
+        ? {
+            ...prev,
+            messages: prev.messages.map((m) =>
+              m.id === messageId
+                ? { ...m, translations: { ...(m.translations ?? {}), [lang]: translation } }
+                : m,
+            ),
+          }
+        : prev,
+    );
     return translation;
-  };
+  }, [chatId, setChat]);
 
   // Убираем регенерируемое assistant-сообщение оптимистично — оно заменится
   // новым после завершения генерации и refresh(). User-сообщения не трогаем.
@@ -97,6 +105,35 @@ export function RpChatPage() {
     await deleteMessage(chatId, messageId);
     refresh();
   };
+
+  // Авто-перевод новых сообщений согласно настройке autoTranslateScope.
+  useEffect(() => {
+    const msgs = chat?.messages;
+    if (!msgs?.length) return;
+
+    // Первая загрузка чата или смена ветки — помечаем всё как "видимое" без перевода.
+    if (seenMessageIds.current.size === 0 || suppressNextAutoTranslate.current) {
+      suppressNextAutoTranslate.current = false;
+      seenMessageIds.current = new Set(msgs.map((m) => m.id));
+      return;
+    }
+
+    const { autoTranslateScope, translateTargetLang, translateEnabled } = settings;
+    if (!translateEnabled || autoTranslateScope === "none") {
+      seenMessageIds.current = new Set(msgs.map((m) => m.id));
+      return;
+    }
+    const newMsgs = msgs.filter((m) => !seenMessageIds.current.has(m.id));
+    seenMessageIds.current = new Set(msgs.map((m) => m.id));
+    for (const msg of newMsgs) {
+      if (
+        (autoTranslateScope === "all" || autoTranslateScope === msg.role) &&
+        !msg.translations?.[translateTargetLang]
+      ) {
+        handleTranslate(msg.id, translateTargetLang).catch(() => {});
+      }
+    }
+  }, [chat?.messages, settings, handleTranslate]);
 
   const lastAssistantId = [...(chat?.messages ?? [])].reverse().find((m) => m.role === "assistant")?.id;
 
@@ -137,6 +174,10 @@ export function RpChatPage() {
             const showTranslateButton =
               settings.translateEnabled &&
               (settings.translateScope === "all" || settings.translateScope === msg.role);
+            const autoShowTranslation =
+              settings.translateEnabled &&
+              settings.autoTranslateScope !== "none" &&
+              (settings.autoTranslateScope === "all" || settings.autoTranslateScope === msg.role);
             return (
               <motion.div
                 key={msg.id}
@@ -151,6 +192,7 @@ export function RpChatPage() {
                   persona={chat.persona}
                   showTranslateButton={showTranslateButton}
                   targetLang={settings.translateTargetLang}
+                  autoShowTranslation={autoShowTranslation}
                   isLastAssistant={msg.id === lastAssistantId}
                   onSwitchBranch={handleSwitchBranch}
                   onTranslate={handleTranslate}

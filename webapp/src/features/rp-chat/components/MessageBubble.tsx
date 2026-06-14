@@ -1,6 +1,6 @@
-import { Avatar } from "@telegram-apps/telegram-ui";
+import { Avatar, Spinner } from "@telegram-apps/telegram-ui";
 import { Check, ChevronLeft, ChevronRight, Copy, Globe, Pencil, RefreshCw, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CharacterAvatar } from "../../characters/components/CharacterAvatar";
 import { PersonaAvatar } from "../../personas/components/PersonaAvatar";
 import { getTgUser } from "../../../shared/telegram/initData";
@@ -16,6 +16,8 @@ interface MessageBubbleProps {
   showTranslateButton: boolean;
   /** Язык перевода из настроек. */
   targetLang: string;
+  /** Автоматически отображать перевод, когда он появится (авто-перевод). */
+  autoShowTranslation?: boolean;
   /** Это последнее assistant-сообщение в чате (для кнопки регенерации). */
   isLastAssistant: boolean;
   onSwitchBranch: (siblingId: number) => void;
@@ -31,6 +33,7 @@ export function MessageBubble({
   persona,
   showTranslateButton,
   targetLang,
+  autoShowTranslation = false,
   isLastAssistant,
   onSwitchBranch,
   onTranslate,
@@ -39,6 +42,13 @@ export function MessageBubble({
   onDelete,
 }: MessageBubbleProps) {
   const [showTranslation, setShowTranslation] = useState(false);
+
+  // Когда авто-перевод доставляет перевод в message.translations — автоматически показываем его.
+  useEffect(() => {
+    if (autoShowTranslation && message.translations?.[targetLang]) {
+      setShowTranslation(true);
+    }
+  }, [message.translations, targetLang, autoShowTranslation]);
   const [translating, setTranslating] = useState(false);
   const [copied, setCopied] = useState(false);
   const isAssistant = message.role === "assistant";
@@ -142,7 +152,7 @@ export function MessageBubble({
               type="button"
               aria-label="Перевести"
             >
-              <Globe size={16} />
+              {translating ? <Spinner size="s" /> : <Globe size={16} />}
             </button>
           )}
           <button

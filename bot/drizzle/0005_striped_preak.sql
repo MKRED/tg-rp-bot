@@ -1,0 +1,1 @@
+ALTER TABLE "chat_settings" ADD COLUMN "auto_translate_scope" text DEFAULT 'none' NOT NULL;

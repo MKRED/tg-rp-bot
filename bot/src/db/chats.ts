@@ -535,12 +535,14 @@ export type ChatSettingsRow = {
   translateEnabled: boolean;
   translateTargetLang: string;
   translateScope: "all" | "assistant" | "user";
+  autoTranslateScope: "none" | "all" | "assistant" | "user";
 };
 
 const DEFAULT_SETTINGS: ChatSettingsRow = {
   translateEnabled: false,
   translateTargetLang: "ru",
   translateScope: "assistant",
+  autoTranslateScope: "none",
 };
 
 /** Читает настройки чата; если строки нет — возвращает дефолт. */
@@ -555,6 +557,7 @@ export async function getChatSettings(chatId: number): Promise<ChatSettingsRow> 
     translateEnabled: r.translateEnabled,
     translateTargetLang: r.translateTargetLang,
     translateScope: r.translateScope,
+    autoTranslateScope: r.autoTranslateScope,
   };
 }
 
