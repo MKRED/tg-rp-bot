@@ -28,7 +28,11 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+    // box-sizing: border-box — scrollHeight не включает рамку, а style.height её учитывает.
+    // Без этой добавки поле остаётся на ~рамку короче контента → остаётся лишняя прокрутка
+    // после набора и последующего удаления текста.
+    const borderY = el.offsetHeight - el.clientHeight;
+    el.style.height = `${Math.min(el.scrollHeight + borderY, 160)}px`;
   };
 
   useImperativeHandle(ref, () => ({
@@ -60,9 +64,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setValue(e.target.value);
-    const el = e.target;
-    el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+    resize();
   };
 
   const empty = !value.trim();

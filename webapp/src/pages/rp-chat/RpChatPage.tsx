@@ -23,6 +23,9 @@ export function RpChatPage() {
   const navigate = useTransitionNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<ChatInputHandle>(null);
+  // Первый скролл к низу при загрузке чата — мгновенный (без видимой долгой прокрутки),
+  // далее новые сообщения/стриминг скроллим плавно.
+  const didInitialScroll = useRef(false);
   // Хранит ID сообщений, которые уже были видны — чтобы авто-переводить только новые.
   const seenMessageIds = useRef<Set<number>>(new Set());
   // Подавляет авто-перевод при смене ветки (сообщения исторические, не новые).
@@ -47,9 +50,13 @@ export function RpChatPage() {
 
   const { send, edit, regenerate, sending, streamingText } = useSendMessage(chatId, handleDone, handleOptimisticUserMessage);
 
-  // Скролл вниз при новых сообщениях и стриминге
+  // Скролл вниз при новых сообщениях и стриминге.
+  // Первый скролл (открытие чата) — мгновенный, чтобы не было долгой прокрутки от верха.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!chat?.messages.length) return;
+    const behavior = didInitialScroll.current ? "smooth" : "auto";
+    messagesEndRef.current?.scrollIntoView({ behavior });
+    didInitialScroll.current = true;
   }, [chat?.messages.length, streamingText]);
 
   const handlePickSuggestion = (text: string) => {

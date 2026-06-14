@@ -24,7 +24,7 @@ export function useImpersonate(chatId: number) {
         onToken: (t) => setStreamingText((prev) => (prev ?? "") + t),
         onDone: (variant) => {
           setStreamingText(null);
-          setVariants((prev) => [variant, ...prev]);
+          setVariants((prev) => [...prev, variant]); // новые — в конец списка (снизу)
         },
         onError: () => setStreamingText(null),
       });
@@ -37,7 +37,8 @@ export function useImpersonate(chatId: number) {
 
   const load = useCallback(async () => {
     const list = await listImpersonations(chatId);
-    setVariants(list);
+    // Сервер отдаёт варианты новыми-первыми; в окне показываем старые сверху, новые снизу.
+    setVariants(list.slice().reverse());
     if (list.length === 0) await generate();
   }, [chatId, generate]);
 

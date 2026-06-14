@@ -1,7 +1,7 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import { Sparkles, X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useImpersonate } from "../hooks/useImpersonate";
 import { ImpersonateVariantCard } from "./ImpersonateVariantCard";
 import { RpText } from "./RpText";
@@ -22,11 +22,17 @@ const SHEET_T = { duration: 0.25, ease: "easeOut" as const };
  */
 export function ImpersonateSheet({ chatId, targetLang, onPick, onClose }: ImpersonateSheetProps) {
   const { variants, generating, streamingText, load, generate } = useImpersonate(chatId);
+  const listEndRef = useRef<HTMLDivElement>(null);
 
   // load стабилен (deps [chatId]) → эффект выполняется один раз за открытие шторы.
   useEffect(() => {
     load();
   }, [load]);
+
+  // Держим прокрутку у низа: новые варианты и текущая генерация — снизу.
+  useEffect(() => {
+    listEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [variants.length, streamingText, generating]);
 
   return (
     // Корень — backdrop (один keyed motion-элемент для AnimatePresence в RpChatPage);
@@ -60,16 +66,6 @@ export function ImpersonateSheet({ chatId, targetLang, onPick, onClose }: Impers
         </div>
 
         <div className="impersonate-sheet__list">
-          {generating && (
-            <div className="impersonate-sheet__streaming">
-              {streamingText ? (
-                <p className="impersonate-card__text"><RpText text={streamingText} /></p>
-              ) : (
-                <Spinner size="s" />
-              )}
-            </div>
-          )}
-
           {variants.map((v) => (
             <ImpersonateVariantCard
               key={v.id}
@@ -80,9 +76,22 @@ export function ImpersonateSheet({ chatId, targetLang, onPick, onClose }: Impers
             />
           ))}
 
+          {/* Текущая генерация — снизу, как самый новый вариант. */}
+          {generating && (
+            <div className="impersonate-sheet__streaming">
+              {streamingText ? (
+                <p className="impersonate-card__text"><RpText text={streamingText} /></p>
+              ) : (
+                <Spinner size="s" />
+              )}
+            </div>
+          )}
+
           {!generating && variants.length === 0 && (
             <div className="impersonate-sheet__empty">Нет вариантов</div>
           )}
+
+          <div ref={listEndRef} />
         </div>
 
         <button
