@@ -180,7 +180,7 @@ export function RpChatGraphPage() {
     <PageTransition>
       <div className="rp-chat-graph-page">
         {loading ? (
-          <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
+          <div className="rp-chat-loading">
             <Spinner size="m" />
           </div>
         ) : (

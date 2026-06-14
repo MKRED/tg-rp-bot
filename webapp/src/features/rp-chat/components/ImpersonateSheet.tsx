@@ -21,8 +21,11 @@ const SHEET_T = { duration: 0.25, ease: "easeOut" as const };
  * в RpChatPage (монтируется/размонтируется по impersonateOpen) — exit-анимации играют там.
  */
 export function ImpersonateSheet({ chatId, targetLang, onPick, onClose }: ImpersonateSheetProps) {
-  const { variants, generating, streamingText, load, generate } = useImpersonate(chatId);
+  const { variants, loading, generating, streamingText, load, generate } = useImpersonate(chatId);
   const listEndRef = useRef<HTMLDivElement>(null);
+  // Первый автоскролл (после загрузки истории) — мгновенный, чтобы окно не «прокручивалось»
+  // через все варианты сверху вниз; дальше новые варианты доезжают плавно.
+  const didInitialScroll = useRef(false);
 
   // load стабилен (deps [chatId]) → эффект выполняется один раз за открытие шторы.
   useEffect(() => {
@@ -31,8 +34,11 @@ export function ImpersonateSheet({ chatId, targetLang, onPick, onClose }: Impers
 
   // Держим прокрутку у низа: новые варианты и текущая генерация — снизу.
   useEffect(() => {
-    listEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [variants.length, streamingText, generating]);
+    if (loading) return;
+    const behavior = didInitialScroll.current ? "smooth" : "auto";
+    listEndRef.current?.scrollIntoView({ behavior });
+    didInitialScroll.current = true;
+  }, [loading, variants.length, streamingText, generating]);
 
   return (
     // Корень — backdrop (один keyed motion-элемент для AnimatePresence в RpChatPage);
@@ -66,7 +72,13 @@ export function ImpersonateSheet({ chatId, targetLang, onPick, onClose }: Impers
         </div>
 
         <div className="impersonate-sheet__list">
-          {variants.map((v) => (
+          {loading && (
+            <div className="impersonate-sheet__loading">
+              <Spinner size="m" />
+            </div>
+          )}
+
+          {!loading && variants.map((v) => (
             <ImpersonateVariantCard
               key={v.id}
               chatId={chatId}
@@ -87,7 +99,7 @@ export function ImpersonateSheet({ chatId, targetLang, onPick, onClose }: Impers
             </div>
           )}
 
-          {!generating && variants.length === 0 && (
+          {!loading && !generating && variants.length === 0 && (
             <div className="impersonate-sheet__empty">Нет вариантов</div>
           )}
 

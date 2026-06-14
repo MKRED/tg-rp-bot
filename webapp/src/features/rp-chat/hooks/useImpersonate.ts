@@ -9,6 +9,7 @@ import type { ImpersonationVariant } from "../types/chat";
  */
 export function useImpersonate(chatId: number) {
   const [variants, setVariants] = useState<ImpersonationVariant[]>([]);
+  const [loading, setLoading] = useState(true); // первичная загрузка истории вариантов
   const [generating, setGenerating] = useState(false);
   const [streamingText, setStreamingText] = useState<string | null>(null);
   // Лок против параллельных генераций — ref, чтобы generate оставался стабильным (deps [chatId]).
@@ -36,11 +37,18 @@ export function useImpersonate(chatId: number) {
   }, [chatId]);
 
   const load = useCallback(async () => {
-    const list = await listImpersonations(chatId);
+    setLoading(true);
+    let list: ImpersonationVariant[];
+    try {
+      list = await listImpersonations(chatId);
+    } finally {
+      setLoading(false);
+    }
     // Сервер отдаёт варианты новыми-первыми; в окне показываем старые сверху, новые снизу.
     setVariants(list.slice().reverse());
+    // Пусто → сразу генерируем первый (его покажет уже generating-стейт, не loading).
     if (list.length === 0) await generate();
   }, [chatId, generate]);
 
-  return { variants, generating, streamingText, load, generate };
+  return { variants, loading, generating, streamingText, load, generate };
 }

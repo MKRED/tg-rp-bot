@@ -96,6 +96,15 @@
   gap: 2px;
 }
 
+/* Спиннер загрузки — занимает всю свободную высоту и центрируется по обеим осям
+   (иначе с одним лишь justify-content он прилипает к верху под шапкой). */
+.rp-chat-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .rp-chat-page__input {
   padding: 8px 12px calc(env(safe-area-inset-bottom, 0px) + 8px);
   border-top: 1px solid var(--tg-theme-secondary-bg-color, #f4f4f5);
@@ -450,6 +459,12 @@
   text-align: center;
   padding: 24px;
   color: var(--tg-theme-hint-color, #999);
+}
+
+.impersonate-sheet__loading {
+  display: flex;
+  justify-content: center;
+  padding: 32px;
 }
 
 .impersonate-sheet__more {

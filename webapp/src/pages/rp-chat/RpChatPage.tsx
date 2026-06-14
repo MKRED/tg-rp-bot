@@ -172,7 +172,7 @@ export function RpChatPage() {
 
         <div className="rp-chat-page__messages">
           {loading && (
-            <div style={{ display: "flex", justifyContent: "center", padding: "40px" }}>
+            <div className="rp-chat-loading">
               <Spinner size="m" />
             </div>
           )}
