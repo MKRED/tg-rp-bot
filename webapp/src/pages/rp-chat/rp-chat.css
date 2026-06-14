@@ -360,6 +360,163 @@
   cursor: default;
 }
 
+/* Кнопка «ответ от вашего лица» — вторичная, слева от поля; видна при пустом инпуте */
+.chat-input__impersonate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  color: var(--tg-theme-link-color, #2481cc);
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition: opacity 0.15s;
+}
+
+.chat-input__impersonate:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ─── Штора вариантов impersonate ────────────────────────────────────────────── */
+
+.impersonate-sheet__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+}
+
+.impersonate-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 75vh;
+  padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  background: var(--tg-theme-bg-color, #fff);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+}
+
+.impersonate-sheet__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.impersonate-sheet__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #000);
+}
+
+.impersonate-sheet__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.impersonate-sheet__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.impersonate-sheet__streaming {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  opacity: 0.8;
+}
+
+.impersonate-sheet__empty {
+  text-align: center;
+  padding: 24px;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.impersonate-sheet__more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  background: var(--tg-theme-button-color, #2481cc);
+  color: var(--tg-theme-button-text-color, #fff);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.impersonate-sheet__more:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.impersonate-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  cursor: pointer;
+}
+
+.impersonate-card:active {
+  opacity: 0.7;
+}
+
+.impersonate-card__text {
+  flex: 1;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--tg-theme-text-color, #000);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.impersonate-card__actions {
+  flex-shrink: 0;
+}
+
+.impersonate-card__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.impersonate-card__btn--active {
+  color: var(--tg-theme-link-color, #2481cc);
+}
+
 /* ─── Страница настроек чата ─────────────────────────────────────────────────── */
 
 /* Заглушка-кружок с иконкой для персоны/пресета без аватара */

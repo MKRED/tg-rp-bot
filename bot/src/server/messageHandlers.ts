@@ -21,14 +21,21 @@ import { googleTranslate } from "./translate.js";
 type Ctx = Context<{ Variables: AppVariables }>;
 
 /**
- * Собирает ChatCompletionOptions для вызова LLM на основе текущего состояния чата.
- * Персонаж и пресет читаются из БД; если пресет не задан — используем пустой набор параметров.
+ * Загружает чат + связанные сущности (персонаж/персона/пресет) с проверкой владельца.
+ * Возвращает null, если чат или персонаж не найдены. Переиспользуется обычной генерацией
+ * и impersonate-хендлерами.
  */
-async function buildCompletionInput(
+export type ChatContext = {
+  chat: NonNullable<Awaited<ReturnType<typeof getChat>>>;
+  character: NonNullable<Awaited<ReturnType<typeof getCharacter>>>;
+  persona: Awaited<ReturnType<typeof getPersona>> | null;
+  preset: Awaited<ReturnType<typeof getPreset>> | null;
+};
+
+export async function loadChatContext(
   userId: number,
   chatId: number,
-  newUserMessage: string,
-) {
+): Promise<ChatContext | null> {
   const chat = await getChat(userId, chatId);
   if (!chat) return null;
 
@@ -38,6 +45,22 @@ async function buildCompletionInput(
   const persona = chat.persona ? await getPersona(userId, chat.persona.id) : null;
   const preset = chat.preset ? await getPreset(userId, chat.preset.id) : null;
 
+  return { chat, character, persona, preset };
+}
+
+/**
+ * Собирает ChatCompletionOptions для вызова LLM на основе текущего состояния чата.
+ * Персонаж и пресет читаются из БД; если пресет не задан — используем пустой набор параметров.
+ */
+async function buildCompletionInput(
+  userId: number,
+  chatId: number,
+  newUserMessage: string,
+) {
+  const ctx = await loadChatContext(userId, chatId);
+  if (!ctx) return null;
+  const { chat, character, persona, preset } = ctx;
+
   const msgs = buildMessages({
     preset: preset ?? {
       id: 0, userId, name: "default",
@@ -46,6 +69,7 @@ async function buildCompletionInput(
       frequencyPenalty: null, presencePenalty: null, repetitionPenalty: null,
       minP: null, topA: null,
       systemPrompt: "", auxiliarySystemPrompt: "", postHistoryInstruction: "", userPersonaPrompt: "",
+      userPersonaStreaming: true,
       requestReasoning: false, reasoningEffort: null,
       promptOrder: [
         { id: "system", enabled: false },

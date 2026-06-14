@@ -51,6 +51,13 @@ export interface ChatSettings {
   autoTranslateScope: "none" | "all" | "assistant" | "user";
 }
 
+/** Сгенерированный вариант реплики «от лица пользователя» (impersonate). */
+export interface ImpersonationVariant {
+  id: number;
+  content: string;
+  createdAt: string;
+}
+
 export interface TreeNode {
   id: number;
   parentId: number | null;

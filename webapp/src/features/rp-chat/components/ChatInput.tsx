@@ -1,17 +1,50 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
-import { SendHorizontal, Sparkles } from "lucide-react";
-import { useRef, useState } from "react";
+import { Lightbulb, SendHorizontal, Sparkles } from "lucide-react";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+
+export interface ChatInputHandle {
+  /** Подставить текст в поле как редактируемый черновик (ресайз + фокус). */
+  setDraft: (text: string) => void;
+}
 
 interface ChatInputProps {
   onSend: (content: string) => void;
   /** Вызывается при нажатии кнопки с пустым полем — запрашивает ответ ИИ. */
   onGetResponse?: () => void;
+  /** Открыть окно генерации реплики от лица пользователя (кнопка видна при пустом поле). */
+  onImpersonate?: () => void;
   disabled: boolean;
 }
 
-export function ChatInput({ onSend, onGetResponse, disabled }: ChatInputProps) {
+export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function ChatInput(
+  { onSend, onGetResponse, onImpersonate, disabled },
+  ref,
+) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Авторазмер: сбрасываем до auto, потом ставим по scrollHeight (макс 160px).
+  const resize = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  };
+
+  useImperativeHandle(ref, () => ({
+    setDraft: (text: string) => {
+      setValue(text);
+      // value применится после рендера — ресайз/фокус/курсор в конец на следующем кадре
+      requestAnimationFrame(() => {
+        resize();
+        const el = textareaRef.current;
+        if (el) {
+          el.focus();
+          el.setSelectionRange(el.value.length, el.value.length);
+        }
+      });
+    },
+  }));
 
   const submit = () => {
     if (disabled) return;
@@ -27,20 +60,32 @@ export function ChatInput({ onSend, onGetResponse, disabled }: ChatInputProps) {
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setValue(e.target.value);
-    // Авторазмер: сбрасываем до auto, потом ставим по scrollHeight
     const el = e.target;
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   };
 
+  const empty = !value.trim();
+
   return (
     <div className="chat-input">
+      {empty && onImpersonate && (
+        <button
+          className="chat-input__impersonate"
+          onClick={onImpersonate}
+          disabled={disabled}
+          type="button"
+          aria-label="Ответ от вашего лица"
+        >
+          <Lightbulb size={20} />
+        </button>
+      )}
       <textarea
         ref={textareaRef}
         className="chat-input__textarea"
         value={value}
         onChange={handleInput}
-placeholder="Написать сообщение…"
+        placeholder="Написать сообщение…"
         disabled={disabled}
         rows={1}
       />
@@ -55,4 +100,4 @@ placeholder="Написать сообщение…"
       </button>
     </div>
   );
-}
+});

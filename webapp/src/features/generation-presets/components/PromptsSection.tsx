@@ -1,3 +1,5 @@
+import { Cell, Switch } from "@telegram-apps/telegram-ui";
+import { DEFAULT_IMPERSONATE_TEMPLATE } from "../lib/impersonateTemplate";
 import { PromptField } from "./PromptField";
 
 interface PromptsSectionProps {
@@ -5,6 +7,7 @@ interface PromptsSectionProps {
   auxiliarySystemPrompt: string;
   postHistoryInstruction: string;
   userPersonaPrompt: string;
+  userPersonaStreaming: boolean;
   onChange: (
     field:
       | "systemPrompt"
@@ -13,6 +16,7 @@ interface PromptsSectionProps {
       | "userPersonaPrompt",
     value: string,
   ) => void;
+  onToggleStreaming: (value: boolean) => void;
 }
 
 /** Секция промптов: основной/вспомогательный/после истории + служебный (от лица пользователя). */
@@ -21,7 +25,9 @@ export function PromptsSection({
   auxiliarySystemPrompt,
   postHistoryInstruction,
   userPersonaPrompt,
+  userPersonaStreaming,
   onChange,
+  onToggleStreaming,
 }: PromptsSectionProps) {
   return (
     <>
@@ -49,10 +55,23 @@ export function PromptsSection({
       <div className="preset-form__section-title">Служебные промпты</div>
       <PromptField
         label="Промпт для генерации ответа от лица пользователя"
-        hint="Используется, когда модель пишет реплику за самого пользователя."
+        hint="Шаблон системной инструкции. Плейсхолдеры: {{char}}, {{user}}, {{char_prompt}}, {{user_prompt}}, {{system_prompt}}, {{aux_prompt}}. История чата добавляется отдельным сообщением. Пусто → используется шаблон по умолчанию."
         value={userPersonaPrompt}
+        rows={8}
+        placeholder={DEFAULT_IMPERSONATE_TEMPLATE}
         onChange={(v) => onChange("userPersonaPrompt", v)}
       />
+      <Cell
+        after={
+          <Switch
+            checked={userPersonaStreaming}
+            onChange={(e) => onToggleStreaming(e.target.checked)}
+          />
+        }
+        subtitle="Показывать текст по мере генерации варианта"
+      >
+        Стримить ответ от лица пользователя
+      </Cell>
     </>
   );
 }

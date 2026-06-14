@@ -5,6 +5,7 @@ import type {
   ChatInput,
   ChatListItem,
   ChatSettings,
+  ImpersonationVariant,
   MessageInPath,
   TreeNode,
 } from "../types/chat";
@@ -140,6 +141,96 @@ export async function updateChatSettings(
 export async function getChatTree(chatId: number): Promise<TreeNode[]> {
   const res = await apiFetch<{ nodes: TreeNode[] }>(`/chats/${chatId}/tree`);
   return res.nodes;
+}
+
+// ─── Impersonate (реплики от лица пользователя) ────────────────────────────────
+
+/** Список сохранённых вариантов для текущего момента диалога. */
+export async function listImpersonations(chatId: number): Promise<ImpersonationVariant[]> {
+  const res = await apiFetch<{ variants: ImpersonationVariant[] }>(`/chats/${chatId}/impersonate`);
+  return res.variants;
+}
+
+/** Перевод произвольного текста (эфемерно, без кэша) — для перевода вариантов в шторе. */
+export async function translateText(
+  chatId: number,
+  text: string,
+  targetLang: string,
+): Promise<string> {
+  const res = await apiFetch<{ translation: string }>(`/chats/${chatId}/translate-text`, {
+    method: "POST",
+    body: JSON.stringify({ text, targetLang }),
+  });
+  return res.translation;
+}
+
+export type ImpersonateEvents = {
+  onToken?: (text: string) => void;
+  onDone?: (variant: ImpersonationVariant) => void;
+  onError?: (message: string) => void;
+};
+
+/**
+ * Генерирует один вариант реплики от лица пользователя и читает SSE-поток.
+ * Если стриминг в пресете выключен — token-события не приходят, только done (клиент покажет спиннер).
+ */
+export async function streamImpersonate(
+  chatId: number,
+  events: ImpersonateEvents,
+): Promise<void> {
+  const base = getApiBase();
+  const response = await fetch(`${base}/chats/${chatId}/impersonate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: getAuthHeader(),
+    },
+    body: "{}",
+  });
+
+  if (!response.ok || !response.body) {
+    events.onError?.("Request failed");
+    return;
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      let currentEvent = "";
+      for (const line of lines) {
+        if (line.startsWith("event: ")) {
+          currentEvent = line.slice(7).trim();
+        } else if (line.startsWith("data: ")) {
+          const raw = line.slice(6).trim();
+          try {
+            const parsed = JSON.parse(raw) as Record<string, unknown>;
+            if (currentEvent === "token") {
+              events.onToken?.(parsed.text as string);
+            } else if (currentEvent === "done") {
+              events.onDone?.(parsed.variant as unknown as ImpersonationVariant);
+            } else if (currentEvent === "error") {
+              events.onError?.(parsed.message as string);
+            }
+          } catch {
+            // Игнорируем неверный JSON в потоке
+          }
+          currentEvent = "";
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
 }
 
 // ─── Внутренний хелпер: чтение SSE-потока ─────────────────────────────────────

@@ -19,6 +19,11 @@ import {
   handleSwitchBranch,
   handleTranslateMessage,
 } from "./messageHandlers.js";
+import {
+  handleImpersonate,
+  handleListImpersonations,
+  handleTranslateText,
+} from "./impersonateHandlers.js";
 
 export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
   const app = new Hono<{ Variables: AppVariables }>();
@@ -137,6 +142,12 @@ export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
   app.post("/:id/messages/:msgId/regenerate", handleRegenerateMessage);
   app.post("/:id/messages/:msgId/branch", handleSwitchBranch);
   app.post("/:id/messages/:msgId/translate", handleTranslateMessage);
+
+  // ─── Impersonate (генерация реплики от лица пользователя) ──────────────────
+  // Регистрируем вне ветки /:id/messages/:msgId, чтобы не конфликтовать с :msgId.
+  app.get("/:id/impersonate", handleListImpersonations);
+  app.post("/:id/impersonate", handleImpersonate);
+  app.post("/:id/translate-text", handleTranslateText);
 
   return app;
 }

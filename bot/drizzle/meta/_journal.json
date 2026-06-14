@@ -43,6 +43,13 @@
       "when": 1781425780706,
       "tag": "0005_striped_preak",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781459280451,
+      "tag": "0006_smart_human_cannonball",
+      "breakpoints": true
     }
   ]
 }

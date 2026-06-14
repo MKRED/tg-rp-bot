@@ -8,7 +8,8 @@ import { PageTransition } from "../../shared/components/PageTransition";
 import { useChat, useChatSettings, useSendMessage } from "../../features/rp-chat";
 import { deleteMessage, switchBranch, translateMessage } from "../../features/rp-chat/api/index";
 import { ChatHeader } from "../../features/rp-chat/components/ChatHeader";
-import { ChatInput } from "../../features/rp-chat/components/ChatInput";
+import { ChatInput, type ChatInputHandle } from "../../features/rp-chat/components/ChatInput";
+import { ImpersonateSheet } from "../../features/rp-chat/components/ImpersonateSheet";
 import { MessageBubble } from "../../features/rp-chat/components/MessageBubble";
 import { StreamingBubble } from "../../features/rp-chat/components/StreamingBubble";
 import type { MessageInPath } from "../../features/rp-chat";
@@ -21,10 +22,12 @@ export function RpChatPage() {
   const chatId = Number(id);
   const navigate = useTransitionNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<ChatInputHandle>(null);
   // Хранит ID сообщений, которые уже были видны — чтобы авто-переводить только новые.
   const seenMessageIds = useRef<Set<number>>(new Set());
   // Подавляет авто-перевод при смене ветки (сообщения исторические, не новые).
   const suppressNextAutoTranslate = useRef(false);
+  const [impersonateOpen, setImpersonateOpen] = useState(false);
 
   const { chat, loading, error, refresh, setChat } = useChat(chatId);
   const { settings } = useChatSettings(chatId);
@@ -49,7 +52,13 @@ export function RpChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chat?.messages.length, streamingText]);
 
+  const handlePickSuggestion = (text: string) => {
+    chatInputRef.current?.setDraft(text);
+    setImpersonateOpen(false);
+  };
+
   const handleSend = (content: string) => {
+    setImpersonateOpen(false); // момент диалога сменится — варианты больше не актуальны
     if (editingId != null) {
       // Оптимистично срезаем список с позиции редактируемого сообщения:
       // для user-сообщений — освобождаем место под новый сиблинг + ответ ИИ;
@@ -67,6 +76,7 @@ export function RpChatPage() {
   };
 
   const handleSwitchBranch = async (targetMessageId: number) => {
+    setImpersonateOpen(false); // другой момент диалога
     // Сообщения новой ветки — историческими, авто-переводить не нужно.
     suppressNextAutoTranslate.current = true;
     await switchBranch(chatId, targetMessageId);
@@ -237,8 +247,26 @@ export function RpChatPage() {
               </button>
             </div>
           )}
-          <ChatInput onSend={handleSend} onGetResponse={handleGetResponse} disabled={sending} />
+          <ChatInput
+            ref={chatInputRef}
+            onSend={handleSend}
+            onGetResponse={handleGetResponse}
+            onImpersonate={() => setImpersonateOpen(true)}
+            disabled={sending}
+          />
         </div>
+
+        <AnimatePresence>
+          {impersonateOpen && chat && (
+            <ImpersonateSheet
+              key="impersonate-sheet"
+              chatId={chatId}
+              targetLang={settings.translateTargetLang}
+              onPick={handlePickSuggestion}
+              onClose={() => setImpersonateOpen(false)}
+            />
+          )}
+        </AnimatePresence>
       </div>
     </PageTransition>
   );

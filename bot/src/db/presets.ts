@@ -26,6 +26,7 @@ export type PresetInput = {
   auxiliarySystemPrompt: string;
   postHistoryInstruction: string;
   userPersonaPrompt: string;
+  userPersonaStreaming: boolean;
   requestReasoning: boolean;
   reasoningEffort: string | null;
   promptOrder: PromptOrderItem[];

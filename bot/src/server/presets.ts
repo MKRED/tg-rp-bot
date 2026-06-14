@@ -125,6 +125,8 @@ function parsePresetInput(body: unknown): { input: PresetInput } | { error: stri
   const contextUnlimited = b.contextUnlimited === true;
   const streaming = b.streaming === true;
   const requestReasoning = b.requestReasoning === true;
+  // userPersonaStreaming по умолчанию true (выключается только явным false).
+  const userPersonaStreaming = b.userPersonaStreaming !== false;
 
   // Лимиты токенов.
   const contextSize = parsePositiveInt(b.contextSize);
@@ -170,6 +172,7 @@ function parsePresetInput(body: unknown): { input: PresetInput } | { error: stri
       auxiliarySystemPrompt: str(b.auxiliarySystemPrompt),
       postHistoryInstruction: str(b.postHistoryInstruction),
       userPersonaPrompt: str(b.userPersonaPrompt),
+      userPersonaStreaming,
       requestReasoning,
       reasoningEffort,
       promptOrder,

@@ -67,6 +67,9 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
     initial?.postHistoryInstruction ?? "",
   );
   const [userPersonaPrompt, setUserPersonaPrompt] = useState(initial?.userPersonaPrompt ?? "");
+  const [userPersonaStreaming, setUserPersonaStreaming] = useState(
+    initial?.userPersonaStreaming ?? true,
+  );
   const [requestReasoning, setRequestReasoning] = useState(initial?.requestReasoning ?? false);
   const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>(
     initial?.reasoningEffort ?? DEFAULT_EFFORT,
@@ -120,6 +123,7 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
       auxiliarySystemPrompt,
       postHistoryInstruction,
       userPersonaPrompt,
+      userPersonaStreaming,
       requestReasoning,
       reasoningEffort: requestReasoning ? reasoningEffort : null,
       promptOrder,
@@ -149,7 +153,9 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
         auxiliarySystemPrompt={auxiliarySystemPrompt}
         postHistoryInstruction={postHistoryInstruction}
         userPersonaPrompt={userPersonaPrompt}
+        userPersonaStreaming={userPersonaStreaming}
         onChange={updatePrompt}
+        onToggleStreaming={setUserPersonaStreaming}
       />
 
       <div className="preset-form__section-title">Рассуждение</div>

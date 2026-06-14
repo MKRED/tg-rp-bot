@@ -135,8 +135,12 @@ export const generationPresets = pgTable("generation_presets", {
   systemPrompt: text("system_prompt").notNull().default(""),
   auxiliarySystemPrompt: text("auxiliary_system_prompt").notNull().default(""),
   postHistoryInstruction: text("post_history_instruction").notNull().default(""),
-  // Служебный: генерация ответа от лица пользователя.
+  // Служебный: шаблон системной инструкции для генерации реплики от лица пользователя
+  // (impersonate). Плейсхолдеры: {{char}} {{user}} {{char_prompt}} {{user_prompt}}
+  // {{system_prompt}} {{aux_prompt}}; история чата уходит отдельным user-сообщением.
   userPersonaPrompt: text("user_persona_prompt").notNull().default(""),
+  // Стримить ли текст при генерации реплики от лица пользователя.
+  userPersonaStreaming: boolean("user_persona_streaming").notNull().default(true),
 
   // Рассуждение (reasoning). effort: minimal | low | medium | high | xhigh (или null).
   requestReasoning: boolean("request_reasoning").notNull().default(false),
@@ -239,3 +243,26 @@ export const chatSettings = pgTable("chat_settings", {
 
 export type ChatSettings = typeof chatSettings.$inferSelect;
 export type NewChatSettings = typeof chatSettings.$inferInsert;
+
+/**
+ * Сгенерированные ИИ варианты реплики «от лица пользователя» (impersonate).
+ * Привязаны к «моменту» диалога = parentMessageId (сообщение, после которого пишется реплика,
+ * = chats.activeMessageId на время генерации). parentMessageId = null → начало чата (нет родителя).
+ * Каскад: вариант удаляется при удалении сообщения-момента или всего чата.
+ * Не более 20 на момент — FIFO-эвикт в DAO (insertVariant).
+ */
+export const impersonationVariants = pgTable("impersonation_variants", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  chatId: bigint("chat_id", { mode: "number" })
+    .notNull()
+    .references(() => chats.id, { onDelete: "cascade" }),
+  parentMessageId: bigint("parent_message_id", { mode: "number" }).references(
+    () => messages.id,
+    { onDelete: "cascade" },
+  ),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type ImpersonationVariant = typeof impersonationVariants.$inferSelect;
+export type NewImpersonationVariant = typeof impersonationVariants.$inferInsert;

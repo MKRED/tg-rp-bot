@@ -22,6 +22,31 @@ export type BuildMessagesOptions = {
 };
 
 /**
+ * Дефолтный шаблон системной инструкции для генерации реплики от лица пользователя.
+ * Используется, когда поле userPersonaPrompt пустое. БЕЗ {{system_prompt}} — он обычно
+ * «ты — {{char}}» и вернул бы character-ориентацию, от которой здесь как раз уходим.
+ * ВАЖНО: держать в синхроне с webapp DEFAULT_IMPERSONATE_TEMPLATE
+ * (webapp/src/features/generation-presets/lib/impersonateTemplate.ts).
+ */
+export const DEFAULT_IMPERSONATE_TEMPLATE = `Write your next reply from the point of view of {{user}}, using the chat history as a guideline for {{user}}'s writing style. Write 1 reply only. Don't write as {{char}}. Don't describe actions of {{char}}.
+
+About {{char}}:
+{{char_prompt}}
+
+About {{user}}:
+{{user_prompt}}`;
+
+export type ImpersonateOptions = {
+  /** Шаблон из пресета (preset.userPersonaPrompt). Пустой → DEFAULT_IMPERSONATE_TEMPLATE. */
+  template: string;
+  character: PromptCharacter;
+  persona: PromptPersona | null;
+  systemPrompt: string;
+  auxPrompt: string;
+  history: MessageInPath[];
+};
+
+/**
  * Заменяет плейсхолдеры {{char}} и {{user}} на имена персонажа и персоны.
  * Регистронезависимо: {{Char}}, {{CHAR}}, {{User}}, {{USER}} и т.д.
  * Если персона не задана — подставляется "User".
@@ -99,6 +124,78 @@ export function buildMessages(opts: BuildMessagesOptions): ChatMessage[] {
 
   result.push({ role: "user", content: sub(userMessage) });
   return result;
+}
+
+/**
+ * Подставляет блочные плейсхолдеры (промпты) в шаблон impersonate, затем {{char}}/{{user}}.
+ * Порядок важен: сперва вставляем тексты промптов, потом заменяем имена — чтобы {{char}}/{{user}}
+ * внутри вставленных промптов тоже разрешились.
+ */
+function renderImpersonateTemplate(
+  template: string,
+  ctx: {
+    charName: string;
+    userName: string;
+    charPrompt: string;
+    userPrompt: string;
+    systemPrompt: string;
+    auxPrompt: string;
+  },
+): string {
+  const withBlocks = template
+    .replace(/\{\{char_prompt\}\}/gi, ctx.charPrompt)
+    .replace(/\{\{user_prompt\}\}/gi, ctx.userPrompt)
+    .replace(/\{\{system_prompt\}\}/gi, ctx.systemPrompt)
+    .replace(/\{\{aux_prompt\}\}/gi, ctx.auxPrompt);
+  return replacePlaceholders(withBlocks, ctx.charName, ctx.userName);
+}
+
+/**
+ * Рендерит активный путь плоским текстом: «Имя:\n<реплика>», блоки через пустую строку.
+ * Всегда заканчивается затравкой «<userName>:» — явный speaker cue для модели: история обычно
+ * кончается репликой персонажа, и без затравки модель продолжила бы за {{char}} или эхнула бы
+ * собственный префикс. Затравка снимает обе проблемы (ответ не в том лице / эхо префикса).
+ */
+function renderImpersonateHistory(
+  history: MessageInPath[],
+  charName: string,
+  userName: string,
+): string {
+  const body = history
+    .map((m) => {
+      const name = m.role === "assistant" ? charName : userName;
+      return `${name}:\n${replacePlaceholders(m.content, charName, userName)}`;
+    })
+    .join("\n\n");
+  return body ? `${body}\n\n${userName}:` : `${userName}:`;
+}
+
+/**
+ * Собирает запрос impersonate — РОВНО 2 сообщения:
+ *   system — шаблон с подставленными плейсхолдерами (или дефолт),
+ *   user   — плоская история активного пути (роли вынесены в текст, чтобы снять
+ *            обуславливание «продолжай как {{char}}»).
+ * Намеренно НЕ использует promptOrder/buildMessages.
+ */
+export function renderImpersonateMessages(opts: ImpersonateOptions): ChatMessage[] {
+  const charName = opts.character.name;
+  const userName = opts.persona?.name ?? "User";
+  const template = opts.template.trim() || DEFAULT_IMPERSONATE_TEMPLATE;
+
+  const system = renderImpersonateTemplate(template, {
+    charName,
+    userName,
+    charPrompt: opts.character.prompt,
+    userPrompt: opts.persona?.prompt ?? "",
+    systemPrompt: opts.systemPrompt,
+    auxPrompt: opts.auxPrompt,
+  });
+  const user = renderImpersonateHistory(opts.history, charName, userName);
+
+  return [
+    { role: "system", content: system },
+    { role: "user", content: user },
+  ];
 }
 
 /**
