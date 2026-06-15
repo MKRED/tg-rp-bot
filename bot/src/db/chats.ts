@@ -481,6 +481,20 @@ export async function updateActiveMessage(chatId: number, messageId: number): Pr
 }
 
 /**
+ * Ставит курсор ровно на указанный узел (или null), БЕЗ спуска к листу (в отличие от
+ * updateActiveMessage). Нужно там, где путь не должен «съезжать» к концу ветки:
+ *  — выбор узла в графе (клик по узлу в середине дерева фиксирует диалог на нём);
+ *  — построение контекста для регенерации/правки (курсор ставится ВЫШЕ user-реплики,
+ *    чтобы getChat вернул историю без старого ответа и без дубля самой реплики).
+ */
+export async function setActiveMessage(chatId: number, messageId: number | null): Promise<void> {
+  await db
+    .update(schema.chats)
+    .set({ activeMessageId: messageId })
+    .where(eq(schema.chats.id, chatId));
+}
+
+/**
  * Удаляет сообщение и всё его поддерево (рекурсивно).
  * Если activeMessageId указывал на удаляемый узел/потомка — переключает на родителя
  * (или null, если удалялся корень).

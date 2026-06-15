@@ -7,6 +7,7 @@ import {
   getChat,
   insertMessage,
   saveTranslation,
+  setActiveMessage,
   updateActiveMessage,
 } from "../db/chats.js";
 import { getCharacter } from "../db/characters.js";
@@ -157,7 +158,10 @@ export async function handleEditMessage(c: Ctx) {
 
   // role="user": создаём нового user-сиблинга, потом перегенерируем ответ ИИ
   const newUserMsg = await insertMessage(userId, chatId, original.parentId, "user", content);
-  await updateActiveMessage(chatId, newUserMsg.id);
+  // Курсор — на сообщение ПЕРЕД user-репликой (её родителя), а текст передаём как userMessage:
+  // иначе history закончилась бы на newUserMsg, и buildMessages добавил бы её content повторно
+  // (дубль user-реплики). Та же схема, что в handleSendMessage/handleRegenerateMessage.
+  await setActiveMessage(chatId, original.parentId);
 
   const input = await buildCompletionInput(userId, chatId, content);
   if (!input) return c.json({ error: "Chat not found" }, 404);
@@ -178,6 +182,8 @@ export async function handleEditMessage(c: Ctx) {
       await stream.writeSSE({ event: "done", data: JSON.stringify(assistantMsg) });
     } catch (err) {
       logger.error({ err, userId, chatId }, "editMessage stream error");
+      // Возвращаем курсор на новую user-реплику (выше неё мы поднимали его лишь ради контекста).
+      await updateActiveMessage(chatId, newUserMsg.id).catch(() => {});
       await stream.writeSSE({ event: "error", data: JSON.stringify({ message: "Generation failed" }) });
     }
   });
@@ -205,8 +211,10 @@ export async function handleRegenerateMessage(c: Ctx) {
         : null;
   if (!parentUserMsg) return c.json({ error: "Parent user message not found" }, 404);
 
-  // Переключаемся на родительский user-msg, чтобы getChat вернул путь без старого ответа
-  await updateActiveMessage(chatId, parentUserMsg.id);
+  // Курсор ставим на сообщение ПЕРЕД user-репликой (её родителя), а саму реплику передаём
+  // как userMessage — повторяя схему handleSendMessage. Так getChat вернёт историю без старого
+  // ответа (иначе findLeaf спустился бы обратно к нему) и без дубля самой user-реплики.
+  await setActiveMessage(chatId, parentUserMsg.parentId);
 
   const input = await buildCompletionInput(userId, chatId, parentUserMsg.content);
   if (!input) return c.json({ error: "Chat not found" }, 404);
@@ -225,6 +233,9 @@ export async function handleRegenerateMessage(c: Ctx) {
       await stream.writeSSE({ event: "done", data: JSON.stringify(newMsg) });
     } catch (err) {
       logger.error({ err, userId, chatId }, "regenerate stream error");
+      // Возвращаем курсор на существующий ответ, чтобы чат не «откатился» к точке до реплики
+      // (мы временно подняли его выше user-реплики ради построения контекста).
+      await updateActiveMessage(chatId, parentUserMsg.id).catch(() => {});
       await stream.writeSSE({ event: "error", data: JSON.stringify({ message: "Generation failed" }) });
     }
   });
@@ -243,7 +254,9 @@ export async function handleSwitchBranch(c: Ctx) {
   const msg = await getMessage(userId, msgId);
   if (!msg || msg.chatId !== chatId) return c.json({ error: "Message not found" }, 404);
 
-  await updateActiveMessage(chatId, msgId);
+  // Ставим курсор ровно на выбранный узел (без спуска к листу): клик в графе по
+  // узлу в середине дерева фиксирует диалог на нём — можно ответвиться отсюда.
+  await setActiveMessage(chatId, msgId);
   return c.json({ ok: true });
 }
 
