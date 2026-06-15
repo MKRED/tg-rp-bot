@@ -47,7 +47,7 @@ function ChatNode({ data }: NodeProps<Node<ChatNodeData>>) {
 
 const nodeTypes = { chatNode: ChatNode };
 
-// ─── Layout: двухпроходный алгоритм с центрированием узла над поддеревом ──────
+// ─── Layout: активный путь — прямой вертикальный «рельс», ветки веером вправо ──
 
 const NODE_W = 220;
 const NODE_H = 80;
@@ -82,12 +82,21 @@ function layoutNodes(treeNodes: TreeNode[]): Map<number, { x: number; y: number 
     childrenOf.get(pid)!.push(n.id);
   }
 
+  // Ставим активного потомка первым (он займёт самый левый слот и ляжет точно под родителя).
+  // Иначе активный путь идёт через самого нового (правого) сиблинга и «сползает» вправо на
+  // каждом ветвлении-перегенерации. У узла активен максимум один потомок, порядок остальных
+  // (по createdAt) сохраняется.
+  const activeIds = new Set(treeNodes.filter((n) => n.isOnActivePath).map((n) => n.id));
+  for (const ids of childrenOf.values()) {
+    ids.sort((a, b) => Number(activeIds.has(b)) - Number(activeIds.has(a)));
+  }
+
   // Рекурсивно расставляет узел и его поддерево начиная с левой границы x (в слотах).
   function place(id: number, depth: number, slotX: number): void {
     const children = childrenOf.get(id) ?? [];
-    const width = subtreeWidth(id, childrenOf, widthMemo);
-    // Узел центрируется над своим поддеревом
-    const cx = (slotX + (width - 1) / 2) * (NODE_W + H_GAP);
+    // Узел встаёт на левый край своего поддерева (= под первым, т.е. активным, потомком).
+    // Так весь активный путь выстраивается в прямую вертикаль на x = slotX*step.
+    const cx = slotX * (NODE_W + H_GAP);
     positions.set(id, { x: cx, y: depth * (NODE_H + V_GAP) });
 
     let childSlot = slotX;
