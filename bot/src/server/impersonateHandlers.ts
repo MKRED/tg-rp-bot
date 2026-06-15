@@ -52,7 +52,7 @@ export async function handleImpersonate(c: Ctx) {
           : undefined,
       );
 
-      const variant = await insertVariant(chatId, parentMessageId, result.content);
+      const variant = await insertVariant(userId, chatId, parentMessageId, result.content);
       logger.info(
         { durationMs: Date.now() - t0, userId, chatId, streamed: doStream },
         "Impersonate variant generated",
@@ -73,7 +73,7 @@ export async function handleListImpersonations(c: Ctx) {
   const chat = await getChat(userId, chatId);
   if (!chat) return c.json({ error: "Chat not found" }, 404);
 
-  const variants = await listVariants(chatId, chat.activeMessageId);
+  const variants = await listVariants(userId, chatId, chat.activeMessageId);
   return c.json({ variants });
 }
 

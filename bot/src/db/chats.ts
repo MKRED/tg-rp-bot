@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import logger from "../logger.js";
-import { decryptField, getUserEncryptionKey } from "../utils/index.js";
+import { decryptField, encryptField, getUserEncryptionKey } from "../utils/index.js";
 import { db, schema } from "./index.js";
 import type { Chat, Message } from "./schema.js";
 
@@ -113,8 +113,8 @@ export async function listChats(
     persona: r.persona_id
       ? { id: r.persona_id as number, name: r.persona_name as string }
       : null,
-    // lastMessage — зашифрован в characters.firstMessages, но не в messages.content
-    lastMessage: r.last_message ? (r.last_message as string) : null,
+    // content сообщений зашифрован per-user — расшифровываем последнее для превью списка
+    lastMessage: r.last_message ? decryptField(r.last_message as string, key) : null,
     lastMessageAt: r.last_message_at ? String(r.last_message_at) : null,
     messageCount: r.message_count as number,
     createdAt: String(r.created_at),
@@ -160,6 +160,8 @@ export async function getChat(
   const chatRow = (chatRows as Record<string, unknown>[])[0];
   if (!chatRow) return undefined;
 
+  // content/translations сообщений зашифрованы per-user — расшифровываем при маппинге пути
+  const key = getUserEncryptionKey(userId);
   const activeMessageId = chatRow.active_message_id as number | null;
   let messages: MessageInPath[] = [];
 
@@ -255,8 +257,11 @@ export async function getChat(
           id: Number(r.id),
           parentId: r.parent_id != null ? Number(r.parent_id) : null,
           role: r.role as "user" | "assistant",
-          content: r.content as string,
-          translations: (r.translations as Record<string, string> | null) ?? null,
+          content: decryptField(r.content as string, key),
+          translations: decryptTranslations(
+            (r.translations as Record<string, string> | null) ?? null,
+            key,
+          ),
           createdAt: String(r.created_at),
           siblingIndex: r.sibling_index as number,
           siblingCount: r.sibling_count as number,
@@ -269,8 +274,11 @@ export async function getChat(
         id: r.id as number,
         parentId: r.parent_id as number | null,
         role: r.role as "user" | "assistant",
-        content: r.content as string,
-        translations: (r.translations as Record<string, string> | null) ?? null,
+        content: decryptField(r.content as string, key),
+        translations: decryptTranslations(
+          (r.translations as Record<string, string> | null) ?? null,
+          key,
+        ),
         createdAt: String(r.created_at),
         siblingIndex: r.sibling_index as number,
         siblingCount: r.sibling_count as number,
@@ -351,11 +359,13 @@ export async function getChatTree(userId: number, chatId: number): Promise<TreeN
     "Chat tree loaded",
   );
 
+  // content зашифрован per-user — расшифровываем для узлов графа
+  const key = getUserEncryptionKey(userId);
   return allRows.map((r) => ({
     id: r.id,
     parentId: r.parentId,
     role: r.role as "user" | "assistant",
-    content: r.content,
+    content: decryptField(r.content, key),
     isOnActivePath: activePath.has(r.id),
     createdAt: r.createdAt.toISOString(),
   }));
@@ -386,9 +396,16 @@ export async function createChat(
   const chat = chatRows[0]!;
 
   if (firstMessage) {
+    // content шифруется per-user; firstMessage уже расшифрован вызывающей стороной
+    const key = getUserEncryptionKey(userId);
     const msgRows = await db
       .insert(schema.messages)
-      .values({ chatId: chat.id, parentId: null, role: "assistant", content: firstMessage })
+      .values({
+        chatId: chat.id,
+        parentId: null,
+        role: "assistant",
+        content: encryptField(firstMessage, key),
+      })
       .returning();
     const msg = msgRows[0]!;
     await db
@@ -416,30 +433,38 @@ export async function deleteChat(userId: number, chatId: number): Promise<boolea
 
 // ─── Сообщения ─────────────────────────────────────────────────────────────────
 
-/** Вставляет новое сообщение и возвращает его. */
+/**
+ * Вставляет новое сообщение и возвращает его. content шифруется per-user при записи,
+ * но возвращается расшифрованным (результат уходит клиенту по SSE).
+ */
 export async function insertMessage(
+  userId: number,
   chatId: number,
   parentId: number | null,
   role: "user" | "assistant",
   content: string,
 ): Promise<Message> {
+  const key = getUserEncryptionKey(userId);
   const rows = await db
     .insert(schema.messages)
-    .values({ chatId, parentId, role, content })
+    .values({ chatId, parentId, role, content: encryptField(content, key) })
     .returning();
-  return rows[0]!;
+  return decryptMessageRow(rows[0]!, userId);
 }
 
 /**
  * Читает одно сообщение по id (без проверки владельца — используется внутри сервера,
- * где chatId уже прошёл авторизацию).
+ * где chatId уже прошёл авторизацию). content/translations расшифровываются per-user.
  */
-export async function getMessage(messageId: number): Promise<Message | undefined> {
+export async function getMessage(
+  userId: number,
+  messageId: number,
+): Promise<Message | undefined> {
   const rows = await db
     .select()
     .from(schema.messages)
     .where(eq(schema.messages.id, messageId));
-  return rows[0];
+  return rows[0] ? decryptMessageRow(rows[0], userId) : undefined;
 }
 
 /**
@@ -460,10 +485,14 @@ export async function updateActiveMessage(chatId: number, messageId: number): Pr
  * Если activeMessageId указывал на удаляемый узел/потомка — переключает на родителя
  * (или null, если удалялся корень).
  */
-export async function deleteMessage(chatId: number, messageId: number): Promise<boolean> {
+export async function deleteMessage(
+  userId: number,
+  chatId: number,
+  messageId: number,
+): Promise<boolean> {
   const t0 = Date.now();
 
-  const msg = await getMessage(messageId);
+  const msg = await getMessage(userId, messageId);
   if (!msg || msg.chatId !== chatId) return false;
 
   const chatRows = await db
@@ -516,15 +545,21 @@ export async function deleteMessage(chatId: number, messageId: number): Promise<
   return true;
 }
 
-/** Кэширует перевод сообщения: сливает новую запись в jsonb-объект translations. */
+/**
+ * Кэширует перевод сообщения: сливает новую запись в jsonb-объект translations.
+ * Значение шифруется per-user; ключ (код языка) остаётся открытым.
+ */
 export async function saveTranslation(
+  userId: number,
   messageId: number,
   lang: string,
   text: string,
 ): Promise<void> {
+  const key = getUserEncryptionKey(userId);
+  const encrypted = encryptField(text, key);
   await db.execute(sql`
     UPDATE messages
-    SET translations = COALESCE(translations, '{}'::jsonb) || jsonb_build_object(${lang}::text, ${text}::text)
+    SET translations = COALESCE(translations, '{}'::jsonb) || jsonb_build_object(${lang}::text, ${encrypted}::text)
     WHERE id = ${messageId}
   `);
 }
@@ -571,6 +606,34 @@ export async function upsertChatSettings(
     .values({ chatId, ...patch })
     .onConflictDoUpdate({ target: schema.chatSettings.chatId, set: patch });
   return getChatSettings(chatId);
+}
+
+// ─── Шифрование сообщений ────────────────────────────────────────────────────────
+
+/**
+ * Расшифровывает значения кэша переводов (ключи — коды языков — остаются открытыми).
+ * null → null. Legacy-plaintext значения возвращаются как есть (см. decryptField).
+ */
+function decryptTranslations(
+  translations: Record<string, string> | null,
+  key: Buffer,
+): Record<string, string> | null {
+  if (!translations) return null;
+  const out: Record<string, string> = {};
+  for (const [lang, text] of Object.entries(translations)) {
+    out[lang] = decryptField(text, key);
+  }
+  return out;
+}
+
+/** Расшифровывает зашифрованные поля строки сообщения (content + значения translations). */
+function decryptMessageRow(row: Message, userId: number): Message {
+  const key = getUserEncryptionKey(userId);
+  return {
+    ...row,
+    content: decryptField(row.content, key),
+    translations: decryptTranslations(row.translations, key),
+  };
 }
 
 // ─── Внутренние хелперы ────────────────────────────────────────────────────────

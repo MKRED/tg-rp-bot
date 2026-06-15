@@ -109,7 +109,7 @@ export async function handleSendMessage(c: Ctx) {
   return streamSSE(c, async (stream) => {
     try {
       // Вставляем user-сообщение и сразу отдаём клиенту
-      const userMsg = await insertMessage(chatId, parentId, "user", content);
+      const userMsg = await insertMessage(userId, chatId, parentId, "user", content);
       await stream.writeSSE({ event: "userMessage", data: JSON.stringify(userMsg) });
 
       // Обновляем msgs с вставленным user-сообщением уже включённым (history уже содержит его через buildCompletionInput)
@@ -123,7 +123,7 @@ export async function handleSendMessage(c: Ctx) {
         },
       );
 
-      const assistantMsg = await insertMessage(chatId, userMsg.id, "assistant", result.content);
+      const assistantMsg = await insertMessage(userId, chatId, userMsg.id, "assistant", result.content);
       await updateActiveMessage(chatId, assistantMsg.id);
       await stream.writeSSE({ event: "done", data: JSON.stringify(assistantMsg) });
     } catch (err) {
@@ -143,12 +143,12 @@ export async function handleEditMessage(c: Ctx) {
   const content = typeof body.content === "string" ? body.content.trim() : "";
   if (!content) return c.json({ error: "content is required" }, 400);
 
-  const original = await getMessage(msgId);
+  const original = await getMessage(userId, msgId);
   if (!original || original.chatId !== chatId) return c.json({ error: "Message not found" }, 404);
 
   if (original.role === "assistant") {
     // Создаём сиблинга и возвращаем через SSE — клиент ожидает event:done, не JSON
-    const newMsg = await insertMessage(chatId, original.parentId, "assistant", content);
+    const newMsg = await insertMessage(userId, chatId, original.parentId, "assistant", content);
     await updateActiveMessage(chatId, newMsg.id);
     return streamSSE(c, async (stream) => {
       await stream.writeSSE({ event: "done", data: JSON.stringify(newMsg) });
@@ -156,7 +156,7 @@ export async function handleEditMessage(c: Ctx) {
   }
 
   // role="user": создаём нового user-сиблинга, потом перегенерируем ответ ИИ
-  const newUserMsg = await insertMessage(chatId, original.parentId, "user", content);
+  const newUserMsg = await insertMessage(userId, chatId, original.parentId, "user", content);
   await updateActiveMessage(chatId, newUserMsg.id);
 
   const input = await buildCompletionInput(userId, chatId, content);
@@ -173,7 +173,7 @@ export async function handleEditMessage(c: Ctx) {
         },
       );
 
-      const assistantMsg = await insertMessage(chatId, newUserMsg.id, "assistant", result.content);
+      const assistantMsg = await insertMessage(userId, chatId, newUserMsg.id, "assistant", result.content);
       await updateActiveMessage(chatId, assistantMsg.id);
       await stream.writeSSE({ event: "done", data: JSON.stringify(assistantMsg) });
     } catch (err) {
@@ -190,7 +190,7 @@ export async function handleRegenerateMessage(c: Ctx) {
   const chatId = Number(c.req.param("id"));
   const msgId = Number(c.req.param("msgId"));
 
-  const original = await getMessage(msgId);
+  const original = await getMessage(userId, msgId);
   if (!original || original.chatId !== chatId) {
     return c.json({ error: "Message not found" }, 404);
   }
@@ -201,7 +201,7 @@ export async function handleRegenerateMessage(c: Ctx) {
     original.role === "user"
       ? original
       : original.parentId
-        ? await getMessage(original.parentId)
+        ? await getMessage(userId, original.parentId)
         : null;
   if (!parentUserMsg) return c.json({ error: "Parent user message not found" }, 404);
 
@@ -220,7 +220,7 @@ export async function handleRegenerateMessage(c: Ctx) {
         },
       );
 
-      const newMsg = await insertMessage(chatId, parentUserMsg.id, "assistant", result.content);
+      const newMsg = await insertMessage(userId, chatId, parentUserMsg.id, "assistant", result.content);
       await updateActiveMessage(chatId, newMsg.id);
       await stream.writeSSE({ event: "done", data: JSON.stringify(newMsg) });
     } catch (err) {
@@ -240,7 +240,7 @@ export async function handleSwitchBranch(c: Ctx) {
   const chat = await getChat(userId, chatId);
   if (!chat) return c.json({ error: "Chat not found" }, 404);
 
-  const msg = await getMessage(msgId);
+  const msg = await getMessage(userId, msgId);
   if (!msg || msg.chatId !== chatId) return c.json({ error: "Message not found" }, 404);
 
   await updateActiveMessage(chatId, msgId);
@@ -258,7 +258,7 @@ export async function handleDeleteMessage(c: Ctx) {
   if (!chat) return c.json({ error: "Chat not found" }, 404);
 
   const t0 = Date.now();
-  const deleted = await deleteMessage(chatId, msgId);
+  const deleted = await deleteMessage(userId, chatId, msgId);
   if (!deleted) return c.json({ error: "Message not found" }, 404);
 
   logger.info({ durationMs: Date.now() - t0, userId, chatId, msgId }, "Message deleted via API");
@@ -279,14 +279,14 @@ export async function handleTranslateMessage(c: Ctx) {
   const chat = await getChat(userId, chatId);
   if (!chat) return c.json({ error: "Chat not found" }, 404);
 
-  const msg = await getMessage(msgId);
+  const msg = await getMessage(userId, msgId);
   if (!msg || msg.chatId !== chatId) return c.json({ error: "Message not found" }, 404);
 
-  // Если кэш уже есть — вернём без повторного запроса
+  // Если кэш уже есть — вернём без повторного запроса (translations расшифрованы в getMessage)
   const cached = (msg.translations as Record<string, string> | null)?.[targetLang];
   if (cached) return c.json({ translation: cached });
 
   const translation = await googleTranslate(msg.content, targetLang);
-  await saveTranslation(msgId, targetLang, translation);
+  await saveTranslation(userId, msgId, targetLang, translation);
   return c.json({ translation });
 }
