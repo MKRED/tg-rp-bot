@@ -264,8 +264,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: 1px solid var(--tg-theme-hint-color, #999);
   background: transparent;
   color: var(--tg-theme-hint-color, #999);
@@ -299,8 +299,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: none;
   background: transparent;
   color: var(--tg-theme-hint-color, #999);
@@ -308,6 +308,13 @@
   cursor: pointer;
   padding: 0;
   transition: color 0.15s;
+}
+
+/* Спиннер TGUI рендерится 24×24 — в тулбаре иконки 20px, поэтому ужимаем
+   svg спиннера до 20, чтобы кнопка перевода не «прыгала» при загрузке */
+.message-bubble__action-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 .message-bubble__action-btn:active,
@@ -514,6 +521,8 @@
 }
 
 .impersonate-card__actions {
+  display: flex;
+  gap: 4px;
   flex-shrink: 0;
 }
 
@@ -526,6 +535,13 @@
   padding: 4px;
   cursor: pointer;
   color: var(--tg-theme-hint-color, #999);
+}
+
+/* Спиннер TGUI рендерится 24×24 — иконки кнопок 20px, ужимаем svg спиннера
+   перевода до 20, чтобы кнопка не «прыгала» при загрузке */
+.impersonate-card__btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 .impersonate-card__btn--active {

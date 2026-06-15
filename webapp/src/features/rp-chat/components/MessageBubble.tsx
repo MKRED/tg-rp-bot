@@ -112,7 +112,7 @@ export function MessageBubble({
               type="button"
               aria-label="Предыдущий вариант"
             >
-              <ChevronLeft size={24} />
+              <ChevronLeft size={20} />
             </button>
             <span className="message-bubble__sibling-count">
               {message.siblingIndex + 1}/{message.siblingCount}
@@ -124,7 +124,7 @@ export function MessageBubble({
               type="button"
               aria-label="Следующий вариант"
             >
-              <ChevronRight size={24} />
+              <ChevronRight size={20} />
             </button>
           </div>
         )}
@@ -142,7 +142,7 @@ export function MessageBubble({
             type="button"
             aria-label="Скопировать"
           >
-            {copied ? <Check size={24} /> : <Copy size={24} />}
+            {copied ? <Check size={20} /> : <Copy size={20} />}
           </button>
           {showTranslateButton && (
             <button
@@ -152,7 +152,7 @@ export function MessageBubble({
               type="button"
               aria-label="Перевести"
             >
-              {translating ? <Spinner size="s" /> : <Globe size={24} />}
+              {translating ? <Spinner size="s" /> : <Globe size={20} />}
             </button>
           )}
           <button
@@ -161,7 +161,7 @@ export function MessageBubble({
             type="button"
             aria-label="Редактировать"
           >
-            <Pencil size={24} />
+            <Pencil size={20} />
           </button>
           {isAssistant && isLastAssistant && (
             <button
@@ -170,7 +170,7 @@ export function MessageBubble({
               type="button"
               aria-label="Регенерировать"
             >
-              <RefreshCw size={24} />
+              <RefreshCw size={20} />
             </button>
           )}
           <button
@@ -185,7 +185,7 @@ export function MessageBubble({
             type="button"
             aria-label="Удалить"
           >
-            <Trash2 size={24} />
+            <Trash2 size={20} />
           </button>
         </div>
       </div>
