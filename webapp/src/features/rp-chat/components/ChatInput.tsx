@@ -79,7 +79,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
           type="button"
           aria-label="Ответ от вашего лица"
         >
-          <Lightbulb size={20} />
+          <Lightbulb size={24} />
         </button>
       )}
       <textarea
@@ -98,7 +98,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
         type="button"
         aria-label={value.trim() ? "Отправить" : "Получить ответ"}
       >
-        {disabled ? <Spinner size="s" /> : value.trim() ? <SendHorizontal size={20} /> : <Sparkles size={20} />}
+        {disabled ? <Spinner size="s" /> : value.trim() ? <SendHorizontal size={24} /> : <Sparkles size={24} />}
       </button>
     </div>
   );

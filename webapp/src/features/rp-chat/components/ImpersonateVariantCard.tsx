@@ -63,7 +63,7 @@ export function ImpersonateVariantCard({ chatId, text, targetLang, onPick, onDel
           type="button"
           aria-label="Перевести"
         >
-          {translating ? <Spinner size="s" /> : <Globe size={16} />}
+          {translating ? <Spinner size="s" /> : <Globe size={24} />}
         </button>
         <button
           className="impersonate-card__btn impersonate-card__btn--danger"
@@ -71,7 +71,7 @@ export function ImpersonateVariantCard({ chatId, text, targetLang, onPick, onDel
           type="button"
           aria-label="Удалить"
         >
-          <Trash2 size={16} />
+          <Trash2 size={24} />
         </button>
       </div>
     </div>

@@ -21,7 +21,7 @@ export function ChatHeader({ character, onSettingsClick, onGraphClick }: ChatHea
           aria-label="Граф веток"
           type="button"
         >
-          <GitBranch size={20} />
+          <GitBranch size={24} />
         </button>
         <button
           className="chat-header__icon-btn"
@@ -29,7 +29,7 @@ export function ChatHeader({ character, onSettingsClick, onGraphClick }: ChatHea
           aria-label="Настройки чата"
           type="button"
         >
-          <Settings size={20} />
+          <Settings size={24} />
         </button>
       </div>
     </div>

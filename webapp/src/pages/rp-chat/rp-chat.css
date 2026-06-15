@@ -256,7 +256,7 @@
 .message-bubble__siblings {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   padding: 0 4px;
 }
 
@@ -264,8 +264,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 32px;
+  height: 32px;
   border: 1px solid var(--tg-theme-hint-color, #999);
   background: transparent;
   color: var(--tg-theme-hint-color, #999);
@@ -280,7 +280,7 @@
 }
 
 .message-bubble__sibling-count {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--tg-theme-hint-color, #999);
   min-width: 28px;
   text-align: center;
@@ -291,7 +291,7 @@
 .message-bubble__actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   padding: 0 4px;
 }
 
@@ -299,8 +299,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border: none;
   background: transparent;
   color: var(--tg-theme-hint-color, #999);
