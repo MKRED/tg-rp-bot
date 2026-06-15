@@ -74,3 +74,17 @@ export async function insertVariant(
   );
   return { ...created, content: decryptField(created.content, key) };
 }
+
+/**
+ * Удаляет один вариант момента. Привязка к chatId — защита от удаления чужого варианта
+ * по голому id (принадлежность чата пользователю проверяется в хендлере через getChat).
+ * Возвращает true, если строка действительно была удалена.
+ */
+export async function deleteVariant(chatId: number, variantId: number): Promise<boolean> {
+  const v = schema.impersonationVariants;
+  const deleted = await db
+    .delete(v)
+    .where(and(eq(v.id, variantId), eq(v.chatId, chatId)))
+    .returning({ id: v.id });
+  return deleted.length > 0;
+}

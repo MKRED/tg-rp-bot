@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { listImpersonations, streamImpersonate } from "../api/index";
+import { deleteImpersonation, listImpersonations, streamImpersonate } from "../api/index";
 import type { ImpersonationVariant } from "../types/chat";
 
 /**
@@ -23,6 +23,7 @@ export function useImpersonate(chatId: number) {
     try {
       await streamImpersonate(chatId, {
         onToken: (t) => setStreamingText((prev) => (prev ?? "") + t),
+        onReset: () => setStreamingText(""), // ретрай: стираем плохой вариант
         onDone: (variant) => {
           setStreamingText(null);
           setVariants((prev) => [...prev, variant]); // новые — в конец списка (снизу)
@@ -50,5 +51,16 @@ export function useImpersonate(chatId: number) {
     if (list.length === 0) await generate();
   }, [chatId, generate]);
 
-  return { variants, loading, generating, streamingText, load, generate };
+  // Удаление варианта: оптимистично убираем из списка, затем зовём API. На ошибке возвращаем.
+  const remove = useCallback(async (variantId: number) => {
+    const prev = variants;
+    setVariants((list) => list.filter((v) => v.id !== variantId));
+    try {
+      await deleteImpersonation(chatId, variantId);
+    } catch {
+      setVariants(prev); // откат при сбое
+    }
+  }, [chatId, variants]);
+
+  return { variants, loading, generating, streamingText, load, generate, remove };
 }

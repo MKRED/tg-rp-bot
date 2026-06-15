@@ -114,14 +114,14 @@ export async function handleSendMessage(c: Ctx) {
       await stream.writeSSE({ event: "userMessage", data: JSON.stringify(userMsg) });
 
       // Обновляем msgs с вставленным user-сообщением уже включённым (history уже содержит его через buildCompletionInput)
-      let fullText = "";
       const result = await chatCompletion(
         { messages: msgs, ...samplingOpts },
         (token) => {
-          fullText += token;
           // writeSSE внутри callback — fire and forget (не ждём promise)
           stream.writeSSE({ event: "token", data: JSON.stringify({ text: token }) }).catch(() => {});
         },
+        // Перед ретраем пустого/отказного ответа — просим клиента стереть показанный текст.
+        () => stream.writeSSE({ event: "reset", data: "{}" }).catch(() => {}),
       );
 
       const assistantMsg = await insertMessage(userId, chatId, userMsg.id, "assistant", result.content);
@@ -175,6 +175,7 @@ export async function handleEditMessage(c: Ctx) {
         (token) => {
           stream.writeSSE({ event: "token", data: JSON.stringify({ text: token }) }).catch(() => {});
         },
+        () => stream.writeSSE({ event: "reset", data: "{}" }).catch(() => {}),
       );
 
       const assistantMsg = await insertMessage(userId, chatId, newUserMsg.id, "assistant", result.content);
@@ -226,6 +227,7 @@ export async function handleRegenerateMessage(c: Ctx) {
         (token) => {
           stream.writeSSE({ event: "token", data: JSON.stringify({ text: token }) }).catch(() => {});
         },
+        () => stream.writeSSE({ event: "reset", data: "{}" }).catch(() => {}),
       );
 
       const newMsg = await insertMessage(userId, chatId, parentUserMsg.id, "assistant", result.content);

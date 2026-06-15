@@ -23,6 +23,7 @@ export function useSendMessage(
         await sendMessage(chatId, content, {
           onUserMessage: (msg) => { userMsg = msg; onOptimisticUserMessage?.(msg); },
           onToken: (text) => setStreamingText((prev) => (prev ?? "") + text),
+          onReset: () => setStreamingText(""), // ретрай: стираем плохой ответ
           onDone: (assistantMsg) => {
             setStreamingText(null);
             onDone(userMsg, assistantMsg);
@@ -49,6 +50,7 @@ export function useSendMessage(
         await editMessage(chatId, messageId, content, {
           onUserMessage: (msg) => { setStreamingText(""); userMsg = msg; onOptimisticUserMessage?.(msg); },
           onToken: (text) => setStreamingText((prev) => (prev ?? "") + text),
+          onReset: () => setStreamingText(""), // ретрай: стираем плохой ответ
           onDone: (assistantMsg) => {
             setStreamingText(null);
             onDone(userMsg, assistantMsg);
@@ -72,6 +74,7 @@ export function useSendMessage(
       try {
         await regenerateMessage(chatId, messageId, {
           onToken: (text) => setStreamingText((prev) => (prev ?? "") + text),
+          onReset: () => setStreamingText(""), // ретрай: стираем плохой ответ
           onDone: (assistantMsg) => {
             setStreamingText(null);
             onDone(null, assistantMsg);

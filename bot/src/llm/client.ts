@@ -1,6 +1,7 @@
 import { config } from "../config.js";
 import logger from "../logger.js";
 import { retry } from "../utils/index.js";
+import { isUnusableCompletion } from "./completionGuard.js";
 import { CHAT_COMPLETIONS_PATH, OPENROUTER_APP_HEADERS, OPENROUTER_BASE_URL } from "./constants.js";
 import type {
   ChatCompletionOptions,
@@ -17,6 +18,14 @@ class OpenRouterHttpError extends Error {
   ) {
     super(`OpenRouter ${status}: ${bodyText}`);
     this.name = "OpenRouterHttpError";
+  }
+}
+
+/** Ответ пришёл, но непригоден (пустой текст или отказ модели) — ретраибл. */
+class EmptyCompletionError extends Error {
+  constructor() {
+    super("OpenRouter returned an empty or refusal completion");
+    this.name = "EmptyCompletionError";
   }
 }
 
@@ -59,6 +68,7 @@ function makeHeaders(): Record<string, string> {
 export async function chatCompletion(
   options: ChatCompletionOptions,
   onChunk?: (token: string) => void,
+  onReset?: () => void,
 ): Promise<ChatCompletionResult> {
   if (!config.openRouterApiKey) {
     throw new Error("OPENROUTER_API_KEY is not set — cannot call OpenRouter");
@@ -74,9 +84,11 @@ export async function chatCompletion(
   );
 
   if (onChunk) {
-    return chatCompletionStreaming(options, model, url, t0, onChunk);
+    return chatCompletionStreaming(options, model, url, t0, onChunk, onReset);
   }
 
+  // Непригодный ответ (пустой/отказ) бросает EmptyCompletionError внутри retry — попытка
+  // повторяется так же, как при 5xx/429.
   const data = await retry<OpenRouterResponse>(
     async () => {
       const response = await fetch(url, {
@@ -88,12 +100,18 @@ export async function chatCompletion(
         const text = await response.text().catch(() => "");
         throw new OpenRouterHttpError(response.status, text);
       }
-      return (await response.json()) as OpenRouterResponse;
+      const json = (await response.json()) as OpenRouterResponse;
+      if (isUnusableCompletion(json.choices[0]?.message.content ?? "")) {
+        throw new EmptyCompletionError();
+      }
+      return json;
     },
     3,
     1500,
     "openrouter.chatCompletion",
-    (err) => (err instanceof OpenRouterHttpError ? err.status >= 500 || err.status === 429 : true),
+    (err) =>
+      err instanceof EmptyCompletionError ||
+      (err instanceof OpenRouterHttpError ? err.status >= 500 || err.status === 429 : true),
   );
 
   const result: ChatCompletionResult = {
@@ -116,15 +134,47 @@ export async function chatCompletion(
 }
 
 /**
- * Streaming-ветка: читает SSE-поток, вызывает onChunk на каждый токен,
- * возвращает накопленный результат. Ретрай не применяем — поток уже начат,
- * ретрай дублировал бы сгенерированный текст.
+ * Streaming-ветка: одну попытку оборачиваем в retry. Непригодный результат (пустой/отказ)
+ * бросает EmptyCompletionError и регенерируется заново; перед этим зовём onReset, чтобы
+ * клиент стёр уже показанный (плохой) текст и не склеил его со следующей попыткой.
+ * Сетевые ошибки до начала чтения тела тоже ретраятся (как в non-stream).
  */
 async function chatCompletionStreaming(
   options: ChatCompletionOptions,
   model: string,
   url: string,
   t0: number,
+  onChunk: (token: string) => void,
+  onReset?: () => void,
+): Promise<ChatCompletionResult> {
+  return retry<ChatCompletionResult>(
+    async () => {
+      const result = await streamOnce(options, model, url, onChunk);
+      if (isUnusableCompletion(result.content)) {
+        // Стёрли плохой ответ у клиента прямо сейчас (а не после backoff-задержки).
+        onReset?.();
+        throw new EmptyCompletionError();
+      }
+      logger.info(
+        { durationMs: Date.now() - t0, model: result.model, chars: result.content.length },
+        "OpenRouter streaming completion done",
+      );
+      return result;
+    },
+    3,
+    1500,
+    "openrouter.chatCompletion.stream",
+    (err) =>
+      err instanceof EmptyCompletionError ||
+      (err instanceof OpenRouterHttpError ? err.status >= 500 || err.status === 429 : true),
+  );
+}
+
+/** Одна попытка стриминга: fetch + чтение SSE-потока, onChunk на каждый токен. */
+async function streamOnce(
+  options: ChatCompletionOptions,
+  model: string,
+  url: string,
   onChunk: (token: string) => void,
 ): Promise<ChatCompletionResult> {
   const response = await fetch(url, {
@@ -179,11 +229,6 @@ async function chatCompletionStreaming(
   } finally {
     reader.releaseLock();
   }
-
-  logger.info(
-    { durationMs: Date.now() - t0, model: responseModel, chars: fullContent.length },
-    "OpenRouter streaming completion done",
-  );
 
   return { content: fullContent, model: responseModel };
 }

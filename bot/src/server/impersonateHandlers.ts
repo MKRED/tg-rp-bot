@@ -1,7 +1,7 @@
 import { streamSSE } from "hono/streaming";
 import type { Context } from "hono";
 import { getChat } from "../db/chats.js";
-import { insertVariant, listVariants } from "../db/impersonations.js";
+import { deleteVariant, insertVariant, listVariants } from "../db/impersonations.js";
 import { chatCompletion } from "../llm/client.js";
 import logger from "../logger.js";
 import type { AppVariables } from "./initData.js";
@@ -50,6 +50,10 @@ export async function handleImpersonate(c: Ctx) {
                 .catch(() => {});
             }
           : undefined,
+        // Перед ретраем пустого/отказного варианта — просим клиента стереть показанный текст.
+        doStream
+          ? () => stream.writeSSE({ event: "reset", data: "{}" }).catch(() => {})
+          : undefined,
       );
 
       const variant = await insertVariant(userId, chatId, parentMessageId, result.content);
@@ -75,6 +79,21 @@ export async function handleListImpersonations(c: Ctx) {
 
   const variants = await listVariants(userId, chatId, chat.activeMessageId);
   return c.json({ variants });
+}
+
+/** DELETE /:id/impersonate/:variantId — удалить один сохранённый вариант реплики. */
+export async function handleDeleteImpersonation(c: Ctx) {
+  const userId = c.get("tgUser")!.id;
+  const chatId = Number(c.req.param("id"));
+  const variantId = Number(c.req.param("variantId"));
+
+  // Проверяем принадлежность чата пользователю до удаления варианта
+  const chat = await getChat(userId, chatId);
+  if (!chat) return c.json({ error: "Chat not found" }, 404);
+
+  const deleted = await deleteVariant(chatId, variantId);
+  if (!deleted) return c.json({ error: "Variant not found" }, 404);
+  return c.json({ ok: true });
 }
 
 /** POST /:id/translate-text — перевод произвольного текста (эфемерно, без кэша в БД). */

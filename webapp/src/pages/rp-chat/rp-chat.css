@@ -532,6 +532,10 @@
   color: var(--tg-theme-link-color, #2481cc);
 }
 
+.impersonate-card__btn--danger {
+  color: var(--tg-theme-destructive-text-color, #e53935);
+}
+
 /* ─── Страница настроек чата ─────────────────────────────────────────────────── */
 
 /* Заглушка-кружок с иконкой для персоны/пресета без аватара */

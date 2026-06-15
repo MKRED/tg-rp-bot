@@ -20,6 +20,7 @@ import {
   handleTranslateMessage,
 } from "./messageHandlers.js";
 import {
+  handleDeleteImpersonation,
   handleImpersonate,
   handleListImpersonations,
   handleTranslateText,
@@ -147,6 +148,7 @@ export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
   // Регистрируем вне ветки /:id/messages/:msgId, чтобы не конфликтовать с :msgId.
   app.get("/:id/impersonate", handleListImpersonations);
   app.post("/:id/impersonate", handleImpersonate);
+  app.delete("/:id/impersonate/:variantId", handleDeleteImpersonation);
   app.post("/:id/translate-text", handleTranslateText);
 
   return app;

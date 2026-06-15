@@ -59,6 +59,8 @@ export async function deleteChat(id: number): Promise<void> {
 export type SendMessageEvents = {
   onUserMessage?: (msg: MessageInPath) => void;
   onToken?: (text: string) => void;
+  /** Сервер ретраит пустой/отказной ответ — стереть уже показанный стриминговый текст. */
+  onReset?: () => void;
   onDone?: (msg: MessageInPath) => void;
   onError?: (message: string) => void;
 };
@@ -151,6 +153,11 @@ export async function listImpersonations(chatId: number): Promise<ImpersonationV
   return res.variants;
 }
 
+/** Удалить сохранённый вариант реплики от лица пользователя. */
+export async function deleteImpersonation(chatId: number, variantId: number): Promise<void> {
+  await apiFetch(`/chats/${chatId}/impersonate/${variantId}`, { method: "DELETE" });
+}
+
 /** Перевод произвольного текста (эфемерно, без кэша) — для перевода вариантов в шторе. */
 export async function translateText(
   chatId: number,
@@ -166,6 +173,8 @@ export async function translateText(
 
 export type ImpersonateEvents = {
   onToken?: (text: string) => void;
+  /** Сервер ретраит пустой/отказной вариант — стереть уже показанный стриминговый текст. */
+  onReset?: () => void;
   onDone?: (variant: ImpersonationVariant) => void;
   onError?: (message: string) => void;
 };
@@ -216,6 +225,8 @@ export async function streamImpersonate(
             const parsed = JSON.parse(raw) as Record<string, unknown>;
             if (currentEvent === "token") {
               events.onToken?.(parsed.text as string);
+            } else if (currentEvent === "reset") {
+              events.onReset?.();
             } else if (currentEvent === "done") {
               events.onDone?.(parsed.variant as unknown as ImpersonationVariant);
             } else if (currentEvent === "error") {
@@ -280,6 +291,8 @@ async function readChatSSE(
               events.onUserMessage?.(parsed as unknown as MessageInPath);
             } else if (currentEvent === "token") {
               events.onToken?.(parsed.text as string);
+            } else if (currentEvent === "reset") {
+              events.onReset?.();
             } else if (currentEvent === "done") {
               events.onDone?.(parsed as unknown as MessageInPath);
             } else if (currentEvent === "error") {

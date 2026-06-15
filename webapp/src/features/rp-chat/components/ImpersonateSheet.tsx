@@ -21,7 +21,7 @@ const SHEET_T = { duration: 0.25, ease: "easeOut" as const };
  * в RpChatPage (монтируется/размонтируется по impersonateOpen) — exit-анимации играют там.
  */
 export function ImpersonateSheet({ chatId, targetLang, onPick, onClose }: ImpersonateSheetProps) {
-  const { variants, loading, generating, streamingText, load, generate } = useImpersonate(chatId);
+  const { variants, loading, generating, streamingText, load, generate, remove } = useImpersonate(chatId);
   const listEndRef = useRef<HTMLDivElement>(null);
   // Первый автоскролл (после загрузки истории) — мгновенный, чтобы окно не «прокручивалось»
   // через все варианты сверху вниз; дальше новые варианты доезжают плавно.
@@ -85,6 +85,7 @@ export function ImpersonateSheet({ chatId, targetLang, onPick, onClose }: Impers
               text={v.content}
               targetLang={targetLang}
               onPick={onPick}
+              onDelete={() => remove(v.id)}
             />
           ))}
 

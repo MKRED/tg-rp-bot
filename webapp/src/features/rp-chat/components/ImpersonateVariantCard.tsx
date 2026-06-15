@@ -1,6 +1,7 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
-import { Globe } from "lucide-react";
+import { Globe, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { confirmAction } from "../../../shared/telegram/confirm";
 import { translateText } from "../api/index";
 import { RpText } from "./RpText";
 
@@ -11,10 +12,11 @@ interface ImpersonateVariantCardProps {
   /** Язык перевода из настроек чата. */
   targetLang: string;
   onPick: (text: string) => void;
+  onDelete: () => void;
 }
 
-/** Карточка варианта реплики: текст + кнопка перевода; тап по телу → подстановка в поле ввода. */
-export function ImpersonateVariantCard({ chatId, text, targetLang, onPick }: ImpersonateVariantCardProps) {
+/** Карточка варианта реплики: текст + кнопки перевода/удаления; тап по телу → подстановка в поле ввода. */
+export function ImpersonateVariantCard({ chatId, text, targetLang, onPick, onDelete }: ImpersonateVariantCardProps) {
   const [showTranslation, setShowTranslation] = useState(false);
   const [translation, setTranslation] = useState<string | null>(null);
   const [translating, setTranslating] = useState(false);
@@ -41,6 +43,15 @@ export function ImpersonateVariantCard({ chatId, text, targetLang, onPick }: Imp
     }
   };
 
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // не подставлять вариант при клике по кнопке удаления
+    const ok = await confirmAction("Удалить вариант?", {
+      title: "Удаление варианта",
+      confirmText: "Удалить",
+    });
+    if (ok) onDelete();
+  };
+
   return (
     <div className="impersonate-card" onClick={() => onPick(text)}>
       <p className="impersonate-card__text"><RpText text={display} /></p>
@@ -53,6 +64,14 @@ export function ImpersonateVariantCard({ chatId, text, targetLang, onPick }: Imp
           aria-label="Перевести"
         >
           {translating ? <Spinner size="s" /> : <Globe size={16} />}
+        </button>
+        <button
+          className="impersonate-card__btn impersonate-card__btn--danger"
+          onClick={handleDelete}
+          type="button"
+          aria-label="Удалить"
+        >
+          <Trash2 size={16} />
         </button>
       </div>
     </div>
