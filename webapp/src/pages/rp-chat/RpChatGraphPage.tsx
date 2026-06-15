@@ -47,70 +47,119 @@ function ChatNode({ data }: NodeProps<Node<ChatNodeData>>) {
 
 const nodeTypes = { chatNode: ChatNode };
 
-// ─── Layout: активный путь — прямой вертикальный «рельс», ветки веером вправо ──
+// ─── Layout: tidy-tree (контурная упаковка), родитель центрирован над детьми ───
 
 const NODE_W = 220;
 const NODE_H = 80;
 const H_GAP = 40;
 const V_GAP = 100;
 
-// Ширина поддерева в «слотах» (листья = 1 слот). Мемоизируем в общий кэш —
-// без него subtreeWidth пересчитывал бы каждое поддерево заново на каждом узле (O(n²)).
-function subtreeWidth(
-  id: number,
-  childrenOf: Map<number | null, number[]>,
-  memo: Map<number, number>,
-): number {
-  const cached = memo.get(id);
-  if (cached !== undefined) return cached;
-  const children = childrenOf.get(id) ?? [];
-  const w = children.length === 0
-    ? 1
-    : children.reduce((sum, cid) => sum + subtreeWidth(cid, childrenOf, memo), 0);
-  memo.set(id, w);
-  return w;
-}
+// Раскладка поддерева относительно его корня (корень в x = 0) + контуры по глубинам.
+type SubtreeLayout = {
+  x: Map<number, number>; // x каждого узла относительно корня поддерева
+  left: number[]; // левый контур: min x на каждой относительной глубине (0 = корень)
+  right: number[]; // правый контур: max x на каждой относительной глубине
+};
 
 function layoutNodes(treeNodes: TreeNode[]): Map<number, { x: number; y: number }> {
-  const positions = new Map<number, { x: number; y: number }>();
   const childrenOf = new Map<number | null, number[]>();
-  const widthMemo = new Map<number, number>();
-
   for (const n of treeNodes) {
     const pid = n.parentId;
     if (!childrenOf.has(pid)) childrenOf.set(pid, []);
     childrenOf.get(pid)!.push(n.id);
   }
 
-  // Ставим активного потомка первым (он займёт самый левый слот и ляжет точно под родителя).
-  // Иначе активный путь идёт через самого нового (правого) сиблинга и «сползает» вправо на
-  // каждом ветвлении-перегенерации. У узла активен максимум один потомок, порядок остальных
-  // (по createdAt) сохраняется.
-  const activeIds = new Set(treeNodes.filter((n) => n.isOnActivePath).map((n) => n.id));
-  for (const ids of childrenOf.values()) {
-    ids.sort((a, b) => Number(activeIds.has(b)) - Number(activeIds.has(a)));
-  }
+  // Порядок детей оставляем как пришёл из getChatTree (по createdAt): регенерации-сиблинги
+  // стоят группой, продолжение пути естественно уходит из самого нового (правого) узла.
 
-  // Рекурсивно расставляет узел и его поддерево начиная с левой границы x (в слотах).
-  function place(id: number, depth: number, slotX: number): void {
+  const HSTEP = NODE_W + H_GAP; // минимальный зазор по горизонтали между узлами одной глубины
+
+  // Контурная упаковка (tidy-tree): дети размещаются плотным рядом (каждый следующий сдвигается
+  // вправо ровно настолько, чтобы его левый контур не задел правый контур уже размещённых
+  // соседей), а родитель центрируется над серединой группы детей. Так регенерации одного
+  // сообщения держатся вместе, а не разлетаются по ширине своих поддеревьев.
+  function layout(id: number): SubtreeLayout {
     const children = childrenOf.get(id) ?? [];
-    // Узел встаёт на левый край своего поддерева (= под первым, т.е. активным, потомком).
-    // Так весь активный путь выстраивается в прямую вертикаль на x = slotX*step.
-    const cx = slotX * (NODE_W + H_GAP);
-    positions.set(id, { x: cx, y: depth * (NODE_H + V_GAP) });
-
-    let childSlot = slotX;
-    for (const cid of children) {
-      place(cid, depth + 1, childSlot);
-      childSlot += subtreeWidth(cid, childrenOf, widthMemo);
+    if (children.length === 0) {
+      return { x: new Map([[id, 0]]), left: [0], right: [0] };
     }
+
+    const childLayouts = children.map(layout);
+    const offsets: number[] = [0]; // сдвиг каждого потомка относительно корня; первый — 0
+    const runRight = childLayouts[0]!.right.slice(); // правый контур уже размещённых сиблингов
+
+    for (let i = 1; i < children.length; i++) {
+      const L = childLayouts[i]!;
+      // Минимальный сдвиг вправо: на каждой общей глубине левый контур i-го должен отстоять от
+      // правого контура соседей на HSTEP.
+      let shift = 0;
+      const shared = Math.min(runRight.length, L.left.length);
+      for (let d = 0; d < shared; d++) {
+        shift = Math.max(shift, runRight[d]! - L.left[d]! + HSTEP);
+      }
+      offsets[i] = shift;
+      for (let d = 0; d < L.right.length; d++) {
+        const v = L.right[d]! + shift;
+        runRight[d] = d < runRight.length ? Math.max(runRight[d]!, v) : v;
+      }
+    }
+
+    // Центр группы детей = середина между первым (offset 0) и последним. Сдвигаем всё поддерево
+    // так, чтобы родитель встал над этим центром, а корень поддерева остался в x = 0 (соглашение).
+    const center = offsets[children.length - 1]! / 2;
+
+    // Собираем координаты поддерева и его контуры. Корень = 0 (над серединой группы детей).
+    const x = new Map<number, number>([[id, 0]]);
+    const left = [0];
+    const right = [0];
+    for (let i = 0; i < children.length; i++) {
+      const off = offsets[i]! - center;
+      const cLayout = childLayouts[i]!;
+      for (const [nid, nx] of cLayout.x) x.set(nid, nx + off);
+      const { left: cl, right: cr } = cLayout;
+      for (let d = 0; d < cl.length; d++) {
+        const depth = d + 1; // контур потомка на глубине d → глубина d+1 в текущем поддереве
+        const lv = cl[d]! + off;
+        const rv = cr[d]! + off;
+        if (depth < left.length) {
+          left[depth] = Math.min(left[depth]!, lv);
+          right[depth] = Math.max(right[depth]!, rv);
+        } else {
+          left[depth] = lv;
+          right[depth] = rv;
+        }
+      }
+    }
+    return { x, left, right };
   }
 
+  // Глубины (для y) — отдельный обход от корней.
   const roots = childrenOf.get(null) ?? [];
-  let rootSlot = 0;
+  const depthOf = new Map<number, number>();
+  const stack: Array<{ id: number; depth: number }> = roots.map((id) => ({ id, depth: 0 }));
+  while (stack.length) {
+    const { id, depth } = stack.pop()!;
+    depthOf.set(id, depth);
+    for (const cid of childrenOf.get(id) ?? []) stack.push({ id: cid, depth: depth + 1 });
+  }
+
+  // Раскладываем каждый корень и пакуем корни слева направо тем же контурным способом.
+  const positions = new Map<number, { x: number; y: number }>();
+  const rootRight: number[] = [];
   for (const rid of roots) {
-    place(rid, 0, rootSlot);
-    rootSlot += subtreeWidth(rid, childrenOf, widthMemo);
+    const sub = layout(rid);
+    let shift = 0;
+    const shared = Math.min(rootRight.length, sub.left.length);
+    for (let d = 0; d < shared; d++) {
+      shift = Math.max(shift, rootRight[d]! - sub.left[d]! + HSTEP);
+    }
+    for (const [nid, nx] of sub.x) {
+      positions.set(nid, { x: nx + shift, y: (depthOf.get(nid) ?? 0) * (NODE_H + V_GAP) });
+    }
+    for (let d = 0; d < sub.right.length; d++) {
+      const v = sub.right[d]! + shift;
+      rootRight[d] = d < rootRight.length ? Math.max(rootRight[d]!, v) : v;
+    }
   }
 
   return positions;
