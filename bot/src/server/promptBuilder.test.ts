@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   buildMessages,
   DEFAULT_IMPERSONATE_TEMPLATE,
   renderImpersonateMessages,
   replacePlaceholders,
+  trimHistoryToBudget,
 } from "./promptBuilder.js";
 import type { BuildMessagesOptions } from "./promptBuilder.js";
 import type { MessageInPath } from "../db/chats/index.js";
@@ -180,6 +181,113 @@ describe("buildMessages", () => {
   });
 });
 
+// Генерирует историю из n сообщений с уникальным содержимым (для проверки, что отброшены старые).
+function makeLongHistory(n: number): MessageInPath[] {
+  return Array.from({ length: n }, (_, i) => ({
+    id: i + 1,
+    parentId: i === 0 ? null : i,
+    role: (i % 2 === 0 ? "user" : "assistant") as "user" | "assistant",
+    content: `Сообщение номер ${i + 1}.`,
+    translations: null,
+    createdAt: `2024-01-01T00:${String(i).padStart(2, "0")}:00Z`,
+    siblingIndex: 0,
+    siblingCount: 1,
+    siblings: [i + 1],
+  }));
+}
+
+describe("trimHistoryToBudget", () => {
+  const history = makeLongHistory(5);
+  // Фейковая стоимость = длина content (детерминированно, без реального токенайзера).
+  const cost = (m: MessageInPath) => m.content.length;
+
+  it("budget <= 0 → пустой массив", () => {
+    expect(trimHistoryToBudget(history, 0, cost)).toEqual([]);
+    expect(trimHistoryToBudget(history, -100, cost)).toEqual([]);
+  });
+
+  it("большой бюджет → вся история без изменений, порядок сохранён", () => {
+    const kept = trimHistoryToBudget(history, 100000, cost);
+    expect(kept).toHaveLength(5);
+    expect(kept.map((m) => m.id)).toEqual([1, 2, 3, 4, 5]);
+  });
+
+  it("отбрасывает самые СТАРЫЕ, оставляя новые (суффикс) в хронологическом порядке", () => {
+    // Каждое сообщение стоит ~18 символов; бюджета на ~2 хватит.
+    const kept = trimHistoryToBudget(history, 40, cost);
+    expect(kept.length).toBeGreaterThan(0);
+    expect(kept.length).toBeLessThan(5);
+    // Оставленные — это хвост исходного массива (новейшие), порядок не перевёрнут.
+    expect(kept).toEqual(history.slice(history.length - kept.length));
+  });
+});
+
+describe("buildMessages — обрезка истории под contextSize", () => {
+  // Пресет: только история + userMessage (без фиксированных промптов), reserve=0 (maxTokens:0).
+  function historyOnlyPreset(overrides: Partial<GenerationPreset> = {}): GenerationPreset {
+    return makePreset({
+      systemPrompt: "",
+      auxiliarySystemPrompt: "",
+      postHistoryInstruction: "",
+      maxTokens: 0,
+      promptOrder: [
+        { id: "system", enabled: false },
+        { id: "characterDescription", enabled: false },
+        { id: "userDescription", enabled: false },
+        { id: "auxiliary", enabled: false },
+        { id: "history", enabled: true },
+        { id: "postHistory", enabled: false },
+      ],
+      ...overrides,
+    });
+  }
+
+  it("contextSize=null → история не урезается", () => {
+    const history = makeLongHistory(10);
+    const msgs = buildMessages(makeOpts({ preset: historyOnlyPreset({ contextSize: null }), history }));
+    expect(msgs).toHaveLength(11); // 10 история + userMessage
+  });
+
+  it("contextUnlimited=true → история не урезается даже при заданном contextSize", () => {
+    const history = makeLongHistory(10);
+    const msgs = buildMessages(
+      makeOpts({ preset: historyOnlyPreset({ contextUnlimited: true, contextSize: 10 }), history }),
+    );
+    expect(msgs).toHaveLength(11);
+  });
+
+  it("маленький contextSize → остаются только новые сообщения (хвост)", () => {
+    const history = makeLongHistory(20);
+    const onTrim = vi.fn();
+    const msgs = buildMessages(
+      makeOpts({ preset: historyOnlyPreset({ contextSize: 30 }), history }),
+      { onTrim },
+    );
+    const historyMsgs = msgs.slice(0, -1); // последний — userMessage
+    expect(historyMsgs.length).toBeGreaterThan(0);
+    expect(historyMsgs.length).toBeLessThan(20);
+    // Оставлены именно новейшие: содержимое совпадает с хвостом исходной истории.
+    const keptContents = historyMsgs.map((m) => m.content);
+    const tailContents = history.slice(history.length - historyMsgs.length).map((m) => m.content);
+    expect(keptContents).toEqual(tailContents);
+    // onTrim вызван с числом отброшенных.
+    expect(onTrim).toHaveBeenCalledWith(
+      expect.objectContaining({ dropped: 20 - historyMsgs.length, total: 20 }),
+    );
+  });
+
+  it("trim:false → история не урезается, onTrim не вызывается (режим статистики)", () => {
+    const history = makeLongHistory(20);
+    const onTrim = vi.fn();
+    const msgs = buildMessages(
+      makeOpts({ preset: historyOnlyPreset({ contextSize: 30 }), history }),
+      { trim: false, onTrim },
+    );
+    expect(msgs).toHaveLength(21);
+    expect(onTrim).not.toHaveBeenCalled();
+  });
+});
+
 // Реальный сценарий impersonate: история кончается репликой персонажа (assistant).
 function makeHistory(): MessageInPath[] {
   return [
@@ -279,5 +387,39 @@ describe("renderImpersonateMessages", () => {
       history: [],
     });
     expect(user!.content).toBe("Иван:");
+  });
+
+  it("урезает историю под contextSize (самые старые реплики выпадают, новейшая остаётся)", () => {
+    const onTrim = vi.fn();
+    const [, user] = renderImpersonateMessages({
+      template: "t",
+      character: { name: "Алиса", prompt: "" },
+      persona: { name: "Иван", prompt: "" },
+      systemPrompt: "",
+      auxPrompt: "",
+      history: makeLongHistory(20),
+      contextSize: 40,
+      maxTokens: 0,
+      onTrim,
+    });
+    expect(user!.content).toContain("Сообщение номер 20.");
+    expect(user!.content).not.toContain("Сообщение номер 1.");
+    expect(onTrim).toHaveBeenCalled();
+  });
+
+  it("без contextSize → история не урезается", () => {
+    const onTrim = vi.fn();
+    const [, user] = renderImpersonateMessages({
+      template: "t",
+      character: { name: "Алиса", prompt: "" },
+      persona: { name: "Иван", prompt: "" },
+      systemPrompt: "",
+      auxPrompt: "",
+      history: makeLongHistory(20),
+      onTrim,
+    });
+    expect(user!.content).toContain("Сообщение номер 1.");
+    expect(user!.content).toContain("Сообщение номер 20.");
+    expect(onTrim).not.toHaveBeenCalled();
   });
 });

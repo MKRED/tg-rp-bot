@@ -62,13 +62,21 @@ async function buildCompletionInput(
   if (!ctx) return null;
   const { chat, character, persona, preset } = ctx;
 
-  const msgs = buildMessages({
-    preset: preset ?? makeDefaultPreset(userId),
-    character: { name: character.name, prompt: character.prompt },
-    persona: persona ? { name: persona.name, prompt: persona.prompt } : null,
-    history: chat.messages,
-    userMessage: newUserMessage,
-  });
+  const msgs = buildMessages(
+    {
+      preset: preset ?? makeDefaultPreset(userId),
+      character: { name: character.name, prompt: character.prompt },
+      persona: persona ? { name: persona.name, prompt: persona.prompt } : null,
+      history: chat.messages,
+      userMessage: newUserMessage,
+    },
+    {
+      // История урезана под contextSize пресета — фиксируем в логах, сколько старых реплик
+      // выпало из контекста (отброшено самых старых: kept из total).
+      onTrim: ({ dropped, kept, total }) =>
+        logger.info({ userId, chatId, dropped, kept, total }, "History trimmed to context budget"),
+    },
+  );
 
   const samplingOpts = preset ? presetToCompletionOptions(preset) : {};
   return { msgs, samplingOpts, chat };
