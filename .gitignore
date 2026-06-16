@@ -23,5 +23,5 @@ logs/
 # Тесты
 coverage/
 
-# Claude
-.claude
+# Claude — версионируем агентов/настройки команды, кроме локальных
+.claude/settings.local.json
