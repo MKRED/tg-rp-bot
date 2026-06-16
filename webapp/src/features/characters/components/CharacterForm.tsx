@@ -1,6 +1,7 @@
-import { Button, Input, Textarea } from "@telegram-apps/telegram-ui";
+import { Button, Input } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { AvatarPicker } from "../../../shared/components/AvatarPicker";
+import { ExpandableTextarea } from "../../../shared/components/ExpandableTextarea";
 import { FirstMessagesEditor } from "./FirstMessagesEditor";
 import { TagsInput } from "./TagsInput";
 import { estimateTokens } from "../../../shared/text/tokens";
@@ -51,7 +52,7 @@ export function CharacterForm({ initial, submitting, onSubmit, onDelete }: Chara
       <TagsInput tags={tags} onChange={setTags} />
 
       <div className="char-field">
-        <Textarea
+        <ExpandableTextarea
           header="Промпт"
           placeholder="Системный промпт персонажа…"
           value={prompt}

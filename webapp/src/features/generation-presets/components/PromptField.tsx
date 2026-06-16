@@ -1,4 +1,4 @@
-import { Textarea } from "@telegram-apps/telegram-ui";
+import { ExpandableTextarea } from "../../../shared/components/ExpandableTextarea";
 import { estimateTokens } from "../../../shared/text/tokens";
 
 interface PromptFieldProps {
@@ -21,7 +21,7 @@ export function PromptField({
 }: PromptFieldProps) {
   return (
     <div className="preset-field">
-      <Textarea
+      <ExpandableTextarea
         header={label}
         placeholder={placeholder}
         value={value}

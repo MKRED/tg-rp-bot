@@ -1,0 +1,44 @@
+.expandable-textarea {
+  position: relative;
+}
+
+/* Анимация высоты; height ставится инлайн в px из JS. */
+.expandable-textarea textarea {
+  transition: height 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  /* telegram-ui ставит textarea min-height:80px — мешает контейнеру схлопываться в 0
+     при exit-анимации (framer-motion в FirstMessagesEditor). Высоту и так задаёт rows. */
+  min-height: 0;
+}
+
+.expandable-textarea__toggle {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--tgui--secondary_bg_color);
+  color: var(--tgui--hint_color);
+  opacity: 0.65;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.expandable-textarea__toggle:hover,
+.expandable-textarea__toggle:active {
+  opacity: 1;
+}
+
+.expandable-textarea__icon {
+  transition: transform 0.28s ease;
+}
+
+.expandable-textarea--expanded .expandable-textarea__icon {
+  transform: rotate(180deg);
+}

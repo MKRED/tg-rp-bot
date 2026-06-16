@@ -96,9 +96,10 @@
 .char-firsts {
   display: flex;
   flex-direction: column;
-  gap: 16px;
 }
 
+/* Отступ между вариантами задаём margin'ом (анимируется framer-motion на добавлении/
+   удалении), а не gap: при схлопывании height до 0 «лишний» gap оставлял бы пустоту. */
 .char-firsts__item {
   display: flex;
   flex-direction: column;

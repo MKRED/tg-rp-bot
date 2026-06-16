@@ -1,6 +1,7 @@
-import { Button, Input, Textarea } from "@telegram-apps/telegram-ui";
+import { Button, Input } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { AvatarPicker } from "../../../shared/components/AvatarPicker";
+import { ExpandableTextarea } from "../../../shared/components/ExpandableTextarea";
 import { estimateTokens } from "../../../shared/text/tokens";
 import type { PersonaInput } from "../types/persona";
 
@@ -51,7 +52,7 @@ export function PersonaForm({ initial, submitting, onSubmit, onDelete }: Persona
       />
 
       <div className="persona-field">
-        <Textarea
+        <ExpandableTextarea
           header="Промпт"
           placeholder="Описание персоны для нейросети…"
           value={prompt}
