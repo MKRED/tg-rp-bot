@@ -1,5 +1,5 @@
 import { Textarea } from "@telegram-apps/telegram-ui";
-import { type ComponentProps, useEffect, useRef, useState } from "react";
+import { type ComponentProps, useEffect, useLayoutEffect, useRef, useState } from "react";
 import "./ExpandableTextarea.css";
 
 type TextareaProps = ComponentProps<typeof Textarea>;
@@ -23,11 +23,23 @@ export function ExpandableTextarea({ rows = 6, expandFactor = 3, ...props }: Exp
   const taRef = useRef<HTMLTextAreaElement>(null);
   const naturalRef = useRef<number | null>(null);
   const [expanded, setExpanded] = useState(false);
+  // Ширина скроллбара textarea: на десктопе классический скроллбар занимает место справа
+  // и перекрыл бы кнопку; на мобиле overlay-скроллбар даёт 0. Смещаем кнопку на эту ширину.
+  const [scrollbarW, setScrollbarW] = useState(0);
 
   // Кэш свёрнутой высоты привязан к rows: если базовое число строк сменилось — пересчитать.
   useEffect(() => {
     naturalRef.current = null;
   }, [rows]);
+
+  // Меряем скроллбар до пэйнта (иначе кнопка прыгнет на первом кадре с переполненным контентом).
+  // value в зависимостях — скроллбар появляется по мере набора текста, кнопка должна отойти тогда же.
+  useLayoutEffect(() => {
+    const ta = taRef.current;
+    if (!ta) return;
+    const next = ta.offsetWidth - ta.clientWidth; // = ширина скроллбара (border здесь 0)
+    setScrollbarW((prev) => (prev !== next ? next : prev));
+  }, [props.value, expanded, rows]);
 
   const toggle = () => {
     const ta = taRef.current;
@@ -58,6 +70,7 @@ export function ExpandableTextarea({ rows = 6, expandFactor = 3, ...props }: Exp
       <button
         type="button"
         className="expandable-textarea__toggle"
+        style={{ right: 8 + scrollbarW }}
         aria-label={expanded ? "Свернуть" : "Развернуть"}
         aria-expanded={expanded}
         onClick={toggle}
