@@ -1,0 +1,290 @@
+import { and, eq, sql } from "drizzle-orm";
+import logger from "../../logger.js";
+import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/index.js";
+import { db, schema } from "../index.js";
+import type { Chat } from "../schema.js";
+import { decryptTranslations } from "./crypto.js";
+import { findLastLeaf, queryActivePath, queryActivePathIds } from "./queries.js";
+import type { ChatDetail, ChatInput, ChatListItem, MessageInPath, TreeNode } from "./types.js";
+
+/** Маппит сырую строку пути (из queryActivePath) в MessageInPath, расшифровывая content/translations. */
+function mapPathRow(r: Record<string, unknown>, key: Buffer): MessageInPath {
+  return {
+    id: Number(r.id),
+    parentId: r.parent_id != null ? Number(r.parent_id) : null,
+    role: r.role as "user" | "assistant",
+    content: decryptField(r.content as string, key),
+    translations: decryptTranslations(
+      (r.translations as Record<string, string> | null) ?? null,
+      key,
+    ),
+    createdAt: String(r.created_at),
+    siblingIndex: r.sibling_index as number,
+    siblingCount: r.sibling_count as number,
+    siblings: (r.siblings as unknown[]).map(Number),
+  };
+}
+
+// ─── Список чатов ──────────────────────────────────────────────────────────────
+
+/** Пагинированный список чатов пользователя (свежие сверху). */
+export async function listChats(
+  userId: number,
+  page: number,
+  pageSize: number,
+): Promise<{ items: ChatListItem[]; total: number }> {
+  const t0 = Date.now();
+  const offset = (page - 1) * pageSize;
+
+  const rows = await db.execute(sql`
+    SELECT
+      c.id,
+      c.created_at,
+      ch.id   AS char_id,
+      ch.name AS char_name,
+      ch.image IS NOT NULL AS char_has_image,
+      p.id    AS persona_id,
+      p.name  AS persona_name,
+      lm.content AS last_message,
+      lm.created_at AS last_message_at,
+      COALESCE(mc.cnt, 0) AS message_count
+    FROM chats c
+    JOIN characters ch ON ch.id = c.character_id
+    LEFT JOIN personas  p  ON p.id  = c.persona_id
+    LEFT JOIN LATERAL (
+      SELECT content, created_at FROM messages
+      WHERE chat_id = c.id
+      ORDER BY created_at DESC LIMIT 1
+    ) lm ON TRUE
+    LEFT JOIN LATERAL (
+      SELECT COUNT(*)::int AS cnt FROM messages WHERE chat_id = c.id
+    ) mc ON TRUE
+    WHERE c.user_id = ${userId}
+    ORDER BY COALESCE(lm.created_at, c.created_at) DESC
+    LIMIT ${pageSize} OFFSET ${offset}
+  `);
+
+  const countRows = await db
+    .select({ cnt: sql<number>`count(*)::int` })
+    .from(schema.chats)
+    .where(eq(schema.chats.userId, userId));
+
+  const total = countRows[0]?.cnt ?? 0;
+  const key = getUserEncryptionKey(userId);
+
+  const items: ChatListItem[] = (rows as Record<string, unknown>[]).map((r) => ({
+    id: r.id as number,
+    character: {
+      id: r.char_id as number,
+      name: r.char_name as string,
+      hasImage: r.char_has_image as boolean,
+    },
+    persona: r.persona_id
+      ? { id: r.persona_id as number, name: r.persona_name as string }
+      : null,
+    // content сообщений зашифрован per-user — расшифровываем последнее для превью списка
+    lastMessage: r.last_message ? decryptField(r.last_message as string, key) : null,
+    lastMessageAt: r.last_message_at ? String(r.last_message_at) : null,
+    messageCount: r.message_count as number,
+    createdAt: String(r.created_at),
+  }));
+
+  logger.debug({ durationMs: Date.now() - t0, userId, page, total }, "Chats listed");
+  return { items, total };
+}
+
+// ─── Детальное чтение чата (активный путь) ────────────────────────────────────
+
+/**
+ * Читает чат + активный путь (рекурсивный CTE снизу вверх от activeMessageId).
+ * Для каждого сообщения пути вычисляет sibling_count, sibling_index, siblings[].
+ */
+export async function getChat(
+  userId: number,
+  chatId: number,
+): Promise<ChatDetail | undefined> {
+  const t0 = Date.now();
+
+  // Проверяем принадлежность и читаем мета
+  const chatRows = await db.execute(sql`
+    SELECT
+      c.id,
+      c.active_message_id,
+      ch.id   AS char_id,
+      ch.name AS char_name,
+      ch.image IS NOT NULL AS char_has_image,
+      p.id    AS persona_id,
+      p.name  AS persona_name,
+      p.image IS NOT NULL AS persona_has_image,
+      pr.id   AS preset_id,
+      pr.name AS preset_name
+    FROM chats c
+    JOIN characters ch ON ch.id = c.character_id
+    LEFT JOIN personas p  ON p.id  = c.persona_id
+    LEFT JOIN generation_presets pr ON pr.id = c.preset_id
+    WHERE c.id = ${chatId} AND c.user_id = ${userId}
+    LIMIT 1
+  `);
+
+  const chatRow = (chatRows as Record<string, unknown>[])[0];
+  if (!chatRow) return undefined;
+
+  // content/translations сообщений зашифрованы per-user — расшифровываем при маппинге пути
+  const key = getUserEncryptionKey(userId);
+  let activeMessageId = chatRow.active_message_id as number | null;
+  let messages: MessageInPath[] = [];
+
+  if (activeMessageId) {
+    let pathRows = await queryActivePath(chatId, activeMessageId);
+
+    // Если путь пуст — active_message_id указывает на удалённое сообщение (повреждённое состояние).
+    // Самовосстановление: найти последний лист дерева, переключить курсор на него и повторить запрос.
+    if (pathRows.length === 0) {
+      const leafId = await findLastLeaf(chatId);
+      if (leafId) {
+        await db
+          .update(schema.chats)
+          .set({ activeMessageId: leafId })
+          .where(eq(schema.chats.id, chatId));
+        activeMessageId = leafId;
+        pathRows = await queryActivePath(chatId, leafId);
+      }
+      // Если leafId нет — чат пуст, messages остаётся []
+    }
+
+    messages = pathRows.map((r) => mapPathRow(r, key));
+  }
+
+  logger.debug(
+    { durationMs: Date.now() - t0, userId, chatId, messageCount: messages.length },
+    "Chat loaded",
+  );
+
+  return {
+    id: chatRow.id as number,
+    character: {
+      id: chatRow.char_id as number,
+      name: chatRow.char_name as string,
+      hasImage: chatRow.char_has_image as boolean,
+    },
+    persona: chatRow.persona_id
+      ? {
+          id: chatRow.persona_id as number,
+          name: chatRow.persona_name as string,
+          hasImage: chatRow.persona_has_image as boolean,
+        }
+      : null,
+    preset: chatRow.preset_id
+      ? { id: chatRow.preset_id as number, name: chatRow.preset_name as string }
+      : null,
+    activeMessageId,
+    messages,
+  };
+}
+
+// ─── Дерево для графа ──────────────────────────────────────────────────────────
+
+/** Все сообщения чата плоским массивом с флагом isOnActivePath (для страницы графа). */
+export async function getChatTree(userId: number, chatId: number): Promise<TreeNode[]> {
+  const t0 = Date.now();
+
+  // Проверяем принадлежность
+  const chatRows = await db
+    .select({ id: schema.chats.id, activeMessageId: schema.chats.activeMessageId })
+    .from(schema.chats)
+    .where(and(eq(schema.chats.id, chatId), eq(schema.chats.userId, userId)));
+  const chat = chatRows[0];
+  if (!chat) return [];
+
+  const activePath = chat.activeMessageId
+    ? await queryActivePathIds(chat.activeMessageId)
+    : new Set<number>();
+
+  const allRows = await db
+    .select({
+      id: schema.messages.id,
+      parentId: schema.messages.parentId,
+      role: schema.messages.role,
+      content: schema.messages.content,
+      createdAt: schema.messages.createdAt,
+    })
+    .from(schema.messages)
+    .where(eq(schema.messages.chatId, chatId))
+    .orderBy(schema.messages.createdAt);
+
+  logger.debug(
+    { durationMs: Date.now() - t0, userId, chatId, count: allRows.length },
+    "Chat tree loaded",
+  );
+
+  // content зашифрован per-user — расшифровываем для узлов графа
+  const key = getUserEncryptionKey(userId);
+  return allRows.map((r) => ({
+    id: r.id,
+    parentId: r.parentId,
+    role: r.role as "user" | "assistant",
+    content: decryptField(r.content, key),
+    isOnActivePath: activePath.has(r.id),
+    createdAt: r.createdAt.toISOString(),
+  }));
+}
+
+// ─── Создание / удаление чата ──────────────────────────────────────────────────
+
+/**
+ * Создаёт чат и вставляет первое сообщение из character.firstMessages[0] (если есть).
+ * Персонаж уже должен быть расшифрован вызывающей стороной.
+ */
+export async function createChat(
+  userId: number,
+  input: ChatInput,
+  firstMessage: string | null,
+): Promise<Chat> {
+  const t0 = Date.now();
+
+  const chatRows = await db
+    .insert(schema.chats)
+    .values({
+      userId,
+      characterId: input.characterId,
+      personaId: input.personaId ?? undefined,
+      presetId: input.presetId ?? undefined,
+    })
+    .returning();
+  const chat = chatRows[0]!;
+
+  if (firstMessage) {
+    // content шифруется per-user; firstMessage уже расшифрован вызывающей стороной
+    const key = getUserEncryptionKey(userId);
+    const msgRows = await db
+      .insert(schema.messages)
+      .values({
+        chatId: chat.id,
+        parentId: null,
+        role: "assistant",
+        content: encryptField(firstMessage, key),
+      })
+      .returning();
+    const msg = msgRows[0]!;
+    await db
+      .update(schema.chats)
+      .set({ activeMessageId: msg.id })
+      .where(eq(schema.chats.id, chat.id));
+    chat.activeMessageId = msg.id;
+  }
+
+  logger.info({ durationMs: Date.now() - t0, userId, chatId: chat.id }, "Chat created");
+  return chat;
+}
+
+/** Удаляет чат (только свой). true — если строка была удалена. */
+export async function deleteChat(userId: number, chatId: number): Promise<boolean> {
+  const t0 = Date.now();
+  const rows = await db
+    .delete(schema.chats)
+    .where(and(eq(schema.chats.id, chatId), eq(schema.chats.userId, userId)))
+    .returning({ id: schema.chats.id });
+  const deleted = rows.length > 0;
+  logger.info({ durationMs: Date.now() - t0, userId, chatId, deleted }, "Chat delete attempted");
+  return deleted;
+}

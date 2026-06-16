@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { deleteImpersonation, listImpersonations, streamImpersonate } from "../api/index";
+import { deleteImpersonation, listImpersonations, streamImpersonate } from "../api/impersonate-api";
 import type { ImpersonationVariant } from "../types/chat";
 
 /**

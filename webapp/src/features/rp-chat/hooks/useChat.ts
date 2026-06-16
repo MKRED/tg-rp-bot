@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { getChat } from "../api/index";
+import { getChat } from "../api/chats-api";
 import type { ChatDetail } from "../types/chat";
 
 export function useChat(id: number) {

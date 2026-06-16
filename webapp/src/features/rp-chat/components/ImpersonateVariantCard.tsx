@@ -2,7 +2,7 @@ import { Spinner } from "@telegram-apps/telegram-ui";
 import { Globe, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { confirmAction } from "../../../shared/telegram/confirm";
-import { translateText } from "../api/index";
+import { translateText } from "../api/impersonate-api";
 import { RpText } from "./RpText";
 
 interface ImpersonateVariantCardProps {

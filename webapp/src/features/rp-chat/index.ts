@@ -5,7 +5,8 @@ export { useChat } from "./hooks/useChat";
 export { useSendMessage } from "./hooks/useSendMessage";
 export { useChatSettings } from "./hooks/useChatSettings";
 export { useChatTree } from "./hooks/useChatTree";
-export { createChat, deleteChat, switchBranch, translateMessage } from "./api/index";
+export { createChat, deleteChat } from "./api/chats-api";
+export { switchBranch, translateMessage } from "./api/messages-api";
 export type {
   ChatListItem,
   ChatInput,

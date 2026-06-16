@@ -1,4 +1,4 @@
-import type { MessageInPath } from "../db/chats.js";
+import type { MessageInPath } from "../db/chats/index.js";
 import type { GenerationPreset } from "../db/schema.js";
 import type { ChatMessage } from "../llm/types.js";
 
@@ -196,6 +196,33 @@ export function renderImpersonateMessages(opts: ImpersonateOptions): ChatMessage
     { role: "system", content: system },
     { role: "user", content: user },
   ];
+}
+
+/**
+ * Дефолтный пресет генерации, когда у чата пресет не выбран. Значимы здесь только
+ * promptOrder (что включаем в контекст) и пустые промпты; сэмплинг — дефолты OpenRouter.
+ * Фабрика, а не константа: id/userId/createdAt привязаны к пользователю.
+ */
+export function makeDefaultPreset(userId: number): GenerationPreset {
+  return {
+    id: 0, userId, name: "default",
+    contextUnlimited: false, contextSize: null, maxTokens: null, streaming: false,
+    temperature: null, topP: null, topK: null,
+    frequencyPenalty: null, presencePenalty: null, repetitionPenalty: null,
+    minP: null, topA: null,
+    systemPrompt: "", auxiliarySystemPrompt: "", postHistoryInstruction: "", userPersonaPrompt: "",
+    userPersonaStreaming: true,
+    requestReasoning: false, reasoningEffort: null,
+    promptOrder: [
+      { id: "system", enabled: false },
+      { id: "characterDescription", enabled: true },
+      { id: "userDescription", enabled: false },
+      { id: "auxiliary", enabled: false },
+      { id: "history", enabled: true },
+      { id: "postHistory", enabled: false },
+    ],
+    createdAt: new Date(), updatedAt: new Date(),
+  };
 }
 
 /**

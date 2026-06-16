@@ -9,14 +9,14 @@ import {
   saveTranslation,
   setActiveMessage,
   updateActiveMessage,
-} from "../db/chats.js";
+} from "../db/chats/index.js";
 import { getCharacter } from "../db/characters.js";
 import { getPersona } from "../db/personas.js";
 import { getPreset } from "../db/presets.js";
-import { chatCompletion } from "../llm/client.js";
 import logger from "../logger.js";
 import type { AppVariables } from "./initData.js";
-import { buildMessages, presetToCompletionOptions } from "./promptBuilder.js";
+import { buildMessages, makeDefaultPreset, presetToCompletionOptions } from "./promptBuilder.js";
+import { streamCompletion } from "./streamGeneration.js";
 import { googleTranslate } from "./translate.js";
 
 type Ctx = Context<{ Variables: AppVariables }>;
@@ -63,25 +63,7 @@ async function buildCompletionInput(
   const { chat, character, persona, preset } = ctx;
 
   const msgs = buildMessages({
-    preset: preset ?? {
-      id: 0, userId, name: "default",
-      contextUnlimited: false, contextSize: null, maxTokens: null, streaming: false,
-      temperature: null, topP: null, topK: null,
-      frequencyPenalty: null, presencePenalty: null, repetitionPenalty: null,
-      minP: null, topA: null,
-      systemPrompt: "", auxiliarySystemPrompt: "", postHistoryInstruction: "", userPersonaPrompt: "",
-      userPersonaStreaming: true,
-      requestReasoning: false, reasoningEffort: null,
-      promptOrder: [
-        { id: "system", enabled: false },
-        { id: "characterDescription", enabled: true },
-        { id: "userDescription", enabled: false },
-        { id: "auxiliary", enabled: false },
-        { id: "history", enabled: true },
-        { id: "postHistory", enabled: false },
-      ],
-      createdAt: new Date(), updatedAt: new Date(),
-    },
+    preset: preset ?? makeDefaultPreset(userId),
     character: { name: character.name, prompt: character.prompt },
     persona: persona ? { name: persona.name, prompt: persona.prompt } : null,
     history: chat.messages,
@@ -113,16 +95,8 @@ export async function handleSendMessage(c: Ctx) {
       const userMsg = await insertMessage(userId, chatId, parentId, "user", content);
       await stream.writeSSE({ event: "userMessage", data: JSON.stringify(userMsg) });
 
-      // Обновляем msgs с вставленным user-сообщением уже включённым (history уже содержит его через buildCompletionInput)
-      const result = await chatCompletion(
-        { messages: msgs, ...samplingOpts },
-        (token) => {
-          // writeSSE внутри callback — fire and forget (не ждём promise)
-          stream.writeSSE({ event: "token", data: JSON.stringify({ text: token }) }).catch(() => {});
-        },
-        // Перед ретраем пустого/отказного ответа — просим клиента стереть показанный текст.
-        () => stream.writeSSE({ event: "reset", data: "{}" }).catch(() => {}),
-      );
+      // history уже содержит вставленное user-сообщение (через buildCompletionInput)
+      const result = await streamCompletion(stream, { messages: msgs, ...samplingOpts });
 
       const assistantMsg = await insertMessage(userId, chatId, userMsg.id, "assistant", result.content);
       await updateActiveMessage(chatId, assistantMsg.id);
@@ -170,13 +144,7 @@ export async function handleEditMessage(c: Ctx) {
     try {
       await stream.writeSSE({ event: "userMessage", data: JSON.stringify(newUserMsg) });
 
-      const result = await chatCompletion(
-        { messages: input.msgs, ...input.samplingOpts },
-        (token) => {
-          stream.writeSSE({ event: "token", data: JSON.stringify({ text: token }) }).catch(() => {});
-        },
-        () => stream.writeSSE({ event: "reset", data: "{}" }).catch(() => {}),
-      );
+      const result = await streamCompletion(stream, { messages: input.msgs, ...input.samplingOpts });
 
       const assistantMsg = await insertMessage(userId, chatId, newUserMsg.id, "assistant", result.content);
       await updateActiveMessage(chatId, assistantMsg.id);
@@ -222,13 +190,7 @@ export async function handleRegenerateMessage(c: Ctx) {
 
   return streamSSE(c, async (stream) => {
     try {
-      const result = await chatCompletion(
-        { messages: input.msgs, ...input.samplingOpts },
-        (token) => {
-          stream.writeSSE({ event: "token", data: JSON.stringify({ text: token }) }).catch(() => {});
-        },
-        () => stream.writeSSE({ event: "reset", data: "{}" }).catch(() => {}),
-      );
+      const result = await streamCompletion(stream, { messages: input.msgs, ...input.samplingOpts });
 
       const newMsg = await insertMessage(userId, chatId, parentUserMsg.id, "assistant", result.content);
       await updateActiveMessage(chatId, newMsg.id);

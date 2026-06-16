@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listRecentChats } from "../api/index";
+import { listRecentChats } from "../api/chats-api";
 import type { ChatListItem } from "../types/chat";
 
 interface RecentChatsState {

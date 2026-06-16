@@ -1,12 +1,12 @@
 import { streamSSE } from "hono/streaming";
 import type { Context } from "hono";
-import { getChat } from "../db/chats.js";
+import { getChat } from "../db/chats/index.js";
 import { deleteVariant, insertVariant, listVariants } from "../db/impersonations.js";
-import { chatCompletion } from "../llm/client.js";
 import logger from "../logger.js";
 import type { AppVariables } from "./initData.js";
 import { loadChatContext } from "./messageHandlers.js";
 import { presetToCompletionOptions, renderImpersonateMessages } from "./promptBuilder.js";
+import { streamCompletion } from "./streamGeneration.js";
 import { googleTranslate } from "./translate.js";
 
 type Ctx = Context<{ Variables: AppVariables }>;
@@ -40,21 +40,7 @@ export async function handleImpersonate(c: Ctx) {
   return streamSSE(c, async (stream) => {
     try {
       const t0 = Date.now();
-      const result = await chatCompletion(
-        { messages, ...samplingOpts },
-        doStream
-          ? (token) => {
-              // fire-and-forget внутри callback — не ждём промис
-              stream
-                .writeSSE({ event: "token", data: JSON.stringify({ text: token }) })
-                .catch(() => {});
-            }
-          : undefined,
-        // Перед ретраем пустого/отказного варианта — просим клиента стереть показанный текст.
-        doStream
-          ? () => stream.writeSSE({ event: "reset", data: "{}" }).catch(() => {})
-          : undefined,
-      );
+      const result = await streamCompletion(stream, { messages, ...samplingOpts }, doStream);
 
       const variant = await insertVariant(userId, chatId, parentMessageId, result.content);
       logger.info(

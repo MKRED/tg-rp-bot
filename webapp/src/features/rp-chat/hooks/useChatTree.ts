@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getChatTree } from "../api/index";
+import { getChatTree } from "../api/tree-api";
 import type { TreeNode } from "../types/chat";
 
 export function useChatTree(chatId: number) {

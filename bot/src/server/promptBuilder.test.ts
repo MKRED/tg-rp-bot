@@ -6,7 +6,7 @@ import {
   replacePlaceholders,
 } from "./promptBuilder.js";
 import type { BuildMessagesOptions } from "./promptBuilder.js";
-import type { MessageInPath } from "../db/chats.js";
+import type { MessageInPath } from "../db/chats/index.js";
 import type { GenerationPreset } from "../db/schema.js";
 
 // Минимальный пресет с каноническим порядком для тестов

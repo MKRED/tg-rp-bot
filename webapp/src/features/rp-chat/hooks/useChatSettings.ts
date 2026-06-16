@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { getChatSettings, updateChatSettings } from "../api/index";
+import { getChatSettings, updateChatSettings } from "../api/settings-api";
 import type { ChatSettings } from "../types/chat";
 
 const DEFAULT_SETTINGS: ChatSettings = {

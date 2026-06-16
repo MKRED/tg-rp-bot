@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { editMessage, regenerateMessage, sendMessage } from "../api/index";
+import { editMessage, regenerateMessage, sendMessage } from "../api/messages-api";
 import type { MessageInPath } from "../types/chat";
 
 type OnDoneCallback = (userMsg: MessageInPath | null, assistantMsg: MessageInPath) => void;

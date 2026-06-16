@@ -6,7 +6,7 @@ import { chatGraphPath, chatSettingsPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { useChat, useChatSettings, useSendMessage } from "../../features/rp-chat";
-import { deleteMessage, switchBranch, translateMessage } from "../../features/rp-chat/api/index";
+import { deleteMessage, switchBranch, translateMessage } from "../../features/rp-chat/api/messages-api";
 import { ChatHeader } from "../../features/rp-chat/components/ChatHeader";
 import { ChatInput, type ChatInputHandle } from "../../features/rp-chat/components/ChatInput";
 import { ImpersonateSheet } from "../../features/rp-chat/components/ImpersonateSheet";

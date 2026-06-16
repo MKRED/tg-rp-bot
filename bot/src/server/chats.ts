@@ -7,7 +7,7 @@ import {
   getChat,
   listChats,
   upsertChatSettings,
-} from "../db/chats.js";
+} from "../db/chats/index.js";
 import { getCharacter } from "../db/characters.js";
 import logger from "../logger.js";
 import type { AppVariables } from "./initData.js";

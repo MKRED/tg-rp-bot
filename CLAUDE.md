@@ -39,28 +39,37 @@ bot/src/
   bot.ts        — grammY bot instance (+ прокси для Telegram через baseFetchConfig)
   config.ts     — env vars (requireEnv for mandatory, process.env for optional)
   logger.ts     — pino logger (daily rolling, pino-pretty in TTY)
-  proxy.ts      — undici ProxyAgent (dispatcher) ТОЛЬКО для Telegram
-  db/           — drizzle: schema.ts + клиент (postgres.js, ленивое подключение)
-  llm/          — OpenRouter client (client/types/constants) — серверно, ключ не уходит в браузер
-  handlers/     — обработчики команд (index = registerHandlers, start.ts …)
-  server/       — Hono HTTP API (index=startServer, routes.ts, initData.ts — валидация подписи)
+  proxy.ts      — HttpsProxyAgent (https-proxy-agent) ТОЛЬКО для Telegram
+  config.ts     — env vars (requireEnv для обязательных)
+  db/           — drizzle: schema.ts + клиент + DAO по таблицам (chats, characters, personas,
+                  presets, impersonations, users); chats — папка (queries/messages/settings/crypto)
+  llm/          — OpenRouter client (client/types/constants/completionGuard) — серверно
+  handlers/     — обработчики команд бота (index = registerHandlers, start.ts …)
+  server/       — Hono HTTP API: index=startServer, routes.ts, initData.ts (валидация подписи),
+                  CRUD-роуты (characters/personas/presets/chats), messageHandlers +
+                  impersonateHandlers (стриминговая RP-генерация по SSE), promptBuilder,
+                  translate (Google Translate), profilePhoto
                   + раздача собранной статики Mini App из ./public (SPA-fallback) — один процесс
-  utils/        — retry и пр.
+  scripts/      — разовые скрипты (backfill-message-encryption)
+  utils/        — retry, crypto (per-user шифрование сообщений)
 
 webapp/src/
   main.tsx      — точка входа: initTelegram() + рендер <App/>
   init.ts       — инициализация @telegram-apps SDK (защищённая) + initData.restore()
   app/          — оболочка: App.tsx (AppRoot + HashRouter), routes.ts, BackButtonBridge
-  pages/        — экраны-маршруты (один на маршрут): home/ …
-  shared/       — кросс-каттинг: telegram/ (доступ к initData), api/ (client с Authorization)
-  features/<feature>/  — доменный модуль, разложенный по подпапкам-категориям + barrel index.ts:
+  pages/        — экраны-маршруты (один на маршрут): home/ characters/ personas/
+                  generation-presets/ rp-chat/
+  shared/       — кросс-каттинг: telegram/ (initData, confirm, profile photo), api/ (client с
+                  Authorization), text/, image/, components/ (AvatarPicker, ImageLightbox, PageTransition)
+  features/<feature>/  — доменный модуль, разложенный по подпапкам-категориям + barrel index.ts.
+                  Фичи: characters, personas, generation-presets, rp-chat.
                   index.ts    — публичная поверхность фичи (то, что нужно страницам)
-                  api/        — обёртки над apiFetch (граница к /api)
+                  api/        — обёртки над apiFetch (граница к /api), доменные файлы (НЕ один barrel)
                   hooks/      — React-хуки фичи
                   components/ — .tsx-компоненты (+ фичевый .css рядом, если есть)
                   types/      — типы фичи (один файл с доменным именем, напр. character.ts)
-                  lib/        — чистые хелперы и данные (форматтеры, спеки, mock)
-                  (категории без файлов не заводим: у rp-chat нет api/ и hooks/)
+                  lib/        — чистые хелперы и данные (форматтеры, спеки, парсеры, mock)
+                  (категории без файлов не заводим)
 ```
 
 ### Структура webapp — pages vs features
@@ -178,8 +187,11 @@ Still avoid restating what the code obviously does — focus on the **why**, not
 4. Run `yarn drizzle-kit migrate` to apply
 
 ### Testing — vitest
-Test runner is **vitest** (`yarn test` = `vitest run`, `yarn test:watch` = watch mode). Config: `vitest.config.ts`.
-- **Co-locate** tests next to the code as `*.test.ts` (same folder, e.g. `transform.ts` → `transform.test.ts`). The runner globs `src/**/*.test.ts`; `tsc` (`yarn build`) excludes them via `**/*.test.ts` in `tsconfig.json`, so tests never land in `dist/`.
+Test runner is **vitest** в **обоих** workspace (`bot/` и `webapp/`), у каждого свой `vitest.config.ts`
+(pool `forks`). Корневой `yarn test` гоняет оба пакета по очереди; `yarn test:watch` — только bot.
+- **Co-locate** tests next to the code as `*.test.ts` (same folder, e.g. `transform.ts` → `transform.test.ts`). The runner globs `src/**/*.test.ts`. В `bot/` `tsc` (`yarn build`) исключает тесты через `**/*.test.ts` в `tsconfig.json`, так что они не попадают в `dist/`; в `webapp/` сборка `noEmit` (vite бандлит только импортируемое), поэтому тесты не нужно исключать.
+- **webapp:** импорты в тестах — **без** `.js` (bundler resolution); чистую логику изолируем от Telegram SDK
+  (напр. SSE-парсер `parseSSE.ts` вынесен из `sse.ts`, чтобы тест не тянул `@telegram-apps/sdk-react`).
 - **What to test:** pure functions — transformers, formatters, parsers, retry/decision logic — the stuff with no I/O. Workers, DAOs (`db/*`), and Telegram/LLM handlers are **not** unit-tested (they need a live DB / external services / mutable module state).
 - **Imports still need `.js`** in test files too (native ESM). Vitest/Vite resolves the `.js` specifier to the `.ts` source automatically.
 - **Avoid pulling in `config`/`logger` transitively.** A unit under test that imports `../logger.js` will drag in `config.ts` (which `requireEnv`s `BOT_TOKEN` etc. and would throw without a `.env`) plus pino-roll worker threads. Mock it: `vi.mock("../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() } }))`.

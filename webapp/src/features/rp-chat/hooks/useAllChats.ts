@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listAllChats } from "../api/index";
+import { listAllChats } from "../api/chats-api";
 import type { ChatListItem } from "../types/chat";
 
 const PAGE_SIZE = 20;

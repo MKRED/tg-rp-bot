@@ -12,9 +12,10 @@ Telegram-бот для ролевой игры (RP) с упором на **Teleg
 | БД | Postgres + [drizzle-orm](https://orm.drizzle.team) / drizzle-kit |
 | LLM | OpenRouter (OpenAI-совместимый API) |
 | Логи | pino (+ pino-roll, pino-pretty) |
-| Mini App | React 19 + Vite + `@telegram-apps/sdk-react` + `@telegram-apps/telegram-ui` + `react-router-dom` (HashRouter) |
+| Mini App | React 19 + Vite + `@telegram-apps/sdk-react` + `@telegram-apps/telegram-ui` + `react-router-dom` (HashRouter) + `@xyflow/react` (граф диалога) + `framer-motion` |
 | initData | подпись проверяется серверно через `@tma.js/init-data-node` |
-| Тесты | vitest |
+| Прокси | `https-proxy-agent` (HttpsProxyAgent, CONNECT-туннель) — только для Telegram |
+| Тесты | vitest (bot + webapp) |
 
 ## Структура
 
@@ -30,28 +31,31 @@ tg-rp-bot/
 │  │  ├─ bot.ts        # инстанс grammY (+ прокси для Telegram)
 │  │  ├─ config.ts     # переменные окружения
 │  │  ├─ logger.ts     # pino
-│  │  ├─ proxy.ts      # undici ProxyAgent только для Telegram
-│  │  ├─ db/           # drizzle: schema + клиент
+│  │  ├─ proxy.ts      # HttpsProxyAgent (https-proxy-agent) только для Telegram
+│  │  ├─ db/           # drizzle: schema + клиент + DAO по таблицам (chats — папка)
 │  │  ├─ llm/          # клиент OpenRouter
-│  │  ├─ handlers/     # обработчики команд (/start …)
-│  │  ├─ server/       # Hono HTTP API (/health, /api) + раздача статики Mini App + seam initData
-│  │  └─ utils/        # retry и пр.
+│  │  ├─ handlers/     # обработчики команд бота (/start …)
+│  │  ├─ server/       # Hono HTTP API (/health, /api): CRUD + стриминговая RP-генерация (SSE)
+│  │  │                #   + impersonate + перевод + раздача статики Mini App + seam initData
+│  │  ├─ scripts/      # разовые скрипты (backfill шифрования сообщений)
+│  │  └─ utils/        # retry, crypto (per-user шифрование)
 │  └─ drizzle/         # SQL-миграции
 └─ webapp/             # Mini App (React + Vite)
    └─ src/
       ├─ main.tsx      # точка входа + init Telegram SDK
       ├─ init.ts       # инициализация SDK + restore initData
       ├─ app/          # оболочка: App (AppRoot + HashRouter), routes, BackButton-мост
-      ├─ pages/        # экраны-маршруты (home/ …)
-      ├─ shared/       # api/client (граница к /api), telegram/ (доступ к initData)
-      └─ features/rp-chat/  # экран RP-чата (маршрут /chat)
+      ├─ pages/        # экраны-маршруты (home/ characters/ personas/ generation-presets/ rp-chat/)
+      ├─ shared/       # api/client (граница к /api), telegram/, text/, image/, components/
+      └─ features/     # доменные модули: characters, personas, generation-presets, rp-chat
 ```
 
 ## Прокси для Telegram
 
 Запросы **только к Telegram Bot API** проходят через локальный HTTP-прокси (`TELEGRAM_PROXY_URL`,
-например `http://127.0.0.1:8080`, без авторизации). Реализовано через undici `ProxyAgent`,
-который подключается исключительно к grammY-клиенту — OpenRouter и любые другие запросы идут напрямую.
+например `http://127.0.0.1:8080`, без авторизации). Реализовано через `https-proxy-agent`
+(`HttpsProxyAgent`, CONNECT-туннелирование), который подключается исключительно к grammY-клиенту —
+OpenRouter и любые другие запросы идут напрямую.
 
 ## Запуск
 
