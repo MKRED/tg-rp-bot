@@ -1,17 +1,12 @@
-import { Avatar, Spinner } from "@telegram-apps/telegram-ui";
+import { Spinner } from "@telegram-apps/telegram-ui";
 import { Check, ChevronLeft, ChevronRight, Copy, Globe, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { CharacterAvatar } from "../../characters/components/CharacterAvatar";
-import { PersonaAvatar } from "../../personas/components/PersonaAvatar";
-import { getTgUser } from "../../../shared/telegram/initData";
 import { confirmAction } from "../../../shared/telegram/confirm";
 import type { MessageInPath } from "../types/chat";
 import { RpText } from "./RpText";
 
 interface MessageBubbleProps {
   message: MessageInPath;
-  character: { id: number; name: string; hasImage: boolean };
-  persona: { id: number; name: string; hasImage: boolean } | null;
   /** Показывать кнопку перевода на этом сообщении (на основе settings.translateScope). */
   showTranslateButton: boolean;
   /** Язык перевода из настроек. */
@@ -29,8 +24,6 @@ interface MessageBubbleProps {
 
 export function MessageBubble({
   message,
-  character,
-  persona,
   showTranslateButton,
   targetLang,
   autoShowTranslation = false,
@@ -52,7 +45,6 @@ export function MessageBubble({
   const [translating, setTranslating] = useState(false);
   const [copied, setCopied] = useState(false);
   const isAssistant = message.role === "assistant";
-  const user = getTgUser();
 
   const displayText =
     showTranslation && message.translations?.[targetLang]
@@ -90,15 +82,6 @@ export function MessageBubble({
 
   return (
     <div className={`message-bubble message-bubble--${message.role}`}>
-      {isAssistant && (
-        <CharacterAvatar
-          id={character.id}
-          hasImage={character.hasImage}
-          name={character.name}
-          size={28}
-        />
-      )}
-
       <div className="message-bubble__body">
         <p className="message-bubble__text"><RpText text={displayText} /></p>
 
@@ -189,12 +172,6 @@ export function MessageBubble({
           </button>
         </div>
       </div>
-
-      {!isAssistant && (
-        persona
-          ? <PersonaAvatar id={persona.id} hasImage={persona.hasImage} name={persona.name} size={28} />
-          : <Avatar size={28} acronym={user?.firstName?.charAt(0).toUpperCase() ?? "?"} />
-      )}
     </div>
   );
 }

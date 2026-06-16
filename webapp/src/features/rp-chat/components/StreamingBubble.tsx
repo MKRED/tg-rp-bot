@@ -1,21 +1,13 @@
-import { CharacterAvatar } from "../../characters/components/CharacterAvatar";
 import { RpText } from "./RpText";
 
 interface StreamingBubbleProps {
   text: string;
-  character: { id: number; name: string; hasImage: boolean };
 }
 
 /** Пузырь ответа ИИ во время стриминга: мигающий курсор, текст накапливается. */
-export function StreamingBubble({ text, character }: StreamingBubbleProps) {
+export function StreamingBubble({ text }: StreamingBubbleProps) {
   return (
     <div className="message-bubble message-bubble--assistant">
-      <CharacterAvatar
-        id={character.id}
-        hasImage={character.hasImage}
-        name={character.name}
-        size={28}
-      />
       <div className="message-bubble__body">
         <p className="message-bubble__text message-bubble__text--streaming"><RpText text={text} /></p>
       </div>

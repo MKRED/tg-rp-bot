@@ -222,9 +222,6 @@ export function RpChatPage() {
               >
                 <MessageBubble
                   message={msg}
-                  // messages непуст только при существующем chat (см. messages = chat?.messages ?? [])
-                  character={chat!.character}
-                  persona={chat!.persona}
                   showTranslateButton={showTranslateButton}
                   targetLang={settings.translateTargetLang}
                   autoShowTranslation={autoShowTranslation}
@@ -248,7 +245,7 @@ export function RpChatPage() {
                 exit={{ opacity: 0 }}
                 transition={MSG_TRANSITION}
               >
-                <StreamingBubble text={streamingText} character={chat.character} />
+                <StreamingBubble text={streamingText} />
               </motion.div>
             )}
           </AnimatePresence>
