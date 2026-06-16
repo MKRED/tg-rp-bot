@@ -131,7 +131,10 @@ export async function getChat(
 
   // content/translations сообщений зашифрованы per-user — расшифровываем при маппинге пути
   const key = getUserEncryptionKey(userId);
-  let activeMessageId = chatRow.active_message_id as number | null;
+  // Сырой db.execute (postgres.js) отдаёт bigint строкой — приводим к number, иначе на клиенте
+  // строгое сравнение activeMessageId === message.id (id'ы сообщений уже number) ломается.
+  let activeMessageId =
+    chatRow.active_message_id != null ? Number(chatRow.active_message_id) : null;
   let messages: MessageInPath[] = [];
 
   if (activeMessageId) {
