@@ -50,6 +50,12 @@ export type TreeNode = {
   createdAt: string;
 };
 
+/** Оценка объёма чата в токенах: весь чат (все ветки) и текущая активная ветка. */
+export type ChatTokenStats = {
+  tokensTotal: number;
+  tokensActiveBranch: number;
+};
+
 export type ChatSettingsRow = {
   translateEnabled: boolean;
   translateTargetLang: string;

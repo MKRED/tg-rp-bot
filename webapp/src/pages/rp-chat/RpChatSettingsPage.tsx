@@ -1,6 +1,6 @@
 import { Cell, List, Section, Spinner, Switch } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
-import { Bot, ChevronRight, Trash2, User } from "lucide-react";
+import { Bot, ChevronRight, Eraser, Trash2, User } from "lucide-react";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { ROUTES, characterEditPath, chatSettingsPath, personaEditPath, presetEditPath } from "../../app/routes";
@@ -8,7 +8,7 @@ import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { CharacterAvatar } from "../../features/characters/components/CharacterAvatar";
 import { PersonaAvatar } from "../../features/personas/components/PersonaAvatar";
-import { deleteChat, useChat, useChatSettings } from "../../features/rp-chat";
+import { deleteChat, TokenBudgetBar, useChat, useChatSettings, useChatStats } from "../../features/rp-chat";
 import { ExpandableSelect } from "../../features/rp-chat/components/ExpandableSelect";
 import {
   AUTO_SCOPE_OPTIONS,
@@ -20,6 +20,9 @@ import "./rp-chat.css";
 
 const ITEM_T = { duration: 0.2, ease: "easeOut" as const };
 
+// Токены — оценка (~), показываем с разделителями разрядов для читаемости.
+const fmtTokens = (n: number) => `~${n.toLocaleString("ru-RU")}`;
+
 // Какой из выпадающих списков сейчас раскрыт — единое состояние, чтобы открытие одного
 // автоматически закрывало остальные (раньше держалось тремя независимыми булевыми флагами).
 type OpenSelect = "lang" | "scope" | "auto" | null;
@@ -30,6 +33,7 @@ export function RpChatSettingsPage() {
   const navigate = useTransitionNavigate();
   const { chat, loading: chatLoading } = useChat(chatId);
   const { settings, loading: settingsLoading, update } = useChatSettings(chatId);
+  const { stats, loading: statsLoading, clearing, clearVariants } = useChatStats(chatId);
   const [deleting, setDeleting] = useState(false);
   const [openSelect, setOpenSelect] = useState<OpenSelect>(null);
 
@@ -53,6 +57,16 @@ export function RpChatSettingsPage() {
     } finally {
       setDeleting(false);
     }
+  };
+
+  const handleClearVariants = async () => {
+    if (clearing || stats.impersonationCount === 0) return;
+    const ok = await confirmAction(
+      "Очистить все сохранённые варианты реплик? Их можно будет сгенерировать заново.",
+      { title: "Очистка вариантов", confirmText: "Очистить" },
+    );
+    if (!ok) return;
+    await clearVariants();
   };
 
   return (
@@ -208,6 +222,73 @@ export function RpChatSettingsPage() {
                     />
                   </>
                 )}
+              </>
+            )}
+          </Section>
+
+          <Section header="Статистика">
+            {statsLoading ? (
+              <div style={{ display: "flex", justifyContent: "center", padding: 16 }}>
+                <Spinner size="m" />
+              </div>
+            ) : (
+              <>
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ ...ITEM_T, delay: 0 }}
+                >
+                  <Cell
+                    after={<span style={{ color: "var(--tg-theme-hint-color)" }}>{fmtTokens(stats.tokensTotal)}</span>}
+                    subtitle="Токенов в сообщениях всех веток"
+                  >
+                    Весь чат
+                  </Cell>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ ...ITEM_T, delay: 0.07 }}
+                >
+                  <Cell
+                    after={<span style={{ color: "var(--tg-theme-hint-color)" }}>{fmtTokens(stats.tokensActiveBranch)}</span>}
+                    subtitle="Токенов в сообщениях текущей ветки"
+                  >
+                    Активная ветка
+                  </Cell>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ ...ITEM_T, delay: 0.14 }}
+                >
+                  <Cell subtitle="Полный запрос к ИИ: активная ветка + промпты">
+                    Запрос с промптами
+                  </Cell>
+                  {/* Полоса «использовано / лимит контекста»; при безграничном пресете лимит = ∞ */}
+                  <TokenBudgetBar used={stats.tokensPrompt} limit={stats.contextLimit} />
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ ...ITEM_T, delay: 0.21 }}
+                >
+                  <Cell
+                    before={<Eraser size={20} style={{ color: "var(--tg-theme-hint-color)" }} />}
+                    after={<span style={{ color: "var(--tg-theme-hint-color)" }}>{stats.impersonationCount}</span>}
+                    subtitle="Сгенерированные варианты реплик игрока"
+                    onClick={handleClearVariants}
+                    style={{
+                      cursor: clearing || stats.impersonationCount === 0 ? "default" : "pointer",
+                      opacity: clearing || stats.impersonationCount === 0 ? 0.5 : 1,
+                    }}
+                  >
+                    Очистить сохранённые варианты
+                  </Cell>
+                </motion.div>
               </>
             )}
           </Section>

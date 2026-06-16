@@ -1,7 +1,12 @@
 import { streamSSE } from "hono/streaming";
 import type { Context } from "hono";
 import { getChat } from "../db/chats/index.js";
-import { deleteVariant, insertVariant, listVariants } from "../db/impersonations.js";
+import {
+  deleteAllVariantsForChat,
+  deleteVariant,
+  insertVariant,
+  listVariants,
+} from "../db/impersonations.js";
 import logger from "../logger.js";
 import type { AppVariables } from "./initData.js";
 import { loadChatContext } from "./messageHandlers.js";
@@ -32,6 +37,12 @@ export async function handleImpersonate(c: Ctx) {
     systemPrompt: preset?.systemPrompt ?? "",
     auxPrompt: preset?.auxiliarySystemPrompt ?? "",
     history: chat.messages,
+    // Лимит контекста урезает историю так же, как в обычной генерации (см. resolveImpersonateHistory).
+    contextUnlimited: preset?.contextUnlimited,
+    contextSize: preset?.contextSize,
+    maxTokens: preset?.maxTokens,
+    onTrim: ({ dropped, kept, total }) =>
+      logger.info({ userId, chatId, dropped, kept, total }, "Impersonate history trimmed to context budget"),
   });
   const samplingOpts = preset ? presetToCompletionOptions(preset) : {};
   const doStream = preset?.userPersonaStreaming ?? true;
@@ -65,6 +76,19 @@ export async function handleListImpersonations(c: Ctx) {
 
   const variants = await listVariants(userId, chatId, chat.activeMessageId);
   return c.json({ variants });
+}
+
+/** DELETE /:id/impersonate — очистить ВСЕ сохранённые варианты реплик чата. */
+export async function handleClearImpersonations(c: Ctx) {
+  const userId = c.get("tgUser")!.id;
+  const chatId = Number(c.req.param("id"));
+
+  // Проверяем принадлежность чата пользователю до массового удаления
+  const chat = await getChat(userId, chatId);
+  if (!chat) return c.json({ error: "Chat not found" }, 404);
+
+  const deleted = await deleteAllVariantsForChat(chatId);
+  return c.json({ ok: true, deleted });
 }
 
 /** DELETE /:id/impersonate/:variantId — удалить один сохранённый вариант реплики. */

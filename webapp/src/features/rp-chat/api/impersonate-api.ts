@@ -13,6 +13,14 @@ export async function deleteImpersonation(chatId: number, variantId: number): Pr
   await apiFetch(`/chats/${chatId}/impersonate/${variantId}`, { method: "DELETE" });
 }
 
+/** Очистить ВСЕ сохранённые варианты реплик чата. Возвращает число удалённых. */
+export async function clearImpersonations(chatId: number): Promise<number> {
+  const res = await apiFetch<{ deleted: number }>(`/chats/${chatId}/impersonate`, {
+    method: "DELETE",
+  });
+  return res.deleted;
+}
+
 /** Перевод произвольного текста (эфемерно, без кэша) — для перевода вариантов в шторе. */
 export async function translateText(
   chatId: number,

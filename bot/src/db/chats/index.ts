@@ -7,6 +7,7 @@ export type {
   ChatDetail,
   ChatListItem,
   TreeNode,
+  ChatTokenStats,
   ChatSettingsRow,
 } from "./types.js";
 
@@ -28,3 +29,5 @@ export {
 } from "./messages.js";
 
 export { getChatSettings, upsertChatSettings } from "./settings.js";
+
+export { getChatTokenStats } from "./stats.js";

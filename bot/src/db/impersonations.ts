@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, notInArray, type SQL } from "drizzle-orm";
+import { and, desc, eq, isNull, notInArray, sql, type SQL } from "drizzle-orm";
 import logger from "../logger.js";
 import { decryptField, encryptField, getUserEncryptionKey } from "../utils/index.js";
 import { db, schema } from "./index.js";
@@ -73,6 +73,28 @@ export async function insertVariant(
     "Impersonation variant inserted",
   );
   return { ...created, content: decryptField(created.content, key) };
+}
+
+/** Сколько всего сохранённых вариантов реплик существует для чата (по всем моментам). */
+export async function countVariantsForChat(chatId: number): Promise<number> {
+  const v = schema.impersonationVariants;
+  const rows = await db
+    .select({ cnt: sql<number>`count(*)::int` })
+    .from(v)
+    .where(eq(v.chatId, chatId));
+  return rows[0]?.cnt ?? 0;
+}
+
+/** Удаляет все сохранённые варианты реплик чата (по всем моментам). Возвращает число удалённых строк. */
+export async function deleteAllVariantsForChat(chatId: number): Promise<number> {
+  const t0 = Date.now();
+  const v = schema.impersonationVariants;
+  const deleted = await db
+    .delete(v)
+    .where(eq(v.chatId, chatId))
+    .returning({ id: v.id });
+  logger.info({ durationMs: Date.now() - t0, chatId, deleted: deleted.length }, "Impersonation variants cleared");
+  return deleted.length;
 }
 
 /**

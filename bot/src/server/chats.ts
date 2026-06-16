@@ -20,11 +20,13 @@ import {
   handleTranslateMessage,
 } from "./messageHandlers.js";
 import {
+  handleClearImpersonations,
   handleDeleteImpersonation,
   handleImpersonate,
   handleListImpersonations,
   handleTranslateText,
 } from "./impersonateHandlers.js";
+import { handleChatStats } from "./statsHandler.js";
 
 export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
   const app = new Hono<{ Variables: AppVariables }>();
@@ -95,6 +97,10 @@ export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
     return c.json({ nodes });
   });
 
+  // ─── Статистика чата (для экрана настроек) ────────────────────────────────
+
+  app.get("/:id/stats", handleChatStats);
+
   // ─── Настройки чата ───────────────────────────────────────────────────────
 
   app.get("/:id/settings", async (c) => {
@@ -148,6 +154,7 @@ export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
   // Регистрируем вне ветки /:id/messages/:msgId, чтобы не конфликтовать с :msgId.
   app.get("/:id/impersonate", handleListImpersonations);
   app.post("/:id/impersonate", handleImpersonate);
+  app.delete("/:id/impersonate", handleClearImpersonations);
   app.delete("/:id/impersonate/:variantId", handleDeleteImpersonation);
   app.post("/:id/translate-text", handleTranslateText);
 

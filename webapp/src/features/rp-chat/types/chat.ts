@@ -51,6 +51,21 @@ export interface ChatSettings {
   autoTranslateScope: "none" | "all" | "assistant" | "user";
 }
 
+/**
+ * Статистика чата для экрана настроек. Числа считает СЕРВЕР точным BPE-токенайзером (o200k_base),
+ * не грубой webapp-эвристикой estimateTokens (она осталась только для «~подсказок» в формах).
+ * tokensTotal/tokensActiveBranch — только сообщения; tokensPrompt — полный запрос к LLM по активной
+ * ветке (с системными/персонажными промптами, как при генерации).
+ */
+export interface ChatStats {
+  tokensTotal: number;
+  tokensActiveBranch: number;
+  tokensPrompt: number;
+  /** Лимит контекста из пресета; null — безграничный или не задан. */
+  contextLimit: number | null;
+  impersonationCount: number;
+}
+
 /** Сгенерированный вариант реплики «от лица пользователя» (impersonate). */
 export interface ImpersonationVariant {
   id: number;
