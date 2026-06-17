@@ -1,7 +1,7 @@
-import { Spinner, Switch } from "@telegram-apps/telegram-ui";
+import { Spinner } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import { Languages, SendHorizontal, X } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useComposeTranslate } from "../hooks/useComposeTranslate";
 import type { TranslateMode } from "../api/translate-api";
 import { LANG_OPTIONS } from "../lib/translate-options";
@@ -26,6 +26,16 @@ const LANG_KEY = "rp-translate-lang";
 export function TranslateSheet({ chatId, onPick, onClose }: TranslateSheetProps) {
   const { loading, result, error, translate, reset } = useComposeTranslate(chatId);
   const [text, setText] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Авторазмер инпута как в основном поле чата: от одной строки вверх до 160px.
+  const resize = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const borderY = el.offsetHeight - el.clientHeight;
+    el.style.height = `${Math.min(el.scrollHeight + borderY, 160)}px`;
+  };
   const [mode, setMode] = useState<TranslateMode>(
     () => (localStorage.getItem(MODE_KEY) === "ai" ? "ai" : "google"),
   );
@@ -77,19 +87,30 @@ export function TranslateSheet({ chatId, onPick, onClose }: TranslateSheetProps)
         </div>
 
         <div className="translate-sheet__controls">
-          {/* Обе подписи видны, активная подсвечена — иначе непонятно, что включает тумблер */}
-          <label className="translate-sheet__mode">
-            <span className={`translate-sheet__mode-label${mode === "google" ? " is-active" : ""}`}>
-              Google
-            </span>
-            <Switch
-              checked={mode === "ai"}
-              onChange={(e) => setModePersist(e.target.checked ? "ai" : "google")}
-            />
-            <span className={`translate-sheet__mode-label${mode === "ai" ? " is-active" : ""}`}>
-              ИИ
-            </span>
-          </label>
+          {/* Сегмент-переключатель: подсветка-«таблетка» скользит между Google и ИИ (layoutId) */}
+          <div className="translate-sheet__mode" role="tablist">
+            {(["google", "ai"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                role="tab"
+                aria-selected={mode === m}
+                className={`translate-sheet__mode-btn${mode === m ? " is-active" : ""}`}
+                onClick={() => setModePersist(m)}
+              >
+                {mode === m && (
+                  <motion.span
+                    layoutId="translate-mode-thumb"
+                    className="translate-sheet__mode-thumb"
+                    transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                  />
+                )}
+                <span className="translate-sheet__mode-btn-label">
+                  {m === "ai" ? "ИИ" : "Google"}
+                </span>
+              </button>
+            ))}
+          </div>
           <select
             className="translate-sheet__lang"
             value={targetLang}
@@ -131,14 +152,16 @@ export function TranslateSheet({ chatId, onPick, onClose }: TranslateSheetProps)
 
         <div className="translate-sheet__input">
           <textarea
+            ref={textareaRef}
             className="chat-input__textarea"
             value={text}
             onChange={(e) => {
               setText(e.target.value);
               if (result || error) reset();
+              resize();
             }}
             placeholder="Текст для перевода…"
-            rows={2}
+            rows={1}
           />
           <button
             className="chat-input__send"
