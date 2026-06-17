@@ -1,6 +1,6 @@
 import { Spinner, Switch } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
-import { SendHorizontal, X } from "lucide-react";
+import { Languages, SendHorizontal, X } from "lucide-react";
 import { useState } from "react";
 import { useComposeTranslate } from "../hooks/useComposeTranslate";
 import type { TranslateMode } from "../api/translate-api";
@@ -77,12 +77,18 @@ export function TranslateSheet({ chatId, onPick, onClose }: TranslateSheetProps)
         </div>
 
         <div className="translate-sheet__controls">
+          {/* Обе подписи видны, активная подсвечена — иначе непонятно, что включает тумблер */}
           <label className="translate-sheet__mode">
-            <span>{mode === "ai" ? "ИИ" : "Google"}</span>
+            <span className={`translate-sheet__mode-label${mode === "google" ? " is-active" : ""}`}>
+              Google
+            </span>
             <Switch
               checked={mode === "ai"}
               onChange={(e) => setModePersist(e.target.checked ? "ai" : "google")}
             />
+            <span className={`translate-sheet__mode-label${mode === "ai" ? " is-active" : ""}`}>
+              ИИ
+            </span>
           </label>
           <select
             className="translate-sheet__lang"
@@ -101,19 +107,25 @@ export function TranslateSheet({ chatId, onPick, onClose }: TranslateSheetProps)
         {/* Результат сверху: клик вставляет перевод в поле ввода чата. */}
         <div className="translate-sheet__result">
           {loading ? (
-            <div className="impersonate-sheet__loading">
+            <div className="translate-sheet__placeholder">
               <Spinner size="m" />
             </div>
           ) : error ? (
-            <div className="impersonate-sheet__empty">{error}</div>
+            <div className="translate-sheet__placeholder translate-sheet__placeholder--error">
+              {error}
+            </div>
           ) : result ? (
-            <div className="impersonate-card" onClick={() => onPick(result)}>
-              <p className="impersonate-card__text">
+            <div className="translate-sheet__card" onClick={() => onPick(result)}>
+              <p className="translate-sheet__card-text">
                 <RpText text={result} />
               </p>
+              <span className="translate-sheet__card-hint">Нажмите, чтобы вставить в сообщение</span>
             </div>
           ) : (
-            <div className="impersonate-sheet__empty">Введите текст и нажмите «Перевести»</div>
+            <div className="translate-sheet__placeholder">
+              <Languages size={28} strokeWidth={1.5} />
+              <span>Введите текст ниже и нажмите отправить</span>
+            </div>
           )}
         </div>
 

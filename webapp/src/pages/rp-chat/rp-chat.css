@@ -605,24 +605,38 @@
   justify-content: space-between;
   gap: 12px;
   flex-shrink: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
 }
 
+/* Тумблер режима: обе подписи видны, активная — контрастная, неактивная — приглушённая */
 .translate-sheet__mode {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 15px;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.translate-sheet__mode-label {
+  color: var(--tg-theme-hint-color, #999);
   font-weight: 500;
+  transition: color 0.15s;
+}
+
+.translate-sheet__mode-label.is-active {
   color: var(--tg-theme-text-color, #000);
+  font-weight: 600;
 }
 
 .translate-sheet__lang {
-  padding: 8px 12px;
-  border: 1.5px solid var(--tg-theme-secondary-bg-color, #e5e5e5);
-  border-radius: 10px;
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  padding: 7px 12px;
+  border: none;
+  border-radius: 9px;
+  background: var(--tg-theme-bg-color, #fff);
   color: var(--tg-theme-text-color, #000);
-  font-size: 15px;
+  font-size: 14px;
+  font-weight: 500;
   font-family: inherit;
   cursor: pointer;
 }
@@ -632,7 +646,60 @@
   flex-direction: column;
   overflow-y: auto;
   flex: 1;
-  min-height: 80px;
+  min-height: 120px;
+}
+
+/* Заглушка-пустота и состояние загрузки/ошибки — по центру области результата */
+.translate-sheet__placeholder {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.translate-sheet__placeholder svg {
+  opacity: 0.55;
+}
+
+.translate-sheet__placeholder--error {
+  color: var(--tg-theme-destructive-text-color, #e53935);
+}
+
+/* Карточка результата: клик вставляет перевод в инпут чата */
+.translate-sheet__card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.translate-sheet__card:active {
+  opacity: 0.7;
+}
+
+.translate-sheet__card-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--tg-theme-text-color, #000);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.translate-sheet__card-hint {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tg-theme-link-color, #2481cc);
 }
 
 .translate-sheet__input {
