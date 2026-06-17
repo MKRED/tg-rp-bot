@@ -11,7 +11,7 @@ export function ChatHeader({ character, onSettingsClick, onGraphClick }: ChatHea
   return (
     <div className="chat-header">
       <div className="chat-header__info">
-        <CharacterAvatar id={character.id} hasImage={character.hasImage} name={character.name} size={40} />
+        <CharacterAvatar id={character.id} hasImage={character.hasImage} name={character.name} size={40} enlargeable />
         <span className="chat-header__name">{character.name}</span>
       </div>
       <div className="chat-header__actions">

@@ -29,8 +29,13 @@ export function CharacterAvatar({
 }: CharacterAvatarProps) {
   const src = useCharacterImage(id, hasImage);
   const [open, setOpen] = useState(false);
-  // Полное фото догружаем только когда лайтбокс открыт; пока нет — показываем миниатюру.
-  const fullSrc = useCharacterImageFull(id, open);
+  // Полное фото догружаем только когда лайтбокс открыт.
+  const { src: fullSrc, loading: fullLoading } = useCharacterImageFull(id, open);
+
+  // Что показываем в лайтбоксе: оригинал, как только он загружен. Пока грузится — undefined
+  // (лайтбокс покажет спиннер), чтобы не мелькать миниатюрой. Когда полного фото нет вовсе
+  // (загрузка завершена, оригинала не оказалось) — откатываемся на миниатюру.
+  const lightboxSrc = fullSrc ?? (fullLoading ? undefined : src);
 
   // Лайтбокс доступен только когда картинка уже загружена
   const canEnlarge = enlargeable && Boolean(src);
@@ -55,7 +60,7 @@ export function CharacterAvatar({
       )}
       <AnimatePresence>
         {open && src && (
-          <ImageLightbox src={fullSrc ?? src} onClose={() => setOpen(false)} />
+          <ImageLightbox src={lightboxSrc} onClose={() => setOpen(false)} />
         )}
       </AnimatePresence>
     </>

@@ -5,19 +5,27 @@ import { getCachedFull, setCachedFull } from "../lib/imageCache";
 /**
  * Полноразмерное (некадрированное) фото персонажа как data URL — грузится лениво, только когда
  * enabled=true (открыт лайтбокс). Список так не тянет тяжёлое фото для каждой строки. Результат
- * кэшируется на сессию SPA. На любой сбой/отсутствие — undefined (вызывающий покажет миниатюру).
+ * кэшируется на сессию SPA. На любой сбой/отсутствие — src=undefined (вызывающий покажет миниатюру).
+ * Флаг loading=true, пока фото догружается: лайтбокс по нему держит индикатор вместо миниатюры,
+ * чтобы картинка не «скакала» при подмене на оригинал.
  */
-export function useCharacterImageFull(id: number, enabled: boolean): string | undefined {
+export function useCharacterImageFull(
+  id: number,
+  enabled: boolean,
+): { src: string | undefined; loading: boolean } {
   const [dataUrl, setDataUrl] = useState<string | undefined>(() => getCachedFull(id));
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!enabled) return;
     const cached = getCachedFull(id);
     if (cached) {
       setDataUrl(cached);
+      setLoading(false);
       return;
     }
     let cancelled = false; // защита от StrictMode-двойного эффекта и размонтирования
+    setLoading(true);
     apiFetch<{ dataUrl: string | null }>(`/characters/${id}/image/full`)
       .then((res) => {
         if (!cancelled && res.dataUrl) {
@@ -27,11 +35,14 @@ export function useCharacterImageFull(id: number, enabled: boolean): string | un
       })
       .catch(() => {
         // тихо: останется миниатюра как запасной вариант
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
     };
   }, [id, enabled]);
 
-  return dataUrl;
+  return { src: dataUrl, loading };
 }
