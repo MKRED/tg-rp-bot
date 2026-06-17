@@ -5,22 +5,21 @@
   background: rgba(0, 0, 0, 0.85);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  /* Гасим дефолтные жесты браузера/вебвью (пан/зум страницы) на всём оверлее: иначе двумя
+     пальцами уезжает контент позади лайтбокса. JS-события библиотеки при этом продолжают
+     работать — touch-action отключает только нативную прокрутку/зум, не сами события. */
+  touch-action: none;
+  overscroll-behavior: contain;
 }
 
-/* Область зума/пана от react-zoom-pan-pinch занимает весь экран — пан возможен на всю площадь. */
+/* Область зума/пана от react-zoom-pan-pinch занимает весь экран — пан возможен на всю площадь,
+   а overflow:hidden библиотеки обрезает по краям. Контент (contentClass) НЕ трогаем: он остаётся
+   fit-content по картинке (того требует zoom-to-point — он читает getBoundingClientRect картинки,
+   а не вьюпорта). Центрирование делает centerView() из компонента после загрузки фото. */
 .image-lightbox__viewport {
   width: 100% !important;
   height: 100% !important;
-}
-
-/* Контент библиотеки по умолчанию fit-content — растягиваем на весь вьюпорт (!important бьёт
-   её CSS-классы) и центрируем картинку флексом: центрирование не зависит от момента загрузки img. */
-.image-lightbox__content {
-  width: 100% !important;
-  height: 100% !important;
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
+  touch-action: none;
 }
 
 .image-lightbox__img {

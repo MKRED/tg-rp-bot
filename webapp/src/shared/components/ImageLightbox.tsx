@@ -2,7 +2,11 @@ import { Spinner } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
+import {
+  type ReactZoomPanPinchRef,
+  TransformComponent,
+  TransformWrapper,
+} from "react-zoom-pan-pinch";
 import { pushBackInterceptor } from "../telegram/backInterceptor";
 import "./ImageLightbox.css";
 
@@ -30,6 +34,7 @@ interface ImageLightboxProps {
 export function ImageLightbox({ src, onClose }: ImageLightboxProps) {
   const [loaded, setLoaded] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
+  const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
   // Текущий масштаб > 1 — для решения «закрывать ли по тапу на фон».
   const zoomedRef = useRef(false);
 
@@ -44,12 +49,23 @@ export function ImageLightbox({ src, onClose }: ImageLightboxProps) {
   // Нативная «Назад» закрывает просмотр, а не уводит со страницы.
   useEffect(() => pushBackInterceptor(onClose), [onClose]);
 
+  // Контент библиотеки — fit-content по картинке, поэтому центрируем императивно после того,
+  // как у <img> появятся размеры (centerOnInit не сработает на ещё не загруженном фото).
+  const handleLoaded = () => {
+    setLoaded(true);
+    transformRef.current?.centerView(1, 0);
+  };
+
   // Смена источника — ждём декодирования заново. Если картинка уже в кэше браузера
-  // (data URL), onLoad мог сработать до навешивания обработчика — проверяем .complete вручную.
+  // (data URL), onLoad мог сработать до навешивания обработчика — проверяем .complete вручную
+  // и центрируем на следующем кадре, когда fit-content успеет измериться по картинке.
   useEffect(() => {
     setLoaded(false);
     const img = imgRef.current;
-    if (src && img?.complete && img.naturalWidth > 0) setLoaded(true);
+    if (src && img?.complete && img.naturalWidth > 0) {
+      setLoaded(true);
+      requestAnimationFrame(() => transformRef.current?.centerView(1, 0));
+    }
   }, [src]);
 
   // Тап по фону (не по картинке) закрывает — но не когда включён зум.
@@ -80,10 +96,14 @@ export function ImageLightbox({ src, onClose }: ImageLightboxProps) {
 
       {src && (
         <TransformWrapper
+          ref={transformRef}
           minScale={1}
           maxScale={5}
-          doubleClick={{ mode: "toggle", step: 2 }}
-          wheel={{ step: 0.2 }}
+          centerOnInit
+          // Двойной тап переключает 1×↔~2.5× (e^step), а не слэмит в максимум.
+          doubleClick={{ mode: "toggle", step: 0.9 }}
+          // wheel.step не задаём — дефолт 0.015 даёт плавный зум (наше прежнее 0.2,
+          // умноженное на |deltaY|, прыгало сразу в максимум).
           onTransform={(_ref, state) => { zoomedRef.current = state.scale > 1.01; }}
         >
           <TransformComponent
@@ -96,7 +116,7 @@ export function ImageLightbox({ src, onClose }: ImageLightboxProps) {
               src={src}
               alt=""
               draggable={false}
-              onLoad={() => setLoaded(true)}
+              onLoad={handleLoaded}
               style={{ opacity: loaded ? 1 : 0 }}
             />
           </TransformComponent>
