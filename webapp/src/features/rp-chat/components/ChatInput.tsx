@@ -1,6 +1,7 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
-import { Lightbulb, SendHorizontal, Sparkles } from "lucide-react";
+import { SendHorizontal, Sparkles } from "lucide-react";
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import { InputActionsMenu } from "./InputActionsMenu";
 
 export interface ChatInputHandle {
   /** Подставить текст в поле как редактируемый черновик (ресайз + фокус). */
@@ -11,13 +12,15 @@ interface ChatInputProps {
   onSend: (content: string) => void;
   /** Вызывается при нажатии кнопки с пустым полем — запрашивает ответ ИИ. */
   onGetResponse?: () => void;
-  /** Открыть окно генерации реплики от лица пользователя (кнопка видна при пустом поле). */
+  /** Открыть окно генерации реплики от лица пользователя (пункт меню при пустом поле). */
   onImpersonate?: () => void;
+  /** Открыть штору перевода черновика (пункт меню при пустом поле). */
+  onTranslate?: () => void;
   disabled: boolean;
 }
 
 export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function ChatInput(
-  { onSend, onGetResponse, onImpersonate, disabled },
+  { onSend, onGetResponse, onImpersonate, onTranslate, disabled },
   ref,
 ) {
   const [value, setValue] = useState("");
@@ -71,16 +74,12 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
 
   return (
     <div className="chat-input">
-      {empty && onImpersonate && (
-        <button
-          className="chat-input__impersonate"
-          onClick={onImpersonate}
+      {empty && onImpersonate && onTranslate && (
+        <InputActionsMenu
+          onImpersonate={onImpersonate}
+          onTranslate={onTranslate}
           disabled={disabled}
-          type="button"
-          aria-label="Ответ от вашего лица"
-        >
-          <Lightbulb size={24} />
-        </button>
+        />
       )}
       <textarea
         ref={textareaRef}

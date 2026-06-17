@@ -10,6 +10,7 @@ import { deleteMessage, switchBranch, translateMessage } from "../../features/rp
 import { ChatHeader } from "../../features/rp-chat/components/ChatHeader";
 import { ChatInput, type ChatInputHandle } from "../../features/rp-chat/components/ChatInput";
 import { ImpersonateSheet } from "../../features/rp-chat/components/ImpersonateSheet";
+import { TranslateSheet } from "../../features/rp-chat/components/TranslateSheet";
 import { MessageBubble } from "../../features/rp-chat/components/MessageBubble";
 import { StreamingBubble } from "../../features/rp-chat/components/StreamingBubble";
 import type { MessageInPath } from "../../features/rp-chat";
@@ -35,6 +36,7 @@ export function RpChatPage() {
   // Подавляет авто-перевод при смене ветки (сообщения исторические, не новые).
   const suppressNextAutoTranslate = useRef(false);
   const [impersonateOpen, setImpersonateOpen] = useState(false);
+  const [translateOpen, setTranslateOpen] = useState(false);
 
   const { chat, loading, error, refresh, setChat } = useChat(chatId);
   const { settings } = useChatSettings(chatId);
@@ -72,6 +74,7 @@ export function RpChatPage() {
   const handlePickSuggestion = (text: string) => {
     chatInputRef.current?.setDraft(text);
     setImpersonateOpen(false);
+    setTranslateOpen(false);
   };
 
   const handleSend = (content: string) => {
@@ -274,6 +277,7 @@ export function RpChatPage() {
             onSend={handleSend}
             onGetResponse={handleGetResponse}
             onImpersonate={() => setImpersonateOpen(true)}
+            onTranslate={() => setTranslateOpen(true)}
             disabled={sending}
           />
         </div>
@@ -286,6 +290,14 @@ export function RpChatPage() {
               targetLang={settings.translateTargetLang}
               onPick={handlePickSuggestion}
               onClose={() => setImpersonateOpen(false)}
+            />
+          )}
+          {translateOpen && chat && (
+            <TranslateSheet
+              key="translate-sheet"
+              chatId={chatId}
+              onPick={handlePickSuggestion}
+              onClose={() => setTranslateOpen(false)}
             />
           )}
         </AnimatePresence>

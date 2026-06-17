@@ -302,6 +302,7 @@ export function makeDefaultPreset(userId: number): GenerationPreset {
     minP: null, topA: null,
     systemPrompt: "", auxiliarySystemPrompt: "", postHistoryInstruction: "", userPersonaPrompt: "",
     userPersonaStreaming: true,
+    translationSystemPrompt: "",
     requestReasoning: false, reasoningEffort: null,
     promptOrder: [
       { id: "system", enabled: false },

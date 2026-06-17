@@ -8,24 +8,27 @@ interface PromptsSectionProps {
   postHistoryInstruction: string;
   userPersonaPrompt: string;
   userPersonaStreaming: boolean;
+  translationSystemPrompt: string;
   onChange: (
     field:
       | "systemPrompt"
       | "auxiliarySystemPrompt"
       | "postHistoryInstruction"
-      | "userPersonaPrompt",
+      | "userPersonaPrompt"
+      | "translationSystemPrompt",
     value: string,
   ) => void;
   onToggleStreaming: (value: boolean) => void;
 }
 
-/** Секция промптов: основной/вспомогательный/после истории + служебный (от лица пользователя). */
+/** Секция промптов: основной/вспомогательный/после истории + служебные (от лица пользователя, перевод). */
 export function PromptsSection({
   systemPrompt,
   auxiliarySystemPrompt,
   postHistoryInstruction,
   userPersonaPrompt,
   userPersonaStreaming,
+  translationSystemPrompt,
   onChange,
   onToggleStreaming,
 }: PromptsSectionProps) {
@@ -72,6 +75,14 @@ export function PromptsSection({
       >
         Стримить ответ от лица пользователя
       </Cell>
+
+      <PromptField
+        label="Промпт для перевода (ИИ-режим)"
+        hint="Системная инструкция для перевода черновика сообщения через нейросеть. Плейсхолдер {{target_lang}} — полное английское название выбранного языка. Текст сообщения уходит ролью user. Пусто → используется шаблон по умолчанию."
+        value={translationSystemPrompt}
+        rows={6}
+        onChange={(v) => onChange("translationSystemPrompt", v)}
+      />
     </>
   );
 }

@@ -1,0 +1,144 @@
+import { Spinner, Switch } from "@telegram-apps/telegram-ui";
+import { motion } from "framer-motion";
+import { SendHorizontal, X } from "lucide-react";
+import { useState } from "react";
+import { useComposeTranslate } from "../hooks/useComposeTranslate";
+import type { TranslateMode } from "../api/translate-api";
+import { LANG_OPTIONS } from "../lib/translate-options";
+import { RpText } from "./RpText";
+
+interface TranslateSheetProps {
+  chatId: number;
+  onPick: (text: string) => void;
+  onClose: () => void;
+}
+
+const SHEET_T = { duration: 0.25, ease: "easeOut" as const };
+
+const MODE_KEY = "rp-translate-mode";
+const LANG_KEY = "rp-translate-lang";
+
+/**
+ * Нижняя «штора» перевода черновика сообщения. Внизу — поле исходного текста, сверху — результат
+ * (клик вставляет его в инпут чата). Тумблер переключает Google ↔ ИИ; язык и режим хранятся в
+ * localStorage. Управляется AnimatePresence в RpChatPage (exit-анимации играют там).
+ */
+export function TranslateSheet({ chatId, onPick, onClose }: TranslateSheetProps) {
+  const { loading, result, error, translate, reset } = useComposeTranslate(chatId);
+  const [text, setText] = useState("");
+  const [mode, setMode] = useState<TranslateMode>(
+    () => (localStorage.getItem(MODE_KEY) === "ai" ? "ai" : "google"),
+  );
+  const [targetLang, setTargetLang] = useState(
+    () => localStorage.getItem(LANG_KEY) ?? "en",
+  );
+
+  const setModePersist = (m: TranslateMode) => {
+    setMode(m);
+    localStorage.setItem(MODE_KEY, m);
+  };
+  const setLangPersist = (l: string) => {
+    setTargetLang(l);
+    localStorage.setItem(LANG_KEY, l);
+  };
+
+  const run = () => {
+    if (loading || !text.trim()) return;
+    translate({ text: text.trim(), targetLang, mode });
+  };
+
+  return (
+    <motion.div
+      className="impersonate-sheet__backdrop"
+      onClick={onClose}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={SHEET_T}
+    >
+      <motion.div
+        className="impersonate-sheet translate-sheet"
+        onClick={(e) => e.stopPropagation()}
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={SHEET_T}
+      >
+        <div className="impersonate-sheet__header">
+          <span className="impersonate-sheet__title">Перевод</span>
+          <button
+            className="impersonate-sheet__close"
+            onClick={onClose}
+            type="button"
+            aria-label="Закрыть"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="translate-sheet__controls">
+          <label className="translate-sheet__mode">
+            <span>{mode === "ai" ? "ИИ" : "Google"}</span>
+            <Switch
+              checked={mode === "ai"}
+              onChange={(e) => setModePersist(e.target.checked ? "ai" : "google")}
+            />
+          </label>
+          <select
+            className="translate-sheet__lang"
+            value={targetLang}
+            onChange={(e) => setLangPersist(e.target.value)}
+            aria-label="Язык перевода"
+          >
+            {LANG_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Результат сверху: клик вставляет перевод в поле ввода чата. */}
+        <div className="translate-sheet__result">
+          {loading ? (
+            <div className="impersonate-sheet__loading">
+              <Spinner size="m" />
+            </div>
+          ) : error ? (
+            <div className="impersonate-sheet__empty">{error}</div>
+          ) : result ? (
+            <div className="impersonate-card" onClick={() => onPick(result)}>
+              <p className="impersonate-card__text">
+                <RpText text={result} />
+              </p>
+            </div>
+          ) : (
+            <div className="impersonate-sheet__empty">Введите текст и нажмите «Перевести»</div>
+          )}
+        </div>
+
+        <div className="translate-sheet__input">
+          <textarea
+            className="chat-input__textarea"
+            value={text}
+            onChange={(e) => {
+              setText(e.target.value);
+              if (result || error) reset();
+            }}
+            placeholder="Текст для перевода…"
+            rows={2}
+          />
+          <button
+            className="chat-input__send"
+            onClick={run}
+            disabled={loading || !text.trim()}
+            type="button"
+            aria-label="Перевести"
+          >
+            {loading ? <Spinner size="s" /> : <SendHorizontal size={24} />}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}

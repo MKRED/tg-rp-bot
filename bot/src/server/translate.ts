@@ -1,3 +1,4 @@
+import { chatCompletion } from "../llm/client.js";
 import logger from "../logger.js";
 import { retry } from "../utils/index.js";
 
@@ -37,4 +38,63 @@ export async function googleTranslate(text: string, targetLang: string): Promise
     "googleTranslate done",
   );
   return result;
+}
+
+/**
+ * Полные английские названия языков по коду (значения LANG_OPTIONS из webapp). Нужны для
+ * подстановки в плейсхолдер {{target_lang}} ИИ-промпта — он всегда получает английское название,
+ * а не код. Неизвестный код → сам код (фолбэк).
+ */
+const LANG_ENGLISH_NAMES: Record<string, string> = {
+  ru: "Russian",
+  en: "English",
+  de: "German",
+  ja: "Japanese",
+  zh: "Chinese",
+  fr: "French",
+  es: "Spanish",
+};
+
+export function englishLangName(code: string): string {
+  return LANG_ENGLISH_NAMES[code] ?? code;
+}
+
+/** Дефолтный системный промпт ИИ-перевода, когда в пресете он не задан. */
+export const DEFAULT_TRANSLATION_TEMPLATE =
+  "You are a translation engine. Translate the user's message into {{target_lang}}. " +
+  "Output only the translation, preserving formatting and meaning; no notes or explanations.";
+
+/**
+ * Переводит текст запросом к LLM (режим «ИИ» в шторе перевода). Системный промпт берётся из
+ * пресета (плейсхолдер {{target_lang}} → полное англ. название языка), исходный текст уходит
+ * ролью user, ответ ждём от assistant. Нестриминговый вызов chatCompletion (без onChunk).
+ * Сэмплинг не передаём — параметры пресета настроены под RP и навредили бы переводу (см. вызов).
+ */
+export async function aiTranslate(
+  systemPromptTemplate: string,
+  text: string,
+  targetLangName: string,
+): Promise<string> {
+  const t0 = Date.now();
+  const template = systemPromptTemplate.trim() || DEFAULT_TRANSLATION_TEMPLATE;
+  const system = template.replaceAll("{{target_lang}}", targetLangName);
+
+  const result = await chatCompletion({
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: text },
+    ],
+  });
+
+  logger.info(
+    {
+      durationMs: Date.now() - t0,
+      targetLang: targetLangName,
+      inputChars: text.length,
+      outputChars: result.content.length,
+      ...result.usage,
+    },
+    "aiTranslate done",
+  );
+  return result.content.trim();
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "generation_presets" ADD COLUMN "translation_system_prompt" text DEFAULT '' NOT NULL;

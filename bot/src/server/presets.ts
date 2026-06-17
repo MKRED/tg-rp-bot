@@ -173,6 +173,7 @@ function parsePresetInput(body: unknown): { input: PresetInput } | { error: stri
       postHistoryInstruction: str(b.postHistoryInstruction),
       userPersonaPrompt: str(b.userPersonaPrompt),
       userPersonaStreaming,
+      translationSystemPrompt: str(b.translationSystemPrompt),
       requestReasoning,
       reasoningEffort,
       promptOrder,

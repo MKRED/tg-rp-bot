@@ -70,6 +70,9 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
   const [userPersonaStreaming, setUserPersonaStreaming] = useState(
     initial?.userPersonaStreaming ?? true,
   );
+  const [translationSystemPrompt, setTranslationSystemPrompt] = useState(
+    initial?.translationSystemPrompt ?? "",
+  );
   const [requestReasoning, setRequestReasoning] = useState(initial?.requestReasoning ?? false);
   const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>(
     initial?.reasoningEffort ?? DEFAULT_EFFORT,
@@ -89,7 +92,8 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
       | "systemPrompt"
       | "auxiliarySystemPrompt"
       | "postHistoryInstruction"
-      | "userPersonaPrompt",
+      | "userPersonaPrompt"
+      | "translationSystemPrompt",
     value: string,
   ) => {
     const setters = {
@@ -97,6 +101,7 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
       auxiliarySystemPrompt: setAuxiliarySystemPrompt,
       postHistoryInstruction: setPostHistoryInstruction,
       userPersonaPrompt: setUserPersonaPrompt,
+      translationSystemPrompt: setTranslationSystemPrompt,
     };
     setters[field](value);
   };
@@ -124,6 +129,7 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
       postHistoryInstruction,
       userPersonaPrompt,
       userPersonaStreaming,
+      translationSystemPrompt,
       requestReasoning,
       reasoningEffort: requestReasoning ? reasoningEffort : null,
       promptOrder,
@@ -154,6 +160,7 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
         postHistoryInstruction={postHistoryInstruction}
         userPersonaPrompt={userPersonaPrompt}
         userPersonaStreaming={userPersonaStreaming}
+        translationSystemPrompt={translationSystemPrompt}
         onChange={updatePrompt}
         onToggleStreaming={setUserPersonaStreaming}
       />

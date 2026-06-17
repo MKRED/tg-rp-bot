@@ -12,7 +12,7 @@ import type { AppVariables } from "./initData.js";
 import { loadChatContext } from "./messageHandlers.js";
 import { presetToCompletionOptions, renderImpersonateMessages } from "./promptBuilder.js";
 import { streamCompletion } from "./streamGeneration.js";
-import { googleTranslate } from "./translate.js";
+import { aiTranslate, englishLangName, googleTranslate } from "./translate.js";
 
 type Ctx = Context<{ Variables: AppVariables }>;
 
@@ -106,15 +106,40 @@ export async function handleDeleteImpersonation(c: Ctx) {
   return c.json({ ok: true });
 }
 
-/** POST /:id/translate-text — перевод произвольного текста (эфемерно, без кэша в БД). */
+/**
+ * POST /:id/translate-text — перевод произвольного текста (эфемерно, без кэша в БД).
+ * mode: "google" (по умолчанию — Google Translate) или "ai" (запрос к LLM с промптом перевода
+ * из пресета). Используется и карточками impersonate (без mode → google), и шторой перевода черновика.
+ */
 export async function handleTranslateText(c: Ctx) {
   const userId = c.get("tgUser")!.id;
   const chatId = Number(c.req.param("id"));
 
-  const body = (await c.req.json().catch(() => ({}))) as { text?: string; targetLang?: string };
+  const body = (await c.req.json().catch(() => ({}))) as {
+    text?: string;
+    targetLang?: string;
+    mode?: string;
+  };
   const text = typeof body.text === "string" ? body.text : "";
   const targetLang = typeof body.targetLang === "string" ? body.targetLang.trim() : "";
+  const mode = body.mode === "ai" ? "ai" : "google";
   if (!text.trim() || !targetLang) return c.json({ error: "text and targetLang are required" }, 400);
+
+  if (mode === "ai") {
+    // ИИ-режиму нужны пресет и контекст чата (проверка владельца — внутри loadChatContext).
+    const ctx = await loadChatContext(userId, chatId);
+    if (!ctx) return c.json({ error: "Chat not found" }, 404);
+    const { preset } = ctx;
+    // Сэмплинг пресета НЕ переиспользуем: его maxTokens обрезал бы длинный перевод, а высокие
+    // temperature/penalties (настроенные под RP) портят верность перевода. Управляющая
+    // поверхность ИИ-режима — сам промпт перевода; параметры оставляем дефолтными для модели.
+    const translation = await aiTranslate(
+      preset?.translationSystemPrompt ?? "",
+      text,
+      englishLangName(targetLang),
+    );
+    return c.json({ translation });
+  }
 
   // Проверяем принадлежность чата пользователю
   const chat = await getChat(userId, chatId);

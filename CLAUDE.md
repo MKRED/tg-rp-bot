@@ -48,7 +48,7 @@ bot/src/
   server/       — Hono HTTP API: index=startServer, routes.ts, initData.ts (валидация подписи),
                   CRUD-роуты (characters/personas/presets/chats), messageHandlers +
                   impersonateHandlers (стриминговая RP-генерация по SSE), promptBuilder,
-                  translate (Google Translate), profilePhoto
+                  translate (Google Translate + ИИ-перевод по промпту пресета), profilePhoto
                   + раздача собранной статики Mini App из ./public (SPA-fallback) — один процесс
   scripts/      — разовые скрипты (backfill-message-encryption)
   utils/        — retry, crypto (per-user шифрование сообщений)

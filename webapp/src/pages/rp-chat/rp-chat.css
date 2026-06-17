@@ -552,6 +552,96 @@
   color: var(--tg-theme-destructive-text-color, #e53935);
 }
 
+/* ─── Меню действий над инпутом (impersonate / перевод) ──────────────────────── */
+
+.input-actions-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.input-actions-menu__popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  padding: 6px;
+  background: var(--tg-theme-bg-color, #fff);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+}
+
+.input-actions-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  font-size: 15px;
+  color: var(--tg-theme-text-color, #000);
+  text-align: left;
+}
+
+.input-actions-menu__item:active {
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+}
+
+.input-actions-menu__item svg {
+  color: var(--tg-theme-link-color, #2481cc);
+  flex-shrink: 0;
+}
+
+/* ─── Штора перевода черновика ───────────────────────────────────────────────── */
+
+.translate-sheet__controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.translate-sheet__mode {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--tg-theme-text-color, #000);
+}
+
+.translate-sheet__lang {
+  padding: 8px 12px;
+  border: 1.5px solid var(--tg-theme-secondary-bg-color, #e5e5e5);
+  border-radius: 10px;
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  color: var(--tg-theme-text-color, #000);
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.translate-sheet__result {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 80px;
+}
+
+.translate-sheet__input {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 /* ─── Страница настроек чата ─────────────────────────────────────────────────── */
 
 /* Заглушка-кружок с иконкой для персоны/пресета без аватара */

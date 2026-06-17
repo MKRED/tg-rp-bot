@@ -141,6 +141,10 @@ export const generationPresets = pgTable("generation_presets", {
   userPersonaPrompt: text("user_persona_prompt").notNull().default(""),
   // Стримить ли текст при генерации реплики от лица пользователя.
   userPersonaStreaming: boolean("user_persona_streaming").notNull().default(true),
+  // Служебный: системный промпт для ИИ-перевода черновика сообщения (режим «ИИ» в шторе перевода).
+  // Плейсхолдер {{target_lang}} — полное англ. название целевого языка; текст уходит ролью user.
+  // Пусто → дефолтный шаблон (DEFAULT_TRANSLATION_TEMPLATE в server/translate.ts).
+  translationSystemPrompt: text("translation_system_prompt").notNull().default(""),
 
   // Рассуждение (reasoning). effort: minimal | low | medium | high | xhigh (или null).
   requestReasoning: boolean("request_reasoning").notNull().default(false),
