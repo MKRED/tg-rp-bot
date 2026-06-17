@@ -1,3 +1,5 @@
+/* Редактор кропа рендерится через portal в body — ВНЕ <AppRoot>, поэтому CSS-переменные
+   темы tgui (--tgui--*) сюда не доезжают. Используем фиксированные цвета, не var(--tgui--…). */
 .crop-editor {
   position: fixed;
   inset: 0;
@@ -5,9 +7,31 @@
   display: flex;
   flex-direction: column;
   background: #000;
+  color: #fff;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Область кропа занимает всё доступное место над панелью управления;
+.crop-editor__header {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 16px 22px 4px;
+  /* верхний отступ под шапку Telegram */
+  padding-top: calc(16px + var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)));
+}
+
+.crop-editor__title {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.crop-editor__hint {
+  margin-top: 4px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* Область кропа занимает всё доступное место между шапкой и панелью;
    react-easy-crop позиционируется absolute внутри неё. */
 .crop-editor__area {
   position: relative;
@@ -15,23 +39,109 @@
   min-height: 0;
 }
 
+/* Сильнее затемняем фото вне круга, чтобы выбранная область читалась.
+   react-easy-crop рисует затемнение через box-shadow: 0 0 0 9999em currentColor —
+   управляем им именно через color (а не добавляем второй оверлей). */
+.crop-editor .reactEasyCrop_CropArea {
+  color: rgba(0, 0, 0, 0.72);
+  border: 2px solid rgba(255, 255, 255, 0.7);
+}
+
+/* Панель управления — отдельная «поверхность» поверх чёрного фото: чуть светлее,
+   скруглённый верх и линия-разделитель, чтобы не сливалась с областью кропа. */
 .crop-editor__controls {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px 22px;
+  gap: 18px;
+  padding: 20px 22px;
   /* нижний отступ под домашнюю полоску/safe-area */
-  padding-bottom: calc(16px + var(--tg-viewport-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
-  background: var(--tgui--bg_color, #1c1c1e);
+  padding-bottom: calc(20px + var(--tg-viewport-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+  background: #1c1c1e;
+  border-radius: 16px 16px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Слайдер зума с иконками «меньше/больше» по краям. */
+.crop-editor__zoom-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.crop-editor__zoom-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .crop-editor__zoom {
-  width: 100%;
-  accent-color: var(--tgui--link_color, #2481cc);
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.18);
+  outline: none;
+  cursor: pointer;
+}
+
+/* Ползунок (WebKit/Telegram webview) */
+.crop-editor__zoom::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+/* Ползунок (Firefox/dev-браузер) */
+.crop-editor__zoom::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
 }
 
 .crop-editor__actions {
   display: flex;
   gap: 12px;
+}
+
+/* Кнопки — собственный стиль вместо tgui Button (см. коммент в .tsx). */
+.crop-editor__btn {
+  flex: 1;
+  height: 48px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, background-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.crop-editor__btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.crop-editor__btn:not(:disabled):active {
+  opacity: 0.8;
+}
+
+.crop-editor__btn--ghost {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.crop-editor__btn--primary {
+  background: #2481cc;
+  color: #fff;
 }
