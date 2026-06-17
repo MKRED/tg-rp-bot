@@ -4,7 +4,7 @@ import { Languages, SendHorizontal, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { useComposeTranslate } from "../hooks/useComposeTranslate";
 import type { TranslateMode } from "../api/translate-api";
-import { LANG_OPTIONS } from "../lib/translate-options";
+import { LangPicker } from "./LangPicker";
 import { RpText } from "./RpText";
 
 interface TranslateSheetProps {
@@ -28,13 +28,17 @@ export function TranslateSheet({ chatId, onPick, onClose }: TranslateSheetProps)
   const [text, setText] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Авторазмер инпута как в основном поле чата: от одной строки вверх до 160px.
+  // Авторазмер инпута как в основном поле чата, но потолок — 5 строк (дальше внутренний скролл).
   const resize = () => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
+    const cs = getComputedStyle(el);
+    const lineHeight = parseFloat(cs.lineHeight) || 21;
+    const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
     const borderY = el.offsetHeight - el.clientHeight;
-    el.style.height = `${Math.min(el.scrollHeight + borderY, 160)}px`;
+    const max = lineHeight * 5 + padY + borderY;
+    el.style.height = `${Math.min(el.scrollHeight + borderY, max)}px`;
   };
   const [mode, setMode] = useState<TranslateMode>(
     () => (localStorage.getItem(MODE_KEY) === "ai" ? "ai" : "google"),
@@ -111,18 +115,7 @@ export function TranslateSheet({ chatId, onPick, onClose }: TranslateSheetProps)
               </button>
             ))}
           </div>
-          <select
-            className="translate-sheet__lang"
-            value={targetLang}
-            onChange={(e) => setLangPersist(e.target.value)}
-            aria-label="Язык перевода"
-          >
-            {LANG_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+          <LangPicker value={targetLang} onChange={setLangPersist} />
         </div>
 
         {/* Результат сверху: клик вставляет перевод в поле ввода чата. */}

@@ -57,6 +57,14 @@ export function ImpersonateVariantCard({ chatId, text, targetLang, onPick, onDel
       <p className="impersonate-card__text"><RpText text={display} /></p>
       <div className="impersonate-card__actions">
         <button
+          className="impersonate-card__btn impersonate-card__btn--danger"
+          onClick={handleDelete}
+          type="button"
+          aria-label="Удалить"
+        >
+          <Trash2 size={20} />
+        </button>
+        <button
           className={`impersonate-card__btn${showTranslation ? " impersonate-card__btn--active" : ""}`}
           onClick={handleTranslateToggle}
           disabled={translating}
@@ -64,14 +72,6 @@ export function ImpersonateVariantCard({ chatId, text, targetLang, onPick, onDel
           aria-label="Перевести"
         >
           {translating ? <Spinner size="s" /> : <Globe size={20} />}
-        </button>
-        <button
-          className="impersonate-card__btn impersonate-card__btn--danger"
-          onClick={handleDelete}
-          type="button"
-          aria-label="Удалить"
-        >
-          <Trash2 size={20} />
         </button>
       </div>
     </div>
