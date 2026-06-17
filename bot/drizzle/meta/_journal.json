@@ -57,6 +57,13 @@
       "when": 1781661567247,
       "tag": "0007_young_tomas",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1781678084988,
+      "tag": "0008_fluffy_gateway",
+      "breakpoints": true
     }
   ]
 }

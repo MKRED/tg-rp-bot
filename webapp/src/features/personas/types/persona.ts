@@ -3,6 +3,7 @@ export interface Persona {
   id: number;
   name: string;
   image: string | null;
+  imageFull: string | null;
   footnote: string | null;
   prompt: string;
   createdAt: string;
@@ -23,6 +24,7 @@ export interface PersonaInput {
   prompt: string;
   footnote: string | null;
   image: string | null;
+  imageFull: string | null;
 }
 
 export const MAX_PERSONAS_PER_USER = 50;

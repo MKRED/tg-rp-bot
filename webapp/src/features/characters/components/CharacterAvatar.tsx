@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ImageLightbox } from "../../../shared/components/ImageLightbox";
 import { nameInitials as characterInitials } from "../../../shared/text/initials";
 import { useCharacterImage } from "../hooks/useCharacterImage";
+import { useCharacterImageFull } from "../hooks/useCharacterImageFull";
 import "./CharacterAvatar.css";
 
 interface CharacterAvatarProps {
@@ -28,6 +29,8 @@ export function CharacterAvatar({
 }: CharacterAvatarProps) {
   const src = useCharacterImage(id, hasImage);
   const [open, setOpen] = useState(false);
+  // Полное фото догружаем только когда лайтбокс открыт; пока нет — показываем миниатюру.
+  const fullSrc = useCharacterImageFull(id, open);
 
   // Лайтбокс доступен только когда картинка уже загружена
   const canEnlarge = enlargeable && Boolean(src);
@@ -51,7 +54,9 @@ export function CharacterAvatar({
         avatar
       )}
       <AnimatePresence>
-        {open && src && <ImageLightbox src={src} onClose={() => setOpen(false)} />}
+        {open && src && (
+          <ImageLightbox src={fullSrc ?? src} onClose={() => setOpen(false)} />
+        )}
       </AnimatePresence>
     </>
   );

@@ -3,6 +3,7 @@ export interface Character {
   id: number;
   name: string;
   image: string | null;
+  imageFull: string | null;
   tags: string[];
   prompt: string;
   firstMessages: string[];
@@ -22,13 +23,17 @@ export interface CharacterListItem {
   hasImage: boolean;
 }
 
-/** Тело формы создания/редактирования (POST/PUT). image — аватар как data URL или null. */
+/**
+ * Тело формы создания/редактирования (POST/PUT).
+ * image — квадратная миниатюра (data URL или null); imageFull — то же фото целиком (без кропа).
+ */
 export interface CharacterInput {
   name: string;
   tags: string[];
   prompt: string;
   firstMessages: string[];
   image: string | null;
+  imageFull: string | null;
 }
 
 /** Мягкие лимиты — дублируют серверные (bot/src/server/characters.ts), блокируют UI заранее. */

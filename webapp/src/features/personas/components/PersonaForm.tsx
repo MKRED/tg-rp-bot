@@ -1,6 +1,6 @@
 import { Button, Input } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
-import { AvatarPicker } from "../../../shared/components/AvatarPicker";
+import { AvatarPicker, type AvatarValue } from "../../../shared/components/AvatarPicker";
 import { ExpandableTextarea } from "../../../shared/components/ExpandableTextarea";
 import { estimateTokens } from "../../../shared/text/tokens";
 import type { PersonaInput } from "../types/persona";
@@ -18,16 +18,24 @@ interface PersonaFormProps {
 export function PersonaForm({ initial, submitting, onSubmit, onDelete }: PersonaFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
   const [image, setImage] = useState<string | null>(initial?.image ?? null);
+  const [imageFull, setImageFull] = useState<string | null>(initial?.imageFull ?? null);
   const [footnote, setFootnote] = useState(initial?.footnote ?? "");
   const [prompt, setPrompt] = useState(initial?.prompt ?? "");
 
   const canSubmit = name.trim().length > 0 && !submitting;
+
+  // Аватар: выбор фото даёт обе картинки, удаление — null.
+  const handleAvatar = (value: AvatarValue | null) => {
+    setImage(value?.image ?? null);
+    setImageFull(value?.imageFull ?? null);
+  };
 
   const handleSubmit = () => {
     if (!canSubmit) return;
     onSubmit({
       name: name.trim(),
       image,
+      imageFull,
       footnote: footnote.trim() || null,
       prompt,
     });
@@ -35,7 +43,7 @@ export function PersonaForm({ initial, submitting, onSubmit, onDelete }: Persona
 
   return (
     <div className="persona-form">
-      <AvatarPicker image={image} name={name} onChange={setImage} />
+      <AvatarPicker image={image} imageFull={imageFull} name={name} onChange={handleAvatar} />
 
       <Input
         header="Имя"

@@ -22,6 +22,7 @@ function toInput(p: Persona): PersonaInput {
   return {
     name: p.name,
     image: p.image,
+    imageFull: p.imageFull,
     footnote: p.footnote,
     prompt: p.prompt,
   };

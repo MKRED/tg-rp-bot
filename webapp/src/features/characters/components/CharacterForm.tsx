@@ -1,6 +1,6 @@
 import { Button, Input } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
-import { AvatarPicker } from "../../../shared/components/AvatarPicker";
+import { AvatarPicker, type AvatarValue } from "../../../shared/components/AvatarPicker";
 import { ExpandableTextarea } from "../../../shared/components/ExpandableTextarea";
 import { FirstMessagesEditor } from "./FirstMessagesEditor";
 import { TagsInput } from "./TagsInput";
@@ -20,17 +20,25 @@ interface CharacterFormProps {
 export function CharacterForm({ initial, submitting, onSubmit, onDelete }: CharacterFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
   const [image, setImage] = useState<string | null>(initial?.image ?? null);
+  const [imageFull, setImageFull] = useState<string | null>(initial?.imageFull ?? null);
   const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
   const [prompt, setPrompt] = useState(initial?.prompt ?? "");
   const [firstMessages, setFirstMessages] = useState<string[]>(initial?.firstMessages ?? []);
 
   const canSubmit = name.trim().length > 0 && !submitting;
 
+  // Аватар: выбор фото даёт обе картинки, удаление — null.
+  const handleAvatar = (value: AvatarValue | null) => {
+    setImage(value?.image ?? null);
+    setImageFull(value?.imageFull ?? null);
+  };
+
   const handleSubmit = () => {
     if (!canSubmit) return;
     onSubmit({
       name: name.trim(),
       image,
+      imageFull,
       tags,
       prompt,
       // отбрасываем пустые варианты первого сообщения
@@ -40,7 +48,7 @@ export function CharacterForm({ initial, submitting, onSubmit, onDelete }: Chara
 
   return (
     <div className="char-form">
-      <AvatarPicker image={image} name={name} onChange={setImage} />
+      <AvatarPicker image={image} imageFull={imageFull} name={name} onChange={handleAvatar} />
 
       <Input
         header="Название"

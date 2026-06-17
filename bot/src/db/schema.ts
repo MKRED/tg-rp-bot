@@ -35,7 +35,9 @@ export type NewUser = typeof users.$inferInsert;
  *
  * id — собственный identity-ключ (в отличие от users.id, который равен Telegram id):
  * персонаж адресуется только за стеной initData, непредсказуемость не нужна.
- * image (data URL) — nullable: колонка под будущий UI загрузки, в этой итерации не заполняется.
+ * image (data URL) — nullable: квадратная миниатюра (кроп, выбранный пользователем) для аватара.
+ * imageFull (data URL) — nullable: то же фото целиком (уменьшенное, без кадрирования) для
+ * полноэкранного просмотра; грузится отдельным запросом, чтобы список тянул только миниатюру.
  */
 export const characters = pgTable("characters", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
@@ -44,6 +46,7 @@ export const characters = pgTable("characters", {
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   image: text("image"),
+  imageFull: text("image_full"),
   tags: text("tags")
     .array()
     .notNull()
@@ -74,6 +77,7 @@ export const personas = pgTable("personas", {
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   image: text("image"),
+  imageFull: text("image_full"),
   footnote: text("footnote"),
   prompt: text("prompt").notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

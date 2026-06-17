@@ -10,7 +10,8 @@ export { ensureUser } from "./users.js";
 
 /**
  * Поля персонажа, которые приходят из формы Mini App (без серверных id/timestamps).
- * image — аватар как data URL (или null, если не задан/удалён).
+ * image — квадратная миниатюра аватара (data URL или null).
+ * imageFull — то же фото целиком, без кадрирования (data URL или null) для полноэкранного просмотра.
  */
 export type CharacterInput = {
   name: string;
@@ -18,6 +19,7 @@ export type CharacterInput = {
   prompt: string;
   firstMessages: string[];
   image: string | null;
+  imageFull: string | null;
 };
 
 /**
@@ -97,6 +99,22 @@ export async function getCharacterImage(
   return rows[0]?.image;
 }
 
+/**
+ * Полноразмерное (некадрированное) фото персонажа — отдельной колонкой, грузится только при
+ * открытии лайтбокса. Возвращает: undefined — персонажа нет/не его; null — есть, но без фото;
+ * string — data URL. У старых персонажей imageFull = null (заполняется при следующем сохранении).
+ */
+export async function getCharacterImageFull(
+  userId: number,
+  id: number,
+): Promise<string | null | undefined> {
+  const rows = await db
+    .select({ imageFull: schema.characters.imageFull })
+    .from(schema.characters)
+    .where(and(eq(schema.characters.id, id), eq(schema.characters.userId, userId)));
+  return rows[0]?.imageFull;
+}
+
 /** Создаёт персонажа и возвращает созданную строку. */
 export async function createCharacter(userId: number, input: CharacterInput): Promise<Character> {
   const t0 = Date.now();
@@ -110,6 +128,7 @@ export async function createCharacter(userId: number, input: CharacterInput): Pr
       prompt: encryptField(input.prompt, key),
       firstMessages: input.firstMessages.map((msg) => encryptField(msg, key)),
       image: input.image,
+      imageFull: input.imageFull,
     })
     .returning();
   const created = rows[0]!; // insert ... returning всегда отдаёт одну строку
@@ -136,6 +155,7 @@ export async function updateCharacter(
       prompt: encryptField(input.prompt, key),
       firstMessages: input.firstMessages.map((msg) => encryptField(msg, key)),
       image: input.image,
+      imageFull: input.imageFull,
     })
     .where(and(eq(schema.characters.id, id), eq(schema.characters.userId, userId)))
     .returning();

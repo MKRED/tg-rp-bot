@@ -12,7 +12,7 @@ Telegram-бот для ролевой игры (RP) с упором на **Teleg
 | БД | Postgres + [drizzle-orm](https://orm.drizzle.team) / drizzle-kit |
 | LLM | OpenRouter (OpenAI-совместимый API) |
 | Логи | pino (+ pino-roll, pino-pretty) |
-| Mini App | React 19 + Vite + `@telegram-apps/sdk-react` + `@telegram-apps/telegram-ui` + `react-router-dom` (HashRouter) + `@xyflow/react` (граф диалога) + `framer-motion` |
+| Mini App | React 19 + Vite + `@telegram-apps/sdk-react` + `@telegram-apps/telegram-ui` + `react-router-dom` (HashRouter) + `@xyflow/react` (граф диалога) + `framer-motion` + `react-easy-crop` (кроп аватара) |
 | initData | подпись проверяется серверно через `@tma.js/init-data-node` |
 | Прокси | `https-proxy-agent` (HttpsProxyAgent, CONNECT-туннель) — только для Telegram |
 | Тесты | vitest (bot + webapp) |

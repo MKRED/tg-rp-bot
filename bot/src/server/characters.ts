@@ -7,10 +7,12 @@ import {
   ensureUser,
   getCharacter,
   getCharacterImage,
+  getCharacterImageFull,
   listCharacters,
   updateCharacter,
 } from "../db/characters.js";
 import logger from "../logger.js";
+import { MAX_IMAGE_CHARS, MAX_IMAGE_FULL_CHARS, parseImageField } from "./imageValidation.js";
 import type { AppVariables } from "./initData.js";
 
 /** Проверяет, является ли ошибка нарушением FK-ограничения PostgreSQL (SQLSTATE 23503).
@@ -32,9 +34,6 @@ const isFkViolation = (err: unknown): boolean => {
 // Мягкие лимиты (дублируются в webapp для блокировки UI — здесь последняя линия защиты).
 const MAX_CHARACTERS_PER_USER = 50;
 const MAX_FIRST_MESSAGES = 10;
-// Потолок размера аватара (data URL). ~900 КБ строки ≈ ~675 КБ бинарных данных — последняя
-// линия защиты: webapp и так даунскейлит картинку до 512px JPEG перед отправкой.
-const MAX_IMAGE_CHARS = 900_000;
 
 /**
  * Разбирает тело запроса в CharacterInput с ручной валидацией (без отдельной зависимости).
@@ -59,17 +58,11 @@ function parseCharacterInput(body: unknown): { input: CharacterInput } | { error
     return { error: `Too many first messages (max ${MAX_FIRST_MESSAGES})` };
   }
 
-  // image опционален: отсутствует/null → нет аватара; строка обязана быть data:image/*-URL.
-  let image: string | null = null;
-  if (b.image !== undefined && b.image !== null) {
-    if (typeof b.image !== "string" || !b.image.startsWith("data:image/")) {
-      return { error: "Image must be a data:image/* URL" };
-    }
-    if (b.image.length > MAX_IMAGE_CHARS) {
-      return { error: "Image too large" };
-    }
-    image = b.image;
-  }
+  // image/imageFull опциональны: отсутствует/null → нет картинки; строка обязана быть data:image/*-URL.
+  const imageParsed = parseImageField(b.image, MAX_IMAGE_CHARS, "Image");
+  if ("error" in imageParsed) return { error: imageParsed.error };
+  const imageFullParsed = parseImageField(b.imageFull, MAX_IMAGE_FULL_CHARS, "Full image");
+  if ("error" in imageFullParsed) return { error: imageFullParsed.error };
 
   return {
     input: {
@@ -77,7 +70,8 @@ function parseCharacterInput(body: unknown): { input: CharacterInput } | { error
       prompt,
       tags: b.tags as string[],
       firstMessages: b.firstMessages as string[],
-      image,
+      image: imageParsed.value,
+      imageFull: imageFullParsed.value,
     },
   };
 }
@@ -132,6 +126,23 @@ export function createCharacterRoutes(): Hono<{ Variables: AppVariables }> {
       return c.json({ dataUrl: image }); // image: string | null
     } catch (err) {
       logger.error({ err, userId: user.id, id }, "Failed to get character image");
+      return c.json({ error: "Internal error" }, 500);
+    }
+  });
+
+  // Полноразмерное (некадрированное) фото — отдельным запросом при открытии лайтбокса.
+  // Сегментов больше, чем у /:id/image, поэтому маршруты не конфликтуют. Фото не логируем.
+  api.get("/:id/image/full", async (c) => {
+    const user = c.get("tgUser");
+    if (!user) return c.json({ error: "Auth required" }, 401);
+    const id = Number(c.req.param("id"));
+    if (!Number.isInteger(id)) return c.json({ error: "Invalid id" }, 400);
+    try {
+      const imageFull = await getCharacterImageFull(user.id, id);
+      if (imageFull === undefined) return c.json({ error: "Not found" }, 404);
+      return c.json({ dataUrl: imageFull }); // imageFull: string | null
+    } catch (err) {
+      logger.error({ err, userId: user.id, id }, "Failed to get character full image");
       return c.json({ error: "Internal error" }, 500);
     }
   });

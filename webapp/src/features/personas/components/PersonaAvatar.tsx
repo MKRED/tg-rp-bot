@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ImageLightbox } from "../../../shared/components/ImageLightbox";
 import { nameInitials } from "../../../shared/text/initials";
 import { usePersonaImage } from "../hooks/usePersonaImage";
+import { usePersonaImageFull } from "../hooks/usePersonaImageFull";
 import "./PersonaAvatar.css";
 
 interface PersonaAvatarProps {
@@ -22,6 +23,8 @@ interface PersonaAvatarProps {
 export function PersonaAvatar({ id, hasImage, name, size = 40, enlargeable = false }: PersonaAvatarProps) {
   const src = usePersonaImage(id, hasImage);
   const [open, setOpen] = useState(false);
+  // Полное фото догружаем только когда лайтбокс открыт; пока нет — показываем миниатюру.
+  const fullSrc = usePersonaImageFull(id, open);
 
   // Лайтбокс доступен только когда картинка уже загружена
   const canEnlarge = enlargeable && Boolean(src);
@@ -45,7 +48,9 @@ export function PersonaAvatar({ id, hasImage, name, size = 40, enlargeable = fal
         avatar
       )}
       <AnimatePresence>
-        {open && src && <ImageLightbox src={src} onClose={() => setOpen(false)} />}
+        {open && src && (
+          <ImageLightbox src={fullSrc ?? src} onClose={() => setOpen(false)} />
+        )}
       </AnimatePresence>
     </>
   );

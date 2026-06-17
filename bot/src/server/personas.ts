@@ -7,10 +7,12 @@ import {
   ensureUser,
   getPersona,
   getPersonaImage,
+  getPersonaImageFull,
   listPersonas,
   updatePersona,
 } from "../db/personas.js";
 import logger from "../logger.js";
+import { MAX_IMAGE_CHARS, MAX_IMAGE_FULL_CHARS, parseImageField } from "./imageValidation.js";
 import type { AppVariables } from "./initData.js";
 
 /** Проверяет, является ли ошибка нарушением FK-ограничения PostgreSQL (SQLSTATE 23503).
@@ -31,7 +33,6 @@ const isFkViolation = (err: unknown): boolean => {
 
 // Мягкий лимит (дублируется в webapp для блокировки UI — здесь последняя линия защиты).
 const MAX_PERSONAS_PER_USER = 50;
-const MAX_IMAGE_CHARS = 900_000;
 
 /**
  * Разбирает тело запроса в PersonaInput с ручной валидацией.
@@ -53,17 +54,15 @@ function parsePersonaInput(body: unknown): { input: PersonaInput } | { error: st
     footnote = b.footnote;
   }
 
-  // image опционален: null → нет аватара; строка обязана быть data:image/*-URL.
-  let image: string | null = null;
-  if (b.image !== undefined && b.image !== null) {
-    if (typeof b.image !== "string" || !b.image.startsWith("data:image/")) {
-      return { error: "Image must be a data:image/* URL" };
-    }
-    if (b.image.length > MAX_IMAGE_CHARS) return { error: "Image too large" };
-    image = b.image;
-  }
+  // image/imageFull опциональны: null → нет картинки; строка обязана быть data:image/*-URL.
+  const imageParsed = parseImageField(b.image, MAX_IMAGE_CHARS, "Image");
+  if ("error" in imageParsed) return { error: imageParsed.error };
+  const imageFullParsed = parseImageField(b.imageFull, MAX_IMAGE_FULL_CHARS, "Full image");
+  if ("error" in imageFullParsed) return { error: imageFullParsed.error };
 
-  return { input: { name, prompt, footnote, image } };
+  return {
+    input: { name, prompt, footnote, image: imageParsed.value, imageFull: imageFullParsed.value },
+  };
 }
 
 /**
@@ -114,6 +113,22 @@ export function createPersonaRoutes(): Hono<{ Variables: AppVariables }> {
       return c.json({ dataUrl: image });
     } catch (err) {
       logger.error({ err, userId: user.id, id }, "Failed to get persona image");
+      return c.json({ error: "Internal error" }, 500);
+    }
+  });
+
+  // Полноразмерное (некадрированное) фото — отдельным запросом при открытии лайтбокса.
+  api.get("/:id/image/full", async (c) => {
+    const user = c.get("tgUser");
+    if (!user) return c.json({ error: "Auth required" }, 401);
+    const id = Number(c.req.param("id"));
+    if (!Number.isInteger(id)) return c.json({ error: "Invalid id" }, 400);
+    try {
+      const imageFull = await getPersonaImageFull(user.id, id);
+      if (imageFull === undefined) return c.json({ error: "Not found" }, 404);
+      return c.json({ dataUrl: imageFull });
+    } catch (err) {
+      logger.error({ err, userId: user.id, id }, "Failed to get persona full image");
       return c.json({ error: "Internal error" }, 500);
     }
   });

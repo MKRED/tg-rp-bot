@@ -22,6 +22,7 @@ function toInput(c: Character): CharacterInput {
   return {
     name: c.name,
     image: c.image,
+    imageFull: c.imageFull,
     tags: c.tags,
     prompt: c.prompt,
     firstMessages: c.firstMessages,

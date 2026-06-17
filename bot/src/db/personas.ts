@@ -15,6 +15,7 @@ export type PersonaInput = {
   prompt: string;
   footnote: string | null;
   image: string | null;
+  imageFull: string | null;
 };
 
 /**
@@ -81,6 +82,22 @@ export async function getPersonaImage(
   return rows[0]?.image;
 }
 
+/**
+ * Полноразмерное (некадрированное) фото персоны — отдельной колонкой, грузится только при
+ * открытии лайтбокса. Возвращает: undefined — персоны нет/не его; null — есть, но без фото;
+ * string — data URL. У старых персон imageFull = null (заполняется при следующем сохранении).
+ */
+export async function getPersonaImageFull(
+  userId: number,
+  id: number,
+): Promise<string | null | undefined> {
+  const rows = await db
+    .select({ imageFull: schema.personas.imageFull })
+    .from(schema.personas)
+    .where(and(eq(schema.personas.id, id), eq(schema.personas.userId, userId)));
+  return rows[0]?.imageFull;
+}
+
 /** Создаёт персону и возвращает созданную строку. */
 export async function createPersona(userId: number, input: PersonaInput): Promise<Persona> {
   const t0 = Date.now();
@@ -93,6 +110,7 @@ export async function createPersona(userId: number, input: PersonaInput): Promis
       prompt: encryptField(input.prompt, key),
       footnote: encryptField(input.footnote, key),
       image: input.image,
+      imageFull: input.imageFull,
     })
     .returning();
   const created = rows[0]!;
@@ -118,6 +136,7 @@ export async function updatePersona(
       prompt: encryptField(input.prompt, key),
       footnote: encryptField(input.footnote, key),
       image: input.image,
+      imageFull: input.imageFull,
     })
     .where(and(eq(schema.personas.id, id), eq(schema.personas.userId, userId)))
     .returning();
