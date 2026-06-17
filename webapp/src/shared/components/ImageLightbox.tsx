@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
+import { pushBackInterceptor } from "../telegram/backInterceptor";
 import "./ImageLightbox.css";
 
 interface ImageLightboxProps {
@@ -21,6 +22,9 @@ export function ImageLightbox({ src, onClose }: ImageLightboxProps) {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [onClose]);
+
+  // Нативная «Назад» закрывает просмотр, а не уводит со страницы.
+  useEffect(() => pushBackInterceptor(onClose), [onClose]);
 
   return createPortal(
     <motion.div

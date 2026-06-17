@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import { createPortal } from "react-dom";
 import type { CropArea } from "../image";
+import { pushBackInterceptor } from "../telegram/backInterceptor";
 // CSS react-easy-crop НЕ инжектится сам (sideEffects:false) — импортируем явно, иначе кроппер
 // рендерится сломанным (контейнер/маска/contain не спозиционированы).
 import "react-easy-crop/react-easy-crop.css";
@@ -35,6 +36,9 @@ export function ImageCropEditor({ src, busy = false, onConfirm, onCancel }: Imag
   const [zoom, setZoom] = useState(1);
   // croppedAreaPixels приходит из onCropComplete — это и есть область в пикселях исходника.
   const [areaPixels, setAreaPixels] = useState<Area | null>(null);
+
+  // Нативная «Назад» закрывает редактор, а не уводит со страницы редактирования.
+  useEffect(() => pushBackInterceptor(onCancel), [onCancel]);
 
   return createPortal(
     <motion.div

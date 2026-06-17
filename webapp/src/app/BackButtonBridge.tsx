@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { backButton } from "@telegram-apps/sdk-react";
 import { ROUTES, parentPath } from "./routes";
 import { useTransitionNavigate } from "./useTransitionNavigate";
+import { consumeBackInterceptor } from "../shared/telegram/backInterceptor";
 
 /**
  * Мост нативной кнопки «Назад» Telegram ↔ роутер.
@@ -31,7 +32,12 @@ export function BackButtonBridge() {
   useEffect(() => {
     if (!backButton.onClick.isAvailable()) return;
     const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
-    return backButton.onClick(() => navigate(returnTo ?? parentPath(location.pathname)));
+    return backButton.onClick(() => {
+      // Сначала отдаём нажатие открытому оверлею (редактор кропа/лайтбокс): он закроется,
+      // навигацию не делаем. Если оверлеев нет — обычный уход к родителю.
+      if (consumeBackInterceptor()) return;
+      navigate(returnTo ?? parentPath(location.pathname));
+    });
   }, [navigate, location.pathname, location.state]);
 
   // Показ/скрытие в зависимости от текущего маршрута.

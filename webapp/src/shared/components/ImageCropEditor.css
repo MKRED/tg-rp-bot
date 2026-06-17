@@ -15,8 +15,13 @@
   flex-shrink: 0;
   text-align: center;
   padding: 16px 22px 4px;
-  /* верхний отступ под шапку Telegram */
-  padding-top: calc(16px + var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)));
+  /* Отступ сверху = системный safe-area (статус-бар) + content-safe-area (нативная шапка Telegram
+     с кнопкой «Назад»/меню в full-screen). Без второго слагаемого заголовок уезжает под шапку. */
+  padding-top: calc(
+    16px
+    + var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px))
+    + var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
 }
 
 .crop-editor__title {
