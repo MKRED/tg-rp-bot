@@ -1,6 +1,7 @@
 import { Button } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { BasicsSection } from "./BasicsSection";
+import { CollapsibleSection } from "./CollapsibleSection";
 import {
   SAMPLING_SPECS,
   type SamplingKey,
@@ -151,8 +152,9 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
         onStreaming={setStreaming}
       />
 
-      <div className="preset-form__section-title">Параметры сэмплинга</div>
-      <SamplingSection state={sampling} onChange={updateSampling} />
+      <CollapsibleSection title="Параметры сэмплинга">
+        <SamplingSection state={sampling} onChange={updateSampling} />
+      </CollapsibleSection>
 
       <PromptsSection
         systemPrompt={systemPrompt}

@@ -1,4 +1,5 @@
 import { Switch } from "@telegram-apps/telegram-ui";
+import { motion } from "framer-motion";
 import {
   PROMPT_COMPONENT_LABELS,
   UNIMPLEMENTED_COMPONENTS,
@@ -33,7 +34,14 @@ export function PromptOrderEditor({ order, onChange }: PromptOrderEditorProps) {
       {order.map((item, index) => {
         const unimplemented = UNIMPLEMENTED_COMPONENTS.includes(item.id);
         return (
-          <div className="preset-order__row" key={item.id}>
+          // layout — при перестановке (key стабилен по item.id) строки плавно переезжают на новые
+          // позиции (FLIP), а не перескакивают. Так же реагируют на смену высоты соседей.
+          <motion.div
+            className="preset-order__row"
+            key={item.id}
+            layout
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          >
             <div className="preset-order__buttons">
               <button
                 type="button"
@@ -63,7 +71,7 @@ export function PromptOrderEditor({ order, onChange }: PromptOrderEditorProps) {
               disabled={unimplemented}
               onChange={() => toggle(index)}
             />
-          </div>
+          </motion.div>
         );
       })}
     </div>

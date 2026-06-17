@@ -129,11 +129,150 @@
   display: inline-flex;
 }
 
-/* Нативные <option> выпадашки: на ПК их попап рисует Chromium системно-белым.
-   Задаём фон и цвет по теме, чтобы текст читался и в тёмной теме. */
-.preset-select option {
+/* --- Сворачивающаяся группа настроек --- */
+.preset-collapse {
+  display: flex;
+  flex-direction: column;
+}
+
+.preset-collapse__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 4px 22px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
   color: var(--tgui--text_color, #000);
-  background-color: var(--tgui--bg_color, #fff);
+}
+
+.preset-collapse__title {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.preset-collapse__chevron {
+  flex-shrink: 0;
+  color: var(--tgui--hint_color, #7d8b99);
+  transition: transform 0.15s;
+}
+
+/* Панель-обёртка: grid 0fr→1fr плавно анимирует высоту содержимого. */
+.preset-collapse__panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.24s ease;
+}
+
+.preset-collapse.is-open .preset-collapse__panel {
+  grid-template-rows: 1fr;
+}
+
+.preset-collapse__body {
+  /* min-height:0 + overflow:hidden — обязательны, чтобы grid-строка реально сжималась до нуля. */
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 12px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.preset-collapse.is-open .preset-collapse__body {
+  opacity: 1;
+}
+
+/* --- Выпадающий список (уровень рассуждения) — свой вместо нативного <Select> ---
+   Нативный попап на ПК (Chromium) рисуется системно-белым, светлый текст не виден. */
+.preset-picker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 22px;
+}
+
+.preset-picker__header {
+  font-size: 13px;
+  color: var(--tgui--hint_color, #7d8b99);
+}
+
+.preset-picker__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 12px;
+  background: var(--tgui--secondary_fill, rgba(127, 139, 153, 0.12));
+  color: var(--tgui--text_color, #000);
+  font-size: 16px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Раскрывается вниз; absolute относительно padding-box .preset-picker — отступы 22px совпадают с триггером. */
+.preset-picker__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 22px;
+  right: 22px;
+  z-index: 20;
+  max-height: 50vh;
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border-radius: 14px;
+  background: var(--tgui--bg_color, #fff);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  transform-origin: top;
+  animation: preset-picker-in 0.14s ease-out;
+}
+
+@keyframes preset-picker-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.preset-picker__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--tgui--text_color, #000);
+  font-size: 15px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.preset-picker__option.is-active {
+  color: var(--tgui--link_color, #2481cc);
+  font-weight: 600;
+}
+
+.preset-picker__option:active {
+  background: var(--tgui--secondary_fill, rgba(127, 139, 153, 0.12));
 }
 
 /* --- Параметры сэмплинга (слайдеры) --- */
