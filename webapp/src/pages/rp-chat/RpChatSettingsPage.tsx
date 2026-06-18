@@ -95,19 +95,25 @@ export function RpChatSettingsPage() {
   return (
     <PageTransition>
       <div className="rp-chat-settings-page">
-        <List>
-          {/* Название чата: пусто → в списке и шапке показываем имя персонажа */}
-          {chat && (
-            <Section header="Название" footer="Оставьте пустым, чтобы показывать имя персонажа">
-              <Input
-                placeholder={chat.character.name}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                onBlur={handleTitleBlur}
-              />
-            </Section>
-          )}
+        {/* Название чата: пусто → в списке и шапке показываем имя персонажа.
+            Standalone <Input> на фоне страницы (как в форме персонажа), а НЕ внутри
+            Section — иначе рамка-«коробка» FormInput вкладывается в карточку секции. */}
+        {chat && (
+          <div className="rp-chat-settings-page__title-field">
+            <Input
+              header="Название"
+              placeholder={chat.character.name}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onBlur={handleTitleBlur}
+            />
+            <p className="rp-chat-settings-page__title-hint">
+              Оставьте пустым, чтобы показывать имя персонажа
+            </p>
+          </div>
+        )}
 
+        <List>
           {/* Секция с текущим персонажем, персоной и пресетом */}
           <Section header="Чат">
             {chatLoading ? (

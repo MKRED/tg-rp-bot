@@ -807,6 +807,20 @@
   flex-shrink: 0;
 }
 
+/* Поле названия чата — telegram-ui <Input> standalone на фоне страницы (как в форме
+   персонажа), потому НЕ внутри Section. Под ним — подсказка в стиле footer секции. */
+.rp-chat-settings-page__title-field {
+  padding: 8px 0;
+}
+
+.rp-chat-settings-page__title-hint {
+  margin: 4px 0 0;
+  padding: 0 22px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--tg-theme-hint-color, #999);
+}
+
 .rp-chat-settings-page {
   min-height: 100dvh;
   padding-top: calc(
