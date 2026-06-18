@@ -5,6 +5,8 @@ export interface Character {
   image: string | null;
   imageFull: string | null;
   tags: string[];
+  /** Примечание «для себя» — не уходит в LLM, показывается только в UI. */
+  footnote: string | null;
   prompt: string;
   firstMessages: string[];
   createdAt: string;
@@ -19,6 +21,8 @@ export interface CharacterListItem {
   id: number;
   name: string;
   tags: string[];
+  /** Примечание «для себя» (расшифровано сервером); заполненное показывается в строке списка. */
+  footnote: string | null;
   firstMessageCount: number;
   hasImage: boolean;
 }
@@ -30,6 +34,8 @@ export interface CharacterListItem {
 export interface CharacterInput {
   name: string;
   tags: string[];
+  /** Примечание «для себя» — не уходит в LLM. */
+  footnote: string | null;
   prompt: string;
   firstMessages: string[];
   image: string | null;

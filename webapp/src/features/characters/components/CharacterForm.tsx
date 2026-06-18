@@ -22,6 +22,7 @@ export function CharacterForm({ initial, submitting, onSubmit, onDelete }: Chara
   const [image, setImage] = useState<string | null>(initial?.image ?? null);
   const [imageFull, setImageFull] = useState<string | null>(initial?.imageFull ?? null);
   const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
+  const [footnote, setFootnote] = useState(initial?.footnote ?? "");
   const [prompt, setPrompt] = useState(initial?.prompt ?? "");
   const [firstMessages, setFirstMessages] = useState<string[]>(initial?.firstMessages ?? []);
 
@@ -40,6 +41,8 @@ export function CharacterForm({ initial, submitting, onSubmit, onDelete }: Chara
       image,
       imageFull,
       tags,
+      // пустое примечание сохраняем как null (как у персоны)
+      footnote: footnote.trim() || null,
       prompt,
       // отбрасываем пустые варианты первого сообщения
       firstMessages: firstMessages.map((m) => m.trim()).filter(Boolean),
@@ -55,6 +58,13 @@ export function CharacterForm({ initial, submitting, onSubmit, onDelete }: Chara
         placeholder="Имя персонажа"
         value={name}
         onChange={(e) => setName(e.target.value)}
+      />
+
+      <Input
+        header="Примечание"
+        placeholder="Заметка для себя (не влияет на чат)"
+        value={footnote}
+        onChange={(e) => setFootnote(e.target.value)}
       />
 
       <TagsInput tags={tags} onChange={setTags} />

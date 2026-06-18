@@ -85,6 +85,59 @@
 }
 
 /* --- Теги --- */
+/* Обёртка поля = якорь для абсолютного выпадающего списка подсказок. */
+.char-tags__field {
+  position: relative;
+}
+
+/* Выпадающий список подсказок под полем. Выровнен по внутреннему gutter поля (22px),
+   поднят над остальной формой (z-index) и скроллится при переполнении. */
+.char-tags__suggestions {
+  position: absolute;
+  top: 100%;
+  left: 22px;
+  right: 22px;
+  z-index: 10;
+  margin-top: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  border-radius: 12px;
+  background: var(--tgui--bg_color, #fff);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+.char-tags__suggestion {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 15px;
+  color: var(--tgui--text_color, #000);
+  cursor: pointer;
+}
+
+/* Подсветка активной строки (ховер мышью или навигация стрелками). */
+.char-tags__suggestion--active {
+  background: var(--tgui--secondary_bg_color, #f1f1f4);
+}
+
+.char-tags__suggestion-tag {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.char-tags__suggestion-count {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--tgui--hint_color, #7d8b99);
+}
+
 .char-tags__list {
   display: flex;
   flex-wrap: wrap;

@@ -16,6 +16,8 @@ export { ensureUser } from "./users.js";
 export type CharacterInput = {
   name: string;
   tags: string[];
+  // footnote — примечание «для себя», хранится только в UI (в LLM-запрос не передаётся).
+  footnote: string | null;
   prompt: string;
   firstMessages: string[];
   image: string | null;
@@ -30,6 +32,7 @@ export type CharacterListItem = {
   id: number;
   name: string;
   tags: string[];
+  footnote: string | null;
   firstMessageCount: number;
   hasImage: boolean;
 };
@@ -42,6 +45,7 @@ export async function listCharacters(userId: number): Promise<CharacterListItem[
       id: schema.characters.id,
       name: schema.characters.name,
       tags: schema.characters.tags,
+      footnote: schema.characters.footnote,
       // длина jsonb-массива первых сообщений считается на стороне БД — список не тянет тексты
       firstMessageCount: sql<number>`jsonb_array_length(${schema.characters.firstMessages})`,
       // только наличие аватара (не сами байты) — картинку список грузит отдельным запросом
@@ -50,11 +54,12 @@ export async function listCharacters(userId: number): Promise<CharacterListItem[
     .from(schema.characters)
     .where(eq(schema.characters.userId, userId))
     .orderBy(desc(schema.characters.updatedAt));
-  // listCharacters не проходит через decryptCharacterRow — расшифровываем теги здесь
+  // listCharacters не проходит через decryptCharacterRow — расшифровываем теги и примечание здесь
   const key = getUserEncryptionKey(userId);
   const result = rows.map((row) => ({
     ...row,
     tags: row.tags.map((tag) => decryptField(tag, key)),
+    footnote: decryptField(row.footnote, key),
   }));
   logger.debug(
     { durationMs: Date.now() - t0, userId, count: result.length },
@@ -125,6 +130,7 @@ export async function createCharacter(userId: number, input: CharacterInput): Pr
       userId,
       name: input.name,
       tags: input.tags.map((tag) => encryptField(tag, key)),
+      footnote: encryptField(input.footnote, key),
       prompt: encryptField(input.prompt, key),
       firstMessages: input.firstMessages.map((msg) => encryptField(msg, key)),
       image: input.image,
@@ -152,6 +158,7 @@ export async function updateCharacter(
     .set({
       name: input.name,
       tags: input.tags.map((tag) => encryptField(tag, key)),
+      footnote: encryptField(input.footnote, key),
       prompt: encryptField(input.prompt, key),
       firstMessages: input.firstMessages.map((msg) => encryptField(msg, key)),
       image: input.image,
@@ -185,6 +192,7 @@ function decryptCharacterRow(row: Character, userId: number): Character {
   return {
     ...row,
     tags: row.tags.map((tag) => decryptField(tag, key)),
+    footnote: decryptField(row.footnote, key),
     prompt: decryptField(row.prompt, key),
     firstMessages: row.firstMessages.map((msg) => decryptField(msg, key)),
   };

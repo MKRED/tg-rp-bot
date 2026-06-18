@@ -77,7 +77,7 @@ export function FirstMessagesEditor({ messages, onChange }: FirstMessagesEditorP
               header={`Вариант ${index + 1}`}
               placeholder="Первое сообщение персонажа в новом чате…"
               value={msg}
-              rows={3}
+              rows={6}
               onChange={(e) => updateAt(index, e.target.value)}
             />
             <div className="char-field__meta">

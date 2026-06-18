@@ -64,7 +64,8 @@ export function CharactersListPage() {
                 >
                   <Cell
                     before={<CharacterAvatar id={c.id} hasImage={c.hasImage} name={c.name} size={48} enlargeable />}
-                    subtitle={subtitleOf(c.tags, c.firstMessageCount)}
+                    // заполненное примечание заменяет строку тегов/приветствий (как у персоны)
+                    subtitle={c.footnote || subtitleOf(c.tags, c.firstMessageCount)}
                     onClick={() => navigate(characterEditPath(c.id))}
                   >
                     {c.name}

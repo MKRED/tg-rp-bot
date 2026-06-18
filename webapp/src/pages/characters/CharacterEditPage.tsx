@@ -24,6 +24,7 @@ function toInput(c: Character): CharacterInput {
     image: c.image,
     imageFull: c.imageFull,
     tags: c.tags,
+    footnote: c.footnote,
     prompt: c.prompt,
     firstMessages: c.firstMessages,
   };

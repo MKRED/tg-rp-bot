@@ -58,6 +58,13 @@ function parseCharacterInput(body: unknown): { input: CharacterInput } | { error
     return { error: `Too many first messages (max ${MAX_FIRST_MESSAGES})` };
   }
 
+  // footnote опционален: null/отсутствие/пустая строка → нет примечания; непустая строка → примечание.
+  let footnote: string | null = null;
+  if (b.footnote !== undefined && b.footnote !== null) {
+    if (typeof b.footnote !== "string") return { error: "Footnote must be a string" };
+    footnote = b.footnote || null; // защита «последнего рубежа»: пустую строку храним как null
+  }
+
   // image/imageFull опциональны: отсутствует/null → нет картинки; строка обязана быть data:image/*-URL.
   const imageParsed = parseImageField(b.image, MAX_IMAGE_CHARS, "Image");
   if ("error" in imageParsed) return { error: imageParsed.error };
@@ -69,6 +76,7 @@ function parseCharacterInput(body: unknown): { input: CharacterInput } | { error
       name,
       prompt,
       tags: b.tags as string[],
+      footnote,
       firstMessages: b.firstMessages as string[],
       image: imageParsed.value,
       imageFull: imageFullParsed.value,

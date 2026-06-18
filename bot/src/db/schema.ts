@@ -51,6 +51,8 @@ export const characters = pgTable("characters", {
     .array()
     .notNull()
     .default(sql`'{}'`),
+  // Примечание «для себя» — хранится только в UI, в LLM-запрос не передаётся (как footnote персоны).
+  footnote: text("footnote"),
   prompt: text("prompt").notNull().default(""),
   firstMessages: jsonb("first_messages")
     .$type<string[]>()
