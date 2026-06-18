@@ -43,7 +43,8 @@ bot/src/
   config.ts     — env vars (requireEnv для обязательных)
   db/           — drizzle: schema.ts + клиент + DAO по таблицам (chats, characters, personas,
                   presets, impersonations, users); chats — папка (queries/messages/settings/crypto)
-  llm/          — OpenRouter client (client/types/constants/completionGuard) — серверно
+  llm/          — LLM client (client/types/constants/completionGuard/providers) — серверно,
+                  провайдер (OpenRouter | DeepSeek) выбирается env LLM_PROVIDER
   handlers/     — обработчики команд бота (index = registerHandlers, start.ts …)
   server/       — Hono HTTP API: index=startServer, routes.ts, initData.ts (валидация подписи),
                   CRUD-роуты (characters/personas/presets/chats), messageHandlers +
@@ -207,7 +208,15 @@ Test runner is **vitest** в **обоих** workspace (`bot/` и `webapp/`), у 
 |---|---|---|
 | Telegram | Bot API (через HTTP-прокси) | `BOT_TOKEN`, `TELEGRAM_PROXY_URL` |
 | OpenRouter | LLM (chat completion), серверно | `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` |
+| DeepSeek | LLM (chat completion), серверно | `DEEPSEEK_API_KEY`, `DEEPSEEK_MODEL` |
 | Postgres | БД (drizzle) | `DATABASE_URL` |
+
+**Выбор LLM-провайдера** — глобально через env `LLM_PROVIDER` (`openrouter` | `deepseek`, дефолт
+`openrouter`). Оба OpenAI-совместимы, поэтому `bot/src/llm/client.ts` общий, а различия (base URL,
+ключ, app-заголовки, дефолтная модель, формат reasoning) вынесены в `bot/src/llm/providers.ts`
+(`getActiveProvider()`). **Инвариант:** тело запросов OpenRouter не меняем — это запасной путь;
+reasoning («мышление» из пресета, поля `requestReasoning`/`reasoningEffort`) применяется только для
+DeepSeek (`thinking`-режим), для OpenRouter `reasoningBody` возвращает `{}`.
 
 ## Keeping docs up to date
 

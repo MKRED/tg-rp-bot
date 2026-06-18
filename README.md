@@ -10,7 +10,7 @@ Telegram-бот для ролевой игры (RP) с упором на **Teleg
 | Бот | Node 24 (native ESM, TypeScript), [grammY](https://grammy.dev) |
 | HTTP API | [Hono](https://hono.dev) + `@hono/node-server` |
 | БД | Postgres + [drizzle-orm](https://orm.drizzle.team) / drizzle-kit |
-| LLM | OpenRouter (OpenAI-совместимый API) |
+| LLM | OpenRouter / DeepSeek (OpenAI-совместимый API, выбор через `LLM_PROVIDER`) |
 | Логи | pino (+ pino-roll, pino-pretty) |
 | Mini App | React 19 + Vite + `@telegram-apps/sdk-react` + `@telegram-apps/telegram-ui` + `react-router-dom` (HashRouter) + `@xyflow/react` (граф диалога) + `framer-motion` + `react-easy-crop` (кроп аватара) |
 | initData | подпись проверяется серверно через `@tma.js/init-data-node` |
@@ -33,7 +33,7 @@ tg-rp-bot/
 │  │  ├─ logger.ts     # pino
 │  │  ├─ proxy.ts      # HttpsProxyAgent (https-proxy-agent) только для Telegram
 │  │  ├─ db/           # drizzle: schema + клиент + DAO по таблицам (chats — папка)
-│  │  ├─ llm/          # клиент OpenRouter
+│  │  ├─ llm/          # клиент LLM (OpenRouter / DeepSeek, выбор через LLM_PROVIDER)
 │  │  ├─ handlers/     # обработчики команд бота (/start …)
 │  │  ├─ server/       # Hono HTTP API (/health, /api): CRUD + стриминговая RP-генерация (SSE)
 │  │  │                #   + impersonate + перевод + раздача статики Mini App + seam initData
@@ -84,6 +84,11 @@ yarn workspace bot drizzle-kit migrate      # применить миграци�
 ## Переменные окружения
 
 См. [`bot/.env.example`](bot/.env.example). Обязательные: `BOT_TOKEN`, `DATABASE_URL`.
+
+**LLM-провайдер** выбирается переменной `LLM_PROVIDER` (`openrouter` | `deepseek`, по умолчанию
+`openrouter`). Для OpenRouter — `OPENROUTER_API_KEY` / `OPENROUTER_MODEL`; для DeepSeek —
+`DEEPSEEK_API_KEY` / `DEEPSEEK_MODEL` (дефолт `deepseek-v4-flash`). Чтобы слать все запросы в
+DeepSeek, поставь `LLM_PROVIDER=deepseek` и задай `DEEPSEEK_API_KEY`.
 
 ## Деплой
 

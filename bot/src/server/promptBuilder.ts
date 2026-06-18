@@ -148,7 +148,7 @@ export type BuildMessagesControl = {
 };
 
 /**
- * Собирает массив ChatMessage[] для отправки в OpenRouter.
+ * Собирает массив ChatMessage[] для отправки в LLM.
  * Порядок компонентов определяется preset.promptOrder; отключённые/пустые компоненты пропускаются.
  * Во всех текстах автоматически заменяются {{char}} и {{user}} на имена персонажа/персоны.
  *
@@ -290,7 +290,7 @@ export function renderImpersonateMessages(opts: ImpersonateOptions): ChatMessage
 
 /**
  * Дефолтный пресет генерации, когда у чата пресет не выбран. Значимы здесь только
- * promptOrder (что включаем в контекст) и пустые промпты; сэмплинг — дефолты OpenRouter.
+ * promptOrder (что включаем в контекст) и пустые промпты; сэмплинг — дефолты провайдера.
  * Фабрика, а не константа: id/userId/createdAt привязаны к пользователю.
  */
 export function makeDefaultPreset(userId: number): GenerationPreset {
@@ -318,7 +318,7 @@ export function makeDefaultPreset(userId: number): GenerationPreset {
 
 /**
  * Маппит поля пресета в ChatCompletionOptions (сэмплинг-параметры).
- * null-значения пропускаются — OpenRouter применяет свои дефолты.
+ * null-значения пропускаются — провайдер применяет свои дефолты.
  */
 export function presetToCompletionOptions(preset: GenerationPreset) {
   return {
@@ -331,5 +331,8 @@ export function presetToCompletionOptions(preset: GenerationPreset) {
     repetitionPenalty: preset.repetitionPenalty ?? undefined,
     minP: preset.minP ?? undefined,
     topA: preset.topA ?? undefined,
+    // Reasoning («мышление»): применяется провайдеро-специфично (для DeepSeek — thinking-режим).
+    requestReasoning: preset.requestReasoning,
+    reasoningEffort: preset.reasoningEffort ?? undefined,
   };
 }

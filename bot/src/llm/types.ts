@@ -7,7 +7,7 @@ export interface ChatMessage {
   content: string;
 }
 
-/** Параметры запроса к OpenRouter chat completion. */
+/** Параметры запроса к LLM chat completion (OpenAI-совместимый формат). */
 export interface ChatCompletionOptions {
   messages: ChatMessage[];
   /** Переопределить модель из конфига для конкретного вызова. */
@@ -23,6 +23,9 @@ export interface ChatCompletionOptions {
   repetitionPenalty?: number;
   minP?: number;
   topA?: number;
+  // Reasoning («мышление»). Применяется провайдеро-специфично (для DeepSeek — thinking-режим).
+  requestReasoning?: boolean;
+  reasoningEffort?: string | null;
 }
 
 /** Упрощённый результат: текст ответа + расход токенов (для логов/биллинга). */
@@ -36,8 +39,8 @@ export interface ChatCompletionResult {
   };
 }
 
-/** Сырой ответ OpenRouter (только нужные нам поля). */
-export interface OpenRouterResponse {
+/** Сырой ответ LLM (OpenAI-совместимый, только нужные нам поля). */
+export interface LlmResponse {
   model: string;
   choices: Array<{ message: { role: string; content: string } }>;
   usage?: {
@@ -48,7 +51,7 @@ export interface OpenRouterResponse {
 }
 
 /** Одна SSE-дельта при стриминге (choices[0].delta). */
-export interface OpenRouterStreamDelta {
+export interface LlmStreamDelta {
   model?: string;
   choices: Array<{
     delta: { content?: string; role?: string };

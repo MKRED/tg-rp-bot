@@ -1,40 +1,45 @@
-import { config } from "../config.js";
 import logger from "../logger.js";
 import { retry } from "../utils/index.js";
 import { isUnusableCompletion } from "./completionGuard.js";
-import { CHAT_COMPLETIONS_PATH, OPENROUTER_APP_HEADERS, OPENROUTER_BASE_URL } from "./constants.js";
+import { CHAT_COMPLETIONS_PATH } from "./constants.js";
+import { getActiveProvider, type LlmProvider } from "./providers.js";
 import type {
   ChatCompletionOptions,
   ChatCompletionResult,
-  OpenRouterResponse,
-  OpenRouterStreamDelta,
+  LlmResponse,
+  LlmStreamDelta,
 } from "./types.js";
 
-/** Ошибка с HTTP-статусом OpenRouter — по статусу решаем, ретраить ли. */
-class OpenRouterHttpError extends Error {
+/** Ошибка с HTTP-статусом LLM-провайдера — по статусу решаем, ретраить ли. */
+class LlmHttpError extends Error {
   constructor(
+    readonly provider: string,
     readonly status: number,
     readonly bodyText: string,
   ) {
-    super(`OpenRouter ${status}: ${bodyText}`);
-    this.name = "OpenRouterHttpError";
+    super(`${provider} ${status}: ${bodyText}`);
+    this.name = "LlmHttpError";
   }
 }
 
 /** Ответ пришёл, но непригоден (пустой текст или отказ модели) — ретраибл. */
 class EmptyCompletionError extends Error {
   constructor() {
-    super("OpenRouter returned an empty or refusal completion");
+    super("LLM returned an empty or refusal completion");
     this.name = "EmptyCompletionError";
   }
 }
 
-function buildBody(options: ChatCompletionOptions, stream: boolean): Record<string, unknown> {
+function buildBody(
+  options: ChatCompletionOptions,
+  stream: boolean,
+  provider: LlmProvider,
+): Record<string, unknown> {
   return {
-    model: options.model ?? config.openRouterModel,
+    model: options.model ?? provider.defaultModel,
     messages: options.messages,
     stream,
-    // Передаём только заданные параметры — OpenRouter применяет дефолты на undefined.
+    // Передаём только заданные параметры — провайдер применяет дефолты на undefined.
     ...(options.temperature !== undefined && { temperature: options.temperature }),
     ...(options.maxTokens !== undefined && { max_tokens: options.maxTokens }),
     ...(options.topP !== undefined && { top_p: options.topP }),
@@ -44,19 +49,22 @@ function buildBody(options: ChatCompletionOptions, stream: boolean): Record<stri
     ...(options.repetitionPenalty !== undefined && { repetition_penalty: options.repetitionPenalty }),
     ...(options.minP !== undefined && { min_p: options.minP }),
     ...(options.topA !== undefined && { top_a: options.topA }),
+    // Reasoning подключается провайдеро-специфично (для DeepSeek — thinking-режим).
+    ...provider.reasoningBody(options),
   };
 }
 
-function makeHeaders(): Record<string, string> {
+function makeHeaders(provider: LlmProvider): Record<string, string> {
   return {
-    Authorization: `Bearer ${config.openRouterApiKey}`,
+    Authorization: `Bearer ${provider.apiKey}`,
     "Content-Type": "application/json",
-    ...OPENROUTER_APP_HEADERS,
+    ...provider.appHeaders,
   };
 }
 
 /**
- * Вызывает OpenRouter chat completion.
+ * Вызывает chat completion активного LLM-провайдера (OpenRouter или DeepSeek — выбор по
+ * config.llmProvider). Оба OpenAI-совместимы, поэтому код общий, различия — в providers.ts.
  *
  * Если передан `onChunk` — использует streaming (Server-Sent Events): каждый токен
  * передаётся в коллбэк, итоговая строка накапливается и возвращается как обычно.
@@ -70,37 +78,38 @@ export async function chatCompletion(
   onChunk?: (token: string) => void,
   onReset?: () => void,
 ): Promise<ChatCompletionResult> {
-  if (!config.openRouterApiKey) {
-    throw new Error("OPENROUTER_API_KEY is not set — cannot call OpenRouter");
+  const provider = getActiveProvider();
+  if (!provider.apiKey) {
+    throw new Error(`API key for LLM provider "${provider.name}" is not set — cannot call LLM`);
   }
 
-  const model = options.model ?? config.openRouterModel;
-  const url = `${OPENROUTER_BASE_URL}${CHAT_COMPLETIONS_PATH}`;
+  const model = options.model ?? provider.defaultModel;
+  const url = `${provider.baseUrl}${CHAT_COMPLETIONS_PATH}`;
   const t0 = Date.now();
 
   logger.debug(
-    { model, messages: options.messages.length, streaming: !!onChunk },
-    "OpenRouter chat completion start",
+    { provider: provider.name, model, messages: options.messages.length, streaming: !!onChunk },
+    "LLM chat completion start",
   );
 
   if (onChunk) {
-    return chatCompletionStreaming(options, model, url, t0, onChunk, onReset);
+    return chatCompletionStreaming(options, provider, model, url, t0, onChunk, onReset);
   }
 
   // Непригодный ответ (пустой/отказ) бросает EmptyCompletionError внутри retry — попытка
   // повторяется так же, как при 5xx/429.
-  const data = await retry<OpenRouterResponse>(
+  const data = await retry<LlmResponse>(
     async () => {
       const response = await fetch(url, {
         method: "POST",
-        headers: makeHeaders(),
-        body: JSON.stringify(buildBody(options, false)),
+        headers: makeHeaders(provider),
+        body: JSON.stringify(buildBody(options, false, provider)),
       });
       if (!response.ok) {
         const text = await response.text().catch(() => "");
-        throw new OpenRouterHttpError(response.status, text);
+        throw new LlmHttpError(provider.name, response.status, text);
       }
-      const json = (await response.json()) as OpenRouterResponse;
+      const json = (await response.json()) as LlmResponse;
       if (isUnusableCompletion(json.choices[0]?.message.content ?? "")) {
         throw new EmptyCompletionError();
       }
@@ -108,10 +117,10 @@ export async function chatCompletion(
     },
     3,
     1500,
-    "openrouter.chatCompletion",
+    `${provider.name}.chatCompletion`,
     (err) =>
       err instanceof EmptyCompletionError ||
-      (err instanceof OpenRouterHttpError ? err.status >= 500 || err.status === 429 : true),
+      (err instanceof LlmHttpError ? err.status >= 500 || err.status === 429 : true),
   );
 
   const result: ChatCompletionResult = {
@@ -127,8 +136,8 @@ export async function chatCompletion(
   };
 
   logger.info(
-    { durationMs: Date.now() - t0, model: result.model, ...result.usage },
-    "OpenRouter chat completion done",
+    { durationMs: Date.now() - t0, provider: provider.name, model: result.model, ...result.usage },
+    "LLM chat completion done",
   );
   return result;
 }
@@ -141,6 +150,7 @@ export async function chatCompletion(
  */
 async function chatCompletionStreaming(
   options: ChatCompletionOptions,
+  provider: LlmProvider,
   model: string,
   url: string,
   t0: number,
@@ -149,47 +159,53 @@ async function chatCompletionStreaming(
 ): Promise<ChatCompletionResult> {
   return retry<ChatCompletionResult>(
     async () => {
-      const result = await streamOnce(options, model, url, onChunk);
+      const result = await streamOnce(options, provider, model, url, onChunk);
       if (isUnusableCompletion(result.content)) {
         // Стёрли плохой ответ у клиента прямо сейчас (а не после backoff-задержки).
         onReset?.();
         throw new EmptyCompletionError();
       }
       logger.info(
-        { durationMs: Date.now() - t0, model: result.model, chars: result.content.length },
-        "OpenRouter streaming completion done",
+        {
+          durationMs: Date.now() - t0,
+          provider: provider.name,
+          model: result.model,
+          chars: result.content.length,
+        },
+        "LLM streaming completion done",
       );
       return result;
     },
     3,
     1500,
-    "openrouter.chatCompletion.stream",
+    `${provider.name}.chatCompletion.stream`,
     (err) =>
       err instanceof EmptyCompletionError ||
-      (err instanceof OpenRouterHttpError ? err.status >= 500 || err.status === 429 : true),
+      (err instanceof LlmHttpError ? err.status >= 500 || err.status === 429 : true),
   );
 }
 
 /** Одна попытка стриминга: fetch + чтение SSE-потока, onChunk на каждый токен. */
 async function streamOnce(
   options: ChatCompletionOptions,
+  provider: LlmProvider,
   model: string,
   url: string,
   onChunk: (token: string) => void,
 ): Promise<ChatCompletionResult> {
   const response = await fetch(url, {
     method: "POST",
-    headers: makeHeaders(),
-    body: JSON.stringify(buildBody(options, true)),
+    headers: makeHeaders(provider),
+    body: JSON.stringify(buildBody(options, true, provider)),
   });
 
   if (!response.ok) {
     const text = await response.text().catch(() => "");
-    throw new OpenRouterHttpError(response.status, text);
+    throw new LlmHttpError(provider.name, response.status, text);
   }
 
   if (!response.body) {
-    throw new Error("OpenRouter streaming: response.body is null");
+    throw new Error("LLM streaming: response.body is null");
   }
 
   const reader = response.body.getReader();
@@ -212,13 +228,15 @@ async function streamOnce(
         if (!line.startsWith("data: ")) continue;
         const raw = line.slice(6).trim();
         if (raw === "[DONE]") continue;
-        let parsed: OpenRouterStreamDelta;
+        let parsed: LlmStreamDelta;
         try {
-          parsed = JSON.parse(raw) as OpenRouterStreamDelta;
+          parsed = JSON.parse(raw) as LlmStreamDelta;
         } catch {
           continue;
         }
         if (parsed.model) responseModel = parsed.model;
+        // reasoning_content DeepSeek (thinking-режим) читаем намеренно НЕ — пользователю
+        // показываем только финальный ответ (delta.content), «мысли» отбрасываем.
         const delta = parsed.choices[0]?.delta?.content;
         if (delta) {
           fullContent += delta;

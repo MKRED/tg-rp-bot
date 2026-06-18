@@ -1,7 +1,4 @@
-/** Базовый URL OpenRouter (OpenAI-совместимый API). */
-export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
-
-/** Эндпоинт chat completions. */
+/** Эндпоинт chat completions (общий для OpenAI-совместимых провайдеров). */
 export const CHAT_COMPLETIONS_PATH = "/chat/completions";
 
 /**

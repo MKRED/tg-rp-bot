@@ -28,11 +28,23 @@ export const config = {
    */
   telegramProxyUrl: process.env.TELEGRAM_PROXY_URL,
 
+  /**
+   * Активный LLM-провайдер: "openrouter" | "deepseek". По умолчанию openrouter
+   * (бэк-совместимость). Чтобы слать запросы в DeepSeek — задать LLM_PROVIDER=deepseek.
+   */
+  llmProvider: process.env.LLM_PROVIDER ?? "openrouter",
+
   /** Ключ OpenRouter. Опционален: валидируется в момент вызова LLM, не на старте. */
   openRouterApiKey: process.env.OPENROUTER_API_KEY,
 
   /** Модель OpenRouter по умолчанию. */
   openRouterModel: process.env.OPENROUTER_MODEL ?? "openai/gpt-4o-mini",
+
+  /** Ключ DeepSeek. Опционален: валидируется в момент вызова LLM, не на старте. */
+  deepSeekApiKey: process.env.DEEPSEEK_API_KEY,
+
+  /** Модель DeepSeek по умолчанию. */
+  deepSeekModel: process.env.DEEPSEEK_MODEL ?? "deepseek-v4-flash",
 
   /** Порт HTTP-сервера для Mini App API. */
   port: Number(process.env.PORT ?? 3000),
