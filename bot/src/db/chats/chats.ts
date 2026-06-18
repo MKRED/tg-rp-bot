@@ -39,6 +39,7 @@ export async function listChats(
   const rows = await db.execute(sql`
     SELECT
       c.id,
+      c.title,
       c.created_at,
       ch.id   AS char_id,
       ch.name AS char_name,
@@ -74,6 +75,8 @@ export async function listChats(
 
   const items: ChatListItem[] = (rows as Record<string, unknown>[]).map((r) => ({
     id: r.id as number,
+    // title зашифрован per-user — расшифровываем; null остаётся null (fallback на имя персонажа в UI)
+    title: r.title ? decryptField(r.title as string, key) : null,
     character: {
       id: r.char_id as number,
       name: r.char_name as string,
@@ -109,6 +112,7 @@ export async function getChat(
   const chatRows = await db.execute(sql`
     SELECT
       c.id,
+      c.title,
       c.active_message_id,
       ch.id   AS char_id,
       ch.name AS char_name,
@@ -165,6 +169,8 @@ export async function getChat(
 
   return {
     id: chatRow.id as number,
+    // title зашифрован per-user — расшифровываем (ключ key уже получен выше)
+    title: chatRow.title ? decryptField(chatRow.title as string, key) : null,
     character: {
       id: chatRow.char_id as number,
       name: chatRow.char_name as string,
@@ -278,6 +284,39 @@ export async function createChat(
 
   logger.info({ durationMs: Date.now() - t0, userId, chatId: chat.id }, "Chat created");
   return chat;
+}
+
+/**
+ * Переименовывает чат (только свой). Пустая/пробельная строка → title = null
+ * (UI вернётся к показу имени персонажа). Непустой title шифруется per-user.
+ * Возвращает применённый title (расшифрованный) или undefined, если чат не найден.
+ */
+export async function renameChat(
+  userId: number,
+  chatId: number,
+  rawTitle: string,
+): Promise<{ title: string | null } | undefined> {
+  const t0 = Date.now();
+  const trimmed = rawTitle.trim();
+  const title = trimmed.length > 0 ? trimmed : null;
+  const key = getUserEncryptionKey(userId);
+
+  const rows = await db
+    .update(schema.chats)
+    .set({ title: title != null ? encryptField(title, key) : null })
+    .where(and(eq(schema.chats.id, chatId), eq(schema.chats.userId, userId)))
+    .returning({ id: schema.chats.id });
+
+  if (rows.length === 0) {
+    logger.info({ durationMs: Date.now() - t0, userId, chatId }, "Chat rename: not found");
+    return undefined;
+  }
+
+  logger.info(
+    { durationMs: Date.now() - t0, userId, chatId, cleared: title === null },
+    "Chat renamed",
+  );
+  return { title };
 }
 
 /** Удаляет чат (только свой). true — если строка была удалена. */

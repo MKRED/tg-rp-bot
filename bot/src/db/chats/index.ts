@@ -16,6 +16,7 @@ export {
   getChat,
   getChatTree,
   createChat,
+  renameChat,
   deleteChat,
 } from "./chats.js";
 

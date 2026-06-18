@@ -22,8 +22,10 @@ function formatChatTime(iso: string): string {
   return date.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
 }
 
-/** Ячейка чата в списке: аватар персонажа, имя, персона, превью последнего сообщения. */
+/** Ячейка чата в списке: аватар персонажа, название, персона, превью последнего сообщения. */
 export function ChatCard({ chat, onClick }: ChatCardProps) {
+  // Заголовок ячейки — пользовательское название чата или имя персонажа по умолчанию
+  const displayName = chat.title ?? chat.character.name;
   const subtitle = chat.lastMessage
     ? chat.lastMessage
     : chat.persona?.name
@@ -48,7 +50,7 @@ export function ChatCard({ chat, onClick }: ChatCardProps) {
       }
       onClick={onClick}
     >
-      {chat.character.name}
+      {displayName}
     </Cell>
   );
 }

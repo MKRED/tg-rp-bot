@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import {
   createChat,
   deleteChat,
+  renameChat,
   getChatSettings,
   getChatTree,
   getChat,
@@ -73,6 +74,22 @@ export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
     const chat = await getChat(userId, chatId);
     if (!chat) return c.json({ error: "Chat not found" }, 404);
     return c.json({ chat });
+  });
+
+  app.patch("/:id", async (c) => {
+    const userId = c.get("tgUser")!.id;
+    const chatId = Number(c.req.param("id"));
+    const body = (await c.req.json().catch(() => ({}))) as { title?: unknown };
+
+    if (typeof body.title !== "string") {
+      return c.json({ error: "title must be a string" }, 400);
+    }
+    // Ограничиваем длину названия, чтобы не раздувать список/шапку
+    const title = body.title.slice(0, 100);
+
+    const result = await renameChat(userId, chatId, title);
+    if (!result) return c.json({ error: "Chat not found" }, 404);
+    return c.json({ title: result.title });
   });
 
   app.delete("/:id", async (c) => {

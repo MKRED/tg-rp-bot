@@ -1,14 +1,14 @@
-import { Cell, List, Section, Spinner, Switch } from "@telegram-apps/telegram-ui";
+import { Cell, Input, List, Section, Spinner, Switch } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import { Bot, ChevronRight, Eraser, Trash2, User } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { ROUTES, characterEditPath, chatSettingsPath, personaEditPath, presetEditPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { CharacterAvatar } from "../../features/characters/components/CharacterAvatar";
 import { PersonaAvatar } from "../../features/personas/components/PersonaAvatar";
-import { deleteChat, TokenBudgetBar, useChat, useChatSettings, useChatStats } from "../../features/rp-chat";
+import { deleteChat, renameChat, TokenBudgetBar, useChat, useChatSettings, useChatStats } from "../../features/rp-chat";
 import { ExpandableSelect } from "../../features/rp-chat/components/ExpandableSelect";
 import {
   AUTO_SCOPE_OPTIONS,
@@ -31,11 +31,34 @@ export function RpChatSettingsPage() {
   const { id } = useParams<{ id: string }>();
   const chatId = Number(id);
   const navigate = useTransitionNavigate();
-  const { chat, loading: chatLoading } = useChat(chatId);
+  const { chat, loading: chatLoading, setChat } = useChat(chatId);
   const { settings, loading: settingsLoading, update } = useChatSettings(chatId);
   const { stats, loading: statsLoading, clearing, clearVariants } = useChatStats(chatId);
   const [deleting, setDeleting] = useState(false);
   const [openSelect, setOpenSelect] = useState<OpenSelect>(null);
+  // Локальное поле названия чата: правится свободно, сохраняется на blur.
+  const [title, setTitle] = useState("");
+
+  // Подхватываем сохранённое название, когда чат загрузился или сменился.
+  useEffect(() => {
+    setTitle(chat?.title ?? "");
+  }, [chat?.id, chat?.title]);
+
+  // Сохраняем название на blur: пустая строка очищает (сервер вернёт title = null).
+  const handleTitleBlur = async () => {
+    if (!chat) return;
+    const next = title.trim();
+    if (next === (chat.title ?? "")) return; // без изменений — не дёргаем API
+    try {
+      const saved = await renameChat(chatId, next);
+      setChat((prev) => (prev ? { ...prev, title: saved } : prev));
+      setTitle(saved ?? "");
+    } catch (err) {
+      // При ошибке возвращаем поле к сохранённому значению, чтобы UI не врал
+      console.error("Failed to rename chat", err);
+      setTitle(chat.title ?? "");
+    }
+  };
 
   const toggle = (key: Exclude<OpenSelect, null>) =>
     setOpenSelect((cur) => (cur === key ? null : key));
@@ -73,6 +96,18 @@ export function RpChatSettingsPage() {
     <PageTransition>
       <div className="rp-chat-settings-page">
         <List>
+          {/* Название чата: пусто → в списке и шапке показываем имя персонажа */}
+          {chat && (
+            <Section header="Название" footer="Оставьте пустым, чтобы показывать имя персонажа">
+              <Input
+                placeholder={chat.character.name}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onBlur={handleTitleBlur}
+              />
+            </Section>
+          )}
+
           {/* Секция с текущим персонажем, персоной и пресетом */}
           <Section header="Чат">
             {chatLoading ? (

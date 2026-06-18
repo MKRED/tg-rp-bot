@@ -189,6 +189,9 @@ export const chats = pgTable("chats", {
     .references(() => characters.id),
   personaId: bigint("persona_id", { mode: "number" }).references(() => personas.id),
   presetId: bigint("preset_id", { mode: "number" }).references(() => generationPresets.id),
+  // Пользовательское название чата (зашифровано per-user, как content сообщений).
+  // null → в UI показываем имя персонажа (поведение по умолчанию).
+  title: text("title"),
   activeMessageId: bigint("active_message_id", { mode: "number" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })

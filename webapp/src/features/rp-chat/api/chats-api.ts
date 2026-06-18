@@ -41,6 +41,18 @@ export async function getChat(id: number): Promise<ChatDetail> {
   return res.chat;
 }
 
+/**
+ * Переименовать чат. Пустая строка очищает название (UI вернётся к имени персонажа).
+ * Сервер обрезает title до 100 символов; возвращает применённое значение.
+ */
+export async function renameChat(id: number, title: string): Promise<string | null> {
+  const res = await apiFetch<{ title: string | null }>(`/chats/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ title }),
+  });
+  return res.title;
+}
+
 export async function deleteChat(id: number): Promise<void> {
   await apiFetch(`/chats/${id}`, { method: "DELETE" });
 }

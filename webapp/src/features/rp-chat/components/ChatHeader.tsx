@@ -3,16 +3,18 @@ import { CharacterAvatar } from "../../characters/components/CharacterAvatar";
 
 interface ChatHeaderProps {
   character: { id: number; name: string; hasImage: boolean };
+  /** Пользовательское название чата; null → показываем имя персонажа. */
+  title: string | null;
   onSettingsClick: () => void;
   onGraphClick: () => void;
 }
 
-export function ChatHeader({ character, onSettingsClick, onGraphClick }: ChatHeaderProps) {
+export function ChatHeader({ character, title, onSettingsClick, onGraphClick }: ChatHeaderProps) {
   return (
     <div className="chat-header">
       <div className="chat-header__info">
         <CharacterAvatar id={character.id} hasImage={character.hasImage} name={character.name} size={40} enlargeable />
-        <span className="chat-header__name">{character.name}</span>
+        <span className="chat-header__name">{title ?? character.name}</span>
       </div>
       <div className="chat-header__actions">
         <button

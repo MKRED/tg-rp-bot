@@ -1,5 +1,6 @@
 export interface ChatListItem {
   id: number;
+  title: string | null;
   character: { id: number; name: string; hasImage: boolean };
   persona: { id: number; name: string } | null;
   lastMessage: string | null;
@@ -37,6 +38,7 @@ export interface MessageInPath {
 
 export interface ChatDetail {
   id: number;
+  title: string | null;
   character: { id: number; name: string; hasImage: boolean };
   persona: { id: number; name: string; hasImage: boolean } | null;
   preset: { id: number; name: string } | null;

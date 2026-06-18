@@ -183,6 +183,7 @@ export function RpChatPage() {
         {chat && (
           <ChatHeader
             character={chat.character}
+            title={chat.title}
             onSettingsClick={() => navigate(chatSettingsPath(chatId))}
             onGraphClick={() => navigate(chatGraphPath(chatId))}
           />

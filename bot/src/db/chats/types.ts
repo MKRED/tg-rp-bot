@@ -24,6 +24,7 @@ export type MessageInPath = {
 
 export type ChatDetail = {
   id: number;
+  title: string | null;
   character: { id: number; name: string; hasImage: boolean };
   persona: { id: number; name: string; hasImage: boolean } | null;
   preset: { id: number; name: string } | null;
@@ -33,6 +34,7 @@ export type ChatDetail = {
 
 export type ChatListItem = {
   id: number;
+  title: string | null;
   character: { id: number; name: string; hasImage: boolean };
   persona: { id: number; name: string } | null;
   lastMessage: string | null;
