@@ -7,6 +7,11 @@ import { countTokens } from "../utils/index.js";
 const DEFAULT_OUTPUT_RESERVE = 512;
 /** Надбавка на одно сообщение (роль/служебная разметка чат-формата) — для запаса бюджета. */
 const PER_MESSAGE_OVERHEAD = 4;
+/**
+ * Жёсткий потолок истории для impersonate — последние 30 сообщений (15 пар user/ИИ).
+ * Для ответа от лица игрока хватает свежего контекста; дальше идёт уже обрезка под contextSize.
+ */
+const IMPERSONATE_HISTORY_LIMIT = 30;
 
 /** Сводка по обрезке истории под лимит контекста — отдаётся в onTrim для логирования. */
 export type TrimInfo = { dropped: number; kept: number; total: number };
@@ -279,7 +284,12 @@ export function renderImpersonateMessages(opts: ImpersonateOptions): ChatMessage
     systemPrompt: opts.systemPrompt,
     auxPrompt: opts.auxPrompt,
   });
-  const history = resolveImpersonateHistory(opts, system, charName, userName);
+  // Сперва жёстко берём последние IMPERSONATE_HISTORY_LIMIT сообщений, затем урезаем под contextSize.
+  const capped =
+    opts.history.length > IMPERSONATE_HISTORY_LIMIT
+      ? opts.history.slice(-IMPERSONATE_HISTORY_LIMIT)
+      : opts.history;
+  const history = resolveImpersonateHistory({ ...opts, history: capped }, system, charName, userName);
   const user = renderImpersonateHistory(history, charName, userName);
 
   return [

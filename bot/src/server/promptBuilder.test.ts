@@ -422,4 +422,19 @@ describe("renderImpersonateMessages", () => {
     expect(user!.content).toContain("Сообщение номер 20.");
     expect(onTrim).not.toHaveBeenCalled();
   });
+
+  it("берёт только последние 30 сообщений даже без contextSize", () => {
+    const [, user] = renderImpersonateMessages({
+      template: "t",
+      character: { name: "Алиса", prompt: "" },
+      persona: { name: "Иван", prompt: "" },
+      systemPrompt: "",
+      auxPrompt: "",
+      history: makeLongHistory(50),
+    });
+    // 50 сообщений → остаются 21..50, более старые выпадают
+    expect(user!.content).not.toContain("Сообщение номер 20.");
+    expect(user!.content).toContain("Сообщение номер 21.");
+    expect(user!.content).toContain("Сообщение номер 50.");
+  });
 });
