@@ -60,6 +60,28 @@
   cursor: pointer;
 }
 
+/* Кнопка «Скачать» — в одном ряду слева от «×», та же круглая форма и safe-area-отступ. */
+.image-lightbox__download {
+  position: absolute;
+  top: calc(
+    8px
+    + var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px))
+    + var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
+  right: 60px;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  cursor: pointer;
+}
+
 /* Спиннер по центру, пока картинка не загрузилась. */
 .image-lightbox__spinner {
   position: absolute;

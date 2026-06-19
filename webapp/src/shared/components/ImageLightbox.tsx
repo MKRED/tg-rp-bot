@@ -76,6 +76,31 @@ export function ImageLightbox({ src, onClose }: ImageLightboxProps) {
     onClose();
   };
 
+  // Скачивание текущего фото. src — data URL (base64), поэтому прокачиваем через blob и
+  // object URL: так браузер/вебвью сохраняет файл, а расширение берём из MIME blob'а.
+  const handleDownload = async () => {
+    if (!src) return;
+    try {
+      const res = await fetch(src);
+      const blob = await res.blob();
+      const ext = blob.type.split("/")[1] || "jpg";
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `image.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      // Запасной путь: прямой data URL в href (если fetch недоступен в вебвью).
+      const a = document.createElement("a");
+      a.href = src;
+      a.download = "image";
+      a.click();
+    }
+  };
+
   return createPortal(
     <motion.div
       className="image-lightbox"
@@ -93,6 +118,26 @@ export function ImageLightbox({ src, onClose }: ImageLightboxProps) {
       >
         ×
       </button>
+
+      {/* Кнопка появляется только когда фото загружено (есть что скачивать). */}
+      {src && loaded && (
+        <button
+          type="button"
+          className="image-lightbox__download"
+          aria-label="Скачать"
+          onClick={(e) => { e.stopPropagation(); handleDownload(); }}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      )}
 
       {src && (
         <TransformWrapper
