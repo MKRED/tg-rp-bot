@@ -24,6 +24,7 @@ export function CharacterForm({ initial, submitting, onSubmit, onDelete }: Chara
   const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
   const [footnote, setFootnote] = useState(initial?.footnote ?? "");
   const [prompt, setPrompt] = useState(initial?.prompt ?? "");
+  const [scenario, setScenario] = useState(initial?.scenario ?? "");
   const [firstMessages, setFirstMessages] = useState<string[]>(initial?.firstMessages ?? []);
 
   const canSubmit = name.trim().length > 0 && !submitting;
@@ -44,6 +45,7 @@ export function CharacterForm({ initial, submitting, onSubmit, onDelete }: Chara
       // пустое примечание сохраняем как null (как у персоны)
       footnote: footnote.trim() || null,
       prompt,
+      scenario,
       // отбрасываем пустые варианты первого сообщения
       firstMessages: firstMessages.map((m) => m.trim()).filter(Boolean),
     });
@@ -79,6 +81,19 @@ export function CharacterForm({ initial, submitting, onSubmit, onDelete }: Chara
         />
         <div className="char-field__meta">
           <span className="char-field__tokens">~{estimateTokens(prompt)} токенов</span>
+        </div>
+      </div>
+
+      <div className="char-field">
+        <ExpandableTextarea
+          header="Сценарий"
+          placeholder="Куда движется сюжет, цель сцены…"
+          value={scenario}
+          rows={4}
+          onChange={(e) => setScenario(e.target.value)}
+        />
+        <div className="char-field__meta">
+          <span className="char-field__tokens">~{estimateTokens(scenario)} токенов</span>
         </div>
       </div>
 

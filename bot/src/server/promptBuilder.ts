@@ -19,6 +19,7 @@ export type TrimInfo = { dropped: number; kept: number; total: number };
 export type PromptCharacter = {
   name: string;
   prompt: string;
+  scenario: string;
 };
 
 export type PromptPersona = {
@@ -84,6 +85,10 @@ function componentText(opts: BuildMessagesOptions, id: Exclude<PromptComponentId
       return opts.preset.systemPrompt || null;
     case "characterDescription":
       return opts.character.prompt || null;
+    case "characterScenario":
+      // Сценарий — авторская «вводная» для ИИ (куда ведём сцену), а не реплика игрока,
+      // поэтому уходит системным сообщением, как и описание персонажа.
+      return opts.character.scenario || null;
     case "userDescription":
       // Показываем персону, только если она задана (компонент может быть включён без персоны).
       return opts.persona?.prompt || null;
@@ -157,7 +162,7 @@ export type BuildMessagesControl = {
  * Порядок компонентов определяется preset.promptOrder; отключённые/пустые компоненты пропускаются.
  * Во всех текстах автоматически заменяются {{char}} и {{user}} на имена персонажа/персоны.
  *
- *   system / characterDescription / userDescription / auxiliary → role:"system"
+ *   system / characterDescription / characterScenario / userDescription / auxiliary → role:"system"
  *   history     → MessageInPath[] → {role, content}[] (урезается под preset.contextSize, см. resolveHistory)
  *   postHistory → role:"user", preset.postHistoryInstruction
  *
@@ -319,6 +324,7 @@ export function makeDefaultPreset(userId: number): GenerationPreset {
       { id: "characterDescription", enabled: true },
       { id: "userDescription", enabled: false },
       { id: "auxiliary", enabled: false },
+      { id: "characterScenario", enabled: false },
       { id: "history", enabled: true },
       { id: "postHistory", enabled: false },
     ],

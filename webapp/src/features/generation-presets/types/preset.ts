@@ -21,6 +21,7 @@ export const REASONING_EFFORT_LABELS: Record<ReasoningEffort, string> = {
 export type PromptComponentId =
   | "system"
   | "characterDescription"
+  | "characterScenario"
   | "userDescription"
   | "auxiliary"
   | "history"
@@ -35,10 +36,22 @@ export interface PromptOrderItem {
 export const PROMPT_COMPONENT_LABELS: Record<PromptComponentId, string> = {
   system: "Основной промпт",
   characterDescription: "Описание персонажа",
+  characterScenario: "Сценарий",
   userDescription: "Описание пользователя",
   auxiliary: "Вспомогательный промпт",
   history: "История чата",
   postHistory: "Инструкция после истории",
+};
+
+/** Откуда берётся каждый компонент — подпись под названием, чтобы пользователь понимал источник. */
+export const PROMPT_COMPONENT_SOURCES: Record<PromptComponentId, string> = {
+  system: "из этого пресета",
+  characterDescription: "из карточки персонажа · Промпт",
+  characterScenario: "из карточки персонажа · Сценарий",
+  userDescription: "из персоны · Промпт",
+  auxiliary: "из этого пресета",
+  history: "сообщения чата",
+  postHistory: "из этого пресета",
 };
 
 /** Компоненты, ещё не реализованные как часть запроса — строку показываем неактивной. */
@@ -50,6 +63,7 @@ export const DEFAULT_PROMPT_ORDER: PromptOrderItem[] = [
   { id: "characterDescription", enabled: true },
   { id: "userDescription", enabled: false },
   { id: "auxiliary", enabled: true },
+  { id: "characterScenario", enabled: false },
   { id: "history", enabled: true },
   { id: "postHistory", enabled: true },
 ];

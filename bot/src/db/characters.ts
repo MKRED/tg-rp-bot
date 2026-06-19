@@ -19,6 +19,7 @@ export type CharacterInput = {
   // footnote — примечание «для себя», хранится только в UI (в LLM-запрос не передаётся).
   footnote: string | null;
   prompt: string;
+  scenario: string;
   firstMessages: string[];
   image: string | null;
   imageFull: string | null;
@@ -132,6 +133,7 @@ export async function createCharacter(userId: number, input: CharacterInput): Pr
       tags: input.tags.map((tag) => encryptField(tag, key)),
       footnote: encryptField(input.footnote, key),
       prompt: encryptField(input.prompt, key),
+      scenario: encryptField(input.scenario, key),
       firstMessages: input.firstMessages.map((msg) => encryptField(msg, key)),
       image: input.image,
       imageFull: input.imageFull,
@@ -160,6 +162,7 @@ export async function updateCharacter(
       tags: input.tags.map((tag) => encryptField(tag, key)),
       footnote: encryptField(input.footnote, key),
       prompt: encryptField(input.prompt, key),
+      scenario: encryptField(input.scenario, key),
       firstMessages: input.firstMessages.map((msg) => encryptField(msg, key)),
       image: input.image,
       imageFull: input.imageFull,
@@ -194,6 +197,7 @@ function decryptCharacterRow(row: Character, userId: number): Character {
     tags: row.tags.map((tag) => decryptField(tag, key)),
     footnote: decryptField(row.footnote, key),
     prompt: decryptField(row.prompt, key),
+    scenario: decryptField(row.scenario, key),
     firstMessages: row.firstMessages.map((msg) => decryptField(msg, key)),
   };
 }

@@ -47,6 +47,7 @@ function parseCharacterInput(body: unknown): { input: CharacterInput } | { error
   if (!name) return { error: "Name is required" };
 
   const prompt = typeof b.prompt === "string" ? b.prompt : "";
+  const scenario = typeof b.scenario === "string" ? b.scenario : "";
 
   if (!Array.isArray(b.tags) || !b.tags.every((t) => typeof t === "string")) {
     return { error: "Tags must be an array of strings" };
@@ -75,6 +76,7 @@ function parseCharacterInput(body: unknown): { input: CharacterInput } | { error
     input: {
       name,
       prompt,
+      scenario,
       tags: b.tags as string[],
       footnote,
       firstMessages: b.firstMessages as string[],

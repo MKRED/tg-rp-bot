@@ -8,6 +8,8 @@ export interface Character {
   /** Примечание «для себя» — не уходит в LLM, показывается только в UI. */
   footnote: string | null;
   prompt: string;
+  /** Сценарий — промпт, направляющий ИИ по ходу RP (компонент characterScenario в пресете). */
+  scenario: string;
   firstMessages: string[];
   createdAt: string;
   updatedAt: string;
@@ -37,6 +39,8 @@ export interface CharacterInput {
   /** Примечание «для себя» — не уходит в LLM. */
   footnote: string | null;
   prompt: string;
+  /** Сценарий — промпт, направляющий ИИ по ходу RP. */
+  scenario: string;
   firstMessages: string[];
   image: string | null;
   imageFull: string | null;

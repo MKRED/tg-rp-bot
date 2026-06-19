@@ -40,6 +40,7 @@ function makePreset(overrides: Partial<GenerationPreset> = {}): GenerationPreset
       { id: "characterDescription", enabled: true },
       { id: "userDescription", enabled: false },
       { id: "auxiliary", enabled: true },
+      { id: "characterScenario", enabled: false },
       { id: "history", enabled: true },
       { id: "postHistory", enabled: true },
     ],
@@ -52,7 +53,7 @@ function makePreset(overrides: Partial<GenerationPreset> = {}): GenerationPreset
 function makeOpts(overrides: Partial<BuildMessagesOptions> = {}): BuildMessagesOptions {
   return {
     preset: makePreset(),
-    character: { name: "Алиса", prompt: "Ты персонаж Алиса." },
+    character: { name: "Алиса", prompt: "Ты персонаж Алиса.", scenario: "" },
     persona: null,
     history: [],
     userMessage: "Привет!",
@@ -130,6 +131,51 @@ describe("buildMessages", () => {
     });
     const msgs = buildMessages(opts);
     expect(msgs.some((m) => m.content === "Ты играешь за Ивана.")).toBe(true);
+  });
+
+  it("включает characterScenario (role system) если enabled и сценарий непустой", () => {
+    const opts = makeOpts({
+      preset: makePreset({
+        promptOrder: [
+          { id: "system", enabled: false },
+          { id: "characterDescription", enabled: true },
+          { id: "userDescription", enabled: false },
+          { id: "auxiliary", enabled: false },
+          { id: "characterScenario", enabled: true },
+          { id: "history", enabled: true },
+          { id: "postHistory", enabled: false },
+        ],
+      }),
+      character: { name: "Алиса", prompt: "Описание Алисы.", scenario: "Сюжет ведёт к развязке." },
+    });
+    const msgs = buildMessages(opts);
+    // characterDescription + characterScenario + userMessage; сценарий идёт после описания, перед историей
+    expect(msgs).toHaveLength(3);
+    expect(msgs[0]!.content).toBe("Описание Алисы.");
+    expect(msgs[1]!.role).toBe("system");
+    expect(msgs[1]!.content).toBe("Сюжет ведёт к развязке.");
+    expect(msgs[2]!.content).toBe("Привет!");
+  });
+
+  it("пропускает characterScenario если сценарий пустой, даже при enabled", () => {
+    const opts = makeOpts({
+      preset: makePreset({
+        promptOrder: [
+          { id: "system", enabled: false },
+          { id: "characterDescription", enabled: false },
+          { id: "userDescription", enabled: false },
+          { id: "auxiliary", enabled: false },
+          { id: "characterScenario", enabled: true },
+          { id: "history", enabled: false },
+          { id: "postHistory", enabled: false },
+        ],
+      }),
+      character: { name: "Алиса", prompt: "", scenario: "" },
+    });
+    const msgs = buildMessages(opts);
+    // пустой сценарий не попадает → только userMessage
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0]!.content).toBe("Привет!");
   });
 
   it("вставляет историю в правильном порядке", () => {
@@ -308,7 +354,7 @@ describe("renderImpersonateMessages", () => {
   it("возвращает ровно 2 сообщения: system (шаблон) + user (история)", () => {
     const msgs = renderImpersonateMessages({
       template: "Пиши за {{user}}.",
-      character: { name: "Алиса", prompt: "Описание Алисы." },
+      character: { name: "Алиса", prompt: "Описание Алисы.", scenario: "" },
       persona: { name: "Иван", prompt: "Описание Ивана." },
       systemPrompt: "СИС",
       auxPrompt: "АУКС",
@@ -324,7 +370,7 @@ describe("renderImpersonateMessages", () => {
       "Роль {{user}} vs {{char}}\n{{char_prompt}}\n{{user_prompt}}\n{{system_prompt}}\n{{aux_prompt}}";
     const [system] = renderImpersonateMessages({
       template: tpl,
-      character: { name: "Алиса", prompt: "ОПИС_CHAR" },
+      character: { name: "Алиса", prompt: "ОПИС_CHAR", scenario: "" },
       persona: { name: "Иван", prompt: "ОПИС_USER" },
       systemPrompt: "СИС",
       auxPrompt: "АУКС",
@@ -336,7 +382,7 @@ describe("renderImpersonateMessages", () => {
   it("разрешает {{char}}/{{user}} внутри вставленных промптов", () => {
     const [system] = renderImpersonateMessages({
       template: "{{char_prompt}}",
-      character: { name: "Алиса", prompt: "Я — {{char}}, говорю с {{user}}." },
+      character: { name: "Алиса", prompt: "Я — {{char}}, говорю с {{user}}.", scenario: "" },
       persona: { name: "Иван", prompt: "" },
       systemPrompt: "",
       auxPrompt: "",
@@ -348,7 +394,7 @@ describe("renderImpersonateMessages", () => {
   it("использует дефолтный шаблон при пустом поле", () => {
     const [system] = renderImpersonateMessages({
       template: "   ",
-      character: { name: "Алиса", prompt: "X" },
+      character: { name: "Алиса", prompt: "X", scenario: "" },
       persona: null,
       systemPrompt: "",
       auxPrompt: "",
@@ -365,7 +411,7 @@ describe("renderImpersonateMessages", () => {
   it("рендерит историю плоским текстом + затравкой <userName>: в конце (история кончается на assistant)", () => {
     const [, user] = renderImpersonateMessages({
       template: "t",
-      character: { name: "Алиса", prompt: "" },
+      character: { name: "Алиса", prompt: "", scenario: "" },
       persona: { name: "Иван", prompt: "" },
       systemPrompt: "",
       auxPrompt: "",
@@ -380,7 +426,7 @@ describe("renderImpersonateMessages", () => {
   it("пустая история → user-сообщение = '<userName>:'", () => {
     const [, user] = renderImpersonateMessages({
       template: "t",
-      character: { name: "Алиса", prompt: "" },
+      character: { name: "Алиса", prompt: "", scenario: "" },
       persona: { name: "Иван", prompt: "" },
       systemPrompt: "",
       auxPrompt: "",
@@ -393,7 +439,7 @@ describe("renderImpersonateMessages", () => {
     const onTrim = vi.fn();
     const [, user] = renderImpersonateMessages({
       template: "t",
-      character: { name: "Алиса", prompt: "" },
+      character: { name: "Алиса", prompt: "", scenario: "" },
       persona: { name: "Иван", prompt: "" },
       systemPrompt: "",
       auxPrompt: "",
@@ -411,7 +457,7 @@ describe("renderImpersonateMessages", () => {
     const onTrim = vi.fn();
     const [, user] = renderImpersonateMessages({
       template: "t",
-      character: { name: "Алиса", prompt: "" },
+      character: { name: "Алиса", prompt: "", scenario: "" },
       persona: { name: "Иван", prompt: "" },
       systemPrompt: "",
       auxPrompt: "",
@@ -426,7 +472,7 @@ describe("renderImpersonateMessages", () => {
   it("берёт только последние 30 сообщений даже без contextSize", () => {
     const [, user] = renderImpersonateMessages({
       template: "t",
-      character: { name: "Алиса", prompt: "" },
+      character: { name: "Алиса", prompt: "", scenario: "" },
       persona: { name: "Иван", prompt: "" },
       systemPrompt: "",
       auxPrompt: "",

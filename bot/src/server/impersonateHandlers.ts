@@ -32,7 +32,7 @@ export async function handleImpersonate(c: Ctx) {
 
   const messages = renderImpersonateMessages({
     template: preset?.userPersonaPrompt ?? "",
-    character: { name: character.name, prompt: character.prompt },
+    character: { name: character.name, prompt: character.prompt, scenario: character.scenario },
     persona: persona ? { name: persona.name, prompt: persona.prompt } : null,
     systemPrompt: preset?.systemPrompt ?? "",
     auxPrompt: preset?.auxiliarySystemPrompt ?? "",

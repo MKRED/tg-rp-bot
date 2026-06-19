@@ -54,6 +54,9 @@ export const characters = pgTable("characters", {
   // Примечание «для себя» — хранится только в UI, в LLM-запрос не передаётся (как footnote персоны).
   footnote: text("footnote"),
   prompt: text("prompt").notNull().default(""),
+  // Сценарий — промпт, направляющий ИИ по ходу RP. Уходит в запрос отдельным компонентом
+  // (characterScenario в promptOrder пресета). Шифруется как prompt.
+  scenario: text("scenario").notNull().default(""),
   firstMessages: jsonb("first_messages")
     .$type<string[]>()
     .notNull()
@@ -96,6 +99,7 @@ export type NewPersona = typeof personas.$inferInsert;
 export type PromptComponentId =
   | "system"
   | "characterDescription"
+  | "characterScenario"
   | "userDescription"
   | "auxiliary"
   | "history"
@@ -162,7 +166,7 @@ export const generationPresets = pgTable("generation_presets", {
     .$type<PromptOrderItem[]>()
     .notNull()
     .default(
-      sql`'[{"id":"system","enabled":true},{"id":"characterDescription","enabled":true},{"id":"userDescription","enabled":false},{"id":"auxiliary","enabled":true},{"id":"history","enabled":true},{"id":"postHistory","enabled":true}]'::jsonb`,
+      sql`'[{"id":"system","enabled":true},{"id":"characterDescription","enabled":true},{"id":"userDescription","enabled":false},{"id":"auxiliary","enabled":true},{"id":"characterScenario","enabled":false},{"id":"history","enabled":true},{"id":"postHistory","enabled":true}]'::jsonb`,
     ),
 
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

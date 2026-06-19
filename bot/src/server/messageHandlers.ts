@@ -65,7 +65,7 @@ async function buildCompletionInput(
   const msgs = buildMessages(
     {
       preset: preset ?? makeDefaultPreset(userId),
-      character: { name: character.name, prompt: character.prompt },
+      character: { name: character.name, prompt: character.prompt, scenario: character.scenario },
       persona: persona ? { name: persona.name, prompt: persona.prompt } : null,
       history: chat.messages,
       userMessage: newUserMessage,

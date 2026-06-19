@@ -34,7 +34,7 @@ export async function handleChatStats(c: Ctx) {
   const promptMessages = buildMessages(
     {
       preset: effectivePreset,
-      character: { name: character.name, prompt: character.prompt },
+      character: { name: character.name, prompt: character.prompt, scenario: character.scenario },
       persona: persona ? { name: persona.name, prompt: persona.prompt } : null,
       history: chat.messages,
       userMessage: "",

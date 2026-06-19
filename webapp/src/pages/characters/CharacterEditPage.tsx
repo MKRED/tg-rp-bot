@@ -26,6 +26,7 @@ function toInput(c: Character): CharacterInput {
     tags: c.tags,
     footnote: c.footnote,
     prompt: c.prompt,
+    scenario: c.scenario,
     firstMessages: c.firstMessages,
   };
 }

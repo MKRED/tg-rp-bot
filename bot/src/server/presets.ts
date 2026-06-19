@@ -39,6 +39,7 @@ const REASONING_EFFORTS = ["minimal", "low", "medium", "high", "xhigh"] as const
 const PROMPT_COMPONENT_IDS: PromptComponentId[] = [
   "system",
   "characterDescription",
+  "characterScenario",
   "userDescription",
   "auxiliary",
   "history",

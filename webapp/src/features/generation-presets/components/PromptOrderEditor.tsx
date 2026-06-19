@@ -2,6 +2,7 @@ import { Switch } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import {
   PROMPT_COMPONENT_LABELS,
+  PROMPT_COMPONENT_SOURCES,
   UNIMPLEMENTED_COMPONENTS,
   type PromptOrderItem,
 } from "../types/preset";
@@ -62,10 +63,13 @@ export function PromptOrderEditor({ order, onChange }: PromptOrderEditorProps) {
                 ↓
               </button>
             </div>
-            <span className="preset-order__label">
-              {PROMPT_COMPONENT_LABELS[item.id]}
-              {unimplemented && <span className="preset-order__soon"> · скоро</span>}
-            </span>
+            <div className="preset-order__text">
+              <span className="preset-order__label">
+                {PROMPT_COMPONENT_LABELS[item.id]}
+                {unimplemented && <span className="preset-order__soon"> · скоро</span>}
+              </span>
+              <span className="preset-order__source">{PROMPT_COMPONENT_SOURCES[item.id]}</span>
+            </div>
             <Switch
               checked={item.enabled}
               disabled={unimplemented}
