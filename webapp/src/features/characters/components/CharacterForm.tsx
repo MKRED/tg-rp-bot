@@ -89,7 +89,7 @@ export function CharacterForm({ initial, submitting, onSubmit, onDelete }: Chara
           header="Сценарий"
           placeholder="Куда движется сюжет, цель сцены…"
           value={scenario}
-          rows={4}
+          rows={6}
           onChange={(e) => setScenario(e.target.value)}
         />
         <div className="char-field__meta">
