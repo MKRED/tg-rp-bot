@@ -241,8 +241,8 @@ export async function getChatTree(userId: number, chatId: number): Promise<TreeN
 // ─── Создание / удаление чата ──────────────────────────────────────────────────
 
 /**
- * Создаёт чат и вставляет первое сообщение из character.firstMessages[0] (если есть).
- * Персонаж уже должен быть расшифрован вызывающей стороной.
+ * Создаёт чат и вставляет стартовое сообщение (firstMessage), если оно не null.
+ * Конкретное приветствие выбирает вызывающая сторона; текст уже расшифрован.
  */
 export async function createChat(
   userId: number,
@@ -256,8 +256,8 @@ export async function createChat(
     .values({
       userId,
       characterId: input.characterId,
-      personaId: input.personaId ?? undefined,
-      presetId: input.presetId ?? undefined,
+      personaId: input.personaId,
+      presetId: input.presetId,
     })
     .returning();
   const chat = chatRows[0]!;

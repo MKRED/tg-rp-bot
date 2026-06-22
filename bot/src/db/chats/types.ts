@@ -2,8 +2,8 @@
 
 export type ChatInput = {
   characterId: number;
-  personaId: number | null;
-  presetId: number | null;
+  personaId: number;
+  presetId: number;
 };
 
 /**

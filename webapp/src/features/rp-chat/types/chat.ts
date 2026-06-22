@@ -11,8 +11,10 @@ export interface ChatListItem {
 
 export interface ChatInput {
   characterId: number;
-  personaId: number | null;
-  presetId: number | null;
+  personaId: number;
+  presetId: number;
+  /** Индекс приветствия из character.firstMessages; вне диапазона → чат без стартового сообщения. */
+  firstMessageIndex: number;
 }
 
 /** Ответ сервера при создании чата. */

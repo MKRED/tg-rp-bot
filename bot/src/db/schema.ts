@@ -180,7 +180,7 @@ export type GenerationPreset = typeof generationPresets.$inferSelect;
 export type NewGenerationPreset = typeof generationPresets.$inferInsert;
 
 /**
- * RP-чаты: один чат = один персонаж + опциональная персона + пресет ИИ.
+ * RP-чаты: один чат = один персонаж + обязательная персона + пресет ИИ.
  * activeMessageId — «курсор» активной ветки (лист дерева сообщений).
  * Намеренно НЕ FK: chats ↔ messages образуют цикл, Drizzle/Postgres требовал бы deferrable.
  * Целостность гарантируется кодом (DAO).
@@ -193,8 +193,12 @@ export const chats = pgTable("chats", {
   characterId: bigint("character_id", { mode: "number" })
     .notNull()
     .references(() => characters.id),
-  personaId: bigint("persona_id", { mode: "number" }).references(() => personas.id),
-  presetId: bigint("preset_id", { mode: "number" }).references(() => generationPresets.id),
+  personaId: bigint("persona_id", { mode: "number" })
+    .notNull()
+    .references(() => personas.id),
+  presetId: bigint("preset_id", { mode: "number" })
+    .notNull()
+    .references(() => generationPresets.id),
   // Пользовательское название чата (зашифровано per-user, как content сообщений).
   // null → в UI показываем имя персонажа (поведение по умолчанию).
   title: text("title"),

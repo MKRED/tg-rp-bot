@@ -10,6 +10,8 @@ import {
   upsertChatSettings,
 } from "../db/chats/index.js";
 import { getCharacter } from "../db/characters.js";
+import { getPersona } from "../db/personas.js";
+import { getPreset } from "../db/presets.js";
 import logger from "../logger.js";
 import type { AppVariables } from "./initData.js";
 import {
@@ -48,19 +50,33 @@ export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
       characterId?: unknown;
       personaId?: unknown;
       presetId?: unknown;
+      firstMessageIndex?: unknown;
     };
 
     const characterId = typeof body.characterId === "number" ? body.characterId : null;
-    if (!characterId) return c.json({ error: "characterId is required" }, 400);
+    if (characterId === null) return c.json({ error: "characterId is required" }, 400);
 
+    // Персона и пресет обязательны (NOT NULL в схеме) — играть без персоны нельзя
     const personaId = typeof body.personaId === "number" ? body.personaId : null;
-    const presetId = typeof body.presetId === "number" ? body.presetId : null;
+    if (personaId === null) return c.json({ error: "personaId is required" }, 400);
 
+    const presetId = typeof body.presetId === "number" ? body.presetId : null;
+    if (presetId === null) return c.json({ error: "presetId is required" }, 400);
+
+    // Все три сущности должны принадлежать пользователю (DAO user-scoped → undefined для чужих)
     const character = await getCharacter(userId, characterId);
     if (!character) return c.json({ error: "Character not found" }, 404);
 
-    // firstMessages уже расшифрованы в getCharacter
-    const firstMessage = character.firstMessages[0] ?? null;
+    const persona = await getPersona(userId, personaId);
+    if (!persona) return c.json({ error: "Persona not found" }, 404);
+
+    const preset = await getPreset(userId, presetId);
+    if (!preset) return c.json({ error: "Preset not found" }, 404);
+
+    // Выбранное приветствие (firstMessages уже расшифрованы в getCharacter). Индекс с защитой границ:
+    // нет приветствий или индекс вне диапазона → null (чат стартует пустым).
+    const idx = typeof body.firstMessageIndex === "number" ? body.firstMessageIndex : 0;
+    const firstMessage = character.firstMessages[idx] ?? null;
 
     const t0 = Date.now();
     const chat = await createChat(userId, { characterId, personaId, presetId }, firstMessage);

@@ -85,6 +85,13 @@
       "when": 1781835613817,
       "tag": "0011_mixed_microchip",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1782110044811,
+      "tag": "0012_new_exiles",
+      "breakpoints": true
     }
   ]
 }
