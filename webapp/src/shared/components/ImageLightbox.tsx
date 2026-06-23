@@ -46,8 +46,8 @@ export function ImageLightbox({ src, onSend, onClose }: ImageLightboxProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
   // Текущий масштаб > 1. Нужен и для решения «закрывать ли по тапу на фон», и чтобы
-  // отключать пан в неприближённом состоянии (иначе картинку можно утащить в угол и
-  // отпустить — она там и останется). State, а не ref: от него зависит проп panning.
+  // включать ограничение границами/инерцию только в приближённом состоянии. State, а не
+  // ref: от него зависят пропы limitToBounds / velocityAnimation.
   const [zoomed, setZoomed] = useState(false);
 
   useEffect(() => {
@@ -157,9 +157,13 @@ export function ImageLightbox({ src, onSend, onClose }: ImageLightboxProps) {
           // Возвращаем картинку в центр при зуме обратно к 1× (без этого она «застывала»
           // там, где её отпустили в приближённом состоянии).
           centerZoomedOut
-          // В неприближённом состоянии пан выключен — иначе картинку можно утащить в угол.
-          // При зуме (scale > 1) пан снова доступен.
-          panning={{ disabled: !zoomed }}
+          // В неприближённом состоянии (scale ≤ 1) границы выключены — картинку можно свободно
+          // потянуть в любую сторону. При зуме (scale > 1) включаем bounds, чтобы приближённое
+          // фото нельзя было утащить в пустоту и там бросить.
+          limitToBounds={zoomed}
+          // Инерцию глушим на scale 1 — иначе бросок после отпускания «улетал» бы и боролся с
+          // возвратом в центр; при зуме инерция остаётся.
+          velocityAnimation={{ disabled: !zoomed }}
           // Двойной тап переключает 1×↔~2.5× (e^step), а не слэмит в максимум.
           doubleClick={{ mode: "toggle", step: 0.9 }}
           // wheel.step не задаём — дефолт 0.015 даёт плавный зум (наше прежнее 0.2,
@@ -167,6 +171,12 @@ export function ImageLightbox({ src, onSend, onClose }: ImageLightboxProps) {
           onTransform={(_ref, state) => {
             const z = state.scale > 1.01;
             setZoomed((prev) => (prev !== z ? z : prev));
+          }}
+          // Отпустили после перетаскивания в неприближённом состоянии — плавно возвращаем фото
+          // в центр (иначе оно осталось бы там, где брошено). Живой scale читаем из ref,
+          // не из стейта zoomed (тот мог не успеть обновиться к моменту отпускания).
+          onPanningStop={(ref) => {
+            if (ref.state.scale <= 1.01) ref.centerView(1, 200);
           }}
         >
           <TransformComponent
