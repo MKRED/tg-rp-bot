@@ -1,6 +1,8 @@
 import { Avatar } from "@telegram-apps/telegram-ui";
 import { AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import { personaEditPath } from "../../../app/routes";
+import { sendPhotoToChat } from "../../../shared/api/sendPhoto";
 import { ImageLightbox } from "../../../shared/components/ImageLightbox";
 import { nameInitials } from "../../../shared/text/initials";
 import { usePersonaImage } from "../hooks/usePersonaImage";
@@ -54,7 +56,13 @@ export function PersonaAvatar({ id, hasImage, name, size = 40, enlargeable = fal
       )}
       <AnimatePresence>
         {open && src && (
-          <ImageLightbox src={lightboxSrc} onClose={() => setOpen(false)} />
+          <ImageLightbox
+            src={lightboxSrc}
+            onSend={(photo) =>
+              sendPhotoToChat(photo, { label: name, deepLink: personaEditPath(id) })
+            }
+            onClose={() => setOpen(false)}
+          />
         )}
       </AnimatePresence>
     </>

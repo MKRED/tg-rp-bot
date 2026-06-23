@@ -8,6 +8,7 @@ import {
   TransformWrapper,
 } from "react-zoom-pan-pinch";
 import { pushBackInterceptor } from "../telegram/backInterceptor";
+import { useToast } from "../toast";
 import "./ImageLightbox.css";
 
 interface ImageLightboxProps {
@@ -16,6 +17,12 @@ interface ImageLightboxProps {
    * индикатор, а не миниатюру, чтобы картинка не «скакала» при подмене на оригинал.
    */
   src?: string;
+  /**
+   * Действие «отправить картинку» (получает текущий показанный src). Если задано — вместо
+   * скачивания показываем кнопку отправки. Замена «скачать»: в Telegram webview на мобильных
+   * скачивание файла не работает, а отправка в чат с ботом — нативно. Без onSend кнопки нет.
+   */
+  onSend?: (src: string) => Promise<void>;
   onClose: () => void;
 }
 
@@ -31,12 +38,17 @@ interface ImageLightboxProps {
  * зум не активен (иначе тап в процессе пана случайно закрывал бы просмотр; в зуме закрываем
  * кнопкой). Тап по самой картинке не закрывает — там работают жесты зума.
  */
-export function ImageLightbox({ src, onClose }: ImageLightboxProps) {
+export function ImageLightbox({ src, onSend, onClose }: ImageLightboxProps) {
   const [loaded, setLoaded] = useState(false);
+  // Идёт отправка фото в чат — блокируем кнопку, чтобы не отправить дубль по повторному тапу.
+  const [sending, setSending] = useState(false);
+  const { showToast } = useToast();
   const imgRef = useRef<HTMLImageElement>(null);
   const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
-  // Текущий масштаб > 1 — для решения «закрывать ли по тапу на фон».
-  const zoomedRef = useRef(false);
+  // Текущий масштаб > 1. Нужен и для решения «закрывать ли по тапу на фон», и чтобы
+  // отключать пан в неприближённом состоянии (иначе картинку можно утащить в угол и
+  // отпустить — она там и останется). State, а не ref: от него зависит проп panning.
+  const [zoomed, setZoomed] = useState(false);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -72,32 +84,22 @@ export function ImageLightbox({ src, onClose }: ImageLightboxProps) {
   const handleBackdropClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if ((e.target as HTMLElement).tagName === "IMG") return; // жест по картинке
-    if (zoomedRef.current) return; // в зуме закрываем только кнопкой «×»
+    if (zoomed) return; // в зуме закрываем только кнопкой «×»
     onClose();
   };
 
-  // Скачивание текущего фото. src — data URL (base64), поэтому прокачиваем через blob и
-  // object URL: так браузер/вебвью сохраняет файл, а расширение берём из MIME blob'а.
-  const handleDownload = async () => {
-    if (!src) return;
+  // Отправка текущего фото в чат с ботом. Блокируем кнопку на время запроса (анти-дабл-тап) и
+  // в любом исходе показываем тост — пользователь видит результат, а не «молчаливый» провал.
+  const handleSend = async () => {
+    if (!src || !onSend || sending) return;
+    setSending(true);
     try {
-      const res = await fetch(src);
-      const blob = await res.blob();
-      const ext = blob.type.split("/")[1] || "jpg";
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `image.${ext}`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      await onSend(src);
+      showToast({ type: "success", message: "Фото отправлено в чат с ботом" });
     } catch {
-      // Запасной путь: прямой data URL в href (если fetch недоступен в вебвью).
-      const a = document.createElement("a");
-      a.href = src;
-      a.download = "image";
-      a.click();
+      showToast({ type: "error", message: "Не удалось отправить фото" });
+    } finally {
+      setSending(false);
     }
   };
 
@@ -119,23 +121,30 @@ export function ImageLightbox({ src, onClose }: ImageLightboxProps) {
         ×
       </button>
 
-      {/* Кнопка появляется только когда фото загружено (есть что скачивать). */}
-      {src && loaded && (
+      {/* Кнопка «отправить в чат» — только если задан onSend и фото загружено. На время
+          отправки показываем спиннер и блокируем кнопку (анти-дабл-тап). */}
+      {onSend && src && loaded && (
         <button
           type="button"
-          className="image-lightbox__download"
-          aria-label="Скачать"
-          onClick={(e) => { e.stopPropagation(); handleDownload(); }}
+          className="image-lightbox__send"
+          aria-label="Отправить в чат"
+          disabled={sending}
+          onClick={(e) => { e.stopPropagation(); handleSend(); }}
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          {sending ? (
+            <Spinner size="s" />
+          ) : (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              {/* Бумажный самолётик — отправка. */}
+              <path
+                d="M21 3L3 10.5l6 2.5m12-10l-7 18-2.5-7m9.5-11l-9.5 11"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
         </button>
       )}
 
@@ -145,11 +154,20 @@ export function ImageLightbox({ src, onClose }: ImageLightboxProps) {
           minScale={1}
           maxScale={5}
           centerOnInit
+          // Возвращаем картинку в центр при зуме обратно к 1× (без этого она «застывала»
+          // там, где её отпустили в приближённом состоянии).
+          centerZoomedOut
+          // В неприближённом состоянии пан выключен — иначе картинку можно утащить в угол.
+          // При зуме (scale > 1) пан снова доступен.
+          panning={{ disabled: !zoomed }}
           // Двойной тап переключает 1×↔~2.5× (e^step), а не слэмит в максимум.
           doubleClick={{ mode: "toggle", step: 0.9 }}
           // wheel.step не задаём — дефолт 0.015 даёт плавный зум (наше прежнее 0.2,
           // умноженное на |deltaY|, прыгало сразу в максимум).
-          onTransform={(_ref, state) => { zoomedRef.current = state.scale > 1.01; }}
+          onTransform={(_ref, state) => {
+            const z = state.scale > 1.01;
+            setZoomed((prev) => (prev !== z ? z : prev));
+          }}
         >
           <TransformComponent
             wrapperClass="image-lightbox__viewport"

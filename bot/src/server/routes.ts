@@ -2,10 +2,17 @@ import { Hono } from "hono";
 import logger from "../logger.js";
 import { createCharacterRoutes } from "./characters.js";
 import { createChatRoutes } from "./chats.js";
+import { MAX_IMAGE_FULL_CHARS, parseImageField } from "./imageValidation.js";
 import { type AppVariables, requireInitData } from "./initData.js";
 import { createPersonaRoutes } from "./personas.js";
+import { sendLightboxPhoto } from "./photoToChat.js";
 import { createPresetRoutes } from "./presets.js";
 import { getProfilePhotoDataUrl } from "./profilePhoto.js";
+
+/** Разрешённые внутренние пути для кнопки-ссылки под фото (защита от подстановки внешних URL). */
+const DEEP_LINK_RE = /^\/(characters|personas)\/\d+$/;
+/** Потолок длины текста инлайн-кнопки Telegram. */
+const MAX_BUTTON_LABEL = 64;
 
 /**
  * Маршруты Mini App API под префиксом /api.
@@ -35,6 +42,37 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
     } catch (err) {
       logger.error({ err, userId: user.id }, "Failed to fetch profile photo");
       return c.json({ dataUrl: null });
+    }
+  });
+
+  // Отправка фото из лайтбокса Mini App себе в чат с ботом: само фото (data URL),
+  // подпись-имя для кнопки-ссылки и deep-link на персонажа/персону. На мобильных скачивание
+  // картинки из webview не работает — отправка в чат заменяет «скачать».
+  api.post("/me/send-photo", async (c) => {
+    const user = c.get("tgUser");
+    if (!user) return c.json({ error: "Auth required" }, 401);
+
+    const body = (await c.req.json().catch(() => null)) as Record<string, unknown> | null;
+    if (!body) return c.json({ error: "Body must be an object" }, 400);
+
+    // Картинка — обязательный data:image/*-URL (тот же лимит, что у полноразмерного фото).
+    const imageParsed = parseImageField(body.image, MAX_IMAGE_FULL_CHARS, "Image");
+    if ("error" in imageParsed) return c.json({ error: imageParsed.error }, 400);
+    if (!imageParsed.value) return c.json({ error: "Image is required" }, 400);
+
+    const label = typeof body.label === "string" ? body.label.trim().slice(0, MAX_BUTTON_LABEL) : "";
+    if (!label) return c.json({ error: "Label is required" }, 400);
+
+    const deepLink = typeof body.deepLink === "string" ? body.deepLink : "";
+    if (!DEEP_LINK_RE.test(deepLink)) return c.json({ error: "Invalid deepLink" }, 400);
+
+    try {
+      await sendLightboxPhoto(user.id, { dataUrl: imageParsed.value, label, deepLink });
+      return c.json({ ok: true });
+    } catch (err) {
+      // Частый случай — 403: пользователь заблокировал бота / не начинал диалог.
+      logger.error({ err, userId: user.id }, "Failed to send lightbox photo to chat");
+      return c.json({ error: "send_failed" }, 502);
     }
   });
 

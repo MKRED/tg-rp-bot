@@ -2,6 +2,7 @@ import { AppRoot } from "@telegram-apps/telegram-ui";
 import { miniApp, useSignal } from "@telegram-apps/sdk-react";
 import { HashRouter } from "react-router-dom";
 import { getPlatform } from "../shared/telegram/platform";
+import { ToastProvider } from "../shared/toast";
 import { AnimatedRoutes } from "./AnimatedRoutes";
 import { BackButtonBridge } from "./BackButtonBridge";
 
@@ -26,11 +27,15 @@ export function App() {
   const isDark = useSignal(miniApp.isDark);
   return (
     <AppRoot appearance={isDark ? "dark" : "light"} platform={platform}>
-      <HashRouter>
-        {/* Мост нативной кнопки «Назад» — внутри роутера, т.к. использует navigate/location. */}
-        <BackButtonBridge />
-        <AnimatedRoutes />
-      </HashRouter>
+      {/* ToastProvider оборачивает всё приложение: тосты доступны на любом экране (в т.ч.
+          в порталах — лайтбокс), а Snackbar наследует тему AppRoot. */}
+      <ToastProvider>
+        <HashRouter>
+          {/* Мост нативной кнопки «Назад» — внутри роутера, т.к. использует navigate/location. */}
+          <BackButtonBridge />
+          <AnimatedRoutes />
+        </HashRouter>
+      </ToastProvider>
     </AppRoot>
   );
 }

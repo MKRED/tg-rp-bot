@@ -45,11 +45,14 @@ bot/src/
                   presets, impersonations, users); chats — папка (queries/messages/settings/crypto)
   llm/          — LLM client (client/types/constants/completionGuard/providers) — серверно,
                   провайдер (OpenRouter | DeepSeek) выбирается env LLM_PROVIDER
-  handlers/     — обработчики команд бота (index = registerHandlers, start.ts …)
+  handlers/     — обработчики команд/кнопок бота (index = registerHandlers, start.ts,
+                  photoActions.ts — callback «Закрыть» под фото из лайтбокса)
   server/       — Hono HTTP API: index=startServer, routes.ts, initData.ts (валидация подписи),
                   CRUD-роуты (characters/personas/presets/chats), messageHandlers +
                   impersonateHandlers (стриминговая RP-генерация по SSE), promptBuilder,
-                  translate (Google Translate + ИИ-перевод по промпту пресета), profilePhoto
+                  translate (Google Translate + ИИ-перевод по промпту пресета), profilePhoto,
+                  photoToChat (POST /me/send-photo — бот шлёт фото из лайтбокса юзеру в чат
+                  с web_app-кнопкой deep-link на персонажа/персону + «Закрыть»)
                   + раздача собранной статики Mini App из ./public (SPA-fallback) — один процесс
   scripts/      — разовые скрипты (backfill-message-encryption)
   utils/        — retry, crypto (per-user шифрование сообщений)
@@ -88,8 +91,11 @@ webapp/src/
 - **`shared/`** — только переиспользуемое между фичами: `api/client.ts` (граница к `/api`), `telegram/`
   (доступ к SDK), `text/` (`estimateTokens`, `initials`), `image/` (`buildAvatarImages` — из выбранного
   кропа делает квадратную миниатюру + уменьшенное полное фото), `components/` (`AvatarPicker` — выбор/превью/
-  удаление аватара с кропом миниатюры через `ImageCropEditor` на `react-easy-crop`). Новую папку заводим, когда сущность реально появилась, а не заранее.
-- **Роутер — `HashRouter`** (react-router-dom): маршрут в hash переживает reload и оставляет задел под deep-link через `start_param`. Нативная кнопка «Назад» Telegram связана с роутером в `app/BackButtonBridge.tsx` (`navigate(parentPath(...))` — вверх по иерархии, а не по истории). Catch-all `*` → главная: на Telegram Web launch-параметры приходят в hash, и без редиректа роутер показал бы пустой экран.
+  удаление аватара с кропом миниатюры через `ImageCropEditor` на `react-easy-crop`), `toast/` (`ToastProvider` +
+  `useToast` — переиспользуемые уведомления на tgui `Snackbar`; провайдер обёрнут вокруг приложения в `App`,
+  Snackbar рендерится порталом в `body` с `z-index` выше лайтбокса). Новую папку заводим, когда сущность реально появилась, а не заранее.
+- **Роутер — `HashRouter`** (react-router-dom): маршрут в hash переживает reload. Нативная кнопка «Назад» Telegram связана с роутером в `app/BackButtonBridge.tsx` (`navigate(parentPath(...))` — вверх по иерархии, а не по истории). Catch-all `*` → главная: на Telegram Web launch-параметры приходят в hash, и без редиректа роутер показал бы пустой экран.
+- **Deep-link из бота** (`app/deepLink.ts` + `main.tsx`): web_app-кнопка под фото из лайтбокса открывает Mini App с `?dl=<путь>` (напр. `/characters/123`). `resolveDeepLink()` вызывается **до** `render()` (после `initTelegram()`, который уже считал launch-данные из hash) и переписывает hash на маршрут — иначе catch-all успел бы увести на главную. Делать это в компоненте внутри роутера НЕЛЬЗЯ: эффект `<Navigate>` из catch-all в том же flush перебьёт переход.
 
 ### Прокси для Telegram — invariant
 Прокси (`TELEGRAM_PROXY_URL`) задаётся `https-proxy-agent` (`HttpsProxyAgent`) и подключается **только**

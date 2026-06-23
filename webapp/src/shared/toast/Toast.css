@@ -1,0 +1,32 @@
+/* Слой тоста поверх всего, включая лайтбокс (z-index 9999). Сам слой прозрачен для кликов,
+   чтобы не блокировать UI под ним; кликабелен только Snackbar внутри. */
+.toast-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  pointer-events: none;
+}
+.toast-layer > * {
+  pointer-events: auto;
+}
+
+/* Круглая иконка-индикатор слева в тосте: зелёная для успеха, красная для ошибки. */
+.toast__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 1;
+  color: #fff;
+}
+
+.toast__icon--success {
+  background: var(--tgui--green, #34c759);
+}
+
+.toast__icon--error {
+  background: var(--tgui--destructive_text_color, #e53935);
+}
