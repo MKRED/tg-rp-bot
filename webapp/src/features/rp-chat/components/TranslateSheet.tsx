@@ -1,7 +1,7 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import { Languages, SendHorizontal, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useComposeTranslate } from "../hooks/useComposeTranslate";
 import type { TranslateMode } from "../api/translate-api";
 import { LangPicker } from "./LangPicker";
@@ -47,6 +47,21 @@ export function TranslateSheet({ chatId, onPick, onClose }: TranslateSheetProps)
     () => localStorage.getItem(LANG_KEY) ?? "en",
   );
 
+  // Геометрия скользящей подсветки считается по реальной ширине активной кнопки (Google шире ИИ),
+  // чтобы таблетка точно перекрывала сегмент. Измеряем offsetLeft/offsetWidth — они привязаны к
+  // контейнеру и НЕ меняются, когда штора растёт вверх от появления результата (в отличие от
+  // layout-проекции framer, которая мерила позицию во вьюпорте и дёргала таблетку по вертикали).
+  const btnRefs = useRef<Record<TranslateMode, HTMLButtonElement | null>>({
+    google: null,
+    ai: null,
+  });
+  const [thumb, setThumb] = useState<{ left: number; width: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const el = btnRefs.current[mode];
+    if (el) setThumb({ left: el.offsetLeft, width: el.offsetWidth });
+  }, [mode]);
+
   const setModePersist = (m: TranslateMode) => {
     setMode(m);
     localStorage.setItem(MODE_KEY, m);
@@ -91,33 +106,36 @@ export function TranslateSheet({ chatId, onPick, onClose }: TranslateSheetProps)
         </div>
 
         <div className="translate-sheet__controls">
-          {/* Сегмент-переключатель: подсветка-«таблетка» скользит между Google и ИИ (layoutId).
-              layoutRoot — чтобы layout-анимация таблетки считалась относительно сегмента, а не
-              вьюпорта: иначе рост блока результата сдвигает всю штору вверх, и таблетка ошибочно
-              «съезжает» по вертикали и возвращается. */}
-          <motion.div className="translate-sheet__mode" role="tablist" layoutRoot>
+          {/* Сегмент-переключатель Google ↔ ИИ. Таблетка позиционируется по измеренной геометрии
+              активной кнопки (left/width), а не layout-проекцией — поэтому рефлоу шторы её не дёргает. */}
+          <div className="translate-sheet__mode" role="tablist">
+            {thumb && (
+              <motion.span
+                aria-hidden
+                className="translate-sheet__mode-thumb"
+                initial={false}
+                animate={{ left: thumb.left, width: thumb.width }}
+                transition={{ type: "spring", stiffness: 400, damping: 32 }}
+              />
+            )}
             {(["google", "ai"] as const).map((m) => (
               <button
                 key={m}
+                ref={(el) => {
+                  btnRefs.current[m] = el;
+                }}
                 type="button"
                 role="tab"
                 aria-selected={mode === m}
                 className={`translate-sheet__mode-btn${mode === m ? " is-active" : ""}`}
                 onClick={() => setModePersist(m)}
               >
-                {mode === m && (
-                  <motion.span
-                    layoutId="translate-mode-thumb"
-                    className="translate-sheet__mode-thumb"
-                    transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                  />
-                )}
                 <span className="translate-sheet__mode-btn-label">
                   {m === "ai" ? "ИИ" : "Google"}
                 </span>
               </button>
             ))}
-          </motion.div>
+          </div>
           <LangPicker value={targetLang} onChange={setLangPersist} />
         </div>
 
