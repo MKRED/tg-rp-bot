@@ -91,8 +91,11 @@ export function TranslateSheet({ chatId, onPick, onClose }: TranslateSheetProps)
         </div>
 
         <div className="translate-sheet__controls">
-          {/* Сегмент-переключатель: подсветка-«таблетка» скользит между Google и ИИ (layoutId) */}
-          <div className="translate-sheet__mode" role="tablist">
+          {/* Сегмент-переключатель: подсветка-«таблетка» скользит между Google и ИИ (layoutId).
+              layoutRoot — чтобы layout-анимация таблетки считалась относительно сегмента, а не
+              вьюпорта: иначе рост блока результата сдвигает всю штору вверх, и таблетка ошибочно
+              «съезжает» по вертикали и возвращается. */}
+          <motion.div className="translate-sheet__mode" role="tablist" layoutRoot>
             {(["google", "ai"] as const).map((m) => (
               <button
                 key={m}
@@ -114,7 +117,7 @@ export function TranslateSheet({ chatId, onPick, onClose }: TranslateSheetProps)
                 </span>
               </button>
             ))}
-          </div>
+          </motion.div>
           <LangPicker value={targetLang} onChange={setLangPersist} />
         </div>
 
