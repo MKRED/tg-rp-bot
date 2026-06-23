@@ -1,6 +1,5 @@
 import { Snackbar } from "@telegram-apps/telegram-ui";
 import { type ReactNode, useCallback, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
 import { type ToastOptions, ToastContext } from "./context";
 import "./Toast.css";
 
@@ -28,27 +27,26 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      {/* Портал в body со своим слоем выше лайтбокса (z-index 9999): иначе Snackbar (z-index tgui ~1)
-          рисуется ПОД тёмным оверлеем — а тост нужен как раз для фидбека из лайтбокса. Слой не ловит
-          тапы (pointer-events:none), кликабелен только сам Snackbar. */}
-      {toast &&
-        createPortal(
-          <div className="toast-layer">
-            <Snackbar
-              key={toast.id}
-              duration={toast.duration ?? DEFAULT_DURATION_MS}
-              onClose={() => setToast(null)}
-              before={
-                <span className={`toast__icon toast__icon--${toast.type ?? "success"}`} aria-hidden>
-                  {toast.type === "error" ? "✕" : "✓"}
-                </span>
-              }
-            >
-              {toast.message}
-            </Snackbar>
-          </div>,
-          document.body,
-        )}
+      {/* Snackbar сам портирует себя через tgui RootRenderer в контейнер <AppRoot> (не в наш JSX),
+          поэтому свой портал-обёртку не делаем — она бы всё равно осталась пустой. Класс
+          toast-snackbar поднимает z-index выше лайтбокса (9999): сам Snackbar — position:fixed без
+          z-index, а ни один его предок (AppRoot/#root/body/html) не образует stacking context, так
+          что z-index:10000 на нём конкурирует в корневом контексте и перекрывает оверлей лайтбокса. */}
+      {toast && (
+        <Snackbar
+          key={toast.id}
+          className="toast-snackbar"
+          duration={toast.duration ?? DEFAULT_DURATION_MS}
+          onClose={() => setToast(null)}
+          before={
+            <span className={`toast__icon toast__icon--${toast.type ?? "success"}`} aria-hidden>
+              {toast.type === "error" ? "✕" : "✓"}
+            </span>
+          }
+        >
+          {toast.message}
+        </Snackbar>
+      )}
     </ToastContext.Provider>
   );
 }

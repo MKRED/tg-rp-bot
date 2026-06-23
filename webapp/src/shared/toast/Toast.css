@@ -1,13 +1,8 @@
-/* Слой тоста поверх всего, включая лайтбокс (z-index 9999). Сам слой прозрачен для кликов,
-   чтобы не блокировать UI под ним; кликабелен только Snackbar внутри. */
-.toast-layer {
-  position: fixed;
-  inset: 0;
+/* Поднимаем Snackbar над лайтбоксом (z-index 9999). Базовый класс tgui у Snackbar — position:fixed
+   без z-index, поэтому одного класса достаточно (без !important): z-index конкурирует в корневом
+   stacking context, т.к. предки Snackbar (AppRoot/#root/body/html) его не образуют. */
+.toast-snackbar {
   z-index: 10000;
-  pointer-events: none;
-}
-.toast-layer > * {
-  pointer-events: auto;
 }
 
 /* Круглая иконка-индикатор слева в тосте: зелёная для успеха, красная для ошибки. */
