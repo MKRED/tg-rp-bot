@@ -7,13 +7,37 @@ interface LangPickerProps {
   onChange: (value: string) => void;
 }
 
+// Сколько места по вертикали меню хочет занять и какой зазор оставить от края экрана.
+const MENU_GAP = 6;
+const VIEWPORT_MARGIN = 8;
+
 /**
  * Пикер целевого языка перевода. Вместо нативного <select> рисует свой список прямо в интерфейсе
  * шторы (нативное меню в Telegram webview выглядит чужеродно). Закрывается по выбору или клику вне.
  */
 export function LangPicker({ value, onChange }: LangPickerProps) {
   const [open, setOpen] = useState(false);
+  // Направление и максимальная высота меню считаются при открытии по реальному месту вокруг
+  // триггера: штора растёт вверх от появления результата и сдвигает переключатель к верху экрана,
+  // где раскрытие вверх обрезалось бы. Выбираем сторону с бо́льшим запасом и ограничиваем высоту.
+  const [drop, setDrop] = useState<{ dir: "up" | "down"; maxHeight: number }>({
+    dir: "up",
+    maxHeight: 0,
+  });
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const openMenu = () => {
+    const el = triggerRef.current;
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      const spaceAbove = rect.top - MENU_GAP - VIEWPORT_MARGIN;
+      const spaceBelow = window.innerHeight - rect.bottom - MENU_GAP - VIEWPORT_MARGIN;
+      const dir = spaceBelow > spaceAbove ? "down" : "up";
+      setDrop({ dir, maxHeight: Math.max(120, dir === "down" ? spaceBelow : spaceAbove) });
+    }
+    setOpen((v) => !v);
+  };
 
   // Закрытие по клику вне пикера.
   useEffect(() => {
@@ -30,9 +54,10 @@ export function LangPicker({ value, onChange }: LangPickerProps) {
   return (
     <div className="lang-picker" ref={rootRef}>
       <button
+        ref={triggerRef}
         type="button"
         className="lang-picker__trigger"
-        onClick={() => setOpen((v) => !v)}
+        onClick={openMenu}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label="Язык перевода"
@@ -44,7 +69,11 @@ export function LangPicker({ value, onChange }: LangPickerProps) {
         />
       </button>
       {open && (
-        <ul className="lang-picker__menu" role="listbox">
+        <ul
+          className={`lang-picker__menu lang-picker__menu--${drop.dir}`}
+          role="listbox"
+          style={{ maxHeight: drop.maxHeight }}
+        >
           {LANG_OPTIONS.map((o) => (
             <li key={o.value}>
               <button

@@ -671,14 +671,14 @@
   cursor: pointer;
 }
 
-/* Раскрываем вверх: штора прижата к низу экрана, вниз список ушёл бы за край. */
+/* Направление раскрытия выбирается в LangPicker по доступному месту: когда результата нет — вверх
+   (штора у низа экрана), когда штора выросла вверх от результата — вниз (иначе список вылез бы за
+   верхний край). max-height приходит инлайном (запас по высоте до края). */
 .lang-picker__menu {
   position: absolute;
-  bottom: calc(100% + 6px);
   right: 0;
   z-index: 20;
   min-width: 160px;
-  max-height: 60vh;
   overflow-y: auto;
   margin: 0;
   padding: 6px;
@@ -686,8 +686,17 @@
   border-radius: 14px;
   background: var(--tg-theme-bg-color, #fff);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
-  transform-origin: bottom right;
   animation: lang-picker-in 0.14s ease-out;
+}
+
+.lang-picker__menu--up {
+  bottom: calc(100% + 6px);
+  transform-origin: bottom right;
+}
+
+.lang-picker__menu--down {
+  top: calc(100% + 6px);
+  transform-origin: top right;
 }
 
 @keyframes lang-picker-in {
