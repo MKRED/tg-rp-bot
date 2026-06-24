@@ -40,7 +40,9 @@ export function InputActionsMenu({ onImpersonate, onTranslate, disabled }: Input
             type="button"
             role="menuitem"
           >
-            <Lightbulb size={18} />
+            <span className="input-actions-menu__icon">
+              <Lightbulb size={20} />
+            </span>
             <span>Ответ от вашего лица</span>
           </button>
           <button
@@ -49,7 +51,9 @@ export function InputActionsMenu({ onImpersonate, onTranslate, disabled }: Input
             type="button"
             role="menuitem"
           >
-            <Languages size={18} />
+            <span className="input-actions-menu__icon">
+              <Languages size={20} />
+            </span>
             <span>Перевод</span>
           </button>
         </div>

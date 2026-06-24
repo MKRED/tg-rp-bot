@@ -560,6 +560,7 @@
   flex-shrink: 0;
 }
 
+/* Контейнер-обёртка над пунктами — прозрачный, пункты разнесены просветом как отдельные карточки */
 .input-actions-menu__popover {
   position: absolute;
   bottom: calc(100% + 8px);
@@ -567,35 +568,42 @@
   z-index: 1100;
   display: flex;
   flex-direction: column;
-  min-width: 220px;
-  padding: 6px;
-  background: var(--tg-theme-bg-color, #fff);
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+  gap: 8px;
+  min-width: 230px;
 }
 
+/* Каждый пункт — самостоятельная карточка с фоном и тенью */
 .input-actions-menu__item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
-  padding: 10px 12px;
+  /* без padding-left: иконка живёт в фиксированной колонке шириной с кнопку «+» */
+  padding: 12px 16px 12px 0;
   border: none;
-  border-radius: 8px;
-  background: none;
+  border-radius: 14px;
+  background: var(--tg-theme-bg-color, #fff);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
   cursor: pointer;
   font-size: 15px;
+  font-weight: 500;
   color: var(--tg-theme-text-color, #000);
   text-align: left;
+  transition: background 0.12s;
 }
 
 .input-actions-menu__item:active {
   background: var(--tg-theme-secondary-bg-color, #f4f4f5);
 }
 
-.input-actions-menu__item svg {
-  color: var(--tg-theme-link-color, #2481cc);
+/* Колонка иконки шириной 40px = ширине кнопки «+», чтобы иконки встали ровно под значком раскрытия */
+.input-actions-menu__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
   flex-shrink: 0;
+  color: var(--tg-theme-link-color, #2481cc);
 }
 
 /* ─── Штора перевода черновика ───────────────────────────────────────────────── */
