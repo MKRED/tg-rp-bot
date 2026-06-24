@@ -92,6 +92,13 @@
       "when": 1782110044811,
       "tag": "0012_new_exiles",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1782301671298,
+      "tag": "0013_faulty_rage",
+      "breakpoints": true
     }
   ]
 }

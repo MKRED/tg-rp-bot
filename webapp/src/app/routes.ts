@@ -35,7 +35,36 @@ export const ROUTES = {
   personaNew: "/personas/new",
   /** Форма редактирования персоны по id (статический `new` приоритетнее `:id`). */
   personaEdit: "/personas/:id",
+
+  // ─── Narrator-режим («Режиссёр истории») ───────────────────────────────────
+  /** Список narrator-историй + кнопка «Новая история». */
+  stories: "/stories",
+  /** Форма создания новой истории (книга + шаблон + пресет + открытие + премиза). */
+  storyNew: "/stories/new",
+  /** Экран конкретной истории по id. */
+  storyView: "/stories/:id",
+  /** Список книг знаний. */
+  books: "/books",
+  /** Форма создания новой книги знаний. */
+  bookNew: "/books/new",
+  /** Форма редактирования книги знаний по id (статический `new` приоритетнее `:id`). */
+  bookEdit: "/books/:id",
+  /** Список narrator-шаблонов. */
+  narratorTemplates: "/narrator-templates",
+  /** Форма создания нового narrator-шаблона. */
+  narratorTemplateNew: "/narrator-templates/new",
+  /** Форма редактирования narrator-шаблона по id (статический `new` приоритетнее `:id`). */
+  narratorTemplateEdit: "/narrator-templates/:id",
 } as const;
+
+/** Путь к конкретной истории. */
+export const storyViewPath = (id: number): string => `/stories/${id}`;
+
+/** Путь к редактированию книги знаний. */
+export const bookEditPath = (id: number): string => `/books/${id}`;
+
+/** Путь к редактированию narrator-шаблона. */
+export const narratorTemplateEditPath = (id: number): string => `/narrator-templates/${id}`;
 
 /** Путь к конкретному чату. */
 export const chatViewPath = (id: number): string => `/chats/${id}`;
@@ -71,5 +100,8 @@ export function parentPath(pathname: string): string {
     return `/chats/${id}`;
   }
   if (pathname.startsWith("/chats/")) return ROUTES.chats;
+  if (pathname.startsWith("/stories/")) return ROUTES.stories;
+  if (pathname.startsWith("/books/")) return ROUTES.books;
+  if (pathname.startsWith("/narrator-templates/")) return ROUTES.narratorTemplates;
   return ROUTES.home;
 }

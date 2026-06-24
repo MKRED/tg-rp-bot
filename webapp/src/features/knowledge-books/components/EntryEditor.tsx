@@ -1,0 +1,130 @@
+import { Button, Input, Section, Switch, Textarea } from "@telegram-apps/telegram-ui";
+import { useState } from "react";
+import { useCharacters } from "../../characters";
+import { createEntry, removeEntry, updateEntry } from "../api/books-api";
+import type { Entry } from "../types/book";
+
+interface EntryEditorProps {
+  bookId: number;
+  /** undefined → создание новой записи. */
+  initial?: Entry;
+  onSaved: () => void;
+  onCancel: () => void;
+}
+
+type Mode = "character" | "free";
+
+/**
+ * Редактор одной записи книги знаний. Два вида: «персонаж» (ссылка на карточку) или «свободный текст».
+ * Активация always_on активна; «по ключу» (keyword) — задел, пока выключена. keywords в UI не вводим
+ * (нужны только keyword-режиму). name — метка только для вас (в промпт не уходит).
+ */
+export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorProps) {
+  const { items: characters } = useCharacters();
+
+  const [name, setName] = useState(initial?.name ?? "");
+  const [mode, setMode] = useState<Mode>(initial?.characterId != null ? "character" : "free");
+  const [characterId, setCharacterId] = useState<number | null>(initial?.characterId ?? null);
+  const [content, setContent] = useState(initial?.content ?? "");
+  const [enabled, setEnabled] = useState(initial?.enabled ?? true);
+  const [submitting, setSubmitting] = useState(false);
+
+  const valid = mode === "character" ? characterId != null : content.trim().length > 0;
+
+  const handleSave = () => {
+    if (!valid || submitting) return;
+    setSubmitting(true);
+    const input = {
+      name: name.trim(),
+      enabled,
+      activation: "always_on" as const,
+      characterId: mode === "character" ? characterId : null,
+      content: mode === "free" ? content : "",
+      keywords: [],
+      sortOrder: initial?.sortOrder ?? 0,
+    };
+    const op = initial
+      ? updateEntry(bookId, initial.id, input)
+      : createEntry(bookId, input);
+    op.then(onSaved).catch(() => setSubmitting(false));
+  };
+
+  const handleDelete = () => {
+    if (!initial || submitting) return;
+    setSubmitting(true);
+    removeEntry(bookId, initial.id).then(onSaved).catch(() => setSubmitting(false));
+  };
+
+  return (
+    <Section header={initial ? "Редактирование записи" : "Новая запись"}>
+      <Input
+        header="Название (только для вас)"
+        placeholder="Напр. «Анна» или «Таверна»"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+
+      <div style={{ display: "flex", gap: 8, padding: "8px 16px" }}>
+        <Button
+          size="s"
+          mode={mode === "character" ? "filled" : "outline"}
+          stretched
+          onClick={() => setMode("character")}
+        >
+          Персонаж
+        </Button>
+        <Button
+          size="s"
+          mode={mode === "free" ? "filled" : "outline"}
+          stretched
+          onClick={() => setMode("free")}
+        >
+          Свободный текст
+        </Button>
+      </div>
+
+      {mode === "character" ? (
+        <div style={{ padding: "8px 16px" }}>
+          <select
+            value={characterId ?? ""}
+            onChange={(e) => setCharacterId(e.target.value ? Number(e.target.value) : null)}
+            style={{ width: "100%", padding: 10, borderRadius: 8 }}
+          >
+            <option value="">— выберите персонажа —</option>
+            {characters.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <Textarea
+          header="Текст записи"
+          placeholder="Факт о мире / предмете / месте…"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+        />
+      )}
+
+      <div style={{ padding: "8px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span>Включена</span>
+        <Switch checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 16px" }}>
+        <Button size="l" stretched disabled={!valid || submitting} onClick={handleSave}>
+          {initial ? "Сохранить" : "Добавить"}
+        </Button>
+        <Button size="m" mode="plain" stretched onClick={onCancel} disabled={submitting}>
+          Отмена
+        </Button>
+        {initial && (
+          <Button size="m" mode="plain" stretched onClick={handleDelete} disabled={submitting}>
+            Удалить запись
+          </Button>
+        )}
+      </div>
+    </Section>
+  );
+}

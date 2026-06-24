@@ -287,3 +287,150 @@ export const impersonationVariants = pgTable("impersonation_variants", {
 
 export type ImpersonationVariant = typeof impersonationVariants.$inferSelect;
 export type NewImpersonationVariant = typeof impersonationVariants.$inferInsert;
+
+// ─── Narrator-режим («Режиссёр истории») ────────────────────────────────────────
+
+/**
+ * Книга знаний (lorebook) — переиспользуемый набор фактов о мире/персонажах для narrator-режима.
+ * Самостоятельная сущность (как characters/personas/presets): одну книгу можно привязать к разным
+ * историям. Сами факты лежат в knowledge_book_entries.
+ */
+export const knowledgeBooks = pgTable("knowledge_books", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  userId: bigint("user_id", { mode: "number" })
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export type KnowledgeBook = typeof knowledgeBooks.$inferSelect;
+export type NewKnowledgeBook = typeof knowledgeBooks.$inferInsert;
+
+/**
+ * Запись книги знаний. Два вида: ссылка на персонажа (characterId — карточка рендерится из characters,
+ * без копий) ИЛИ свободный текст (content). activation — поэлементная: always_on (всегда в промпте) или
+ * keyword (по триггеру; в MVP не задействован при сборке, поле-задел). name — метка ТОЛЬКО для UI,
+ * в LLM не уходит (как footnote у персонажей). sortOrder — порядок показа/вставки.
+ */
+export const knowledgeBookEntries = pgTable("knowledge_book_entries", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  bookId: bigint("book_id", { mode: "number" })
+    .notNull()
+    .references(() => knowledgeBooks.id, { onDelete: "cascade" }),
+  // Метка записи для удобства чтения списка — в промпт НЕ передаётся.
+  name: text("name").notNull().default(""),
+  enabled: boolean("enabled").notNull().default(true),
+  activation: text("activation")
+    .$type<"always_on" | "keyword">()
+    .notNull()
+    .default("always_on"),
+  // Запись-персонаж: ссылка на карточку. set null при удалении персонажа — запись не пропадает молча,
+  // UI покажет «персонаж удалён» (а каскад снёс бы контент книги из-за правки в другом разделе).
+  characterId: bigint("character_id", { mode: "number" }).references(() => characters.id, {
+    onDelete: "set null",
+  }),
+  content: text("content").notNull().default(""),
+  keywords: text("keywords")
+    .array()
+    .notNull()
+    .default(sql`'{}'`),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export type KnowledgeBookEntry = typeof knowledgeBookEntries.$inferSelect;
+export type NewKnowledgeBookEntry = typeof knowledgeBookEntries.$inferInsert;
+
+/**
+ * Narrator-шаблон — переиспользуемый источник СИСТЕМНОГО промпта narrator-режима (нарратор-инструкция:
+ * «веди сцену, озвучивай всех персонажей, заканчивай на крючке…»). Отдельно от generation_presets,
+ * который остаётся источником ТОЛЬКО сэмплинга (режимо-независим, шарится между RP и narrator).
+ */
+export const narratorTemplates = pgTable("narrator_templates", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  userId: bigint("user_id", { mode: "number" })
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  systemPrompt: text("system_prompt").notNull().default(""),
+  // Инструкция «после истории» (задел, по образцу postHistoryInstruction у пресета).
+  postHistoryInstruction: text("post_history_instruction").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export type NarratorTemplate = typeof narratorTemplates.$inferSelect;
+export type NewNarratorTemplate = typeof narratorTemplates.$inferInsert;
+
+/**
+ * Narrator-история: ИИ ведёт повествование, пользователь — режиссёр. Отдельно от chats (без персоны/
+ * одного персонажа — персонажи берутся из книги знаний). bookId обязателен; template — источник
+ * системного промпта; preset — только сэмплинг. openingBeat (зашифрован) ОБЯЗАТЕЛЕН — дословный бит 1.
+ * premise (зашифрован) опционален — системная вводная «куда вести сцену».
+ * activeMessageId — курсор активной ветки; намеренно НЕ FK (цикл story_chats ↔ story_messages).
+ */
+export const storyChats = pgTable("story_chats", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  userId: bigint("user_id", { mode: "number" })
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  bookId: bigint("book_id", { mode: "number" })
+    .notNull()
+    .references(() => knowledgeBooks.id),
+  templateId: bigint("template_id", { mode: "number" }).references(() => narratorTemplates.id, {
+    onDelete: "set null",
+  }),
+  presetId: bigint("preset_id", { mode: "number" }).references(() => generationPresets.id, {
+    onDelete: "set null",
+  }),
+  title: text("title"),
+  // Авторское открытие — дословный первый бит (assistant). Зашифровано per-user, как content сообщений.
+  openingBeat: text("opening_beat").notNull(),
+  // Системная вводная (куда вести сцену), опц. — пустая строка = не задано. Зашифровано per-user.
+  premise: text("premise").notNull().default(""),
+  activeMessageId: bigint("active_message_id", { mode: "number" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export type StoryChat = typeof storyChats.$inferSelect;
+export type NewStoryChat = typeof storyChats.$inferInsert;
+
+/**
+ * Сообщения narrator-истории в виде дерева (parentId = null → корень = openingBeat).
+ * kind: beat — бит истории (assistant); continue — «Дальше» (user, эфемерный); directive — режиссёрская
+ * директива (user, эфемерная). Эфемерные user-узлы нейтрализуются при сборке контекста (кроме живого).
+ */
+export const storyMessages = pgTable("story_messages", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  storyChatId: bigint("story_chat_id", { mode: "number" })
+    .notNull()
+    .references(() => storyChats.id, { onDelete: "cascade" }),
+  parentId: bigint("parent_id", { mode: "number" }).references(
+    (): AnyPgColumn => storyMessages.id,
+    { onDelete: "cascade" },
+  ),
+  role: text("role").$type<"user" | "assistant">().notNull(),
+  kind: text("kind").$type<"beat" | "continue" | "directive">().notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type StoryMessage = typeof storyMessages.$inferSelect;
+export type NewStoryMessage = typeof storyMessages.$inferInsert;

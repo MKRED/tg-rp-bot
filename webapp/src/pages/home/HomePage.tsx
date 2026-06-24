@@ -1,5 +1,5 @@
 import { Avatar, Caption, Cell, List, Section, Title } from "@telegram-apps/telegram-ui";
-import { MessageCircle, Users, User, Smile, SlidersHorizontal } from "lucide-react";
+import { MessageCircle, Users, User, Smile, SlidersHorizontal, Clapperboard, BookOpen, ScrollText } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { ROUTES } from "../../app/routes";
@@ -63,6 +63,15 @@ export function HomePage() {
             </motion.div>
             <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.05 }}>
               <Cell
+                before={<Clapperboard size={24} className="home__icon" />}
+                subtitle="ИИ ведёт историю, вы направляете"
+                onClick={() => navigate(ROUTES.stories)}
+              >
+                Режиссёр истории
+              </Cell>
+            </motion.div>
+            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.1 }}>
+              <Cell
                 before={<Users size={24} className="home__icon home__icon--muted" />}
                 subtitle="В разработке"
                 after={<span className="home__soon-badge">Скоро</span>}
@@ -99,6 +108,24 @@ export function HomePage() {
                 onClick={() => navigate(ROUTES.presets)}
               >
                 Настройки ответа ИИ
+              </Cell>
+            </motion.div>
+            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.25 }}>
+              <Cell
+                before={<BookOpen size={24} className="home__icon" />}
+                subtitle="Персонажи и факты мира для историй"
+                onClick={() => navigate(ROUTES.books)}
+              >
+                Книги знаний
+              </Cell>
+            </motion.div>
+            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.3 }}>
+              <Cell
+                before={<ScrollText size={24} className="home__icon" />}
+                subtitle="Инструкции нарратора"
+                onClick={() => navigate(ROUTES.narratorTemplates)}
+              >
+                Narrator-шаблоны
               </Cell>
             </motion.div>
           </Section>

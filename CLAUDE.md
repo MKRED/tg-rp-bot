@@ -97,6 +97,29 @@ webapp/src/
 - **Роутер — `HashRouter`** (react-router-dom): маршрут в hash переживает reload. Нативная кнопка «Назад» Telegram связана с роутером в `app/BackButtonBridge.tsx` (`navigate(parentPath(...))` — вверх по иерархии, а не по истории). Catch-all `*` → главная: на Telegram Web launch-параметры приходят в hash, и без редиректа роутер показал бы пустой экран.
 - **Deep-link из бота** (`app/deepLink.ts` + `main.tsx`): web_app-кнопка под фото из лайтбокса открывает Mini App с `?dl=<путь>` (напр. `/characters/123`). `resolveDeepLink()` вызывается **до** `render()` (после `initTelegram()`, который уже считал launch-данные из hash) и переписывает hash на маршрут — иначе catch-all успел бы увести на главную. Делать это в компоненте внутри роутера НЕЛЬЗЯ: эффект `<Navigate>` из catch-all в том же flush перебьёт переход.
 
+### Narrator-режим («Режиссёр истории») — invariant
+Второй режим игры: ИИ ведёт повествование между персонажами, пользователь — режиссёр (направляет
+**директивами**, не отыгрывает роль). Сделан **новыми** доменными таблицами/модулями (не поверх
+RP-чата), переиспользуя только реально переиспользуемое (шифрование, LLM-клиент, SSE-стриминг, чистые
+хелперы `promptBuilder`).
+
+- **БД:** `knowledge_books` + `knowledge_book_entries` (lorebook: запись = ссылка на персонажа **или**
+  свободный текст; `activation` поэлементная `always_on|keyword`, keyword — задел), `narrator_templates`
+  (только системный промпт нарратора; сэмплинг по-прежнему из `generation_presets`), `story_chats`
+  (`openingBeat` **обязателен** — дословный бит 1; `premise` опц.; `bookId` обяз., `templateId`/`presetId`
+  опц.) + `story_messages` (дерево, `kind: beat|continue|directive`).
+- **Сервер:** `db/knowledge/`, `db/narratorTemplates.ts`, `db/stories/` (зеркало `db/chats/`);
+  `server/storyPromptBuilder.ts` (+тест), `server/storyHandlers.ts`, роуты `books`/`narrator-templates`/
+  `stories`.
+- **Webapp:** фичи `narrator`/`knowledge-books`/`narrator-templates`, страницы `pages/narrator/*`,
+  `pages/knowledge-books/*`, `pages/narrator-templates/*`; кнопки на главной (Режим игры + Библиотека).
+
+**Ключевой инвариант сборки промпта** (`storyPromptBuilder.buildStoryMessages`): отыгранные user-ходы
+(директивы/continue) **нейтрализуются** в `CONTINUE_MARKER`, кроме последнего (живого триггера) — их
+последствие уже в тексте следующего бита, повторно инструктировать нельзя. Перед корнем (openingBeat —
+`assistant`) вставляется синтетический leading-user — иначе массив начинался бы с assistant, что отвергают
+Anthropic (через OpenRouter) и reasoner DeepSeek. Книга знаний: в MVP в промпт идут только `always_on`-записи.
+
 ### Прокси для Telegram — invariant
 Прокси (`TELEGRAM_PROXY_URL`) задаётся `https-proxy-agent` (`HttpsProxyAgent`) и подключается **только**
 к grammY-клиенту (`bot.ts` → `client.baseFetchConfig.agent`). Так через прокси идёт исключительно

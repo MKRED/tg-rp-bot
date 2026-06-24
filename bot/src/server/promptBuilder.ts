@@ -104,13 +104,13 @@ function componentText(opts: BuildMessagesOptions, id: Exclude<PromptComponentId
  * суммарная стоимость не превысит budget. Сохраняет хронологический порядок. Чистая функция —
  * стоимость сообщения считает переданный cost (в проде — countTokens + надбавка; в тестах — фейк).
  */
-export function trimHistoryToBudget(
-  history: MessageInPath[],
+export function trimHistoryToBudget<T>(
+  history: T[],
   budget: number,
-  cost: (msg: MessageInPath) => number,
-): MessageInPath[] {
+  cost: (msg: T) => number,
+): T[] {
   if (budget <= 0) return [];
-  const kept: MessageInPath[] = [];
+  const kept: T[] = [];
   let used = 0;
   for (let i = history.length - 1; i >= 0; i--) {
     const msg = history[i]!;

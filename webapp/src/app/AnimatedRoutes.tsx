@@ -55,6 +55,27 @@ const RpChatSettingsPage = lazy(() =>
 const RpChatGraphPage = lazy(() =>
   import("../pages/rp-chat/RpChatGraphPage").then((m) => ({ default: m.RpChatGraphPage }))
 );
+const StoriesPage = lazy(() =>
+  import("../pages/narrator/StoriesPage").then((m) => ({ default: m.StoriesPage }))
+);
+const StoryNewPage = lazy(() =>
+  import("../pages/narrator/StoryNewPage").then((m) => ({ default: m.StoryNewPage }))
+);
+const StoryPage = lazy(() =>
+  import("../pages/narrator/StoryPage").then((m) => ({ default: m.StoryPage }))
+);
+const BooksListPage = lazy(() =>
+  import("../pages/knowledge-books/BooksListPage").then((m) => ({ default: m.BooksListPage }))
+);
+const BookEditPage = lazy(() =>
+  import("../pages/knowledge-books/BookEditPage").then((m) => ({ default: m.BookEditPage }))
+);
+const TemplatesListPage = lazy(() =>
+  import("../pages/narrator-templates/TemplatesListPage").then((m) => ({ default: m.TemplatesListPage }))
+);
+const TemplateEditPage = lazy(() =>
+  import("../pages/narrator-templates/TemplateEditPage").then((m) => ({ default: m.TemplateEditPage }))
+);
 
 /**
  * Маршруты приложения с анимированными переходами.
@@ -90,6 +111,17 @@ export function AnimatedRoutes() {
           {/* Статический /personas/new стоит раньше /personas/:id — react-router отдаёт ему приоритет. */}
           <Route path={ROUTES.personaNew} element={<PersonaEditPage />} />
           <Route path={ROUTES.personaEdit} element={<PersonaEditPage />} />
+
+          {/* Narrator-режим. Статические /new стоят раньше /:id. */}
+          <Route path={ROUTES.stories} element={<StoriesPage />} />
+          <Route path={ROUTES.storyNew} element={<StoryNewPage />} />
+          <Route path={ROUTES.storyView} element={<StoryPage />} />
+          <Route path={ROUTES.books} element={<BooksListPage />} />
+          <Route path={ROUTES.bookNew} element={<BookEditPage />} />
+          <Route path={ROUTES.bookEdit} element={<BookEditPage />} />
+          <Route path={ROUTES.narratorTemplates} element={<TemplatesListPage />} />
+          <Route path={ROUTES.narratorTemplateNew} element={<TemplateEditPage />} />
+          <Route path={ROUTES.narratorTemplateEdit} element={<TemplateEditPage />} />
           {/*
             Любой неизвестный путь → главная. Важно для Telegram Web: launch-параметры
             прилетают в hash (#tgWebAppData=…); init() их уже считал, а роутеру этот hash

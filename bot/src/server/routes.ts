@@ -1,13 +1,16 @@
 import { Hono } from "hono";
 import logger from "../logger.js";
+import { createBookRoutes } from "./books.js";
 import { createCharacterRoutes } from "./characters.js";
 import { createChatRoutes } from "./chats.js";
 import { MAX_IMAGE_FULL_CHARS, parseImageField } from "./imageValidation.js";
 import { type AppVariables, requireInitData } from "./initData.js";
+import { createNarratorTemplateRoutes } from "./narratorTemplates.js";
 import { createPersonaRoutes } from "./personas.js";
 import { sendLightboxPhoto } from "./photoToChat.js";
 import { createPresetRoutes } from "./presets.js";
 import { getProfilePhotoDataUrl } from "./profilePhoto.js";
+import { createStoryRoutes } from "./stories.js";
 
 /** Разрешённые внутренние пути для кнопки-ссылки под фото (защита от подстановки внешних URL). */
 const DEEP_LINK_RE = /^\/(characters|personas)\/\d+$/;
@@ -87,6 +90,11 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
 
   // RP-чаты: CRUD + стриминговая генерация + ветвление + перевод.
   api.route("/chats", createChatRoutes());
+
+  // Narrator-режим («Режиссёр истории»): книги знаний, шаблоны, истории.
+  api.route("/books", createBookRoutes());
+  api.route("/narrator-templates", createNarratorTemplateRoutes());
+  api.route("/stories", createStoryRoutes());
 
   return api;
 }
