@@ -28,8 +28,6 @@ export const requireInitData: MiddlewareHandler<{ Variables: AppVariables }> = a
 
   if (!initDataRaw) {
     if (config.isProduction) {
-      // ВРЕМЕННАЯ ДИАГНОСТИКА: тихий 401 в проде при отсутствии заголовка Authorization.
-      logger.warn({ path: c.req.path }, "DIAG: request without Authorization header rejected (prod 401)");
       return c.json({ error: "Missing Telegram init data" }, 401);
     }
     logger.warn("Request without initData allowed (dev mode)");

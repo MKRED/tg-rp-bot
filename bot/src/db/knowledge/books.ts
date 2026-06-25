@@ -20,7 +20,9 @@ export async function listBooks(userId: number): Promise<BookListItem[]> {
   `);
   logger.debug({ durationMs: Date.now() - t0, userId, count: (rows as unknown[]).length }, "Books listed");
   return (rows as Record<string, unknown>[]).map((r) => ({
-    id: r.id as number,
+    // bigint из сырого SQL postgres.js отдаёт строкой — приводим к number явно
+    // (каст `as number` лгал: id уходил в JSON строкой и ломал typeof-проверку при создании истории).
+    id: Number(r.id),
     name: r.name as string,
     description: (r.description as string | null) ?? null,
     entryCount: r.entry_count as number,

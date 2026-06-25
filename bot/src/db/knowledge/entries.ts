@@ -39,7 +39,8 @@ export async function listEntries(userId: number, bookId: number): Promise<Entry
   const key = getUserEncryptionKey(userId);
   logger.debug({ durationMs: Date.now() - t0, userId, bookId, count: (rows as unknown[]).length }, "Entries listed");
   return (rows as Record<string, unknown>[]).map((r) => ({
-    id: r.id as number,
+    // bigint из сырого SQL приходит строкой — приводим явно (как characterId ниже).
+    id: Number(r.id),
     name: decryptField(r.name as string, key),
     enabled: r.enabled as boolean,
     activation: r.activation as "always_on" | "keyword",

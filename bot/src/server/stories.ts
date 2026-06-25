@@ -43,64 +43,31 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
       premise?: unknown;
     };
 
-    // ВРЕМЕННАЯ ДИАГНОСТИКА: тост «Не удалось создать историю» при тихом 4xx без логов.
-    // Логируем сам факт входа в хендлер, userId и типы/значения id, чтобы понять, какая ветка отказа.
-    logger.info(
-      {
-        userId,
-        bookId: body.bookId,
-        bookIdType: typeof body.bookId,
-        templateId: body.templateId,
-        templateIdType: typeof body.templateId,
-        presetId: body.presetId,
-        presetIdType: typeof body.presetId,
-        openingBeatLen: typeof body.openingBeat === "string" ? body.openingBeat.length : null,
-      },
-      "DIAG story create: request received",
-    );
-
     const bookId = typeof body.bookId === "number" ? body.bookId : null;
-    if (bookId === null) {
-      logger.warn({ userId, bookId: body.bookId }, "DIAG story create: bookId missing/not number → 400");
-      return c.json({ error: "bookId is required" }, 400);
-    }
+    if (bookId === null) return c.json({ error: "bookId is required" }, 400);
 
     // Стартовое сообщение (openingBeat) — ОБЯЗАТЕЛЬНО.
     const openingBeat = typeof body.openingBeat === "string" ? body.openingBeat.trim() : "";
-    if (!openingBeat) {
-      logger.warn({ userId }, "DIAG story create: openingBeat empty → 400");
-      return c.json({ error: "openingBeat is required" }, 400);
-    }
+    if (!openingBeat) return c.json({ error: "openingBeat is required" }, 400);
 
     const premise = typeof body.premise === "string" ? body.premise.trim() : "";
 
     // Шаблон и пресет — ОБЯЗАТЕЛЬНЫ (как книга).
     const templateId = typeof body.templateId === "number" ? body.templateId : null;
-    if (templateId === null) {
-      logger.warn({ userId, templateId: body.templateId }, "DIAG story create: templateId missing/not number → 400");
-      return c.json({ error: "templateId is required" }, 400);
-    }
+    if (templateId === null) return c.json({ error: "templateId is required" }, 400);
     const presetId = typeof body.presetId === "number" ? body.presetId : null;
-    if (presetId === null) {
-      logger.warn({ userId, presetId: body.presetId }, "DIAG story create: presetId missing/not number → 400");
-      return c.json({ error: "presetId is required" }, 400);
-    }
+    if (presetId === null) return c.json({ error: "presetId is required" }, 400);
 
     try {
       await ensureUser(user);
 
       // Все привязки должны принадлежать пользователю.
       const book = await getBook(userId, bookId);
-      if (!book) {
-        logger.warn({ userId, bookId }, "DIAG story create: book not found for user → 404");
-        return c.json({ error: "Book not found" }, 404);
-      }
+      if (!book) return c.json({ error: "Book not found" }, 404);
       if (!(await getNarratorTemplate(userId, templateId))) {
-        logger.warn({ userId, templateId }, "DIAG story create: template not found for user → 404");
         return c.json({ error: "Template not found" }, 404);
       }
       if (!(await getPreset(userId, presetId))) {
-        logger.warn({ userId, presetId }, "DIAG story create: preset not found for user → 404");
         return c.json({ error: "Preset not found" }, 404);
       }
 

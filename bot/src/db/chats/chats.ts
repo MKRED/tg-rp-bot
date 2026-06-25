@@ -74,16 +74,17 @@ export async function listChats(
   const key = getUserEncryptionKey(userId);
 
   const items: ChatListItem[] = (rows as Record<string, unknown>[]).map((r) => ({
-    id: r.id as number,
+    // bigint из сырого SQL приходит строкой — все id приводим к number явно.
+    id: Number(r.id),
     // title зашифрован per-user — расшифровываем; null остаётся null (fallback на имя персонажа в UI)
     title: r.title ? decryptField(r.title as string, key) : null,
     character: {
-      id: r.char_id as number,
+      id: Number(r.char_id),
       name: r.char_name as string,
       hasImage: r.char_has_image as boolean,
     },
     persona: r.persona_id
-      ? { id: r.persona_id as number, name: r.persona_name as string }
+      ? { id: Number(r.persona_id), name: r.persona_name as string }
       : null,
     // content сообщений зашифрован per-user — расшифровываем последнее для превью списка
     lastMessage: r.last_message ? decryptField(r.last_message as string, key) : null,
@@ -168,23 +169,24 @@ export async function getChat(
   );
 
   return {
-    id: chatRow.id as number,
+    // bigint из сырого SQL приходит строкой — все id приводим к number явно.
+    id: Number(chatRow.id),
     // title зашифрован per-user — расшифровываем (ключ key уже получен выше)
     title: chatRow.title ? decryptField(chatRow.title as string, key) : null,
     character: {
-      id: chatRow.char_id as number,
+      id: Number(chatRow.char_id),
       name: chatRow.char_name as string,
       hasImage: chatRow.char_has_image as boolean,
     },
     persona: chatRow.persona_id
       ? {
-          id: chatRow.persona_id as number,
+          id: Number(chatRow.persona_id),
           name: chatRow.persona_name as string,
           hasImage: chatRow.persona_has_image as boolean,
         }
       : null,
     preset: chatRow.preset_id
-      ? { id: chatRow.preset_id as number, name: chatRow.preset_name as string }
+      ? { id: Number(chatRow.preset_id), name: chatRow.preset_name as string }
       : null,
     activeMessageId,
     messages,

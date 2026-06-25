@@ -59,7 +59,8 @@ export async function listStories(
   const key = getUserEncryptionKey(userId);
 
   const items: StoryListItem[] = (rows as Record<string, unknown>[]).map((r) => ({
-    id: r.id as number,
+    // bigint из сырого SQL приходит строкой — приводим явно (как id сообщений в mapPathRow).
+    id: Number(r.id),
     title: r.title ? decryptField(r.title as string, key) : null,
     bookName: r.book_name as string,
     lastMessage: r.last_message ? decryptField(r.last_message as string, key) : null,
@@ -120,14 +121,15 @@ export async function getStory(userId: number, storyId: number): Promise<StoryDe
   );
 
   return {
-    id: storyRow.id as number,
+    // bigint из сырого SQL приходит строкой — все id приводим к number явно.
+    id: Number(storyRow.id),
     title: storyRow.title ? decryptField(storyRow.title as string, key) : null,
-    book: { id: storyRow.book_id as number, name: storyRow.book_name as string },
+    book: { id: Number(storyRow.book_id), name: storyRow.book_name as string },
     template: storyRow.template_id
-      ? { id: storyRow.template_id as number, name: storyRow.template_name as string }
+      ? { id: Number(storyRow.template_id), name: storyRow.template_name as string }
       : null,
     preset: storyRow.preset_id
-      ? { id: storyRow.preset_id as number, name: storyRow.preset_name as string }
+      ? { id: Number(storyRow.preset_id), name: storyRow.preset_name as string }
       : null,
     premise: decryptField((storyRow.premise as string | null) ?? "", key),
     activeMessageId,
