@@ -3,10 +3,11 @@ import logger from "../../logger.js";
 import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/index.js";
 import { db, schema } from "../index.js";
 import type { StoryChat } from "../schema.js";
+import { decryptStoryTranslations } from "./crypto.js";
 import { findLastStoryLeaf, queryStoryActivePath } from "./queries.js";
 import type { StoryDetail, StoryInput, StoryListItem, StoryMessageInPath } from "./types.js";
 
-/** Маппит сырую строку пути в StoryMessageInPath, расшифровывая content. */
+/** Маппит сырую строку пути в StoryMessageInPath, расшифровывая content и translations. */
 function mapPathRow(r: Record<string, unknown>, key: Buffer): StoryMessageInPath {
   return {
     id: Number(r.id),
@@ -14,6 +15,10 @@ function mapPathRow(r: Record<string, unknown>, key: Buffer): StoryMessageInPath
     role: r.role as "user" | "assistant",
     kind: r.kind as "beat" | "continue" | "directive",
     content: decryptField(r.content as string, key),
+    translations: decryptStoryTranslations(
+      (r.translations as Record<string, string> | null) ?? null,
+      key,
+    ),
     createdAt: String(r.created_at),
     siblingIndex: r.sibling_index as number,
     siblingCount: r.sibling_count as number,

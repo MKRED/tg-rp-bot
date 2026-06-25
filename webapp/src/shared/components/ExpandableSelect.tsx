@@ -26,7 +26,7 @@ interface ExpandableSelectProps<T extends string> {
 
 /**
  * Раскрывающийся одиночный селект: ячейка-триггер + анимированный список опций с галочкой.
- * Вынесен из RpChatSettingsPage, где этот блок повторялся трижды (язык / scope / авто-scope).
+ * Кросс-фичевый (настройки перевода RP-чата и narrator-истории) — потому в shared/components.
  */
 export function ExpandableSelect<T extends string>({
   title,

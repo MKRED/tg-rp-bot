@@ -90,6 +90,19 @@ export function switchBranch(storyId: number, msgId: number): Promise<void> {
   return apiFetch(`/stories/${storyId}/messages/${msgId}/branch`, { method: "POST" });
 }
 
+/** Переводит бит/директиву; сервер кэширует результат в translations сообщения. */
+export async function translateStoryMessage(
+  storyId: number,
+  msgId: number,
+  targetLang: string,
+): Promise<string> {
+  const res = await apiFetch<{ translation: string }>(
+    `/stories/${storyId}/messages/${msgId}/translate`,
+    { method: "POST", body: JSON.stringify({ targetLang }) },
+  );
+  return res.translation;
+}
+
 export function deleteStoryMessage(storyId: number, msgId: number): Promise<void> {
   return apiFetch(`/stories/${storyId}/messages/${msgId}`, { method: "DELETE" });
 }

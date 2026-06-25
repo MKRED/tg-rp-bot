@@ -1,4 +1,4 @@
-import { Cell, Input, List, Section, Spinner } from "@telegram-apps/telegram-ui";
+import { Cell, Input, List, Section, Spinner, Switch } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import { BookOpen, ChevronRight, Clapperboard, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -13,12 +13,25 @@ import {
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { ExpandableTextarea } from "../../shared/components/ExpandableTextarea";
-import { removeStory, renameStory, updateStoryPremise, useStory } from "../../features/narrator";
+import { ExpandableSelect } from "../../shared/components/ExpandableSelect";
+import {
+  AUTO_SCOPE_OPTIONS,
+  LANG_OPTIONS,
+  SCOPE_OPTIONS,
+  removeStory,
+  renameStory,
+  updateStoryPremise,
+  useStory,
+  useStorySettings,
+} from "../../features/narrator";
 import { confirmAction } from "../../shared/telegram/confirm";
 import { useToast } from "../../shared/toast";
 import "./narrator.css";
 
 const ITEM_T = { duration: 0.2, ease: "easeOut" as const };
+
+// Какой из выпадающих списков перевода раскрыт — открытие одного закрывает остальные (как в RP).
+type OpenSelect = "lang" | "scope" | "auto" | null;
 
 /**
  * Настройки истории (Narrator): название, ссылки на привязанные книгу/шаблон/пресет (открывают
@@ -29,9 +42,13 @@ export function StorySettingsPage() {
   const id = Number(idParam);
   const navigate = useTransitionNavigate();
   const { story, loading } = useStory(id);
+  const { settings, loading: settingsLoading, update: updateSettings } = useStorySettings(id);
   const { showToast } = useToast();
 
   const [deleting, setDeleting] = useState(false);
+  const [openSelect, setOpenSelect] = useState<OpenSelect>(null);
+  const toggleSelect = (key: Exclude<OpenSelect, null>) =>
+    setOpenSelect((cur) => (cur === key ? null : key));
   // Локальные поля названия и премизы: правятся свободно, сохраняются по blur.
   const [title, setTitle] = useState("");
   const [premise, setPremise] = useState("");
@@ -202,6 +219,71 @@ export function StorySettingsPage() {
               onChange={(e) => setPremise(e.target.value)}
               onBlur={handlePremiseBlur}
             />
+          </Section>
+
+          <Section header="Перевод">
+            {settingsLoading ? (
+              <div style={{ display: "flex", justifyContent: "center", padding: 16 }}>
+                <Spinner size="m" />
+              </div>
+            ) : (
+              <>
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ ...ITEM_T, delay: 0 }}
+                >
+                  <Cell
+                    after={
+                      <Switch
+                        checked={settings.translateEnabled}
+                        onChange={(e) => updateSettings({ translateEnabled: e.target.checked })}
+                      />
+                    }
+                    subtitle="Показывать кнопку перевода в ленте истории"
+                  >
+                    Перевод сообщений
+                  </Cell>
+                </motion.div>
+
+                {settings.translateEnabled && (
+                  <>
+                    <ExpandableSelect
+                      title="Язык"
+                      subtitle="Язык перевода"
+                      options={LANG_OPTIONS}
+                      value={settings.translateTargetLang}
+                      onChange={(value) => { updateSettings({ translateTargetLang: value }); setOpenSelect(null); }}
+                      open={openSelect === "lang"}
+                      onToggle={() => toggleSelect("lang")}
+                      delay={0.07}
+                    />
+
+                    <ExpandableSelect
+                      title="Показывать"
+                      subtitle="На каких сообщениях показывать кнопку перевода"
+                      options={SCOPE_OPTIONS}
+                      value={settings.translateScope}
+                      onChange={(value) => { updateSettings({ translateScope: value }); setOpenSelect(null); }}
+                      open={openSelect === "scope"}
+                      onToggle={() => toggleSelect("scope")}
+                      delay={0.14}
+                    />
+
+                    <ExpandableSelect
+                      title="Авто-перевод"
+                      subtitle="Переводить новые сообщения сразу"
+                      options={AUTO_SCOPE_OPTIONS}
+                      value={settings.autoTranslateScope}
+                      onChange={(value) => { updateSettings({ autoTranslateScope: value }); setOpenSelect(null); }}
+                      open={openSelect === "auto"}
+                      onToggle={() => toggleSelect("auto")}
+                      delay={0.21}
+                    />
+                  </>
+                )}
+              </>
+            )}
           </Section>
 
           <Section>

@@ -6,9 +6,11 @@ import {
   createStory,
   deleteStory,
   getStory,
+  getStorySettings,
   listStories,
   renameStory,
   updateStoryPremise,
+  upsertStorySettings,
 } from "../db/stories/index.js";
 import { ensureUser } from "../db/users.js";
 import logger from "../logger.js";
@@ -17,6 +19,7 @@ import {
   handleAdvanceStory,
   handleDeleteStoryMessage,
   handleRegenerateStoryBeat,
+  handleStoryTranslateMessage,
   handleSwitchStoryBranch,
 } from "./storyHandlers.js";
 
@@ -144,10 +147,66 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
     }
   });
 
+  // ─── Настройки перевода истории ───────────────────────────────────────────
+  app.get("/:id/settings", async (c) => {
+    const user = c.get("tgUser");
+    if (!user) return c.json({ error: "Auth required" }, 401);
+    const storyId = Number(c.req.param("id"));
+    try {
+      // Проверяем принадлежность истории пользователю.
+      const story = await getStory(user.id, storyId);
+      if (!story) return c.json({ error: "Story not found" }, 404);
+      const settings = await getStorySettings(storyId);
+      return c.json({ settings });
+    } catch (err) {
+      logger.error({ err, userId: user.id, storyId }, "Failed to load story settings");
+      return c.json({ error: "Internal error" }, 500);
+    }
+  });
+
+  app.put("/:id/settings", async (c) => {
+    const user = c.get("tgUser");
+    if (!user) return c.json({ error: "Auth required" }, 401);
+    const storyId = Number(c.req.param("id"));
+
+    const body = (await c.req.json().catch(() => ({}))) as {
+      translateEnabled?: unknown;
+      translateTargetLang?: unknown;
+      translateScope?: unknown;
+      autoTranslateScope?: unknown;
+    };
+
+    const patch: Record<string, unknown> = {};
+    if (typeof body.translateEnabled === "boolean") patch.translateEnabled = body.translateEnabled;
+    if (typeof body.translateTargetLang === "string") patch.translateTargetLang = body.translateTargetLang;
+    if (["all", "assistant", "user"].includes(body.translateScope as string)) {
+      patch.translateScope = body.translateScope;
+    }
+    if (["none", "all", "assistant", "user"].includes(body.autoTranslateScope as string)) {
+      patch.autoTranslateScope = body.autoTranslateScope;
+    }
+
+    try {
+      const story = await getStory(user.id, storyId);
+      if (!story) return c.json({ error: "Story not found" }, 404);
+      // Пустой патч (ни одного валидного поля) → upsert дал бы `SET {}` и SQL-ошибку при конфликте;
+      // просто возвращаем текущие настройки без записи.
+      if (Object.keys(patch).length === 0) {
+        return c.json({ settings: await getStorySettings(storyId) });
+      }
+      const settings = await upsertStorySettings(storyId, patch);
+      return c.json({ settings });
+    } catch (err) {
+      logger.error({ err, userId: user.id, storyId }, "Failed to update story settings");
+      return c.json({ error: "Internal error" }, 500);
+    }
+  });
+
   // ─── Ведение истории ──────────────────────────────────────────────────────
   app.post("/:id/advance", handleAdvanceStory);
   app.post("/:id/messages/:msgId/regenerate", handleRegenerateStoryBeat);
   app.post("/:id/messages/:msgId/branch", handleSwitchStoryBranch);
+  app.post("/:id/messages/:msgId/translate", handleStoryTranslateMessage);
   app.delete("/:id/messages/:msgId", handleDeleteStoryMessage);
 
   return app;

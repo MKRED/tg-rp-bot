@@ -8,6 +8,7 @@ import {
   getStory,
   getStoryMessage,
   insertStoryMessage,
+  saveStoryTranslation,
   setActiveStoryMessage,
   updateActiveStoryMessage,
 } from "../db/stories/index.js";
@@ -15,6 +16,7 @@ import logger from "../logger.js";
 import type { AppVariables } from "./initData.js";
 import { presetToCompletionOptions } from "./promptBuilder.js";
 import { streamCompletion } from "./streamGeneration.js";
+import { googleTranslate } from "./translate.js";
 import {
   buildStoryMessages,
   CONTINUE_MARKER,
@@ -177,6 +179,44 @@ export async function handleSwitchStoryBranch(c: Ctx) {
     return c.json({ ok: true });
   } catch (err) {
     logger.error({ err, userId, storyId, msgId }, "Failed to switch story branch");
+    return c.json({ error: "Internal error" }, 500);
+  }
+}
+
+/** POST /:id/messages/:msgId/translate — переводит бит/директиву и кэширует результат (зеркало RP). */
+export async function handleStoryTranslateMessage(c: Ctx) {
+  const user = c.get("tgUser");
+  if (!user) return c.json({ error: "Auth required" }, 401);
+  const userId = user.id;
+  const storyId = Number(c.req.param("id"));
+  const msgId = Number(c.req.param("msgId"));
+
+  const body = (await c.req.json().catch(() => ({}))) as { targetLang?: string };
+  const targetLang = typeof body.targetLang === "string" ? body.targetLang.trim() : "";
+  if (!targetLang) return c.json({ error: "targetLang is required" }, 400);
+
+  const t0 = Date.now();
+  try {
+    // Принадлежность проверяем через storyId→userId, затем сверяем, что сообщение из этой истории.
+    const story = await getStory(userId, storyId);
+    if (!story) return c.json({ error: "Story not found" }, 404);
+
+    const msg = await getStoryMessage(userId, msgId);
+    if (!msg || msg.storyChatId !== storyId) return c.json({ error: "Message not found" }, 404);
+
+    // Кэш уже есть (translations расшифрованы в getStoryMessage) — не дёргаем переводчик повторно.
+    const cached = (msg.translations as Record<string, string> | null)?.[targetLang];
+    if (cached) return c.json({ translation: cached });
+
+    const translation = await googleTranslate(msg.content, targetLang);
+    await saveStoryTranslation(userId, msgId, targetLang, translation);
+    logger.info(
+      { durationMs: Date.now() - t0, userId, storyId, msgId, targetLang },
+      "Story message translated",
+    );
+    return c.json({ translation });
+  } catch (err) {
+    logger.error({ err, userId, storyId, msgId }, "Failed to translate story message");
     return c.json({ error: "Internal error" }, 500);
   }
 }

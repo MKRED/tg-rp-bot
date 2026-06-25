@@ -431,8 +431,39 @@ export const storyMessages = pgTable("story_messages", {
   role: text("role").$type<"user" | "assistant">().notNull(),
   kind: text("kind").$type<"beat" | "continue" | "directive">().notNull(),
   content: text("content").notNull(),
+  // JSON-кэш переводов { "ru": "...", "en": "..." }, как у messages.translations. Значения
+  // зашифрованы per-user (см. saveStoryTranslation / decryptStoryTranslations).
+  translations: jsonb("translations").$type<Record<string, string>>(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export type StoryMessage = typeof storyMessages.$inferSelect;
 export type NewStoryMessage = typeof storyMessages.$inferInsert;
+
+/**
+ * Настройки перевода истории (Narrator) — зеркало chatSettings под story_chats.
+ * translateScope: на каких ходах показывать кнопку Globe — "all" = все, "assistant" = биты ИИ,
+ * "user" = режиссёрские директивы. autoTranslateScope — что переводить сразу при появлении.
+ */
+export const storySettings = pgTable("story_settings", {
+  storyChatId: bigint("story_chat_id", { mode: "number" })
+    .primaryKey()
+    .references(() => storyChats.id, { onDelete: "cascade" }),
+  translateEnabled: boolean("translate_enabled").notNull().default(false),
+  translateTargetLang: text("translate_target_lang").notNull().default("ru"),
+  translateScope: text("translate_scope")
+    .$type<"all" | "assistant" | "user">()
+    .notNull()
+    .default("assistant"),
+  autoTranslateScope: text("auto_translate_scope")
+    .$type<"none" | "all" | "assistant" | "user">()
+    .notNull()
+    .default("none"),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export type StorySettings = typeof storySettings.$inferSelect;
+export type NewStorySettings = typeof storySettings.$inferInsert;

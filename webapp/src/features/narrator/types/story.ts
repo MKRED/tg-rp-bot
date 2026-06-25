@@ -18,10 +18,21 @@ export type StoryMessage = {
   role: "user" | "assistant";
   kind: StoryMessageKind;
   content: string;
+  /** Кэш переводов { lang: text }; null — переводов нет. */
+  translations: Record<string, string> | null;
   createdAt: string;
   siblingIndex: number;
   siblingCount: number;
   siblings: number[];
+};
+
+/** Настройки перевода истории — зеркало ChatSettings под narrator. */
+export type StorySettings = {
+  translateEnabled: boolean;
+  translateTargetLang: string;
+  /** На каких ходах показывать кнопку: all — все, assistant — биты ИИ, user — директивы. */
+  translateScope: "all" | "assistant" | "user";
+  autoTranslateScope: "none" | "all" | "assistant" | "user";
 };
 
 export type StoryDetail = {

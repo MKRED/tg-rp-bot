@@ -1,5 +1,7 @@
-import { ChevronLeft, ChevronRight, Clapperboard, RefreshCw, Trash2 } from "lucide-react";
+import { Spinner } from "@telegram-apps/telegram-ui";
+import { ChevronLeft, ChevronRight, Clapperboard, Globe, RefreshCw, Trash2 } from "lucide-react";
 import { RpText } from "../../../shared/components/RpText";
+import { useTranslatable } from "../hooks/useTranslatable";
 import type { StoryMessage } from "../types/story";
 
 interface StoryMessageItemProps {
@@ -7,23 +9,43 @@ interface StoryMessageItemProps {
   /** Последний бит активного пути — под ним показываем действия (реген/удаление/ветки). */
   isLast: boolean;
   disabled: boolean;
+  /** Показывать кнопку перевода на этом сообщении (по settings.translateScope + роли). */
+  showTranslateButton: boolean;
+  /** Язык перевода из настроек истории. */
+  targetLang: string;
+  /** Сразу показывать перевод, когда он появится (авто-перевод). */
+  autoShowTranslation?: boolean;
+  onTranslate: (messageId: number, targetLang: string) => Promise<string>;
   onRegenerate: () => void;
   onDelete: () => void;
   onSwitchSibling: (siblingId: number) => void;
 }
 
 /**
- * Один элемент ленты истории. continue-ходы скрыты; directive — компактный чип «режиссёр»;
- * beat — текст истории (с сохранением переносов). Под последним битом — панель действий.
+ * Один элемент ленты истории. continue-ходы скрыты; directive — компактный чип «режиссёр»
+ * (с маленькой кнопкой перевода справа); beat — текст истории. Под последним битом — панель действий,
+ * кнопка перевода — на любом бите/директиве согласно настройкам.
  */
 export function StoryMessageItem({
   message,
   isLast,
   disabled,
+  showTranslateButton,
+  targetLang,
+  autoShowTranslation = false,
+  onTranslate,
   onRegenerate,
   onDelete,
   onSwitchSibling,
 }: StoryMessageItemProps) {
+  // Хук вызываем до ранних return (правила хуков); для continue он просто простаивает.
+  const { displayText, showTranslation, translating, toggle } = useTranslatable(
+    message,
+    targetLang,
+    autoShowTranslation,
+    onTranslate,
+  );
+
   // Технические «Дальше» в ленте не показываем.
   if (message.kind === "continue") return null;
 
@@ -45,7 +67,18 @@ export function StoryMessageItem({
         }}
       >
         <Clapperboard size={14} />
-        <span>{message.content}</span>
+        <span>{displayText}</span>
+        {showTranslateButton && (
+          <button
+            type="button"
+            disabled={translating}
+            onClick={toggle}
+            style={{ ...iconBtn, color: showTranslation ? "var(--tgui--link_color)" : "inherit" }}
+            aria-label="Перевести директиву"
+          >
+            {translating ? <Spinner size="s" /> : <Globe size={14} />}
+          </button>
+        )}
       </div>
     );
   }
@@ -69,12 +102,23 @@ export function StoryMessageItem({
           color: "var(--tgui--text_color)",
         }}
       >
-        <RpText text={message.content} />
+        <RpText text={displayText} />
       </div>
 
-      {showActions && (
+      {(showTranslateButton || showActions) && (
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6, color: "var(--tgui--hint_color)" }}>
-          {canSwitch && (
+          {showTranslateButton && (
+            <button
+              type="button"
+              disabled={translating}
+              onClick={toggle}
+              style={{ ...iconBtn, color: showTranslation ? "var(--tgui--link_color)" : "inherit" }}
+              aria-label="Перевести бит"
+            >
+              {translating ? <Spinner size="s" /> : <Globe size={16} />}
+            </button>
+          )}
+          {canSwitch && showActions && (
             <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13 }}>
               <button
                 type="button"
@@ -97,12 +141,16 @@ export function StoryMessageItem({
               </button>
             </span>
           )}
-          <button type="button" disabled={disabled} onClick={onRegenerate} style={iconBtn} aria-label="Перегенерировать">
-            <RefreshCw size={16} />
-          </button>
-          <button type="button" disabled={disabled} onClick={onDelete} style={iconBtn} aria-label="Удалить">
-            <Trash2 size={16} />
-          </button>
+          {showActions && (
+            <>
+              <button type="button" disabled={disabled} onClick={onRegenerate} style={iconBtn} aria-label="Перегенерировать">
+                <RefreshCw size={16} />
+              </button>
+              <button type="button" disabled={disabled} onClick={onDelete} style={iconBtn} aria-label="Удалить">
+                <Trash2 size={16} />
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

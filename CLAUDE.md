@@ -108,12 +108,17 @@ RP-чата), переиспользуя только реально переи�
   (только системный промпт нарратора; сэмплинг по-прежнему из `generation_presets`), `story_chats`
   (`openingBeat` **обязателен** — дословный бит 1; `premise` опц.; `bookId`/`templateId`/`presetId`
   **обяз.**, FK без onDelete = restrict → удаление используемого шаблона/пресета даёт 409 in_use)
-  + `story_messages` (дерево, `kind: beat|continue|directive`).
-- **Сервер:** `db/knowledge/`, `db/narratorTemplates.ts`, `db/stories/` (зеркало `db/chats/`);
-  `server/storyPromptBuilder.ts` (+тест), `server/storyHandlers.ts`, роуты `books`/`narrator-templates`/
-  `stories`.
+  + `story_messages` (дерево, `kind: beat|continue|directive`; `translations` — JSON-кэш переводов,
+  зашифрован per-user, как у `messages`) + `story_settings` (перевод истории, зеркало `chat_settings`).
+- **Сервер:** `db/knowledge/`, `db/narratorTemplates.ts`, `db/stories/` (зеркало `db/chats/`,
+  вкл. `settings.ts` и `crypto.ts` — расшифровка кэша переводов); `server/storyPromptBuilder.ts` (+тест),
+  `server/storyHandlers.ts` (вкл. перевод бита/директивы через `googleTranslate`), роуты
+  `books`/`narrator-templates`/`stories` (у `stories` — `settings` GET/PUT + `messages/:id/translate`).
 - **Webapp:** фичи `narrator`/`knowledge-books`/`narrator-templates`, страницы `pages/narrator/*`,
   `pages/knowledge-books/*`, `pages/narrator-templates/*`; кнопки на главной (Режим игры + Библиотека).
+  Перевод истории — раздел в `StorySettingsPage` + кнопка-Globe на битах/директивах в ленте
+  (`useStorySettings`/`useTranslatable`), зеркало RP-чата. `ExpandableSelect` — в `shared/components`
+  (кросс-фичевый: настройки перевода RP и narrator).
 
 **Ключевой инвариант сборки промпта** (`storyPromptBuilder.buildStoryMessages`): отыгранные user-ходы
 (директивы/continue) **нейтрализуются** в `CONTINUE_MARKER`, кроме последнего (живого триггера) — их

@@ -13,10 +13,20 @@ export type StoryMessageInPath = {
   role: "user" | "assistant";
   kind: "beat" | "continue" | "directive";
   content: string;
+  /** Кэш переводов { lang: text } — расшифрован. null, если переводов нет. */
+  translations: Record<string, string> | null;
   createdAt: string;
   siblingIndex: number;
   siblingCount: number;
   siblings: number[];
+};
+
+/** Настройки перевода истории (значения из story_settings либо дефолты). */
+export type StorySettingsRow = {
+  translateEnabled: boolean;
+  translateTargetLang: string;
+  translateScope: "all" | "assistant" | "user";
+  autoTranslateScope: "none" | "all" | "assistant" | "user";
 };
 
 export type StoryDetail = {

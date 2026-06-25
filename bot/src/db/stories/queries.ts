@@ -4,8 +4,8 @@ import { db, schema } from "../index.js";
 
 /**
  * Рекурсивный CTE: путь от листа (messageId) к корню + sibling-информация для каждого узла.
- * Зеркало db/chats/queries.ts, но по story_messages (story_chat_id, есть kind, нет translations).
- * Возвращает сырые строки — расшифровку content делает вызывающая сторона (нужен per-user ключ).
+ * Зеркало db/chats/queries.ts, но по story_messages (story_chat_id, есть kind).
+ * Возвращает сырые строки — расшифровку content/translations делает вызывающая сторона (нужен ключ).
  */
 export async function queryStoryActivePath(
   storyChatId: number,
@@ -35,7 +35,7 @@ export async function queryStoryActivePath(
       GROUP BY COALESCE(parent_id, -1)
     )
     SELECT
-      p.id, p.parent_id, p.role, p.kind, p.content, p.created_at,
+      p.id, p.parent_id, p.role, p.kind, p.content, p.translations, p.created_at,
       s.sibling_count, s.sibling_index, sa.siblings
     FROM path p
     JOIN sibling_info s   ON s.id        = p.id

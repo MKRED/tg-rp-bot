@@ -9,7 +9,7 @@ import { PageTransition } from "../../shared/components/PageTransition";
 import { CharacterAvatar } from "../../features/characters/components/CharacterAvatar";
 import { PersonaAvatar } from "../../features/personas/components/PersonaAvatar";
 import { deleteChat, renameChat, TokenBudgetBar, useChat, useChatSettings, useChatStats } from "../../features/rp-chat";
-import { ExpandableSelect } from "../../features/rp-chat/components/ExpandableSelect";
+import { ExpandableSelect } from "../../shared/components/ExpandableSelect";
 import {
   AUTO_SCOPE_OPTIONS,
   LANG_OPTIONS,

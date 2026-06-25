@@ -1,5 +1,5 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { storySettingsPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
@@ -14,7 +14,10 @@ import {
   deleteStoryMessage,
   regenerateBeat,
   switchBranch,
+  translateStoryMessage,
   useStory,
+  useStoryAutoTranslate,
+  useStorySettings,
 } from "../../features/narrator";
 import { confirmAction } from "../../shared/telegram/confirm";
 import { useToast } from "../../shared/toast";
@@ -28,6 +31,7 @@ export function StoryPage() {
 
   const navigate = useTransitionNavigate();
   const { story, messages, setMessages, loading, error, reload } = useStory(id);
+  const { settings } = useStorySettings(id);
   const { showToast } = useToast();
   const [sending, setSending] = useState(false);
   const [streamingText, setStreamingText] = useState<string | null>(null);
@@ -37,6 +41,25 @@ export function StoryPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamingText]);
+
+  // Переводит бит/директиву и вливает перевод в локальную ленту (чтобы тоггл показал его сразу).
+  const handleTranslate = useCallback(
+    async (msgId: number, lang: string): Promise<string> => {
+      const translation = await translateStoryMessage(id, msgId, lang);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === msgId
+            ? { ...m, translations: { ...(m.translations ?? {}), [lang]: translation } }
+            : m,
+        ),
+      );
+      return translation;
+    },
+    [id, setMessages],
+  );
+
+  // Авто-перевод новых сообщений вынесен в хук; suppressNextRun зовём при смене ветки.
+  const { suppressNextRun } = useStoryAutoTranslate(messages, settings, handleTranslate);
 
   const lastBeatId = [...messages].reverse().find((m) => m.role === "assistant")?.id;
 
@@ -102,6 +125,7 @@ export function StoryPage() {
 
   const handleSwitch = async (siblingId: number) => {
     if (sending) return;
+    suppressNextRun(); // ветка историческая — не авто-переводим её сообщения
     try {
       await switchBranch(id, siblingId);
     } catch {
@@ -136,21 +160,37 @@ export function StoryPage() {
         />
 
         <div style={{ flex: 1, overflowY: "auto", padding: "8px 16px", display: "flex", flexDirection: "column" }}>
-          {messages.map((m, i) => (
-            <Fragment key={m.id}>
-              {/* Бит-продолжение (предыдущий ход — «Дальше» без директивы) отделяем орнаментом:
-                  чипа-режиссёра между ними нет, иначе биты сливались бы. */}
-              {m.kind === "beat" && messages[i - 1]?.kind === "continue" && <BeatDivider />}
-              <StoryMessageItem
-                message={m}
-                isLast={m.id === lastBeatId && streamingText === null}
-                disabled={sending}
-                onRegenerate={() => regenerate(m.id)}
-                onDelete={() => handleDelete(m.id)}
-                onSwitchSibling={handleSwitch}
-              />
-            </Fragment>
-          ))}
+          {messages.map((m, i) => {
+            // Кнопку перевода показываем на бите/директиве согласно scope (assistant=бит, user=директива).
+            const showTranslateButton =
+              m.kind !== "continue" &&
+              settings.translateEnabled &&
+              (settings.translateScope === "all" || settings.translateScope === m.role);
+            const autoShowTranslation =
+              m.kind !== "continue" &&
+              settings.translateEnabled &&
+              settings.autoTranslateScope !== "none" &&
+              (settings.autoTranslateScope === "all" || settings.autoTranslateScope === m.role);
+            return (
+              <Fragment key={m.id}>
+                {/* Бит-продолжение (предыдущий ход — «Дальше» без директивы) отделяем орнаментом:
+                    чипа-режиссёра между ними нет, иначе биты сливались бы. */}
+                {m.kind === "beat" && messages[i - 1]?.kind === "continue" && <BeatDivider />}
+                <StoryMessageItem
+                  message={m}
+                  isLast={m.id === lastBeatId && streamingText === null}
+                  disabled={sending}
+                  showTranslateButton={showTranslateButton}
+                  targetLang={settings.translateTargetLang}
+                  autoShowTranslation={autoShowTranslation}
+                  onTranslate={handleTranslate}
+                  onRegenerate={() => regenerate(m.id)}
+                  onDelete={() => handleDelete(m.id)}
+                  onSwitchSibling={handleSwitch}
+                />
+              </Fragment>
+            );
+          })}
 
           {streamingText !== null && (
             <>

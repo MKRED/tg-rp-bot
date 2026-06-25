@@ -3,12 +3,17 @@ import logger from "../../logger.js";
 import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/index.js";
 import { db, schema } from "../index.js";
 import type { StoryMessage } from "../schema.js";
+import { decryptStoryTranslations } from "./crypto.js";
 import { findStoryLeaf } from "./queries.js";
 
-/** Расшифровывает content строки сообщения истории. */
+/** Расшифровывает content + значения translations строки сообщения истории. */
 function decryptRow(row: StoryMessage, userId: number): StoryMessage {
   const key = getUserEncryptionKey(userId);
-  return { ...row, content: decryptField(row.content, key) };
+  return {
+    ...row,
+    content: decryptField(row.content, key),
+    translations: decryptStoryTranslations(row.translations, key),
+  };
 }
 
 /**
@@ -48,6 +53,27 @@ export async function getStoryMessage(
     .where(eq(schema.storyMessages.id, messageId));
   logger.debug({ durationMs: Date.now() - t0, userId, messageId, found: rows.length > 0 }, "Story message read");
   return rows[0] ? decryptRow(rows[0], userId) : undefined;
+}
+
+/**
+ * Кэширует перевод бита/директивы: сливает новую запись в jsonb-объект translations.
+ * Значение шифруется per-user; ключ (код языка) остаётся открытым. Зеркало saveTranslation (RP).
+ */
+export async function saveStoryTranslation(
+  userId: number,
+  messageId: number,
+  lang: string,
+  text: string,
+): Promise<void> {
+  const t0 = Date.now();
+  const key = getUserEncryptionKey(userId);
+  const encrypted = encryptField(text, key);
+  await db.execute(sql`
+    UPDATE story_messages
+    SET translations = COALESCE(translations, '{}'::jsonb) || jsonb_build_object(${lang}::text, ${encrypted}::text)
+    WHERE id = ${messageId}
+  `);
+  logger.debug({ durationMs: Date.now() - t0, userId, messageId, lang }, "Story translation cached");
 }
 
 /** Ставит курсор истории на messageId, опускаясь до листа (как в RP). */
