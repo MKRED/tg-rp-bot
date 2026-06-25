@@ -6,6 +6,7 @@ export { useStory } from "./hooks/useStory";
 export { StoryCard } from "./components/StoryCard";
 export { StoryInput } from "./components/StoryInput";
 export { StoryMessageItem } from "./components/StoryMessageItem";
+export { BeatDivider } from "./components/BeatDivider";
 export {
   listStories,
   getStory,

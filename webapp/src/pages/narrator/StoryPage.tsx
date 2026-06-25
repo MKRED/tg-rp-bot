@@ -1,9 +1,10 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { RpText } from "../../shared/components/RpText";
 import {
+  BeatDivider,
   StoryInput,
   StoryMessageItem,
   advanceStory,
@@ -123,22 +124,30 @@ export function StoryPage() {
         <div className="story-page__header">{story.title ?? story.book.name}</div>
 
         <div style={{ flex: 1, overflowY: "auto", padding: "8px 16px", display: "flex", flexDirection: "column" }}>
-          {messages.map((m) => (
-            <StoryMessageItem
-              key={m.id}
-              message={m}
-              isLast={m.id === lastBeatId && streamingText === null}
-              disabled={sending}
-              onRegenerate={() => regenerate(m.id)}
-              onDelete={() => handleDelete(m.id)}
-              onSwitchSibling={handleSwitch}
-            />
+          {messages.map((m, i) => (
+            <Fragment key={m.id}>
+              {/* Бит-продолжение (предыдущий ход — «Дальше» без директивы) отделяем орнаментом:
+                  чипа-режиссёра между ними нет, иначе биты сливались бы. */}
+              {m.kind === "beat" && messages[i - 1]?.kind === "continue" && <BeatDivider />}
+              <StoryMessageItem
+                message={m}
+                isLast={m.id === lastBeatId && streamingText === null}
+                disabled={sending}
+                onRegenerate={() => regenerate(m.id)}
+                onDelete={() => handleDelete(m.id)}
+                onSwitchSibling={handleSwitch}
+              />
+            </Fragment>
           ))}
 
           {streamingText !== null && (
-            <div style={{ margin: "8px 0", whiteSpace: "pre-wrap", lineHeight: 1.5, color: "var(--tgui--text_color)" }}>
-              {streamingText ? <RpText text={streamingText} /> : <Spinner size="s" />}
-            </div>
+            <>
+              {/* Стримящийся бит тоже отделяем, если двинули историю «Дальше» (последний ход — continue). */}
+              {messages[messages.length - 1]?.kind === "continue" && <BeatDivider />}
+              <div style={{ margin: "8px 0", whiteSpace: "pre-wrap", lineHeight: 1.5, color: "var(--tgui--text_color)" }}>
+                {streamingText ? <RpText text={streamingText} /> : <Spinner size="s" />}
+              </div>
+            </>
           )}
 
           <div ref={bottomRef} />

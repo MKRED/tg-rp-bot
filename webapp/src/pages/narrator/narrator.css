@@ -86,3 +86,58 @@
 .story-new-page__chevron {
   color: var(--tg-theme-hint-color, #999);
 }
+
+/* Поле режиссёра — повторяет инпут RP-чата (.chat-input).
+   min-height + box-sizing: border-box лечат «сплющивание» на старте: без min-height
+   textarea со стартовой высотой в 1 строку обрезала двухстрочный плейсхолдер, а ресайз
+   срабатывал только после первого ввода. */
+.story-input {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  padding: 8px 12px calc(env(safe-area-inset-bottom, 0px) + 8px);
+  border-top: 1px solid var(--tgui--divider);
+  background: var(--tgui--bg_color);
+}
+
+.story-input__textarea {
+  flex: 1;
+  box-sizing: border-box;
+  border: 1.5px solid var(--tgui--secondary_bg_color);
+  border-radius: 20px;
+  padding: 10px 14px;
+  font-size: 15px;
+  line-height: 1.4;
+  resize: none;
+  outline: none;
+  background: var(--tgui--secondary_bg_color);
+  color: var(--tgui--text_color);
+  min-height: 40px;
+  max-height: 160px;
+  font-family: inherit;
+  overflow-y: auto;
+}
+
+.story-input__textarea:focus {
+  border-color: var(--tgui--link_color);
+}
+
+.story-input__send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: var(--tgui--button_color);
+  color: var(--tgui--button_text_color);
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.story-input__send:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
