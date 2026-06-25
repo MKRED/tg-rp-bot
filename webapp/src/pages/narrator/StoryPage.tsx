@@ -36,11 +36,19 @@ export function StoryPage() {
   const [sending, setSending] = useState(false);
   const [streamingText, setStreamingText] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  // Первый скролл к низу при открытии истории — мгновенный (без видимой долгой прокрутки
+  // от верха), далее новые биты/стриминг скроллим плавно.
+  const didInitialScroll = useRef(false);
 
-  // Автопрокрутка к низу при новых сообщениях/стриминге.
+  // Автопрокрутка к низу при новых сообщениях/стриминге. Зависим от ДЛИНЫ ленты, а не от
+  // её содержимого: перевод бита/директивы меняет текст сообщения (но не их число) и не
+  // должен дёргать ленту вниз.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streamingText]);
+    if (!messages.length) return;
+    const behavior = didInitialScroll.current ? "smooth" : "auto";
+    bottomRef.current?.scrollIntoView({ behavior });
+    didInitialScroll.current = true;
+  }, [messages.length, streamingText]);
 
   // Переводит бит/директиву и вливает перевод в локальную ленту (чтобы тоггл показал его сразу).
   const handleTranslate = useCallback(
