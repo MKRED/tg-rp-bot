@@ -1,0 +1,47 @@
+/*
+ * Общие стили графа веток (React Flow), нужные обеим страницам — RP-чату и narrator-истории.
+ * Лежат рядом с treeLayout.ts, потому что часть из них — прямое следствие раскладки.
+ */
+
+/*
+ * Инвариант раскладки: все узлы ОДНОЙ ширины = NODE_W (treeLayout.ts).
+ * layoutTreeNodes центрирует родителя над детьми по координате левого угла, считая ширину
+ * фиксированной, а хэндлы (точки соединения линий) сидят по горизонтальному центру узла.
+ * Если ширина плавающая (узкий «▸ продолжение» против широкого бита), центр узла перестаёт
+ * совпадать с тем, что заложила раскладка, и линии косят. Поэтому ширину жёстко фиксируем.
+ */
+.rp-chat-graph-node,
+.story-graph-node {
+  box-sizing: border-box;
+  width: 220px;
+}
+
+/* Controls (зум/центрирование) — адаптация под тему Telegram (по умолчанию белые на тёмном фоне). */
+.react-flow__controls {
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5) !important;
+  border: 1px solid var(--tg-theme-hint-color, #999) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+  box-shadow: none !important;
+}
+
+.react-flow__controls-button {
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5) !important;
+  border-bottom: 1px solid var(--tg-theme-hint-color, #999) !important;
+  fill: var(--tg-theme-text-color, #000) !important;
+  color: var(--tg-theme-text-color, #000) !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+
+.react-flow__controls-button:hover {
+  background: var(--tg-theme-bg-color, #fff) !important;
+}
+
+.react-flow__controls-button svg {
+  fill: var(--tg-theme-text-color, #000) !important;
+  max-width: 14px;
+  max-height: 14px;
+}

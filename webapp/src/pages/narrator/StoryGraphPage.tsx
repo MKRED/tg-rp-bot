@@ -17,6 +17,7 @@ import { storyViewPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { NODE_H, NODE_W, layoutTreeNodes } from "../../shared/graph/treeLayout";
+import "../../shared/graph/graph.css";
 import { switchBranch, useStoryTree } from "../../features/narrator";
 import type { StoryTreeNode } from "../../features/narrator";
 import "./narrator.css";
@@ -119,8 +120,9 @@ export function StoryGraphPage() {
   );
 
   // Клик по узлу переключает ветку. handleSwitchStoryBranch на сервере: по биту ставит курсор
-  // ровно на узел (можно ответвиться отсюда), по директиве/«Дальше» спускается к их биту-листу
-  // (история обязана заканчиваться битом). При ошибке остаёмся в графе, не переходя в ленту.
+  // ровно на узел, по директиве/«Дальше» — на её бит (прямого ребёнка), а не на конец истории,
+  // чтобы можно было ответвиться из середины (история обязана заканчиваться битом). При ошибке
+  // остаёмся в графе, не переходя в ленту.
   const handleNodeClick = useCallback(
     async (_: React.MouseEvent, node: Node) => {
       try {

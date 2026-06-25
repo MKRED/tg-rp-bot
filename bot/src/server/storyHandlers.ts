@@ -5,6 +5,7 @@ import { getNarratorTemplate } from "../db/narratorTemplates.js";
 import { getPreset } from "../db/presets.js";
 import {
   deleteStoryMessage,
+  findNewestStoryChild,
   getStory,
   getStoryMessage,
   insertStoryMessage,
@@ -184,8 +185,13 @@ export async function handleSwitchStoryBranch(c: Ctx) {
     if (msg.kind === "beat") {
       await setActiveStoryMessage(storyId, msgId);
     } else {
-      // updateActiveStoryMessage спускается к листу (самому свежему биту-потомку директивы).
-      await updateActiveStoryMessage(storyId, msgId);
+      // Директива/«Дальше» — эфемерный триггер, курсор на него ставить нельзя. Встаём ровно на ЕГО
+      // бит (самого свежего прямого ребёнка), а НЕ спускаемся к самому глубокому листу — иначе клик
+      // по узлу в середине дерева увёл бы в конец истории, и ответвиться из середины было бы нельзя.
+      // Ребёнок директивы всегда бит (строгое чередование). Висячая директива без бита (легаси/
+      // середина генерации) — откатываемся на родительский бит (parentId у user-хода всегда бит).
+      const beatId = (await findNewestStoryChild(storyId, msgId)) ?? msg.parentId;
+      await setActiveStoryMessage(storyId, beatId);
     }
     return c.json({ ok: true });
   } catch (err) {

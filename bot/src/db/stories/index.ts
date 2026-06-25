@@ -13,4 +13,6 @@ export {
   deleteStoryMessage,
 } from "./messages.js";
 
+export { findNewestStoryChild } from "./queries.js";
+
 export { getStorySettings, upsertStorySettings } from "./settings.js";

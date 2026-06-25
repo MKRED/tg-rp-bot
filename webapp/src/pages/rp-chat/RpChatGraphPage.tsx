@@ -17,6 +17,7 @@ import { chatViewPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { NODE_H, NODE_W, layoutTreeNodes } from "../../shared/graph/treeLayout";
+import "../../shared/graph/graph.css";
 import { useChatTree } from "../../features/rp-chat";
 import { switchBranch } from "../../features/rp-chat/api/messages-api";
 import type { TreeNode } from "../../features/rp-chat";

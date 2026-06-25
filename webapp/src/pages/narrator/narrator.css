@@ -222,13 +222,12 @@
   flex: 1;
 }
 
+/* Ширина узла фиксируется общим правилом в shared/graph/graph.css (инвариант раскладки). */
 .story-graph-node {
   background: var(--tg-theme-secondary-bg-color, #f4f4f5);
   border: 1.5px solid transparent;
   border-radius: 12px;
   padding: 8px 12px;
-  min-width: 120px;
-  max-width: 200px;
   cursor: pointer;
 }
 

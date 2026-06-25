@@ -86,6 +86,30 @@ export async function findLastStoryLeaf(storyChatId: number): Promise<number | n
   return leafId != null ? Number(leafId) : null;
 }
 
+/**
+ * Самый свежий прямой ребёнок узла (один уровень вниз), либо null если детей нет.
+ * Нужен для клика по директиве/«Дальше» в графе: её ребёнок — всегда бит (строгое чередование
+ * бит↔user-ход), и встать надо ровно на него, чтобы ответвиться из середины, а не спуститься
+ * к самому глубокому листу (это делал бы findStoryLeaf).
+ */
+export async function findNewestStoryChild(
+  storyChatId: number,
+  messageId: number,
+): Promise<number | null> {
+  const children = await db
+    .select({ id: schema.storyMessages.id })
+    .from(schema.storyMessages)
+    .where(
+      and(
+        eq(schema.storyMessages.parentId, messageId),
+        eq(schema.storyMessages.storyChatId, storyChatId),
+      ),
+    )
+    .orderBy(desc(schema.storyMessages.createdAt))
+    .limit(1);
+  return children[0]?.id ?? null;
+}
+
 /** Спускается к листу дерева, следуя самому свежему ребёнку (для переключения ветки). */
 export async function findStoryLeaf(storyChatId: number, messageId: number): Promise<number> {
   let current = messageId;
