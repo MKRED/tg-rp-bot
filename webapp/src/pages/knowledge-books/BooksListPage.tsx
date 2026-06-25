@@ -5,6 +5,7 @@ import { ROUTES, bookEditPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { MAX_BOOKS_PER_USER, useBooks } from "../../features/knowledge-books";
+import "./knowledge-books.css";
 
 /** Экран «Книги знаний»: список lorebook'ов + кнопка создания. */
 export function BooksListPage() {
@@ -14,7 +15,7 @@ export function BooksListPage() {
 
   return (
     <PageTransition>
-      <div style={{ paddingBottom: 24 }}>
+      <div className="kb-page">
         <List>
           <Section header="Книги знаний" footer="Персонажи и факты мира для режима «Режиссёр истории»">
             {loading && (

@@ -15,6 +15,7 @@ import {
 import { confirmAction } from "../../shared/telegram/confirm";
 import { useToast } from "../../shared/toast";
 import type { StoryMessage } from "../../features/narrator";
+import "./narrator.css";
 
 /** Экран истории: лента битов + директив, поле режиссёра, стриминг следующего бита. */
 export function StoryPage() {
@@ -102,7 +103,7 @@ export function StoryPage() {
   if (loading) {
     return (
       <PageTransition>
-        <div style={{ display: "flex", justifyContent: "center", padding: 48 }}>
+        <div className="story-page__fullcenter">
           <Spinner size="m" />
         </div>
       </PageTransition>
@@ -111,7 +112,7 @@ export function StoryPage() {
   if (error || !story) {
     return (
       <PageTransition>
-        <div style={{ padding: 48, textAlign: "center" }}>История не найдена</div>
+        <div className="story-page__fullcenter">История не найдена</div>
       </PageTransition>
     );
   }
@@ -119,16 +120,7 @@ export function StoryPage() {
   return (
     <PageTransition>
       <div style={{ display: "flex", flexDirection: "column", height: "100dvh" }}>
-        <div
-          style={{
-            padding: "10px 16px",
-            borderBottom: "1px solid var(--tgui--divider)",
-            fontWeight: 600,
-            color: "var(--tgui--text_color)",
-          }}
-        >
-          {story.title ?? story.book.name}
-        </div>
+        <div className="story-page__header">{story.title ?? story.book.name}</div>
 
         <div style={{ flex: 1, overflowY: "auto", padding: "8px 16px", display: "flex", flexDirection: "column" }}>
           {messages.map((m) => (

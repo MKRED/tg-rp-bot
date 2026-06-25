@@ -1,3 +1,58 @@
+/* Хаб историй и список — верхний отступ под Full Screen (тот же приём, что в characters.css). */
+.story-list-page {
+  min-height: 100dvh;
+  padding-top: calc(
+    8px +
+    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
+  padding-bottom: 24px;
+}
+
+/* Спиннер загрузки секции — по центру строки (как .rp-chats-page__center). */
+.story-list-page__center {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.story-list-page__icon {
+  color: var(--tg-theme-link-color, #2481cc);
+}
+
+.story-list-page__chevron {
+  color: var(--tg-theme-hint-color, #999);
+}
+
+/* Пагинация полного списка историй (как .rp-chats-all-page__pagination). */
+.story-list-page__pagination {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+/* Полноэкранные состояния (спиннер загрузки / «не найдено») — по центру экрана. */
+.story-page__fullcenter {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100dvh;
+  padding: 16px;
+  text-align: center;
+  color: var(--tgui--hint_color, #7d8b99);
+}
+
+/* Шапка экрана истории — учитывает инсет Full Screen, как .chat-header в RP-чате. */
+.story-page__header {
+  padding: calc(
+    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-top, 0px) + 10px
+  ) 16px 10px;
+  border-bottom: 1px solid var(--tgui--divider);
+  font-weight: 600;
+  color: var(--tgui--text_color);
+}
+
 /* Форма создания новой истории (Режиссёр истории) — раскладка ячеек/иконок как в новом RP-чате */
 .story-new-page {
   min-height: 100dvh;

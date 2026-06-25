@@ -1,0 +1,20 @@
+.story-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tg-theme-link-color, #2481cc);
+}
+
+.story-card__subtitle {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.story-card__time {
+  font-size: 12px;
+  color: var(--tg-theme-hint-color, #999);
+  white-space: nowrap;
+}

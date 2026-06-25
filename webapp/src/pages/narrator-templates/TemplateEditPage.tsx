@@ -14,6 +14,7 @@ import {
 } from "../../features/narrator-templates";
 import { confirmAction, showAlert } from "../../shared/telegram/confirm";
 import { ApiError } from "../../shared/api/client";
+import "./narrator-templates.css";
 
 /** Экран создания/редактирования narrator-шаблона. */
 export function TemplateEditPage() {
@@ -49,7 +50,7 @@ export function TemplateEditPage() {
   if (loading) {
     return (
       <PageTransition>
-        <div style={{ display: "flex", justifyContent: "center", padding: 48 }}>
+        <div className="nt-page__fullcenter">
           <Spinner size="m" />
         </div>
       </PageTransition>
@@ -58,14 +59,14 @@ export function TemplateEditPage() {
   if (error || (id !== undefined && !template)) {
     return (
       <PageTransition>
-        <div style={{ padding: 48, textAlign: "center" }}>Шаблон не найден</div>
+        <div className="nt-page__fullcenter">Шаблон не найден</div>
       </PageTransition>
     );
   }
 
   return (
     <PageTransition>
-      <div style={{ paddingBottom: 24 }}>
+      <div className="nt-page">
         <List>
           <TemplateForm
             initial={template}

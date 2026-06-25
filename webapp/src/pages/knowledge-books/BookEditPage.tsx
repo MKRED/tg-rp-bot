@@ -18,6 +18,7 @@ import {
 } from "../../features/knowledge-books";
 import { ApiError } from "../../shared/api/client";
 import { confirmAction, showAlert } from "../../shared/telegram/confirm";
+import "./knowledge-books.css";
 
 /** «new» при создании, объект Entry при правке записи, null — список без редактора. */
 type EntryEdit = "new" | Entry | null;
@@ -64,7 +65,7 @@ export function BookEditPage() {
   if (loading) {
     return (
       <PageTransition>
-        <div style={{ display: "flex", justifyContent: "center", padding: 48 }}>
+        <div className="kb-page__fullcenter">
           <Spinner size="m" />
         </div>
       </PageTransition>
@@ -73,7 +74,7 @@ export function BookEditPage() {
   if (error || (id !== undefined && !book)) {
     return (
       <PageTransition>
-        <div style={{ padding: 48, textAlign: "center" }}>Книга не найдена</div>
+        <div className="kb-page__fullcenter">Книга не найдена</div>
       </PageTransition>
     );
   }
@@ -82,7 +83,7 @@ export function BookEditPage() {
 
   return (
     <PageTransition>
-      <div style={{ paddingBottom: 24 }}>
+      <div className="kb-page">
         <List>
           <BookForm
             initial={book}

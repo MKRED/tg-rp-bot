@@ -1,29 +1,30 @@
-import { Button, Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
-import { Clapperboard } from "lucide-react";
+import { Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
+import { ChevronRight, Film, Plus } from "lucide-react";
 import { ROUTES, storyViewPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
-import { useStories } from "../../features/narrator";
+import { StoryCard, useRecentStories } from "../../features/narrator";
+import "./narrator.css";
 
-/** Хаб режима «Режиссёр истории»: список историй + кнопка создания. */
+/** Хаб режима «Режиссёр истории»: последние 5 историй + ссылки на все истории и создание новой. */
 export function StoriesPage() {
   const navigate = useTransitionNavigate();
-  const { items, loading, error } = useStories();
+  const { items, loading, error } = useRecentStories(5);
 
   return (
     <PageTransition>
-      <div style={{ paddingBottom: 24 }}>
+      <div className="story-list-page">
         <List>
-          <Section header="Режиссёр истории" footer="ИИ ведёт историю, вы направляете её директивами">
+          <Section header="Последние истории">
             {loading && (
-              <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
+              <div className="story-list-page__center">
                 <Spinner size="m" />
               </div>
             )}
             {!loading && error && <Cell subtitle="Не удалось загрузить список">Ошибка</Cell>}
             {!loading && !error && items.length === 0 && (
-              <Cell subtitle="Пока нет историй — создайте первую">Пусто</Cell>
+              <Cell subtitle="ИИ ведёт историю, вы направляете её директивами">Историй пока нет</Cell>
             )}
             {!loading &&
               !error &&
@@ -34,21 +35,29 @@ export function StoriesPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05, duration: 0.2, ease: "easeOut" }}
                 >
-                  <Cell
-                    before={<Clapperboard size={24} />}
-                    subtitle={s.lastMessage ?? s.bookName}
-                    onClick={() => navigate(storyViewPath(s.id))}
-                  >
-                    {s.title ?? s.bookName}
-                  </Cell>
+                  <StoryCard story={s} onClick={() => navigate(storyViewPath(s.id))} />
                 </motion.div>
               ))}
           </Section>
-          <div style={{ padding: 16 }}>
-            <Button size="l" stretched onClick={() => navigate(ROUTES.storyNew)}>
-              + Новая история
-            </Button>
-          </div>
+
+          <Section>
+            <Cell
+              before={<Film size={24} className="story-list-page__icon" />}
+              after={<ChevronRight size={18} className="story-list-page__chevron" />}
+              subtitle="Полный список"
+              onClick={() => navigate(ROUTES.storyAll)}
+            >
+              Все истории
+            </Cell>
+            <Cell
+              before={<Plus size={24} className="story-list-page__icon" />}
+              after={<ChevronRight size={18} className="story-list-page__chevron" />}
+              subtitle="Выбрать книгу и начать"
+              onClick={() => navigate(ROUTES.storyNew)}
+            >
+              Новая история
+            </Cell>
+          </Section>
         </List>
       </div>
     </PageTransition>

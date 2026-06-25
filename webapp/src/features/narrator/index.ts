@@ -1,7 +1,9 @@
 /** Публичная поверхность фичи narrator («Режиссёр истории»). */
 
-export { useStories } from "./hooks/useStories";
+export { useRecentStories } from "./hooks/useRecentStories";
+export { useAllStories } from "./hooks/useAllStories";
 export { useStory } from "./hooks/useStory";
+export { StoryCard } from "./components/StoryCard";
 export { StoryInput } from "./components/StoryInput";
 export { StoryMessageItem } from "./components/StoryMessageItem";
 export {

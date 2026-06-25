@@ -1,0 +1,21 @@
+/* Список/редактор narrator-шаблонов — верхний отступ под Full Screen (тот же приём, что в characters.css). */
+.nt-page {
+  min-height: 100dvh;
+  padding-top: calc(
+    8px +
+    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
+  padding-bottom: 24px;
+}
+
+/* Полноэкранные состояния (спиннер загрузки / «не найдено») — по центру экрана. */
+.nt-page__fullcenter {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100dvh;
+  padding: 16px;
+  text-align: center;
+  color: var(--tgui--hint_color, #7d8b99);
+}

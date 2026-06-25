@@ -61,6 +61,9 @@ const StoriesPage = lazy(() =>
 const StoryNewPage = lazy(() =>
   import("../pages/narrator/StoryNewPage").then((m) => ({ default: m.StoryNewPage }))
 );
+const StoriesAllPage = lazy(() =>
+  import("../pages/narrator/StoriesAllPage").then((m) => ({ default: m.StoriesAllPage }))
+);
 const StoryPage = lazy(() =>
   import("../pages/narrator/StoryPage").then((m) => ({ default: m.StoryPage }))
 );
@@ -115,6 +118,7 @@ export function AnimatedRoutes() {
           {/* Narrator-режим. Статические /new стоят раньше /:id. */}
           <Route path={ROUTES.stories} element={<StoriesPage />} />
           <Route path={ROUTES.storyNew} element={<StoryNewPage />} />
+          <Route path={ROUTES.storyAll} element={<StoriesAllPage />} />
           <Route path={ROUTES.storyView} element={<StoryPage />} />
           <Route path={ROUTES.books} element={<BooksListPage />} />
           <Route path={ROUTES.bookNew} element={<BookEditPage />} />

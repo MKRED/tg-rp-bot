@@ -5,6 +5,7 @@ import { ROUTES, narratorTemplateEditPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { MAX_TEMPLATES_PER_USER, useTemplates } from "../../features/narrator-templates";
+import "./narrator-templates.css";
 
 /** Экран «Narrator-шаблоны»: список + кнопка создания. */
 export function TemplatesListPage() {
@@ -14,7 +15,7 @@ export function TemplatesListPage() {
 
   return (
     <PageTransition>
-      <div style={{ paddingBottom: 24 }}>
+      <div className="nt-page">
         <List>
           <Section header="Narrator-шаблоны" footer="Инструкция нарратора для режима «Режиссёр истории»">
             {loading && (
