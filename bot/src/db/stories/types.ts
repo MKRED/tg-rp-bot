@@ -21,6 +21,17 @@ export type StoryMessageInPath = {
   siblings: number[];
 };
 
+/** Узел дерева истории плоским массивом с флагом активного пути — для страницы графа. */
+export type StoryTreeNode = {
+  id: number;
+  parentId: number | null;
+  role: "user" | "assistant";
+  kind: "beat" | "continue" | "directive";
+  content: string;
+  isOnActivePath: boolean;
+  createdAt: string;
+};
+
 /** Настройки перевода истории (значения из story_settings либо дефолты). */
 export type StorySettingsRow = {
   translateEnabled: boolean;

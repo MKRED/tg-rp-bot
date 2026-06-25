@@ -7,6 +7,7 @@ import {
   deleteStory,
   getStory,
   getStorySettings,
+  getStoryTree,
   listStories,
   renameStory,
   updateStoryPremise,
@@ -198,6 +199,23 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
       return c.json({ settings });
     } catch (err) {
       logger.error({ err, userId: user.id, storyId }, "Failed to update story settings");
+      return c.json({ error: "Internal error" }, 500);
+    }
+  });
+
+  // ─── Граф (дерево истории для React Flow) ─────────────────────────────────
+  app.get("/:id/tree", async (c) => {
+    const user = c.get("tgUser");
+    if (!user) return c.json({ error: "Auth required" }, 401);
+    const storyId = Number(c.req.param("id"));
+    try {
+      // openingBeat обязателен, так что у валидной истории дерево не бывает пустым:
+      // пустой массив = история не найдена / не принадлежит пользователю.
+      const nodes = await getStoryTree(user.id, storyId);
+      if (nodes.length === 0) return c.json({ error: "Story not found" }, 404);
+      return c.json({ nodes });
+    } catch (err) {
+      logger.error({ err, userId: user.id, storyId }, "Failed to load story tree");
       return c.json({ error: "Internal error" }, 500);
     }
   });

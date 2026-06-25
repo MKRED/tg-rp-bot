@@ -5,6 +5,7 @@ export { useAllStories } from "./hooks/useAllStories";
 export { useStory } from "./hooks/useStory";
 export { useStorySettings } from "./hooks/useStorySettings";
 export { useStoryAutoTranslate } from "./hooks/useStoryAutoTranslate";
+export { useStoryTree } from "./hooks/useStoryTree";
 export { StoryCard } from "./components/StoryCard";
 export { StoryInput } from "./components/StoryInput";
 export { StoryHeader } from "./components/StoryHeader";
@@ -30,6 +31,7 @@ export type {
   StoryListItem,
   StoryMessage,
   StoryMessageKind,
+  StoryTreeNode,
   StoryDetail,
   StoryCreateInput,
   StorySettings,

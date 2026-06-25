@@ -10,7 +10,7 @@ export function useChatTree(chatId: number) {
     setLoading(true);
     getChatTree(chatId)
       .then(setNodes)
-      .catch(() => {})
+      .catch((err) => console.error("Failed to load chat tree", err))
       .finally(() => setLoading(false));
   }, [chatId]);
 

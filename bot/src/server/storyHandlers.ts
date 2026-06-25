@@ -160,7 +160,13 @@ export async function handleRegenerateStoryBeat(c: Ctx) {
   });
 }
 
-/** POST /:id/messages/:msgId/branch — переключает активную ветку (курсор ровно на узел). */
+/**
+ * POST /:id/messages/:msgId/branch — переключает активную ветку. По биту фиксируем курсор ровно
+ * на узле (можно ответвиться отсюда — как в RP-графе). По user-ходу (директива/«Дальше») курсор
+ * ставить нельзя: это эфемерный триггер, история обязана заканчиваться битом (тот же инвариант,
+ * что чинит pruneOrphanSteers при удалении) — спускаемся к его биту-листу. В ленте по стрелкам
+ * переключают только биты, поэтому развилка важна лишь для клика по узлу в графе.
+ */
 export async function handleSwitchStoryBranch(c: Ctx) {
   const user = c.get("tgUser");
   if (!user) return c.json({ error: "Auth required" }, 401);
@@ -175,7 +181,12 @@ export async function handleSwitchStoryBranch(c: Ctx) {
     const msg = await getStoryMessage(userId, msgId);
     if (!msg || msg.storyChatId !== storyId) return c.json({ error: "Message not found" }, 404);
 
-    await setActiveStoryMessage(storyId, msgId);
+    if (msg.kind === "beat") {
+      await setActiveStoryMessage(storyId, msgId);
+    } else {
+      // updateActiveStoryMessage спускается к листу (самому свежему биту-потомку директивы).
+      await updateActiveStoryMessage(storyId, msgId);
+    }
     return c.json({ ok: true });
   } catch (err) {
     logger.error({ err, userId, storyId, msgId }, "Failed to switch story branch");

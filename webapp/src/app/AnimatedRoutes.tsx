@@ -70,6 +70,9 @@ const StoryPage = lazy(() =>
 const StorySettingsPage = lazy(() =>
   import("../pages/narrator/StorySettingsPage").then((m) => ({ default: m.StorySettingsPage }))
 );
+const StoryGraphPage = lazy(() =>
+  import("../pages/narrator/StoryGraphPage").then((m) => ({ default: m.StoryGraphPage }))
+);
 const BooksListPage = lazy(() =>
   import("../pages/knowledge-books/BooksListPage").then((m) => ({ default: m.BooksListPage }))
 );
@@ -122,8 +125,9 @@ export function AnimatedRoutes() {
           <Route path={ROUTES.stories} element={<StoriesPage />} />
           <Route path={ROUTES.storyNew} element={<StoryNewPage />} />
           <Route path={ROUTES.storyAll} element={<StoriesAllPage />} />
-          {/* Более специфичный /stories/:id/settings — раньше /stories/:id (порядок = намерение). */}
+          {/* Более специфичные /stories/:id/settings и /graph — раньше /stories/:id (порядок = намерение). */}
           <Route path={ROUTES.storySettings} element={<StorySettingsPage />} />
+          <Route path={ROUTES.storyGraph} element={<StoryGraphPage />} />
           <Route path={ROUTES.storyView} element={<StoryPage />} />
           <Route path={ROUTES.books} element={<BooksListPage />} />
           <Route path={ROUTES.bookNew} element={<BookEditPage />} />

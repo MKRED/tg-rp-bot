@@ -26,6 +26,17 @@ export type StoryMessage = {
   siblings: number[];
 };
 
+/** Узел дерева истории для графа веток (плоский массив + флаг активного пути). */
+export type StoryTreeNode = {
+  id: number;
+  parentId: number | null;
+  role: "user" | "assistant";
+  kind: StoryMessageKind;
+  content: string;
+  isOnActivePath: boolean;
+  createdAt: string;
+};
+
 /** Настройки перевода истории — зеркало ChatSettings под narrator. */
 export type StorySettings = {
   translateEnabled: boolean;

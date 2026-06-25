@@ -1,7 +1,7 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { storySettingsPath } from "../../app/routes";
+import { storyGraphPath, storySettingsPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { RpText } from "../../shared/components/RpText";
@@ -164,6 +164,7 @@ export function StoryPage() {
       <div style={{ display: "flex", flexDirection: "column", height: "100dvh" }}>
         <StoryHeader
           title={story.title ?? story.book.name}
+          onGraphClick={() => navigate(storyGraphPath(id))}
           onSettingsClick={() => navigate(storySettingsPath(id))}
         />
 

@@ -13,48 +13,58 @@ import "@xyflow/react/dist/style.css";
 import { Spinner } from "@telegram-apps/telegram-ui";
 import { useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { chatViewPath } from "../../app/routes";
+import { storyViewPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { NODE_H, NODE_W, layoutTreeNodes } from "../../shared/graph/treeLayout";
-import { useChatTree } from "../../features/rp-chat";
-import { switchBranch } from "../../features/rp-chat/api/messages-api";
-import type { TreeNode } from "../../features/rp-chat";
-import "./rp-chat.css";
+import { switchBranch, useStoryTree } from "../../features/narrator";
+import type { StoryTreeNode } from "../../features/narrator";
+import "./narrator.css";
 
 // ─── Кастомный тип узла ────────────────────────────────────────────────────────
 
-type ChatNodeData = {
-  node: TreeNode;
+type StoryNodeData = {
+  node: StoryTreeNode;
 };
 
-function ChatNode({ data }: NodeProps<Node<ChatNodeData>>) {
+// Ярлык узла по его роли в дереве истории (kind, а не role — у narrator user-ход бывает двух видов).
+const KIND_LABEL: Record<StoryTreeNode["kind"], string> = {
+  beat: "Бит",
+  directive: "Режиссёр",
+  continue: "Дальше",
+};
+
+function StoryNode({ data }: NodeProps<Node<StoryNodeData>>) {
   const { node } = data;
-  const preview = node.content.length > 60
-    ? `${node.content.slice(0, 60)}…`
-    : node.content;
+  // continue хранит служебный CONTINUE_MARKER, а не прозу — для него показываем ярлык-стрелку,
+  // иначе в узле торчал бы технический маркер. beat/directive показывают усечённый текст.
+  const preview =
+    node.kind === "continue"
+      ? "▸ продолжение"
+      : node.content.length > 60
+        ? `${node.content.slice(0, 60)}…`
+        : node.content;
 
   return (
-    <div className={`rp-chat-graph-node${node.isOnActivePath ? " rp-chat-graph-node--active" : ""}`}>
-      <Handle type="target" position={Position.Top} className="rp-chat-graph-node__handle" />
-      <div className="rp-chat-graph-node__role">
-        {node.role === "assistant" ? "ИИ" : "Игрок"}
-      </div>
-      <div className="rp-chat-graph-node__text">{preview}</div>
-      <Handle type="source" position={Position.Bottom} className="rp-chat-graph-node__handle" />
+    <div className={`story-graph-node${node.isOnActivePath ? " story-graph-node--active" : ""}`}>
+      <Handle type="target" position={Position.Top} className="story-graph-node__handle" />
+      <div className="story-graph-node__role">{KIND_LABEL[node.kind]}</div>
+      <div className="story-graph-node__text">{preview}</div>
+      <Handle type="source" position={Position.Bottom} className="story-graph-node__handle" />
     </div>
   );
 }
 
-const nodeTypes = { chatNode: ChatNode };
+const nodeTypes = { storyNode: StoryNode };
 
 // ─── Страница ─────────────────────────────────────────────────────────────────
 
-export function RpChatGraphPage() {
+/** Граф веток истории (Narrator): всё дерево битов/директив/«Дальше», клик переключает ветку. */
+export function StoryGraphPage() {
   const { id } = useParams<{ id: string }>();
-  const chatId = Number(id);
+  const storyId = Number(id);
   const navigate = useTransitionNavigate();
-  const { nodes: treeNodes, loading } = useChatTree(chatId);
+  const { nodes: treeNodes, loading } = useStoryTree(storyId);
 
   const positions = useMemo(() => layoutTreeNodes(treeNodes), [treeNodes]);
 
@@ -62,9 +72,9 @@ export function RpChatGraphPage() {
     () =>
       treeNodes.map((n) => ({
         id: String(n.id),
-        type: "chatNode",
+        type: "storyNode",
         position: positions.get(n.id) ?? { x: 0, y: 0 },
-        data: { node: n } satisfies ChatNodeData,
+        data: { node: n } satisfies StoryNodeData,
       })),
     [treeNodes, positions],
   );
@@ -84,7 +94,7 @@ export function RpChatGraphPage() {
 
   // Текущая активная ячейка = самый глубокий узел активного пути (его и центрируем при открытии).
   const activeNode = useMemo(() => {
-    let best: TreeNode | null = null;
+    let best: StoryTreeNode | null = null;
     for (const n of treeNodes) {
       if (!n.isOnActivePath) continue;
       const p = positions.get(n.id);
@@ -108,28 +118,30 @@ export function RpChatGraphPage() {
     [activeNode, positions],
   );
 
-  // При ошибке переключения остаёмся в графе (не уходим в чат с устаревшим активным путём) и логируем.
+  // Клик по узлу переключает ветку. handleSwitchStoryBranch на сервере: по биту ставит курсор
+  // ровно на узел (можно ответвиться отсюда), по директиве/«Дальше» спускается к их биту-листу
+  // (история обязана заканчиваться битом). При ошибке остаёмся в графе, не переходя в ленту.
   const handleNodeClick = useCallback(
     async (_: React.MouseEvent, node: Node) => {
       try {
-        await switchBranch(chatId, Number(node.id));
-        navigate(chatViewPath(chatId));
+        await switchBranch(storyId, Number(node.id));
+        navigate(storyViewPath(storyId));
       } catch (err) {
-        console.error("Failed to switch chat branch", err);
+        console.error("Failed to switch story branch", err);
       }
     },
-    [chatId, navigate],
+    [storyId, navigate],
   );
 
   return (
     <PageTransition>
-      <div className="rp-chat-graph-page">
+      <div className="story-graph-page">
         {loading ? (
-          <div className="rp-chat-loading">
+          <div className="story-page__fullcenter">
             <Spinner size="m" />
           </div>
         ) : (
-          <div className="rp-chat-graph-page__flow">
+          <div className="story-graph-page__flow">
             <ReactFlow
               nodes={rfNodes}
               edges={rfEdges}

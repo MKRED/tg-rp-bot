@@ -47,6 +47,8 @@ export const ROUTES = {
   storyView: "/stories/:id",
   /** Настройки конкретной истории (название, привязки, премиза, удаление). */
   storySettings: "/stories/:id/settings",
+  /** Граф веток конкретной истории. */
+  storyGraph: "/stories/:id/graph",
   /** Список книг знаний. */
   books: "/books",
   /** Форма создания новой книги знаний. */
@@ -66,6 +68,9 @@ export const storyViewPath = (id: number): string => `/stories/${id}`;
 
 /** Путь к настройкам конкретной истории. */
 export const storySettingsPath = (id: number): string => `/stories/${id}/settings`;
+
+/** Путь к графу веток конкретной истории. */
+export const storyGraphPath = (id: number): string => `/stories/${id}/graph`;
 
 /** Путь к редактированию книги знаний. */
 export const bookEditPath = (id: number): string => `/books/${id}`;
@@ -107,8 +112,8 @@ export function parentPath(pathname: string): string {
     return `/chats/${id}`;
   }
   if (pathname.startsWith("/chats/")) return ROUTES.chats;
-  if (/^\/stories\/\d+\/settings$/.test(pathname)) {
-    // Настройки истории → назад к самой истории
+  if (/^\/stories\/\d+\/(settings|graph)$/.test(pathname)) {
+    // Настройки и граф истории → назад к самой истории
     const id = pathname.split("/")[2];
     return `/stories/${id}`;
   }

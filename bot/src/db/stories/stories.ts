@@ -4,8 +4,14 @@ import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/in
 import { db, schema } from "../index.js";
 import type { StoryChat } from "../schema.js";
 import { decryptStoryTranslations } from "./crypto.js";
-import { findLastStoryLeaf, queryStoryActivePath } from "./queries.js";
-import type { StoryDetail, StoryInput, StoryListItem, StoryMessageInPath } from "./types.js";
+import { findLastStoryLeaf, queryStoryActivePath, queryStoryActivePathIds } from "./queries.js";
+import type {
+  StoryDetail,
+  StoryInput,
+  StoryListItem,
+  StoryMessageInPath,
+  StoryTreeNode,
+} from "./types.js";
 
 /** Маппит сырую строку пути в StoryMessageInPath, расшифровывая content и translations. */
 function mapPathRow(r: Record<string, unknown>, key: Buffer): StoryMessageInPath {
@@ -140,6 +146,53 @@ export async function getStory(userId: number, storyId: number): Promise<StoryDe
     activeMessageId,
     messages,
   };
+}
+
+/** Все сообщения истории плоским массивом с флагом isOnActivePath (для страницы графа). */
+export async function getStoryTree(userId: number, storyId: number): Promise<StoryTreeNode[]> {
+  const t0 = Date.now();
+
+  // Проверяем принадлежность истории пользователю.
+  const storyRows = await db
+    .select({ id: schema.storyChats.id, activeMessageId: schema.storyChats.activeMessageId })
+    .from(schema.storyChats)
+    .where(and(eq(schema.storyChats.id, storyId), eq(schema.storyChats.userId, userId)));
+  const story = storyRows[0];
+  if (!story) return [];
+
+  const activePath = story.activeMessageId
+    ? await queryStoryActivePathIds(story.activeMessageId)
+    : new Set<number>();
+
+  const allRows = await db
+    .select({
+      id: schema.storyMessages.id,
+      parentId: schema.storyMessages.parentId,
+      role: schema.storyMessages.role,
+      kind: schema.storyMessages.kind,
+      content: schema.storyMessages.content,
+      createdAt: schema.storyMessages.createdAt,
+    })
+    .from(schema.storyMessages)
+    .where(eq(schema.storyMessages.storyChatId, storyId))
+    .orderBy(schema.storyMessages.createdAt);
+
+  logger.debug(
+    { durationMs: Date.now() - t0, userId, storyId, count: allRows.length },
+    "Story tree loaded",
+  );
+
+  // content зашифрован per-user — расшифровываем для узлов графа.
+  const key = getUserEncryptionKey(userId);
+  return allRows.map((r) => ({
+    id: r.id,
+    parentId: r.parentId,
+    role: r.role as "user" | "assistant",
+    kind: r.kind as "beat" | "continue" | "directive",
+    content: decryptField(r.content, key),
+    isOnActivePath: activePath.has(r.id),
+    createdAt: r.createdAt.toISOString(),
+  }));
 }
 
 /**

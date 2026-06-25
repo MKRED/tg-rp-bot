@@ -49,6 +49,25 @@ export async function queryStoryActivePath(
   return rows as Record<string, unknown>[];
 }
 
+/** ID активного пути (только id) от листа к корню — для флага isOnActivePath в графе. */
+export async function queryStoryActivePathIds(activeMessageId: number): Promise<Set<number>> {
+  const t0 = Date.now();
+  const pathRows = await db.execute(sql`
+    WITH RECURSIVE path AS (
+      SELECT id, parent_id FROM story_messages WHERE id = ${activeMessageId}
+      UNION ALL
+      SELECT m.id, m.parent_id FROM story_messages m JOIN path p ON m.id = p.parent_id
+    )
+    SELECT id FROM path
+  `);
+  const ids = new Set((pathRows as unknown as { id: unknown }[]).map((r) => Number(r.id)));
+  logger.debug(
+    { durationMs: Date.now() - t0, activeMessageId, pathLen: ids.size },
+    "Story active path ids queried",
+  );
+  return ids;
+}
+
 /** Последний лист дерева (самый свежий узел без детей). Нужен для самовосстановления курсора. */
 export async function findLastStoryLeaf(storyChatId: number): Promise<number | null> {
   const t0 = Date.now();
