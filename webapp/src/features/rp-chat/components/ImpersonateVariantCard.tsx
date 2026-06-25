@@ -2,8 +2,8 @@ import { Spinner } from "@telegram-apps/telegram-ui";
 import { Globe, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { confirmAction } from "../../../shared/telegram/confirm";
+import { RpText } from "../../../shared/components/RpText";
 import { translateText } from "../api/impersonate-api";
-import { RpText } from "./RpText";
 
 interface ImpersonateVariantCardProps {
   chatId: number;

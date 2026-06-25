@@ -2,6 +2,7 @@ import { Spinner } from "@telegram-apps/telegram-ui";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { PageTransition } from "../../shared/components/PageTransition";
+import { RpText } from "../../shared/components/RpText";
 import {
   StoryInput,
   StoryMessageItem,
@@ -144,7 +145,7 @@ export function StoryPage() {
 
           {streamingText !== null && (
             <div style={{ margin: "8px 0", whiteSpace: "pre-wrap", lineHeight: 1.5, color: "var(--tgui--text_color)" }}>
-              {streamingText || <Spinner size="s" />}
+              {streamingText ? <RpText text={streamingText} /> : <Spinner size="s" />}
             </div>
           )}
 

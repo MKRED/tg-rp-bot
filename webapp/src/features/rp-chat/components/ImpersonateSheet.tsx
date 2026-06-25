@@ -3,8 +3,8 @@ import { motion } from "framer-motion";
 import { Sparkles, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useImpersonate } from "../hooks/useImpersonate";
+import { RpText } from "../../../shared/components/RpText";
 import { ImpersonateVariantCard } from "./ImpersonateVariantCard";
-import { RpText } from "./RpText";
 
 interface ImpersonateSheetProps {
   chatId: number;

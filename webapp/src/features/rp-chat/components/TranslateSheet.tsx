@@ -4,8 +4,8 @@ import { Languages, SendHorizontal, X } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { useComposeTranslate } from "../hooks/useComposeTranslate";
 import type { TranslateMode } from "../api/translate-api";
+import { RpText } from "../../../shared/components/RpText";
 import { LangPicker } from "./LangPicker";
-import { RpText } from "./RpText";
 
 interface TranslateSheetProps {
   chatId: number;

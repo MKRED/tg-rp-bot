@@ -1,4 +1,4 @@
-import { RpText } from "./RpText";
+import { RpText } from "../../../shared/components/RpText";
 
 interface StreamingBubbleProps {
   text: string;

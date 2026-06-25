@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight, Clapperboard, RefreshCw, Trash2 } from "lucide-react";
+import { RpText } from "../../../shared/components/RpText";
 import type { StoryMessage } from "../types/story";
 
 interface StoryMessageItemProps {
@@ -68,7 +69,7 @@ export function StoryMessageItem({
           color: "var(--tgui--text_color)",
         }}
       >
-        {message.content}
+        <RpText text={message.content} />
       </div>
 
       {showActions && (

@@ -2,8 +2,8 @@ import { Spinner } from "@telegram-apps/telegram-ui";
 import { Check, ChevronLeft, ChevronRight, Copy, Globe, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { confirmAction } from "../../../shared/telegram/confirm";
+import { RpText } from "../../../shared/components/RpText";
 import type { MessageInPath } from "../types/chat";
-import { RpText } from "./RpText";
 
 interface MessageBubbleProps {
   message: MessageInPath;

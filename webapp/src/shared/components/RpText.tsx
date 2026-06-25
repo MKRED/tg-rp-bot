@@ -1,5 +1,5 @@
 import "./RpText.css";
-import { parseRpText } from "../lib/parseRpText";
+import { parseRpText } from "../text/parseRpText";
 
 interface RpTextProps {
   text: string;
