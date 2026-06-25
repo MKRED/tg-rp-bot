@@ -2,8 +2,8 @@
 
 export type StoryInput = {
   bookId: number;
-  templateId: number | null;
-  presetId: number | null;
+  templateId: number;
+  presetId: number;
 };
 
 /** Сообщение активного пути истории с информацией о сиблингах (для стрелок ← → в UI). */

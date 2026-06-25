@@ -14,6 +14,21 @@ import type { AppVariables } from "./initData.js";
 
 const MAX_TEMPLATES_PER_USER = 50;
 
+/** Проверяет, является ли ошибка нарушением FK-ограничения PostgreSQL (SQLSTATE 23503).
+ *  DrizzleQueryError оборачивает нативный PostgresError в .cause — проверяем оба уровня. */
+const isFkViolation = (err: unknown): boolean => {
+  if (typeof err !== "object" || err === null) return false;
+  const e = err as Record<string, unknown>;
+  if (e.code === "23503") return true;
+  const cause = e.cause;
+  return (
+    typeof cause === "object" &&
+    cause !== null &&
+    "code" in (cause as object) &&
+    (cause as Record<string, unknown>).code === "23503"
+  );
+};
+
 function parseInput(body: unknown): { input: NarratorTemplateInput } | { error: string } {
   if (typeof body !== "object" || body === null) return { error: "Body must be an object" };
   const b = body as Record<string, unknown>;
@@ -90,11 +105,12 @@ export function createNarratorTemplateRoutes(): Hono<{ Variables: AppVariables }
     const id = Number(c.req.param("id"));
     if (!Number.isInteger(id)) return c.json({ error: "Invalid id" }, 400);
     try {
-      // story_chats.template_id = set null при удалении → FK-конфликта быть не может.
       const deleted = await deleteNarratorTemplate(user.id, id);
       if (!deleted) return c.json({ error: "Not found" }, 404);
       return c.json({ ok: true });
     } catch (err) {
+      // FK нарушение (23503): шаблон привязан к истории (story_chats.template_id NOT NULL).
+      if (isFkViolation(err)) return c.json({ error: "in_use" }, 409);
       logger.error({ err, userId: user.id, id }, "Failed to delete narrator template");
       return c.json({ error: "Internal error" }, 500);
     }

@@ -48,7 +48,7 @@ export function PresetEditPage() {
       .catch(async (err) => {
         setSubmitting(false);
         if (err instanceof ApiError && err.status === 409) {
-          await showAlert("Пресет используется в чате. Сначала удалите чат.", "Нельзя удалить");
+          await showAlert("Пресет используется в чате или истории. Сначала удалите их.", "Нельзя удалить");
         }
       });
   };

@@ -1,4 +1,4 @@
-import { Button, Input, Section, Switch, Textarea } from "@telegram-apps/telegram-ui";
+import { Button, Input, Section, Select, Switch, Textarea } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { useCharacters } from "../../characters";
 import { createEntry, removeEntry, updateEntry } from "../api/books-api";
@@ -84,20 +84,18 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
       </div>
 
       {mode === "character" ? (
-        <div style={{ padding: "8px 16px" }}>
-          <select
-            value={characterId ?? ""}
-            onChange={(e) => setCharacterId(e.target.value ? Number(e.target.value) : null)}
-            style={{ width: "100%", padding: 10, borderRadius: 8 }}
-          >
-            <option value="">— выберите персонажа —</option>
-            {characters.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <Select
+          header="Персонаж"
+          value={characterId ?? ""}
+          onChange={(e) => setCharacterId(e.target.value ? Number(e.target.value) : null)}
+        >
+          <option value="">— выберите персонажа —</option>
+          {characters.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </Select>
       ) : (
         <Textarea
           header="Текст записи"

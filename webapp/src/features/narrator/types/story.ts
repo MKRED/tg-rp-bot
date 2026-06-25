@@ -37,8 +37,9 @@ export type StoryDetail = {
 
 export type StoryCreateInput = {
   bookId: number;
-  templateId: number | null;
-  presetId: number | null;
+  // Шаблон и пресет обязательны (валидируется на сервере и в БД).
+  templateId: number;
+  presetId: number;
   openingBeat: string;
   premise: string;
 };

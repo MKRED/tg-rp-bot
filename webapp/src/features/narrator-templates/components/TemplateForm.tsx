@@ -1,5 +1,6 @@
-import { Button, Input, Section, Textarea } from "@telegram-apps/telegram-ui";
+import { Button, Input, Section } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
+import { ExpandableTextarea } from "../../../shared/components/ExpandableTextarea";
 import type { NarratorTemplate, NarratorTemplateInput } from "../types/template";
 
 /** Подсказка-плейсхолдер: что писать в нарратор-инструкции (дефолт применяется, если оставить пусто). */
@@ -29,15 +30,17 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
-      <Textarea
+      <ExpandableTextarea
         header="Инструкция нарратора"
         placeholder={SYSTEM_PLACEHOLDER}
+        rows={6}
         value={systemPrompt}
         onChange={(e) => setSystemPrompt(e.target.value)}
       />
-      <Textarea
+      <ExpandableTextarea
         header="После истории (необязательно)"
         placeholder="Доп. инструкция перед каждым битом"
+        rows={6}
         value={postHistory}
         onChange={(e) => setPostHistory(e.target.value)}
       />

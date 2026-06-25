@@ -12,7 +12,8 @@ import {
   useTemplate,
   type NarratorTemplateInput,
 } from "../../features/narrator-templates";
-import { confirmAction } from "../../shared/telegram/confirm";
+import { confirmAction, showAlert } from "../../shared/telegram/confirm";
+import { ApiError } from "../../shared/api/client";
 
 /** Экран создания/редактирования narrator-шаблона. */
 export function TemplateEditPage() {
@@ -31,12 +32,18 @@ export function TemplateEditPage() {
 
   const handleDelete = async () => {
     if (id === undefined) return;
-    const confirmed = await confirmAction("Удалить шаблон? Истории, где он выбран, продолжат работать с дефолтом.");
+    const confirmed = await confirmAction("Удалить шаблон? Это действие необратимо.");
     if (!confirmed) return;
     setSubmitting(true);
     removeTemplate(id)
       .then(() => navigate(ROUTES.narratorTemplates))
-      .catch(() => setSubmitting(false));
+      .catch(async (err) => {
+        setSubmitting(false);
+        // 409 — FK нарушение: шаблон выбран в истории, сервер блокирует удаление.
+        if (err instanceof ApiError && err.status === 409) {
+          await showAlert("Шаблон используется в истории. Сначала удалите историю.", "Нельзя удалить");
+        }
+      });
   };
 
   if (loading) {

@@ -51,8 +51,12 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
     if (!openingBeat) return c.json({ error: "openingBeat is required" }, 400);
 
     const premise = typeof body.premise === "string" ? body.premise.trim() : "";
+
+    // Шаблон и пресет — ОБЯЗАТЕЛЬНЫ (как книга).
     const templateId = typeof body.templateId === "number" ? body.templateId : null;
+    if (templateId === null) return c.json({ error: "templateId is required" }, 400);
     const presetId = typeof body.presetId === "number" ? body.presetId : null;
+    if (presetId === null) return c.json({ error: "presetId is required" }, 400);
 
     try {
       await ensureUser(user);
@@ -60,10 +64,10 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
       // Все привязки должны принадлежать пользователю.
       const book = await getBook(userId, bookId);
       if (!book) return c.json({ error: "Book not found" }, 404);
-      if (templateId !== null && !(await getNarratorTemplate(userId, templateId))) {
+      if (!(await getNarratorTemplate(userId, templateId))) {
         return c.json({ error: "Template not found" }, 404);
       }
-      if (presetId !== null && !(await getPreset(userId, presetId))) {
+      if (!(await getPreset(userId, presetId))) {
         return c.json({ error: "Preset not found" }, 404);
       }
 

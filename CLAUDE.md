@@ -106,8 +106,9 @@ RP-чата), переиспользуя только реально переи�
 - **БД:** `knowledge_books` + `knowledge_book_entries` (lorebook: запись = ссылка на персонажа **или**
   свободный текст; `activation` поэлементная `always_on|keyword`, keyword — задел), `narrator_templates`
   (только системный промпт нарратора; сэмплинг по-прежнему из `generation_presets`), `story_chats`
-  (`openingBeat` **обязателен** — дословный бит 1; `premise` опц.; `bookId` обяз., `templateId`/`presetId`
-  опц.) + `story_messages` (дерево, `kind: beat|continue|directive`).
+  (`openingBeat` **обязателен** — дословный бит 1; `premise` опц.; `bookId`/`templateId`/`presetId`
+  **обяз.**, FK без onDelete = restrict → удаление используемого шаблона/пресета даёт 409 in_use)
+  + `story_messages` (дерево, `kind: beat|continue|directive`).
 - **Сервер:** `db/knowledge/`, `db/narratorTemplates.ts`, `db/stories/` (зеркало `db/chats/`);
   `server/storyPromptBuilder.ts` (+тест), `server/storyHandlers.ts`, роуты `books`/`narrator-templates`/
   `stories`.

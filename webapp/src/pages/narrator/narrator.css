@@ -1,0 +1,33 @@
+/* Форма создания новой истории (Режиссёр истории) — раскладка ячеек/иконок как в новом RP-чате */
+.story-new-page {
+  min-height: 100dvh;
+  padding-top: calc(
+    8px +
+    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
+  padding-bottom: calc(env(safe-area-inset-bottom, 0) + 16px);
+}
+
+.story-new-page__submit {
+  padding: 16px;
+}
+
+.story-new-page__center {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0;
+}
+
+.story-new-page__icon {
+  color: var(--tg-theme-link-color, #2481cc);
+}
+
+/* Приглушённая иконка-подсказка для незаполненных/дефолтных полей */
+.story-new-page__icon--hint {
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.story-new-page__chevron {
+  color: var(--tg-theme-hint-color, #999);
+}

@@ -377,8 +377,8 @@ export type NewNarratorTemplate = typeof narratorTemplates.$inferInsert;
 
 /**
  * Narrator-история: ИИ ведёт повествование, пользователь — режиссёр. Отдельно от chats (без персоны/
- * одного персонажа — персонажи берутся из книги знаний). bookId обязателен; template — источник
- * системного промпта; preset — только сэмплинг. openingBeat (зашифрован) ОБЯЗАТЕЛЕН — дословный бит 1.
+ * одного персонажа — персонажи берутся из книги знаний). bookId/templateId/presetId обязательны;
+ * template — источник системного промпта; preset — только сэмплинг. openingBeat (зашифрован) ОБЯЗАТЕЛЕН — дословный бит 1.
  * premise (зашифрован) опционален — системная вводная «куда вести сцену».
  * activeMessageId — курсор активной ветки; намеренно НЕ FK (цикл story_chats ↔ story_messages).
  */
@@ -390,12 +390,14 @@ export const storyChats = pgTable("story_chats", {
   bookId: bigint("book_id", { mode: "number" })
     .notNull()
     .references(() => knowledgeBooks.id),
-  templateId: bigint("template_id", { mode: "number" }).references(() => narratorTemplates.id, {
-    onDelete: "set null",
-  }),
-  presetId: bigint("preset_id", { mode: "number" }).references(() => generationPresets.id, {
-    onDelete: "set null",
-  }),
+  // Шаблон и пресет обязательны (как у RP-чата). FK без onDelete = NO ACTION (restrict):
+  // удаление используемого шаблона/пресета блокируется на уровне БД (23503 → 409 in_use).
+  templateId: bigint("template_id", { mode: "number" })
+    .notNull()
+    .references(() => narratorTemplates.id),
+  presetId: bigint("preset_id", { mode: "number" })
+    .notNull()
+    .references(() => generationPresets.id),
   title: text("title"),
   // Авторское открытие — дословный первый бит (assistant). Зашифровано per-user, как content сообщений.
   openingBeat: text("opening_beat").notNull(),
