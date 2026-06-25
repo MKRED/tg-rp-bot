@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import logger from "../../logger.js";
 import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/index.js";
 import { db, schema } from "../index.js";
@@ -104,8 +104,58 @@ export async function setActiveStoryMessage(
 }
 
 /**
- * Удаляет сообщение истории и всё поддерево. Если курсор указывал внутрь удаляемого — переключает
- * на родителя (или null для корня). Зеркало db/chats/messages.ts deleteMessage.
+ * Поднимается от startId вверх, удаляя осиротевшие user-ходы (директива/continue без бита-ребёнка).
+ * Такой узел — мёртвый триггер: его последствие (следующий бит) удалено, история не должна на нём
+ * заканчиваться (висящая директива-чип в ленте; continue в ленте скрыт, но так же ломает состояние).
+ * Останавливаемся на первом бите (assistant) или узле, у которого ещё остались дети (например
+ * бит-сиблинг после регенерации). Возвращает узел-«выжившего» (на него встанет курсор) и id удалённых.
+ */
+async function pruneOrphanSteers(
+  storyChatId: number,
+  startId: number | null,
+): Promise<{ survivor: number | null; prunedIds: Set<number> }> {
+  const prunedIds = new Set<number>();
+  let current = startId;
+  while (current != null) {
+    const rows = await db
+      .select({
+        id: schema.storyMessages.id,
+        role: schema.storyMessages.role,
+        parentId: schema.storyMessages.parentId,
+      })
+      .from(schema.storyMessages)
+      .where(
+        and(eq(schema.storyMessages.id, current), eq(schema.storyMessages.storyChatId, storyChatId)),
+      );
+    const node = rows[0];
+    if (!node) break;
+    // Бит (assistant) — валидный конец истории, выше не поднимаемся.
+    if (node.role !== "user") break;
+    // Есть ещё дети (другая ветка/бит-сиблинг) — это не сирота, оставляем.
+    const children = await db
+      .select({ id: schema.storyMessages.id })
+      .from(schema.storyMessages)
+      .where(
+        and(
+          eq(schema.storyMessages.parentId, current),
+          eq(schema.storyMessages.storyChatId, storyChatId),
+        ),
+      )
+      .limit(1);
+    if (children.length > 0) break;
+    // Осиротевший user-ход — удаляем и поднимаемся к родителю.
+    await db.delete(schema.storyMessages).where(eq(schema.storyMessages.id, current));
+    prunedIds.add(current);
+    current = node.parentId;
+  }
+  return { survivor: current, prunedIds };
+}
+
+/**
+ * Удаляет сообщение истории и всё поддерево, затем вычищает осиротевшие user-ходы вверх (мёртвые
+ * триггеры без бита — история должна заканчиваться битом, а не висящей директивой). Если курсор
+ * указывал на что-либо удалённое — переставляет его на выжившего предка (бит). Зеркало
+ * db/chats/messages.ts deleteMessage + narrator-инвариант «конец истории = бит».
  */
 export async function deleteStoryMessage(
   userId: number,
@@ -136,10 +186,9 @@ export async function deleteStoryMessage(
   const descendantIds = new Set(
     (descendantRows as unknown as { id: unknown }[]).map((r) => Number(r.id)),
   );
-  const needsActiveUpdate =
-    story.activeMessageId != null && descendantIds.has(story.activeMessageId);
-
-  if (needsActiveUpdate) {
+  // Курсор временно снимаем, если он внутри удаляемого поддерева (activeMessageId — не FK, но
+  // не должен повисать на удалённом узле). Финально переставим его ниже, после прунинга.
+  if (story.activeMessageId != null && descendantIds.has(story.activeMessageId)) {
     await db
       .update(schema.storyChats)
       .set({ activeMessageId: null })
@@ -156,12 +205,28 @@ export async function deleteStoryMessage(
     DELETE FROM story_messages WHERE id IN (SELECT id FROM descendants)
   `);
 
-  if (needsActiveUpdate && msg.parentId != null) {
-    await updateActiveStoryMessage(storyChatId, msg.parentId);
+  // Вычищаем осиротевшую цепочку user-ходов над удалённым (директива → удалённый бит).
+  const { survivor, prunedIds } = await pruneOrphanSteers(storyChatId, msg.parentId);
+
+  // Курсор перезаписываем, если он указывал на ЛЮБОЙ удалённый узел — поддерево ИЛИ выпрунутую
+  // директиву (курсор мог стоять на ней — это и есть исправляемое «история кончается директивой»).
+  const removed = new Set([...descendantIds, ...prunedIds]);
+  if (story.activeMessageId != null && removed.has(story.activeMessageId)) {
+    if (survivor != null) {
+      await updateActiveStoryMessage(storyChatId, survivor);
+    } else {
+      // Поднялись до корня — не должно случаться: openingBeat удалять нельзя (защита в хендлере).
+      await setActiveStoryMessage(storyChatId, null);
+    }
   }
 
   logger.info(
-    { durationMs: Date.now() - t0, storyChatId, messageId, deletedCount: descendantIds.size },
+    {
+      durationMs: Date.now() - t0,
+      storyChatId,
+      messageId,
+      deletedCount: descendantIds.size + prunedIds.size,
+    },
     "Story message and descendants deleted",
   );
   return true;
