@@ -1,6 +1,8 @@
-import { Button, Input, Section, Select, Switch, Textarea } from "@telegram-apps/telegram-ui";
+import { Button, Cell, Input, List, Modal, Section, Switch } from "@telegram-apps/telegram-ui";
+import { ChevronRight } from "lucide-react";
 import { useState } from "react";
-import { useCharacters } from "../../characters";
+import { ExpandableTextarea } from "../../../shared/components/ExpandableTextarea";
+import { CharacterAvatar, useCharacters } from "../../characters";
 import { createEntry, removeEntry, updateEntry } from "../api/books-api";
 import type { Entry } from "../types/book";
 
@@ -28,6 +30,9 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
   const [content, setContent] = useState(initial?.content ?? "");
   const [enabled, setEnabled] = useState(initial?.enabled ?? true);
   const [submitting, setSubmitting] = useState(false);
+  const [charOpen, setCharOpen] = useState(false);
+
+  const selectedCharacter = characters.find((c) => c.id === characterId) ?? null;
 
   const valid = mode === "character" ? characterId != null : content.trim().length > 0;
 
@@ -84,22 +89,28 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
       </div>
 
       {mode === "character" ? (
-        <Select
-          header="Персонаж"
-          value={characterId ?? ""}
-          onChange={(e) => setCharacterId(e.target.value ? Number(e.target.value) : null)}
+        <Cell
+          before={
+            selectedCharacter ? (
+              <CharacterAvatar
+                id={selectedCharacter.id}
+                hasImage={selectedCharacter.hasImage}
+                name={selectedCharacter.name}
+                size={40}
+              />
+            ) : undefined
+          }
+          after={<ChevronRight size={20} style={{ opacity: 0.4 }} />}
+          subtitle={selectedCharacter ? "Персонаж" : "Обязательно"}
+          onClick={() => setCharOpen(true)}
         >
-          <option value="">— выберите персонажа —</option>
-          {characters.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </Select>
+          {selectedCharacter?.name ?? "Выберите персонажа"}
+        </Cell>
       ) : (
-        <Textarea
+        <ExpandableTextarea
           header="Текст записи"
           placeholder="Факт о мире / предмете / месте…"
+          rows={6}
           value={content}
           onChange={(e) => setContent(e.target.value)}
         />
@@ -123,6 +134,28 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
           </Button>
         )}
       </div>
+
+      {/* Модал выбора персонажа — вместо нативного select */}
+      <Modal
+        open={charOpen}
+        onOpenChange={setCharOpen}
+        header={<Modal.Header>Персонаж</Modal.Header>}
+      >
+        <List>
+          {characters.map((c) => (
+            <Cell
+              key={c.id}
+              before={<CharacterAvatar id={c.id} hasImage={c.hasImage} name={c.name} size={40} />}
+              onClick={() => {
+                setCharacterId(c.id);
+                setCharOpen(false);
+              }}
+            >
+              {c.name}
+            </Cell>
+          ))}
+        </List>
+      </Modal>
     </Section>
   );
 }
