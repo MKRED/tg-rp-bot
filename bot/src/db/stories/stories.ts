@@ -205,6 +205,32 @@ export async function renameStory(
   return { title };
 }
 
+/**
+ * Обновляет премизу истории (только свою). Премизу храним как есть (даже ""), как и createStory —
+ * без коэрции пусто→null: getStory читает её через `?? ""`. Возвращает применённое значение.
+ */
+export async function updateStoryPremise(
+  userId: number,
+  storyId: number,
+  rawPremise: string,
+): Promise<{ premise: string } | undefined> {
+  const t0 = Date.now();
+  const premise = rawPremise.trim();
+  const key = getUserEncryptionKey(userId);
+
+  const rows = await db
+    .update(schema.storyChats)
+    .set({ premise: encryptField(premise, key) })
+    .where(and(eq(schema.storyChats.id, storyId), eq(schema.storyChats.userId, userId)))
+    .returning({ id: schema.storyChats.id });
+  logger.info(
+    { durationMs: Date.now() - t0, userId, storyId, found: rows.length > 0 },
+    "Story premise update attempted",
+  );
+  if (rows.length === 0) return undefined;
+  return { premise };
+}
+
 /** Удаляет историю (только свою). true — если удалена. */
 export async function deleteStory(userId: number, storyId: number): Promise<boolean> {
   const t0 = Date.now();

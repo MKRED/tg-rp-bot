@@ -31,6 +31,13 @@ export function renameStory(id: number, title: string): Promise<{ title: string 
   });
 }
 
+export function updateStoryPremise(id: number, premise: string): Promise<{ premise: string }> {
+  return apiFetch<{ premise: string }>(`/stories/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ premise }),
+  });
+}
+
 export function removeStory(id: number): Promise<{ ok: true }> {
   return apiFetch<{ ok: true }>(`/stories/${id}`, { method: "DELETE" });
 }

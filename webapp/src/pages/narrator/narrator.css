@@ -44,13 +44,70 @@
 
 /* Шапка экрана истории — учитывает инсет Full Screen, как .chat-header в RP-чате. */
 .story-page__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: calc(
     var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
     var(--tg-viewport-content-safe-area-inset-top, 0px) + 10px
-  ) 16px 10px;
+  ) 12px 10px 16px;
   border-bottom: 1px solid var(--tgui--divider);
-  font-weight: 600;
   color: var(--tgui--text_color);
+}
+
+/* Заголовок занимает всё свободное место, длинное название обрезаем многоточием. */
+.story-page__header-title {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Кнопка-шестерёнка настроек — иконка без рамки/фона (как .chat-header__icon-btn). */
+.story-page__header-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--tgui--hint_color);
+  cursor: pointer;
+}
+
+/* ─── Страница настроек истории ──────────────────────────────────────────────── */
+.story-settings-page {
+  min-height: 100dvh;
+  padding-top: calc(
+    8px +
+    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+}
+
+/* Поле названия истории — standalone <Input> на фоне страницы (как в настройках чата). */
+.story-settings-page__title-field {
+  padding: 8px 0;
+}
+
+.story-settings-page__title-hint {
+  margin: 4px 0 0;
+  padding: 0 22px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+/* Иконка привязанной сущности (книга/шаблон/пресет) в ячейках раздела «История». */
+.story-settings-page__icon {
+  color: var(--tg-theme-link-color, #2481cc);
+  flex-shrink: 0;
 }
 
 /* Форма создания новой истории (Режиссёр истории) — раскладка ячеек/иконок как в новом RP-чате */

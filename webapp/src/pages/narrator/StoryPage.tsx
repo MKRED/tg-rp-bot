@@ -1,10 +1,13 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
+import { storySettingsPath } from "../../app/routes";
+import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { RpText } from "../../shared/components/RpText";
 import {
   BeatDivider,
+  StoryHeader,
   StoryInput,
   StoryMessageItem,
   advanceStory,
@@ -23,6 +26,7 @@ export function StoryPage() {
   const params = useParams();
   const id = Number(params.id);
 
+  const navigate = useTransitionNavigate();
   const { story, messages, setMessages, loading, error, reload } = useStory(id);
   const { showToast } = useToast();
   const [sending, setSending] = useState(false);
@@ -62,6 +66,10 @@ export function StoryPage() {
     if (sending) return;
     setSending(true);
     setStreamingText("");
+    // Оптимистично убираем регенерируемый бит — иначе стримящийся вариант появлялся бы
+    // под старым битом, а замена происходила только после reload(). Бит вернётся (новым
+    // сиблингом) после завершения генерации; реген доступен лишь на последнем бите.
+    setMessages((prev) => prev.filter((m) => m.id !== beatId));
     regenerateBeat(id, beatId, {
       onToken: (text) => setStreamingText((prev) => (prev ?? "") + text),
       onReset: () => setStreamingText(""),
@@ -72,6 +80,7 @@ export function StoryPage() {
       onError: () => {
         setStreamingText(null);
         showToast({ type: "error", message: "Не удалось перегенерировать бит" });
+        reload(); // вернуть оптимистично убранный бит (сервер откатил курсор на исходный)
       },
     }).finally(() => {
       setSending(false);
@@ -121,7 +130,10 @@ export function StoryPage() {
   return (
     <PageTransition>
       <div style={{ display: "flex", flexDirection: "column", height: "100dvh" }}>
-        <div className="story-page__header">{story.title ?? story.book.name}</div>
+        <StoryHeader
+          title={story.title ?? story.book.name}
+          onSettingsClick={() => navigate(storySettingsPath(id))}
+        />
 
         <div style={{ flex: 1, overflowY: "auto", padding: "8px 16px", display: "flex", flexDirection: "column" }}>
           {messages.map((m, i) => (

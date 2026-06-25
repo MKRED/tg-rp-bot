@@ -12,6 +12,7 @@ export function BeatDivider() {
         color: "var(--tgui--hint_color)",
         fontSize: 13,
         letterSpacing: "0.6em",
+        whiteSpace: "nowrap",
         userSelect: "none",
         opacity: 0.7,
       }}
