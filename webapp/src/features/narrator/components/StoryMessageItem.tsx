@@ -66,7 +66,7 @@ export function StoryMessageItem({
           maxWidth: "85%",
         }}
       >
-        <Clapperboard size={14} />
+        <Clapperboard size={14} style={{ flexShrink: 0 }} />
         <span>{displayText}</span>
         {showTranslateButton && (
           <button
@@ -165,4 +165,5 @@ const iconBtn: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   padding: 2,
+  flexShrink: 0,
 };
