@@ -1,3 +1,5 @@
+import type { LlmCallLabel } from "./debugCapture.js";
+
 /** Роль в диалоге (OpenAI-совместимая). */
 export type ChatRole = "system" | "user" | "assistant";
 
@@ -26,6 +28,13 @@ export interface ChatCompletionOptions {
   // Reasoning («мышление»). Применяется провайдеро-специфично (для DeepSeek — thinking-режим).
   requestReasoning?: boolean;
   reasoningEffort?: string | null;
+
+  // ─── Только для отладочного перехвата (debugCapture), в тело запроса к LLM НЕ попадают ───
+  // buildBody выбирает поля явно, поэтому эти два сюда «протекают» безопасно.
+  /** Чей это вызов — для фильтра «только мои запросы» на экране отладки. */
+  userId?: number;
+  /** Ярлык типа вызова (rp/impersonate/narrator/translate) — для списка на экране отладки. */
+  debugLabel?: LlmCallLabel;
 }
 
 /** Упрощённый результат: текст ответа + расход токенов (для логов/биллинга). */

@@ -3,6 +3,7 @@ import logger from "../logger.js";
 import { createBookRoutes } from "./books.js";
 import { createCharacterRoutes } from "./characters.js";
 import { createChatRoutes } from "./chats.js";
+import { createDebugRoutes } from "./debug.js";
 import { MAX_IMAGE_FULL_CHARS, parseImageField } from "./imageValidation.js";
 import { type AppVariables, requireInitData } from "./initData.js";
 import { createNarratorTemplateRoutes } from "./narratorTemplates.js";
@@ -95,6 +96,9 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
   api.route("/books", createBookRoutes());
   api.route("/narrator-templates", createNarratorTemplateRoutes());
   api.route("/stories", createStoryRoutes());
+
+  // Отладка: просмотр RAW-запросов к LLM и управление перехватом.
+  api.route("/debug", createDebugRoutes());
 
   return api;
 }

@@ -51,7 +51,11 @@ export async function handleImpersonate(c: Ctx) {
   return streamSSE(c, async (stream) => {
     try {
       const t0 = Date.now();
-      const result = await streamCompletion(stream, { messages, ...samplingOpts }, doStream);
+      const result = await streamCompletion(
+        stream,
+        { messages, ...samplingOpts, userId, debugLabel: "impersonate" },
+        doStream,
+      );
 
       const variant = await insertVariant(userId, chatId, parentMessageId, result.content);
       logger.info(
@@ -137,6 +141,7 @@ export async function handleTranslateText(c: Ctx) {
       preset?.translationSystemPrompt ?? "",
       text,
       englishLangName(targetLang),
+      userId,
     );
     return c.json({ translation });
   }

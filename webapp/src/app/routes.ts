@@ -61,6 +61,9 @@ export const ROUTES = {
   narratorTemplateNew: "/narrator-templates/new",
   /** Форма редактирования narrator-шаблона по id (статический `new` приоритетнее `:id`). */
   narratorTemplateEdit: "/narrator-templates/:id",
+
+  /** Экран отладки: RAW-запросы к LLM и управление перехватом. */
+  debugLlm: "/debug/llm",
 } as const;
 
 /** Путь к конкретной истории. */
@@ -120,5 +123,6 @@ export function parentPath(pathname: string): string {
   if (pathname.startsWith("/stories/")) return ROUTES.stories;
   if (pathname.startsWith("/books/")) return ROUTES.books;
   if (pathname.startsWith("/narrator-templates/")) return ROUTES.narratorTemplates;
+  if (pathname.startsWith("/debug/")) return ROUTES.home;
   return ROUTES.home;
 }

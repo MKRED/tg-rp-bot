@@ -29,6 +29,32 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
 /**
+ * Пользовательские настройки (одна строка на пользователя). Заведено под отладку LLM-перехвата,
+ * но намеренно сделано общей таблицей настроек — сюда добавляются будущие per-user предпочтения
+ * без новой таблицы под каждое поле.
+ *
+ * llmDebugEnabled — писать ли RAW-лог запросов к LLM (тумблер на экране отладки). Дефолт true —
+ *   осознанный выбор: перехват это escape-hatch, экран не должен быть пустым на момент бага
+ *   (записи живут только в памяти процесса, на диск/в БД не пишутся, см. llm/debugCapture.ts).
+ * llmDebugMaxRequests — сколько последних запросов держать в кольце перехвата.
+ */
+export const userSettings = pgTable("user_settings", {
+  userId: bigint("user_id", { mode: "number" })
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  llmDebugEnabled: boolean("llm_debug_enabled").notNull().default(true),
+  llmDebugMaxRequests: integer("llm_debug_max_requests").notNull().default(30),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export type UserSettings = typeof userSettings.$inferSelect;
+export type NewUserSettings = typeof userSettings.$inferInsert;
+
+/**
  * RP-персонажи, созданные пользователем. Базовый набор полей расширяемый — поэтому
  * варианты первого сообщения держим в jsonb (форма элемента ещё будет меняться), а теги
  * в text[] (плоские, вероятная ось будущей фильтрации по БД).

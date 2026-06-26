@@ -113,6 +113,13 @@
       "when": 1782385160014,
       "tag": "0015_pale_pixie",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1782432886768,
+      "tag": "0016_nice_agent_zero",
+      "breakpoints": true
     }
   ]
 }

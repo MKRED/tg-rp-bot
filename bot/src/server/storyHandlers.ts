@@ -100,7 +100,12 @@ export async function handleAdvanceStory(c: Ctx) {
       const input = await buildStoryCompletionInput(userId, storyId);
       if (!input) throw new Error("Failed to build story context");
 
-      const result = await streamCompletion(stream, { messages: input.msgs, ...input.samplingOpts });
+      const result = await streamCompletion(stream, {
+        messages: input.msgs,
+        ...input.samplingOpts,
+        userId,
+        debugLabel: "narrator",
+      });
 
       const beat = await insertStoryMessage(userId, storyId, steer.id, "assistant", "beat", result.content);
       await updateActiveStoryMessage(storyId, beat.id);
@@ -146,7 +151,12 @@ export async function handleRegenerateStoryBeat(c: Ctx) {
 
   return streamSSE(c, async (stream) => {
     try {
-      const result = await streamCompletion(stream, { messages: input.msgs, ...input.samplingOpts });
+      const result = await streamCompletion(stream, {
+        messages: input.msgs,
+        ...input.samplingOpts,
+        userId,
+        debugLabel: "narrator",
+      });
       const newBeat = await insertStoryMessage(userId, storyId, steerId, "assistant", "beat", result.content);
       await updateActiveStoryMessage(storyId, newBeat.id);
       await stream.writeSSE({ event: "done", data: JSON.stringify(newBeat) });

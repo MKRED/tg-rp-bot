@@ -104,7 +104,12 @@ export async function handleSendMessage(c: Ctx) {
       await stream.writeSSE({ event: "userMessage", data: JSON.stringify(userMsg) });
 
       // history уже содержит вставленное user-сообщение (через buildCompletionInput)
-      const result = await streamCompletion(stream, { messages: msgs, ...samplingOpts });
+      const result = await streamCompletion(stream, {
+        messages: msgs,
+        ...samplingOpts,
+        userId,
+        debugLabel: "rp",
+      });
 
       const assistantMsg = await insertMessage(userId, chatId, userMsg.id, "assistant", result.content);
       await updateActiveMessage(chatId, assistantMsg.id);
@@ -152,7 +157,12 @@ export async function handleEditMessage(c: Ctx) {
     try {
       await stream.writeSSE({ event: "userMessage", data: JSON.stringify(newUserMsg) });
 
-      const result = await streamCompletion(stream, { messages: input.msgs, ...input.samplingOpts });
+      const result = await streamCompletion(stream, {
+        messages: input.msgs,
+        ...input.samplingOpts,
+        userId,
+        debugLabel: "rp",
+      });
 
       const assistantMsg = await insertMessage(userId, chatId, newUserMsg.id, "assistant", result.content);
       await updateActiveMessage(chatId, assistantMsg.id);
@@ -198,7 +208,12 @@ export async function handleRegenerateMessage(c: Ctx) {
 
   return streamSSE(c, async (stream) => {
     try {
-      const result = await streamCompletion(stream, { messages: input.msgs, ...input.samplingOpts });
+      const result = await streamCompletion(stream, {
+        messages: input.msgs,
+        ...input.samplingOpts,
+        userId,
+        debugLabel: "rp",
+      });
 
       const newMsg = await insertMessage(userId, chatId, parentUserMsg.id, "assistant", result.content);
       await updateActiveMessage(chatId, newMsg.id);

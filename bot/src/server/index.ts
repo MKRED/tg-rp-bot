@@ -2,6 +2,8 @@ import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { config } from "../config.js";
+import { listAllLlmDebugSettings } from "../db/userSettings.js";
+import { primeDebugSettings } from "../llm/debugCapture.js";
 import logger from "../logger.js";
 import { createApiRoutes } from "./routes.js";
 
@@ -28,4 +30,10 @@ export function startServer(): void {
   serve({ fetch: app.fetch, port: config.port }, (info) => {
     logger.info({ port: info.port }, "HTTP server (Mini App API + webapp) started");
   });
+
+  // Прайм in-memory кэша настроек отладки из БД: перехват уважает сохранённый тумблер/N
+  // ещё до первого открытия экрана. Fire-and-forget — на сбое перехват просто стартует с дефолтами.
+  listAllLlmDebugSettings()
+    .then((rows) => primeDebugSettings(rows))
+    .catch((err) => logger.warn({ err }, "Failed to prime LLM debug settings cache"));
 }

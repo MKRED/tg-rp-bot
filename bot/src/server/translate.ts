@@ -74,6 +74,7 @@ export async function aiTranslate(
   systemPromptTemplate: string,
   text: string,
   targetLangName: string,
+  userId: number,
 ): Promise<string> {
   const t0 = Date.now();
   const template = systemPromptTemplate.trim() || DEFAULT_TRANSLATION_TEMPLATE;
@@ -84,6 +85,9 @@ export async function aiTranslate(
       { role: "system", content: system },
       { role: "user", content: text },
     ],
+    // Тегируем для отладочного перехвата (фильтр «только мои запросы» + ярлык типа вызова).
+    userId,
+    debugLabel: "translate",
   });
 
   logger.info(

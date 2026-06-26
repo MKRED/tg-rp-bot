@@ -1,5 +1,5 @@
 import { Avatar, Caption, Cell, List, Section, Title } from "@telegram-apps/telegram-ui";
-import { MessageCircle, Users, User, Smile, SlidersHorizontal, Clapperboard, BookOpen, ScrollText } from "lucide-react";
+import { MessageCircle, Users, User, Smile, SlidersHorizontal, Clapperboard, BookOpen, ScrollText, Bug } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { ROUTES } from "../../app/routes";
@@ -126,6 +126,18 @@ export function HomePage() {
                 onClick={() => navigate(ROUTES.narratorTemplates)}
               >
                 Narrator-шаблоны
+              </Cell>
+            </motion.div>
+          </Section>
+
+          <Section header="Отладка">
+            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.35 }}>
+              <Cell
+                before={<Bug size={24} className="home__icon" />}
+                subtitle="RAW-запросы к ИИ (последние запросы и настройки перехвата)"
+                onClick={() => navigate(ROUTES.debugLlm)}
+              >
+                Запросы к ИИ
               </Cell>
             </motion.div>
           </Section>

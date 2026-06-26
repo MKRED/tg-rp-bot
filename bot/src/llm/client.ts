@@ -2,6 +2,7 @@ import logger from "../logger.js";
 import { retry } from "../utils/index.js";
 import { isUnusableCompletion } from "./completionGuard.js";
 import { CHAT_COMPLETIONS_PATH } from "./constants.js";
+import { type LlmDebugResponse, recordLlmCall } from "./debugCapture.js";
 import { getActiveProvider, type LlmProvider } from "./providers.js";
 import type {
   ChatCompletionOptions,
@@ -92,12 +93,53 @@ export async function chatCompletion(
     "LLM chat completion start",
   );
 
-  if (onChunk) {
-    return chatCompletionStreaming(options, provider, model, url, t0, onChunk, onReset);
+  // Перехватываем КАЖДЫЙ вызов (для отладочного экрана) один раз, оборачивая обе ветки —
+  // и stream, и single. Запись делаем в finally, чтобы поймать и ошибки (4xx/5xx, пустой/отказной
+  // ответ): именно они ценнее всего для отладки «где что не так».
+  const streaming = !!onChunk;
+  let response: LlmDebugResponse = { ok: false };
+  try {
+    // Тестируем onChunk (а не streaming) — так TS сужает его до определённого в stream-ветке.
+    const result = onChunk
+      ? await chatCompletionStreaming(options, provider, model, url, t0, onChunk, onReset)
+      : await chatCompletionSingle(options, provider, model, url, t0);
+    response = { ok: true, content: result.content, model: result.model, usage: result.usage };
+    return result;
+  } catch (err) {
+    response = {
+      ok: false,
+      status: err instanceof LlmHttpError ? err.status : undefined,
+      error: err instanceof Error ? err.message : String(err),
+    };
+    throw err;
+  } finally {
+    // buildBody детерминирован из options → снимок RAW-тела пересобираем здесь (а не ловим
+    // точную строку внутри retry, иначе на 3 попытки было бы 3 записи).
+    recordLlmCall({
+      at: new Date().toISOString(),
+      userId: options.userId ?? null,
+      label: options.debugLabel ?? "other",
+      provider: provider.name,
+      model,
+      streaming,
+      durationMs: Date.now() - t0,
+      request: buildBody(options, streaming, provider),
+      response,
+    });
   }
+}
 
-  // Непригодный ответ (пустой/отказ) бросает EmptyCompletionError внутри retry — попытка
-  // повторяется так же, как при 5xx/429.
+/**
+ * Одна non-stream генерация, обёрнутая в retry. Непригодный ответ (пустой/отказ) бросает
+ * EmptyCompletionError — попытка повторяется так же, как при 5xx/429.
+ */
+async function chatCompletionSingle(
+  options: ChatCompletionOptions,
+  provider: LlmProvider,
+  model: string,
+  url: string,
+  t0: number,
+): Promise<ChatCompletionResult> {
   const data = await retry<LlmResponse>(
     async () => {
       const response = await fetch(url, {

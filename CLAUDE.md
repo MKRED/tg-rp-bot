@@ -42,9 +42,10 @@ bot/src/
   proxy.ts      — HttpsProxyAgent (https-proxy-agent) ТОЛЬКО для Telegram
   config.ts     — env vars (requireEnv для обязательных)
   db/           — drizzle: schema.ts + клиент + DAO по таблицам (chats, characters, personas,
-                  presets, impersonations, users); chats — папка (queries/messages/settings/crypto)
+                  presets, impersonations, users, userSettings); chats — папка (queries/messages/settings/crypto)
   llm/          — LLM client (client/types/constants/completionGuard/providers) — серверно,
-                  провайдер (OpenRouter | DeepSeek) выбирается env LLM_PROVIDER
+                  провайдер (OpenRouter | DeepSeek) выбирается env LLM_PROVIDER;
+                  debugCapture — in-memory перехват RAW-запросов к LLM для экрана отладки
   handlers/     — обработчики команд/кнопок бота (index = registerHandlers, start.ts,
                   photoActions.ts — callback «Закрыть» под фото из лайтбокса)
   server/       — Hono HTTP API: index=startServer, routes.ts, initData.ts (валидация подписи),
@@ -52,7 +53,8 @@ bot/src/
                   impersonateHandlers (стриминговая RP-генерация по SSE), promptBuilder,
                   translate (Google Translate + ИИ-перевод по промпту пресета), profilePhoto,
                   photoToChat (POST /me/send-photo — бот шлёт фото из лайтбокса юзеру в чат
-                  с web_app-кнопкой deep-link на персонажа/персону + «Закрыть»)
+                  с web_app-кнопкой deep-link на персонажа/персону + «Закрыть»),
+                  debug (GET/PATCH/DELETE /debug/llm — RAW-запросы к LLM и настройки перехвата)
                   + раздача собранной статики Mini App из ./public (SPA-fallback) — один процесс
   scripts/      — разовые скрипты (backfill-message-encryption)
   utils/        — retry, crypto (per-user шифрование сообщений)
@@ -67,7 +69,7 @@ webapp/src/
                   Authorization), text/, image/, components/ (AvatarPicker, ImageCropEditor,
                   ImageLightbox, PageTransition)
   features/<feature>/  — доменный модуль, разложенный по подпапкам-категориям + barrel index.ts.
-                  Фичи: characters, personas, generation-presets, rp-chat.
+                  Фичи: characters, personas, generation-presets, rp-chat, debug (экран RAW-запросов к LLM).
                   index.ts    — публичная поверхность фичи (то, что нужно страницам)
                   api/        — обёртки над apiFetch (граница к /api), доменные файлы (НЕ один barrel)
                   hooks/      — React-хуки фичи
