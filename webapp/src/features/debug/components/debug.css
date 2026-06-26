@@ -25,6 +25,15 @@
   align-items: center;
   border-radius: 10px;
   background: var(--tgui--secondary_fill, var(--tg-theme-secondary-bg-color, rgba(118, 118, 128, 0.12)));
+  /*
+    Cell (tgui) — это Tappable: на платформе "base" он рисует ripple-оверлей
+    (span position:absolute; inset:0; БЕЗ pointer-events:none), который перекрывает
+    статичный в потоке контент after-слота и съедает клики по нативным кнопкам.
+    tgui-контролы (Switch/Input) лежат выше за счёт собственного position, нативные
+    кнопки — нет. Поднимаем степпер в позиционированный слой над ripple.
+  */
+  position: relative;
+  z-index: 1;
 }
 
 .debug-stepper__btn {
