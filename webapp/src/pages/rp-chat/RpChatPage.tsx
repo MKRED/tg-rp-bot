@@ -46,7 +46,14 @@ export function RpChatPage() {
     ? (chat?.messages.find((m) => m.id === editingId) ?? null)
     : null;
 
-  const handleDone = useCallback((_u: MessageInPath | null, _a: MessageInPath) => { refresh(); setEditingId(null); }, [refresh]);
+  const handleDone = useCallback((_u: MessageInPath | null, assistantMsg: MessageInPath, commit: () => void) => {
+    // Заранее метим пришедший бит «отанимированным»: иначе при подмене стрим-пузыря реальным
+    // он бы проиграл enter-анимацию (мелькание текста). commit гасит стрим в том же коммите,
+    // где refresh влил бит — атомарно, без схлопывания ленты.
+    animatedIds.current.add(assistantMsg.id);
+    refresh(commit);
+    setEditingId(null);
+  }, [refresh]);
 
   // Добавляем сообщение пользователя в список сразу при получении SSE-события,
   // не дожидаясь завершения генерации и refresh().
@@ -240,19 +247,19 @@ export function RpChatPage() {
             );
           })}
 
-          <AnimatePresence>
-            {streamingText !== null && chat && (
-              <motion.div
-                key="streaming"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={MSG_TRANSITION}
-              >
-                <StreamingBubble text={streamingText} />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* Без AnimatePresence/exit: стрим-пузырь исчезает мгновенно и атомарно подменяется
+              реальным битом (handleDone гасит streamingText в коммите refresh). Exit-анимация
+              раньше давала кросс-фейд одинакового текста — мелькание. Enter оставляем: пузырь
+              «ИИ печатает» плавно появляется в едином стиле с лентой. */}
+          {streamingText !== null && chat && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={MSG_TRANSITION}
+            >
+              <StreamingBubble text={streamingText} />
+            </motion.div>
+          )}
 
           <div ref={messagesEndRef} />
         </div>

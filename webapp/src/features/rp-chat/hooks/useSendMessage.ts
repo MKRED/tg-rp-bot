@@ -2,7 +2,13 @@ import { useCallback, useState } from "react";
 import { editMessage, regenerateMessage, sendMessage } from "../api/messages-api";
 import type { MessageInPath } from "../types/chat";
 
-type OnDoneCallback = (userMsg: MessageInPath | null, assistantMsg: MessageInPath) => void;
+// commit гасит стримящийся пузырь. Вызывающая сторона зовёт его НЕ сразу, а в момент,
+// когда реальный бит уже влит в ленту (refresh применился) — атомарная подмена без рывка.
+type OnDoneCallback = (
+  userMsg: MessageInPath | null,
+  assistantMsg: MessageInPath,
+  commit: () => void,
+) => void;
 
 export function useSendMessage(
   chatId: number,
@@ -24,15 +30,16 @@ export function useSendMessage(
           onUserMessage: (msg) => { userMsg = msg; onOptimisticUserMessage?.(msg); },
           onToken: (text) => setStreamingText((prev) => (prev ?? "") + text),
           onReset: () => setStreamingText(""), // ретрай: стираем плохой ответ
-          onDone: (assistantMsg) => {
-            setStreamingText(null);
-            onDone(userMsg, assistantMsg);
-          },
+          // Стрим НЕ гасим здесь — отдаём commit наверх, он сработает после refresh (без рывка).
+          onDone: (assistantMsg) => onDone(userMsg, assistantMsg, () => setStreamingText(null)),
           onError: () => setStreamingText(null),
         });
+      } catch (err) {
+        // readSSE на сетевом исключении (offline и т.п.) onError НЕ зовёт — снимаем стрим тут.
+        console.error("RP send failed", err);
+        setStreamingText(null);
       } finally {
         setSending(false);
-        setStreamingText(null);
       }
     },
     [chatId, onDone, sending],
@@ -51,15 +58,14 @@ export function useSendMessage(
           onUserMessage: (msg) => { setStreamingText(""); userMsg = msg; onOptimisticUserMessage?.(msg); },
           onToken: (text) => setStreamingText((prev) => (prev ?? "") + text),
           onReset: () => setStreamingText(""), // ретрай: стираем плохой ответ
-          onDone: (assistantMsg) => {
-            setStreamingText(null);
-            onDone(userMsg, assistantMsg);
-          },
+          onDone: (assistantMsg) => onDone(userMsg, assistantMsg, () => setStreamingText(null)),
           onError: () => setStreamingText(null),
         });
+      } catch (err) {
+        console.error("RP edit failed", err);
+        setStreamingText(null);
       } finally {
         setSending(false);
-        setStreamingText(null);
       }
     },
     [chatId, onDone, sending],
@@ -75,15 +81,14 @@ export function useSendMessage(
         await regenerateMessage(chatId, messageId, {
           onToken: (text) => setStreamingText((prev) => (prev ?? "") + text),
           onReset: () => setStreamingText(""), // ретрай: стираем плохой ответ
-          onDone: (assistantMsg) => {
-            setStreamingText(null);
-            onDone(null, assistantMsg);
-          },
+          onDone: (assistantMsg) => onDone(null, assistantMsg, () => setStreamingText(null)),
           onError: () => setStreamingText(null),
         });
+      } catch (err) {
+        console.error("RP regenerate failed", err);
+        setStreamingText(null);
       } finally {
         setSending(false);
-        setStreamingText(null);
       }
     },
     [chatId, onDone, sending],

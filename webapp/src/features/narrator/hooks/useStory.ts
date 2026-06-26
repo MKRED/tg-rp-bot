@@ -22,7 +22,8 @@ export function useStory(id: number) {
         setMessages(res.story.messages);
         onApplied?.();
       })
-      .catch(() => setError(true));
+      // onApplied и в .catch — чтобы стрим-пузырь не «застрял» при провале reload (зеркало useChat).
+      .catch(() => { setError(true); onApplied?.(); });
   }, [id]);
 
   useEffect(() => {
