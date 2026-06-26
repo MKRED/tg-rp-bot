@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ROUTES, storyViewPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
-import { ExpandableTextarea } from "../../shared/components/ExpandableTextarea";
+import { PromptField } from "../../shared/components/PromptField";
 import { createStory } from "../../features/narrator";
 import { useBooks } from "../../features/knowledge-books";
 import { useTemplates } from "../../features/narrator-templates";
@@ -146,20 +146,22 @@ export function StoryNewPage() {
             </motion.div>
           </Section>
 
-          <Section header="Старт истории" footer="Открытие показывается дословно как первый бит. Премиза — куда вести сцену (в текст не попадает).">
-            <ExpandableTextarea
-              header="Стартовое сообщение (обязательно)"
+          <Section header="Старт истории">
+            <PromptField
+              label="Стартовое сообщение (обязательно)"
+              hint="Показывается дословно как первый бит истории и уходит в контекст модели."
               placeholder="С чего начинается история…"
               rows={6}
               value={openingBeat}
-              onChange={(e) => setOpeningBeat(e.target.value)}
+              onChange={setOpeningBeat}
             />
-            <ExpandableTextarea
-              header="Сценарий / премиза (необязательно)"
+            <PromptField
+              label="Сценарий / премиза (необязательно)"
+              hint="Куда вести сцену, тон, завязка. В текст истории не попадает, но влияет на следующие биты."
               placeholder="Куда ведём историю, тон, завязка…"
               rows={6}
               value={premise}
-              onChange={(e) => setPremise(e.target.value)}
+              onChange={setPremise}
             />
           </Section>
         </List>

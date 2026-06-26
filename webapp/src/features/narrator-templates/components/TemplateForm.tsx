@@ -1,6 +1,6 @@
 import { Button, Input, Section } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
-import { ExpandableTextarea } from "../../../shared/components/ExpandableTextarea";
+import { PromptField } from "../../../shared/components/PromptField";
 import type { NarratorTemplate, NarratorTemplateInput } from "../types/template";
 
 /** Подсказка-плейсхолдер: что писать в нарратор-инструкции (дефолт применяется, если оставить пусто). */
@@ -23,26 +23,28 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
   const valid = name.trim().length > 0;
 
   return (
-    <Section header="Narrator-шаблон" footer="Системный промпт для режима «Режиссёр истории» (без сэмплинга — он в пресете)">
+    <Section header="Narrator-шаблон" footer="Сэмплинг (температура и пр.) задаётся не здесь, а в пресете генерации.">
       <Input
         header="Название"
         placeholder="Напр. «Кинематографичный рассказчик»"
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
-      <ExpandableTextarea
-        header="Инструкция нарратора"
+      <PromptField
+        label="Инструкция нарратора"
+        hint="Системный промпт для режима «Режиссёр истории»: задаёт роль рассказчика, стиль и правила ведения сцены. Пусто → применится встроенный дефолт."
         placeholder={SYSTEM_PLACEHOLDER}
         rows={6}
         value={systemPrompt}
-        onChange={(e) => setSystemPrompt(e.target.value)}
+        onChange={setSystemPrompt}
       />
-      <ExpandableTextarea
-        header="После истории (необязательно)"
+      <PromptField
+        label="После истории (необязательно)"
+        hint="Доп. инструкция, вставляемая после истории — последнее напоминание модели перед каждым новым битом."
         placeholder="Доп. инструкция перед каждым битом"
         rows={6}
         value={postHistory}
-        onChange={(e) => setPostHistory(e.target.value)}
+        onChange={setPostHistory}
       />
       <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 16px" }}>
         <Button

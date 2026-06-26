@@ -1,7 +1,7 @@
 import { Cell, Switch } from "@telegram-apps/telegram-ui";
 import { DEFAULT_IMPERSONATE_TEMPLATE } from "../lib/impersonateTemplate";
+import { PromptField } from "../../../shared/components/PromptField";
 import { CollapsibleSection } from "./CollapsibleSection";
-import { PromptField } from "./PromptField";
 
 interface PromptsSectionProps {
   systemPrompt: string;

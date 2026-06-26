@@ -12,7 +12,7 @@ import {
 } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
-import { ExpandableTextarea } from "../../shared/components/ExpandableTextarea";
+import { PromptField } from "../../shared/components/PromptField";
 import { ExpandableSelect } from "../../shared/components/ExpandableSelect";
 import {
   AUTO_SCOPE_OPTIONS,
@@ -207,16 +207,14 @@ export function StorySettingsPage() {
             )}
           </Section>
 
-          <Section
-            header="Сценарий"
-            footer="Куда вести сцену, тон, завязка. В текст истории не попадает, но влияет на следующие биты."
-          >
-            <ExpandableTextarea
-              header="Сценарий / премиза"
+          <Section header="Сценарий">
+            <PromptField
+              label="Сценарий / премиза"
+              hint="Куда вести сцену, тон, завязка. В текст истории не попадает, но влияет на следующие биты."
               placeholder="Куда ведём историю, тон, завязка…"
               rows={6}
               value={premise}
-              onChange={(e) => setPremise(e.target.value)}
+              onChange={setPremise}
               onBlur={handlePremiseBlur}
             />
           </Section>

@@ -1,5 +1,6 @@
-import { ExpandableTextarea } from "../../../shared/components/ExpandableTextarea";
-import { estimateTokens } from "../../../shared/text/tokens";
+import { ExpandableTextarea } from "./ExpandableTextarea";
+import { estimateTokens } from "../text/tokens";
+import "./PromptField.css";
 
 interface PromptFieldProps {
   label: string;
@@ -8,6 +9,8 @@ interface PromptFieldProps {
   rows?: number;
   placeholder?: string;
   onChange: (value: string) => void;
+  /** Необязательный blur — напр. сохранение поля по потере фокуса. */
+  onBlur?: () => void;
 }
 
 /** Поле промпта: Textarea с подписью, подсказкой и счётчиком «~N токенов». */
@@ -18,19 +21,21 @@ export function PromptField({
   rows = 4,
   placeholder,
   onChange,
+  onBlur,
 }: PromptFieldProps) {
   return (
-    <div className="preset-field">
+    <div className="prompt-field">
       <ExpandableTextarea
         header={label}
         placeholder={placeholder}
         value={value}
         rows={rows}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
       />
-      <div className="preset-field__meta">
-        <span className="preset-field__hint">{hint}</span>
-        <span className="preset-field__tokens">~{estimateTokens(value)} токенов</span>
+      <div className="prompt-field__meta">
+        <span className="prompt-field__hint">{hint}</span>
+        <span className="prompt-field__tokens">~{estimateTokens(value)} токенов</span>
       </div>
     </div>
   );

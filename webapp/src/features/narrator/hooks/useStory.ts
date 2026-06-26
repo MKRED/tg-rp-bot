@@ -12,11 +12,15 @@ export function useStory(id: number) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  const reload = useCallback(() => {
+  // onApplied вызывается в том же setState-батче, что и setStory/setMessages — чтобы вызывающий
+  // мог снять стримящийся текст одновременно с появлением реального бита (без «дёрганья» ленты:
+  // иначе сначала исчезает стрим → лента короче → скролл прыгает вверх, потом приходит бит → вниз).
+  const reload = useCallback((onApplied?: () => void) => {
     return getStory(id)
       .then((res) => {
         setStory(res.story);
         setMessages(res.story.messages);
+        onApplied?.();
       })
       .catch(() => setError(true));
   }, [id]);

@@ -79,9 +79,10 @@ export function StoryPage() {
       onUserMessage: (msg: StoryMessage) => setMessages((prev) => [...prev, msg]),
       onToken: (text) => setStreamingText((prev) => (prev ?? "") + text),
       onReset: () => setStreamingText(""),
+      // Стрим снимаем в одном батче с появлением реального бита (onApplied внутри reload) —
+      // иначе лента на миг укоротилась бы (скролл вверх) до прихода бита (скролл обратно вниз).
       onDone: () => {
-        setStreamingText(null);
-        reload();
+        reload(() => setStreamingText(null));
       },
       onError: () => {
         setStreamingText(null);
@@ -89,7 +90,6 @@ export function StoryPage() {
       },
     }).finally(() => {
       setSending(false);
-      setStreamingText(null);
     });
   };
 
@@ -104,9 +104,9 @@ export function StoryPage() {
     regenerateBeat(id, beatId, {
       onToken: (text) => setStreamingText((prev) => (prev ?? "") + text),
       onReset: () => setStreamingText(""),
+      // Снимаем стрим в одном батче с reload — см. коммент в advance (без «дёрганья» ленты).
       onDone: () => {
-        setStreamingText(null);
-        reload();
+        reload(() => setStreamingText(null));
       },
       onError: () => {
         setStreamingText(null);
@@ -115,7 +115,6 @@ export function StoryPage() {
       },
     }).finally(() => {
       setSending(false);
-      setStreamingText(null);
     });
   };
 

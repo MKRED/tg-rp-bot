@@ -1,7 +1,7 @@
 import { Button, Cell, Input, List, Modal, Section, Switch } from "@telegram-apps/telegram-ui";
 import { ChevronRight } from "lucide-react";
 import { useState } from "react";
-import { ExpandableTextarea } from "../../../shared/components/ExpandableTextarea";
+import { PromptField } from "../../../shared/components/PromptField";
 import { CharacterAvatar, useCharacters } from "../../characters";
 import { createEntry, removeEntry, updateEntry } from "../api/books-api";
 import type { Entry } from "../types/book";
@@ -107,12 +107,13 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
           {selectedCharacter?.name ?? "Выберите персонажа"}
         </Cell>
       ) : (
-        <ExpandableTextarea
-          header="Текст записи"
+        <PromptField
+          label="Текст записи"
+          hint="Факт о мире / предмете / месте. Записи always_on уходят в промпт модели при каждом бите истории."
           placeholder="Факт о мире / предмете / месте…"
           rows={6}
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={setContent}
         />
       )}
 
