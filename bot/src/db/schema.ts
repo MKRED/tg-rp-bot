@@ -37,6 +37,9 @@ export type NewUser = typeof users.$inferInsert;
  *   осознанный выбор: перехват это escape-hatch, экран не должен быть пустым на момент бага
  *   (записи живут только в памяти процесса, на диск/в БД не пишутся, см. llm/debugCapture.ts).
  * llmDebugMaxRequests — сколько последних запросов держать в кольце перехвата.
+ * llmDebugHeadMessages / llmDebugTailMessages — сколько сообщений messages[] показывать с краёв
+ *   (усечение середины — только на клиенте). В БД, а не в localStorage, чтобы значения были
+ *   одинаковыми на всех устройствах пользователя.
  */
 export const userSettings = pgTable("user_settings", {
   userId: bigint("user_id", { mode: "number" })
@@ -44,6 +47,8 @@ export const userSettings = pgTable("user_settings", {
     .references(() => users.id, { onDelete: "cascade" }),
   llmDebugEnabled: boolean("llm_debug_enabled").notNull().default(true),
   llmDebugMaxRequests: integer("llm_debug_max_requests").notNull().default(30),
+  llmDebugHeadMessages: integer("llm_debug_head_messages").notNull().default(3),
+  llmDebugTailMessages: integer("llm_debug_tail_messages").notNull().default(5),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()

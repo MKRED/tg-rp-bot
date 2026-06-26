@@ -1,4 +1,4 @@
-import { Button, Cell, Input, List, Section, Spinner, Switch } from "@telegram-apps/telegram-ui";
+import { Button, Cell, List, Section, Spinner, Switch } from "@telegram-apps/telegram-ui";
 import { RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useDebugLlm } from "../hooks/useDebugLlm";
@@ -10,18 +10,7 @@ import "./debug.css";
  * (тумблер «писать лог», N последних запросов) и показом (сколько сообщений с краёв).
  */
 export function DebugLlmView() {
-  const {
-    settings,
-    records,
-    loading,
-    headK,
-    tailK,
-    setHeadK,
-    setTailK,
-    refresh,
-    updateSettings,
-    clear,
-  } = useDebugLlm();
+  const { settings, records, loading, refresh, updateSettings, clear } = useDebugLlm();
 
   return (
     <div className="debug-llm">
@@ -47,18 +36,18 @@ export function DebugLlmView() {
           />
         </Section>
 
-        <Section header="Показ" footer="Усечение длинного messages[] — только в этом экране, на сам запрос не влияет.">
+        <Section header="Показ" footer="Усечение длинного messages[] — только на показе, на сам запрос не влияет. Хранится на сервере, одинаково на всех устройствах.">
           <NumberRow
             label="Сообщений с начала"
-            value={headK}
+            value={settings.headMessages}
             min={0}
-            onCommit={setHeadK}
+            onCommit={(n) => updateSettings({ headMessages: n })}
           />
           <NumberRow
             label="Сообщений с конца"
-            value={tailK}
+            value={settings.tailMessages}
             min={0}
-            onCommit={setTailK}
+            onCommit={(n) => updateSettings({ tailMessages: n })}
           />
         </Section>
 
@@ -86,7 +75,12 @@ export function DebugLlmView() {
             <div className="debug-llm__empty">Пока нет запросов</div>
           ) : (
             records.map((rec) => (
-              <DebugRecordItem key={rec.id} record={rec} headK={headK} tailK={tailK} />
+              <DebugRecordItem
+                key={rec.id}
+                record={rec}
+                headK={settings.headMessages}
+                tailK={settings.tailMessages}
+              />
             ))
           )}
         </Section>
@@ -96,8 +90,9 @@ export function DebugLlmView() {
 }
 
 /**
- * Числовое поле с коммитом на blur (а не на каждое нажатие): иначе правка N дёргала бы API,
- * а правка K — переразбор JSON на каждый символ. Пустой/некорректный ввод откатывается.
+ * Числовая настройка компактным степпером (−  N  +) в правой части ячейки. Кнопки ±1
+ * меняют и сразу коммитят; ручной ввод коммитится на blur/Enter (а не на каждый символ —
+ * иначе правка дёргала бы API). Пустой/некорректный ввод откатывается к валидному.
  */
 function NumberRow({
   label,
@@ -121,21 +116,47 @@ function NumberRow({
     else setText(String(value)); // откат к валидному
   };
 
+  const step = (delta: number) => {
+    const base = Number.isFinite(Number(text)) ? Math.floor(Number(text)) : value;
+    const next = Math.max(min, base + delta);
+    setText(String(next));
+    onCommit(next);
+  };
+
   return (
     <Cell
       subtitle={subtitle}
       after={
-        <Input
-          type="number"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            // Коммит по Enter (на blur тоже коммитим — но Enter ожидаем явно).
-            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-          }}
-          style={{ width: 88, textAlign: "right" }}
-        />
+        <div className="debug-stepper">
+          <button
+            type="button"
+            className="debug-stepper__btn"
+            aria-label="Уменьшить"
+            disabled={Number(text) <= min}
+            onClick={() => step(-1)}
+          >
+            −
+          </button>
+          <input
+            className="debug-stepper__input"
+            inputMode="numeric"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              // Коммит по Enter (на blur тоже коммитим — но Enter ожидаем явно).
+              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+            }}
+          />
+          <button
+            type="button"
+            className="debug-stepper__btn"
+            aria-label="Увеличить"
+            onClick={() => step(1)}
+          >
+            +
+          </button>
+        </div>
       }
     >
       {label}

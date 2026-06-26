@@ -1,7 +1,76 @@
+/*
+  Верхний отступ под Full Screen (Mini Apps v8.0+): аппаратная зона (чёлка) + оверлей
+  Telegram (плавающая шапка). Тот же приём, что в home.css/kb-page. Без него шапка
+  «Перехват» уезжает под статус-бар.
+*/
+.debug-llm {
+  min-height: 100dvh;
+  padding-top: calc(
+    8px +
+    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
+  padding-bottom: 24px;
+}
+
 .debug-llm__actions {
   display: flex;
   gap: 8px;
   padding: 8px 16px 4px;
+}
+
+/* --- Компактный степпер числовой настройки (−  N  +) в правой части ячейки --- */
+.debug-stepper {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 10px;
+  background: var(--tgui--secondary_fill, var(--tg-theme-secondary-bg-color, rgba(118, 118, 128, 0.12)));
+}
+
+.debug-stepper__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--tgui--accent_text_color, #3390ec);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.debug-stepper__btn:disabled {
+  color: var(--tgui--hint_color, #7d8b99);
+  opacity: 0.45;
+  cursor: default;
+}
+
+.debug-stepper__input {
+  width: 42px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tgui--text_color, inherit);
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.debug-stepper__input:focus {
+  outline: none;
+}
+
+.debug-stepper__input::-webkit-outer-spin-button,
+.debug-stepper__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .debug-llm__center,

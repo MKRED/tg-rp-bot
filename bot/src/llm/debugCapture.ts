@@ -51,16 +51,23 @@ export interface LlmDebugRecord {
   response: LlmDebugResponse;
 }
 
+// Перехвату нужны только эти два поля (headMessages/tailMessages — про показ, на сервере не нужны).
+type CaptureSettings = { enabled: boolean; maxRequests: number };
+const CAPTURE_DEFAULTS: CaptureSettings = {
+  enabled: DEFAULT_DEBUG_SETTINGS.enabled,
+  maxRequests: DEFAULT_DEBUG_SETTINGS.maxRequests,
+};
+
 // Кэш настроек per-user (источник истины — БД; здесь копия для горячего пути).
-const settingsCache = new Map<number, LlmDebugSettings>();
+const settingsCache = new Map<number, CaptureSettings>();
 // Глобальное кольцо записей; чтение/тримминг — по userId.
 let records: LlmDebugRecord[] = [];
 let nextId = 1;
 
 /** Эффективные настройки пользователя: из кэша или дефолт (в т.ч. для userId=null). */
-function effectiveSettings(userId: number | null): LlmDebugSettings {
-  if (userId == null) return DEFAULT_DEBUG_SETTINGS;
-  return settingsCache.get(userId) ?? DEFAULT_DEBUG_SETTINGS;
+function effectiveSettings(userId: number | null): CaptureSettings {
+  if (userId == null) return CAPTURE_DEFAULTS;
+  return settingsCache.get(userId) ?? CAPTURE_DEFAULTS;
 }
 
 /** Положить настройки пользователя в кэш (после чтения/записи в БД или при прайме). */

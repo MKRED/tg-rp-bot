@@ -1,0 +1,2 @@
+ALTER TABLE "user_settings" ADD COLUMN "llm_debug_head_messages" integer DEFAULT 3 NOT NULL;--> statement-breakpoint
+ALTER TABLE "user_settings" ADD COLUMN "llm_debug_tail_messages" integer DEFAULT 5 NOT NULL;

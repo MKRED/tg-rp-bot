@@ -35,10 +35,19 @@ export function createDebugRoutes(): Hono<{ Variables: AppVariables }> {
     const body = (await c.req.json().catch(() => ({}))) as {
       enabled?: unknown;
       maxRequests?: unknown;
+      headMessages?: unknown;
+      tailMessages?: unknown;
     };
-    const patch: { enabled?: boolean; maxRequests?: number } = {};
+    const patch: {
+      enabled?: boolean;
+      maxRequests?: number;
+      headMessages?: number;
+      tailMessages?: number;
+    } = {};
     if (typeof body.enabled === "boolean") patch.enabled = body.enabled;
     if (typeof body.maxRequests === "number") patch.maxRequests = body.maxRequests;
+    if (typeof body.headMessages === "number") patch.headMessages = body.headMessages;
+    if (typeof body.tailMessages === "number") patch.tailMessages = body.tailMessages;
     try {
       await ensureUser(user); // строка users должна существовать для FK user_settings
       const settings = await upsertLlmDebugSettings(user.id, patch);

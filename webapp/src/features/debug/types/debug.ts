@@ -34,4 +34,8 @@ export interface LlmDebugSettings {
   enabled: boolean;
   /** Сколько последних запросов держать. */
   maxRequests: number;
+  /** Сколько сообщений messages[] показывать с начала (усечение середины — на клиенте). */
+  headMessages: number;
+  /** Сколько сообщений messages[] показывать с конца. */
+  tailMessages: number;
 }

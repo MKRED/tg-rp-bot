@@ -6,19 +6,21 @@ import {
 } from "../api/debug-api";
 import type { LlmDebugRecord, LlmDebugSettings } from "../types/debug";
 
-const DEFAULT_SETTINGS: LlmDebugSettings = { enabled: true, maxRequests: 30 };
+const DEFAULT_SETTINGS: LlmDebugSettings = {
+  enabled: true,
+  maxRequests: 30,
+  headMessages: 3,
+  tailMessages: 5,
+};
 
 /**
- * Состояние экрана отладки LLM: настройки перехвата (тумблер + N, с сервера) и записи запросов.
- * headK/tailK — чисто клиентские (сколько сообщений показывать с краёв), переживают перезагрузку
- * через localStorage; на сервер не уходят (усечение применяется на показе).
+ * Состояние экрана отладки LLM: все настройки (тумблер, N, сколько сообщений с краёв) приходят
+ * с сервера и через него же сохраняются — поэтому одинаковы на всех устройствах пользователя.
  */
 export function useDebugLlm() {
   const [settings, setSettings] = useState<LlmDebugSettings>(DEFAULT_SETTINGS);
   const [records, setRecords] = useState<LlmDebugRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [headK, setHeadK] = useState(() => readK("llmDebugHeadK", 3));
-  const [tailK, setTailK] = useState(() => readK("llmDebugTailK", 5));
 
   const refresh = useCallback(() => {
     setLoading(true);
@@ -34,10 +36,6 @@ export function useDebugLlm() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
-
-  // Сохраняем K в localStorage при каждом изменении (переживёт перезагрузку Mini App).
-  useEffect(() => localStorage.setItem("llmDebugHeadK", String(headK)), [headK]);
-  useEffect(() => localStorage.setItem("llmDebugTailK", String(tailK)), [tailK]);
 
   // Настройки сохраняем оптимистично: при ошибке откатываем к прежнему значению.
   const updateSettings = useCallback(
@@ -63,23 +61,5 @@ export function useDebugLlm() {
     }
   }, []);
 
-  return {
-    settings,
-    records,
-    loading,
-    headK,
-    tailK,
-    setHeadK,
-    setTailK,
-    refresh,
-    updateSettings,
-    clear,
-  };
-}
-
-/** Прочитать число из localStorage с фолбэком (для headK/tailK). */
-function readK(key: string, fallback: number): number {
-  const raw = localStorage.getItem(key);
-  const n = raw == null ? NaN : Number(raw);
-  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : fallback;
+  return { settings, records, loading, refresh, updateSettings, clear };
 }
