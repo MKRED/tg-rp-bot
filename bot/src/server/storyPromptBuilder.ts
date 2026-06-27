@@ -1,3 +1,4 @@
+import type { StoryPromptComponentId, StoryPromptOrderItem } from "../db/schema.js";
 import type { StoryMessageInPath } from "../db/stories/index.js";
 import type { ChatMessage } from "../llm/types.js";
 import { countTokens } from "../utils/index.js";
@@ -30,10 +31,26 @@ When the latest user message contains a directive (an out-of-character instructi
 
 Write one cohesive beat per turn: vivid but focused. End on a natural pause or a hook rather than resolving everything at once.`;
 
+/**
+ * Дефолтный порядок narrator-компонентов. Используется как дефолт колонки prompt_order в БД,
+ * инициализация формы нового шаблона (webapp), серверный фолбэк при отсутствии поля в запросе и
+ * фолбэк storyHandlers для истории без шаблона. premise идёт после auxiliary; postHistory выключен.
+ */
+export const DEFAULT_NARRATOR_PROMPT_ORDER: StoryPromptOrderItem[] = [
+  { id: "system", enabled: true },
+  { id: "lorebook", enabled: true },
+  { id: "auxiliary", enabled: true },
+  { id: "premise", enabled: true },
+  { id: "history", enabled: true },
+  { id: "postHistory", enabled: false },
+];
+
 export type StoryPromptOptions = {
   /** Нарратор-инструкция (systemPrompt шаблона или дефолт). */
   systemPrompt: string;
-  /** Инструкция «после истории» из шаблона (задел; в MVP уходит в системный блок). */
+  /** Вспомогательный системный промпт из шаблона (опц.). */
+  auxiliarySystemPrompt: string;
+  /** Инструкция «после истории» из шаблона. */
   postHistoryInstruction: string;
   /** Системная вводная истории (опц.). */
   premise: string;
@@ -41,22 +58,31 @@ export type StoryPromptOptions = {
   lorebook: string[];
   /** Активный путь истории; последний узел — живой триггер (user-ход текущей генерации). */
   history: StoryMessageInPath[];
+  /** Порядок и включённость компонентов запроса (из шаблона или DEFAULT_NARRATOR_PROMPT_ORDER). */
+  promptOrder: StoryPromptOrderItem[];
   contextUnlimited?: boolean;
   contextSize?: number | null;
   maxTokens?: number | null;
   onTrim?: (info: TrimInfo) => void;
 };
 
-/** Системные блоки запроса (нарратор-инструкция + премиза + книга знаний + post-history). */
-function systemBlocks(opts: StoryPromptOptions): string[] {
-  const blocks: string[] = [];
-  if (opts.systemPrompt.trim()) blocks.push(opts.systemPrompt);
-  if (opts.premise.trim()) blocks.push(`Story premise:\n${opts.premise}`);
-  if (opts.lorebook.length > 0) {
-    blocks.push(`World and characters:\n\n${opts.lorebook.join("\n\n")}`);
+/** Текст non-history компонента запроса (с обёрткой, если нужна) или null, если он пуст. */
+function componentText(
+  opts: StoryPromptOptions,
+  id: Exclude<StoryPromptComponentId, "history">,
+): string | null {
+  switch (id) {
+    case "system":
+      return opts.systemPrompt.trim() ? opts.systemPrompt : null;
+    case "premise":
+      return opts.premise.trim() ? `Story premise:\n${opts.premise}` : null;
+    case "lorebook":
+      return opts.lorebook.length > 0 ? `World and characters:\n\n${opts.lorebook.join("\n\n")}` : null;
+    case "auxiliary":
+      return opts.auxiliarySystemPrompt.trim() ? opts.auxiliarySystemPrompt : null;
+    case "postHistory":
+      return opts.postHistoryInstruction.trim() ? opts.postHistoryInstruction : null;
   }
-  if (opts.postHistoryInstruction.trim()) blocks.push(opts.postHistoryInstruction);
-  return blocks;
 }
 
 /** Урезает активный путь под лимит контекста (оставляя самые свежие узлы, включая живой триггер). */
@@ -77,38 +103,53 @@ function resolveHistory(opts: StoryPromptOptions, fixedSystemTokens: number): St
 }
 
 /**
- * Собирает ChatMessage[] для narrator-генерации:
- *   - системные блоки (нарратор-инструкция + премиза + книга знаний + post-history) → role:"system";
- *   - синтетический leading-user (массив не должен начинаться с assistant);
- *   - активный путь: assistant-биты как есть; user-ходы (continue/directive) НЕЙТРАЛИЗУЮТСЯ в
- *     CONTINUE_MARKER, КРОМЕ последнего (живого триггера) — он сохраняет свой текст.
+ * Собирает ChatMessage[] для narrator-генерации. Порядок частей задаётся opts.promptOrder;
+ * выключенные и пустые компоненты пропускаются.
+ *   - все non-history компоненты (system / premise / lorebook / auxiliary / postHistory) → role:"system",
+ *     отдельным сообщением;
+ *   - history → синтетический leading-user (массив не должен начинаться с assistant) + активный путь:
+ *     assistant-биты как есть; user-ходы (continue/directive) НЕЙТРАЛИЗУЮТСЯ в CONTINUE_MARKER, КРОМЕ
+ *     последнего (живого триггера) — он сохраняет свой текст.
  * Чистая функция (только countTokens) — тестируется юнит-тестом.
  */
 export function buildStoryMessages(opts: StoryPromptOptions): ChatMessage[] {
-  const blocks = systemBlocks(opts);
-  const fixedSystemTokens = blocks.reduce(
-    (sum, b) => sum + countTokens(b) + PER_MESSAGE_OVERHEAD,
-    0,
-  );
+  // Стоимость фиксированных (non-history) частей — их урезать нельзя, вычитаем из бюджета истории.
+  let fixedSystemTokens = 0;
+  for (const item of opts.promptOrder) {
+    if (!item.enabled || item.id === "history") continue;
+    const text = componentText(opts, item.id);
+    if (text) fixedSystemTokens += countTokens(text) + PER_MESSAGE_OVERHEAD;
+  }
 
-  const history = resolveHistory(opts, fixedSystemTokens);
+  // История эмитируется (и расходует бюджет) только если компонент включён в порядке. Если выключен —
+  // обрезку не считаем, leading-user не резервируем (его стоимость учитывается внутри resolveHistory).
+  const historyEnabled = opts.promptOrder.some((i) => i.id === "history" && i.enabled);
+  const history = historyEnabled ? resolveHistory(opts, fixedSystemTokens) : [];
   const lastIndex = history.length - 1;
 
   const result: ChatMessage[] = [];
-  for (const block of blocks) result.push({ role: "system", content: block });
-  // Примечание: при агрессивной обрезке первым уцелевшим узлом может оказаться нейтрализованный
-  // user-ход — тогда после leading-user идут два user-сообщения подряд. Anthropic/OpenRouter их
-  // склеивают, так что это не нарушает чередование; специально схлопывать не нужно.
-  result.push({ role: "user", content: LEADING_USER_MARKER });
+  for (const item of opts.promptOrder) {
+    if (!item.enabled) continue;
 
-  history.forEach((m, i) => {
-    if (m.role === "user" && i !== lastIndex) {
-      // Отыгранный user-ход → нейтрализуем (последствие уже в следующем бите).
-      result.push({ role: "user", content: CONTINUE_MARKER });
-    } else {
-      result.push({ role: m.role, content: m.content });
+    if (item.id === "history") {
+      // Примечание: при агрессивной обрезке первым уцелевшим узлом может оказаться нейтрализованный
+      // user-ход — тогда после leading-user идут два user-сообщения подряд. Anthropic/OpenRouter их
+      // склеивают, так что это не нарушает чередование; специально схлопывать не нужно.
+      result.push({ role: "user", content: LEADING_USER_MARKER });
+      history.forEach((m, i) => {
+        if (m.role === "user" && i !== lastIndex) {
+          // Отыгранный user-ход → нейтрализуем (последствие уже в следующем бите).
+          result.push({ role: "user", content: CONTINUE_MARKER });
+        } else {
+          result.push({ role: m.role, content: m.content });
+        }
+      });
+      continue;
     }
-  });
+
+    const text = componentText(opts, item.id);
+    if (text) result.push({ role: "system", content: text });
+  }
 
   return result;
 }

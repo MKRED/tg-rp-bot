@@ -21,6 +21,7 @@ import { googleTranslate } from "./translate.js";
 import {
   buildStoryMessages,
   CONTINUE_MARKER,
+  DEFAULT_NARRATOR_PROMPT_ORDER,
   DEFAULT_NARRATOR_TEMPLATE,
 } from "./storyPromptBuilder.js";
 
@@ -38,7 +39,9 @@ async function buildStoryCompletionInput(userId: number, storyId: number) {
   const template = story.template ? await getNarratorTemplate(userId, story.template.id) : null;
   const systemPrompt =
     template && template.systemPrompt.trim() ? template.systemPrompt : DEFAULT_NARRATOR_TEMPLATE;
+  const auxiliarySystemPrompt = template?.auxiliarySystemPrompt ?? "";
   const postHistoryInstruction = template?.postHistoryInstruction ?? "";
+  const promptOrder = template?.promptOrder ?? DEFAULT_NARRATOR_PROMPT_ORDER;
 
   const preset = story.preset ? await getPreset(userId, story.preset.id) : null;
 
@@ -51,9 +54,11 @@ async function buildStoryCompletionInput(userId: number, storyId: number) {
 
   const msgs = buildStoryMessages({
     systemPrompt,
+    auxiliarySystemPrompt,
     postHistoryInstruction,
     premise: story.premise,
     lorebook,
+    promptOrder,
     history: story.messages,
     contextUnlimited: preset?.contextUnlimited,
     contextSize: preset?.contextSize,

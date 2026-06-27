@@ -1,0 +1,2 @@
+ALTER TABLE "narrator_templates" ADD COLUMN "auxiliary_system_prompt" text DEFAULT '' NOT NULL;--> statement-breakpoint
+ALTER TABLE "narrator_templates" ADD COLUMN "prompt_order" jsonb DEFAULT '[{"id":"system","enabled":true},{"id":"lorebook","enabled":true},{"id":"auxiliary","enabled":true},{"id":"premise","enabled":true},{"id":"history","enabled":true},{"id":"postHistory","enabled":false}]'::jsonb NOT NULL;

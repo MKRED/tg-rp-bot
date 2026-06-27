@@ -7,12 +7,15 @@ import {
   type SamplingKey,
   type SamplingState,
 } from "../lib/param-specs";
-import { PromptOrderEditor } from "./PromptOrderEditor";
+import { PromptOrderEditor } from "../../../shared/components/PromptOrderEditor";
 import { PromptsSection } from "./PromptsSection";
 import { ReasoningSection } from "./ReasoningSection";
 import { SamplingSection } from "./SamplingSection";
 import {
   DEFAULT_PROMPT_ORDER,
+  PROMPT_COMPONENT_LABELS,
+  PROMPT_COMPONENT_SOURCES,
+  UNIMPLEMENTED_COMPONENTS,
   type PresetInput,
   type PromptOrderItem,
   type ReasoningEffort,
@@ -176,7 +179,13 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
       />
 
       <div className="preset-form__section-title">Порядок промптов</div>
-      <PromptOrderEditor order={promptOrder} onChange={setPromptOrder} />
+      <PromptOrderEditor
+        order={promptOrder}
+        onChange={setPromptOrder}
+        labels={PROMPT_COMPONENT_LABELS}
+        sources={PROMPT_COMPONENT_SOURCES}
+        unimplemented={UNIMPLEMENTED_COMPONENTS}
+      />
 
       <div className="preset-form__actions">
         <Button size="l" stretched disabled={!canSubmit} onClick={handleSubmit}>

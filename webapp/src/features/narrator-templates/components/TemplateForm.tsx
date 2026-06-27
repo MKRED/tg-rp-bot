@@ -1,7 +1,15 @@
 import { Button, Input, Section } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { PromptField } from "../../../shared/components/PromptField";
-import type { NarratorTemplate, NarratorTemplateInput } from "../types/template";
+import { PromptOrderEditor } from "../../../shared/components/PromptOrderEditor";
+import {
+  DEFAULT_NARRATOR_PROMPT_ORDER,
+  NARRATOR_PROMPT_COMPONENT_LABELS,
+  NARRATOR_PROMPT_COMPONENT_SOURCES,
+  type NarratorTemplate,
+  type NarratorTemplateInput,
+  type StoryPromptOrderItem,
+} from "../types/template";
 
 /** Подсказка-плейсхолдер: что писать в нарратор-инструкции (дефолт применяется, если оставить пусто). */
 const SYSTEM_PLACEHOLDER =
@@ -14,11 +22,17 @@ interface TemplateFormProps {
   onDelete?: () => void;
 }
 
-/** Форма narrator-шаблона: имя + системная инструкция нарратора + (опц.) post-history. */
+/** Форма narrator-шаблона: имя + инструкция + вспомогательный промпт + post-history + порядок промптов. */
 export function TemplateForm({ initial, submitting, onSubmit, onDelete }: TemplateFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
   const [systemPrompt, setSystemPrompt] = useState(initial?.systemPrompt ?? "");
+  const [auxiliarySystemPrompt, setAuxiliarySystemPrompt] = useState(
+    initial?.auxiliarySystemPrompt ?? "",
+  );
   const [postHistory, setPostHistory] = useState(initial?.postHistoryInstruction ?? "");
+  const [promptOrder, setPromptOrder] = useState<StoryPromptOrderItem[]>(
+    initial?.promptOrder ?? DEFAULT_NARRATOR_PROMPT_ORDER,
+  );
 
   const valid = name.trim().length > 0;
 
@@ -39,12 +53,25 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
         onChange={setSystemPrompt}
       />
       <PromptField
+        label="Вспомогательный системный промпт"
+        hint="Дополнительные указания поверх основного — например, формат или ограничения."
+        value={auxiliarySystemPrompt}
+        onChange={setAuxiliarySystemPrompt}
+      />
+      <PromptField
         label="После истории (необязательно)"
-        hint="Доп. инструкция, вставляемая после истории — последнее напоминание модели перед каждым новым битом."
+        hint="Доп. инструкция, вставляемая после истории — последнее напоминание модели перед каждым новым битом. Работает по назначению, только если в порядке промптов стоит после «Ленты истории»."
         placeholder="Доп. инструкция перед каждым битом"
         rows={6}
         value={postHistory}
         onChange={setPostHistory}
+      />
+      <div style={{ padding: "12px 16px 0", fontWeight: 600 }}>Порядок промптов</div>
+      <PromptOrderEditor
+        order={promptOrder}
+        onChange={setPromptOrder}
+        labels={NARRATOR_PROMPT_COMPONENT_LABELS}
+        sources={NARRATOR_PROMPT_COMPONENT_SOURCES}
       />
       <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 16px" }}>
         <Button
@@ -55,7 +82,9 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
             onSubmit({
               name: name.trim(),
               systemPrompt: systemPrompt,
+              auxiliarySystemPrompt: auxiliarySystemPrompt,
               postHistoryInstruction: postHistory,
+              promptOrder: promptOrder,
             })
           }
         >

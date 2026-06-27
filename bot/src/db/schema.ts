@@ -382,10 +382,23 @@ export const knowledgeBookEntries = pgTable("knowledge_book_entries", {
 export type KnowledgeBookEntry = typeof knowledgeBookEntries.$inferSelect;
 export type NewKnowledgeBookEntry = typeof knowledgeBookEntries.$inferInsert;
 
+/** Компонент narrator-запроса, чей порядок и включённость настраиваются в шаблоне. */
+export type StoryPromptComponentId =
+  | "system"
+  | "premise"
+  | "lorebook"
+  | "auxiliary"
+  | "history"
+  | "postHistory";
+
+/** Элемент порядка narrator-промптов: какой компонент и включён ли он в запрос. */
+export type StoryPromptOrderItem = { id: StoryPromptComponentId; enabled: boolean };
+
 /**
- * Narrator-шаблон — переиспользуемый источник СИСТЕМНОГО промпта narrator-режима (нарратор-инструкция:
- * «веди сцену, озвучивай всех персонажей, заканчивай на крючке…»). Отдельно от generation_presets,
- * который остаётся источником ТОЛЬКО сэмплинга (режимо-независим, шарится между RP и narrator).
+ * Narrator-шаблон — переиспользуемый источник промптов narrator-режима (нарратор-инструкция:
+ * «веди сцену, озвучивай всех персонажей, заканчивай на крючке…») + вспомогательный промпт и порядок
+ * сборки запроса. Отдельно от generation_presets, который остаётся источником ТОЛЬКО сэмплинга
+ * (режимо-независим, шарится между RP и narrator).
  */
 export const narratorTemplates = pgTable("narrator_templates", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
@@ -394,8 +407,18 @@ export const narratorTemplates = pgTable("narrator_templates", {
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   systemPrompt: text("system_prompt").notNull().default(""),
-  // Инструкция «после истории» (задел, по образцу postHistoryInstruction у пресета).
+  // Вспомогательный системный промпт — дополнительный блок поверх основного (как у пресета).
+  auxiliarySystemPrompt: text("auxiliary_system_prompt").notNull().default(""),
+  // Инструкция «после истории» (по образцу postHistoryInstruction у пресета).
   postHistoryInstruction: text("post_history_instruction").notNull().default(""),
+  // Порядок и включённость компонентов narrator-запроса. Дефолт — канонический порядок;
+  // premise идёт после auxiliary, postHistory выключен (включается вручную).
+  promptOrder: jsonb("prompt_order")
+    .$type<StoryPromptOrderItem[]>()
+    .notNull()
+    .default(
+      sql`'[{"id":"system","enabled":true},{"id":"lorebook","enabled":true},{"id":"auxiliary","enabled":true},{"id":"premise","enabled":true},{"id":"history","enabled":true},{"id":"postHistory","enabled":false}]'::jsonb`,
+    ),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()

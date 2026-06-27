@@ -3,6 +3,7 @@ import type { StoryMessageInPath } from "../db/stories/index.js";
 import {
   buildStoryMessages,
   CONTINUE_MARKER,
+  DEFAULT_NARRATOR_PROMPT_ORDER,
   LEADING_USER_MARKER,
   type StoryPromptOptions,
 } from "./storyPromptBuilder.js";
@@ -30,9 +31,11 @@ function msg(
 function baseOpts(overrides: Partial<StoryPromptOptions> = {}): StoryPromptOptions {
   return {
     systemPrompt: "You are the narrator.",
+    auxiliarySystemPrompt: "",
     postHistoryInstruction: "",
     premise: "",
     lorebook: [],
+    promptOrder: DEFAULT_NARRATOR_PROMPT_ORDER,
     history: [],
     ...overrides,
   };
@@ -107,6 +110,107 @@ describe("buildStoryMessages — системные блоки", () => {
     const systemMsgs = result.filter((m) => m.role === "system");
     // Только нарратор-инструкция, без блоков премизы/книги.
     expect(systemMsgs).toHaveLength(1);
+  });
+
+  it("включает вспомогательный промпт, когда он задан", () => {
+    const result = buildStoryMessages(
+      baseOpts({ auxiliarySystemPrompt: "Keep beats short.", history: sampleHistory() }),
+    );
+    const systemText = result.filter((m) => m.role === "system").map((m) => m.content).join("\n");
+    expect(systemText).toContain("Keep beats short.");
+  });
+});
+
+describe("buildStoryMessages — порядок промптов", () => {
+  it("соблюдает порядок системных блоков из promptOrder", () => {
+    const result = buildStoryMessages(
+      baseOpts({
+        premise: "PREMISE_TEXT",
+        auxiliarySystemPrompt: "AUX_TEXT",
+        // premise раньше auxiliary в этом порядке.
+        promptOrder: [
+          { id: "system", enabled: true },
+          { id: "premise", enabled: true },
+          { id: "auxiliary", enabled: true },
+          { id: "lorebook", enabled: true },
+          { id: "history", enabled: true },
+          { id: "postHistory", enabled: false },
+        ],
+        history: sampleHistory(),
+      }),
+    );
+    const systemMsgs = result.filter((m) => m.role === "system").map((m) => m.content);
+    const premiseIdx = systemMsgs.findIndex((c) => c.includes("PREMISE_TEXT"));
+    const auxIdx = systemMsgs.findIndex((c) => c.includes("AUX_TEXT"));
+    expect(premiseIdx).toBeGreaterThanOrEqual(0);
+    expect(auxIdx).toBeGreaterThan(premiseIdx);
+  });
+
+  it("выключенный компонент выпадает из запроса", () => {
+    const result = buildStoryMessages(
+      baseOpts({
+        premise: "PREMISE_TEXT",
+        promptOrder: [
+          { id: "system", enabled: true },
+          { id: "premise", enabled: false }, // выключен — не должен попасть
+          { id: "auxiliary", enabled: true },
+          { id: "lorebook", enabled: true },
+          { id: "history", enabled: true },
+          { id: "postHistory", enabled: false },
+        ],
+        history: sampleHistory(),
+      }),
+    );
+    const hasPremise = result.some((m) => m.content.includes("PREMISE_TEXT"));
+    expect(hasPremise).toBe(false);
+  });
+
+  it("выключенный history не эмитирует ленту и leading-user, не зовёт onTrim", () => {
+    const onTrim = vi.fn();
+    const result = buildStoryMessages(
+      baseOpts({
+        promptOrder: [
+          { id: "system", enabled: true },
+          { id: "history", enabled: false }, // лента выключена
+          { id: "postHistory", enabled: false },
+          { id: "lorebook", enabled: true },
+          { id: "auxiliary", enabled: true },
+          { id: "premise", enabled: true },
+        ],
+        history: sampleHistory(),
+        contextSize: 60,
+        maxTokens: 16,
+        onTrim,
+      }),
+    );
+    // Ни ленты, ни синтетического leading-user — только системные блоки.
+    expect(result.every((m) => m.role === "system")).toBe(true);
+    expect(result.some((m) => m.content === LEADING_USER_MARKER)).toBe(false);
+    // Обрезку не считаем, раз лента не эмитируется.
+    expect(onTrim).not.toHaveBeenCalled();
+  });
+
+  it("включённый непустой postHistory идёт хвостом отдельным system-сообщением", () => {
+    const result = buildStoryMessages(
+      baseOpts({
+        postHistoryInstruction: "POST_HISTORY_TEXT",
+        promptOrder: [
+          { id: "system", enabled: true },
+          { id: "history", enabled: true },
+          { id: "postHistory", enabled: true },
+          { id: "lorebook", enabled: true },
+          { id: "auxiliary", enabled: true },
+          { id: "premise", enabled: true },
+        ],
+        history: sampleHistory(),
+      }),
+    );
+    const last = result[result.length - 1]!;
+    expect(last.role).toBe("system");
+    expect(last.content).toBe("POST_HISTORY_TEXT");
+    // Живой триггер остаётся отдельным user-сообщением, не слит с postHistory.
+    const trigger = result.find((m) => m.content === "make the mood tense");
+    expect(trigger?.role).toBe("user");
   });
 });
 

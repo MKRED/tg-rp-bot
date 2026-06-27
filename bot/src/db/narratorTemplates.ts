@@ -1,16 +1,18 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import logger from "../logger.js";
 import { db, schema } from "./index.js";
-import type { NarratorTemplate } from "./schema.js";
+import type { NarratorTemplate, StoryPromptOrderItem } from "./schema.js";
 
 /**
- * Поля narrator-шаблона из формы Mini App. Только тексты промптов — сэмплинг живёт в generation_presets.
- * Не шифруется (как и пресеты — systemPrompt там в открытом виде).
+ * Поля narrator-шаблона из формы Mini App. Тексты промптов + порядок сборки — сэмплинг живёт в
+ * generation_presets. Не шифруется (как и пресеты — systemPrompt там в открытом виде).
  */
 export type NarratorTemplateInput = {
   name: string;
   systemPrompt: string;
+  auxiliarySystemPrompt: string;
   postHistoryInstruction: string;
+  promptOrder: StoryPromptOrderItem[];
 };
 
 /** Лёгкая строка списка шаблонов. */
