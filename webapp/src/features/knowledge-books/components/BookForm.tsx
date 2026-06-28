@@ -17,7 +17,7 @@ export function BookForm({ initial, submitting, onSubmit, onDelete }: BookFormPr
   const valid = name.trim().length > 0;
 
   return (
-    <Section header="Книга знаний">
+    <Section className="section-blend-inputs" header="Книга знаний">
       <Input
         header="Название"
         placeholder="Напр. «Мир Эльдории»"
@@ -30,7 +30,7 @@ export function BookForm({ initial, submitting, onSubmit, onDelete }: BookFormPr
         value={description}
         onChange={(e) => setDescription(e.target.value)}
       />
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 16px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 24, padding: "0 22px" }}>
         <Button
           size="l"
           stretched
@@ -40,7 +40,7 @@ export function BookForm({ initial, submitting, onSubmit, onDelete }: BookFormPr
           {initial ? "Сохранить" : "Создать книгу"}
         </Button>
         {onDelete && (
-          <Button size="m" mode="plain" stretched onClick={onDelete} disabled={submitting}>
+          <Button size="l" mode="outline" stretched onClick={onDelete} disabled={submitting}>
             Удалить книгу
           </Button>
         )}

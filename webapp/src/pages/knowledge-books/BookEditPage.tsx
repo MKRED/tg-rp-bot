@@ -106,7 +106,7 @@ export function BookEditPage() {
                   onCancel={() => setEntryEdit(null)}
                 />
               ) : (
-                <Section header="Записи" footer="Записи always_on всегда попадают в промпт истории">
+                <Section header="Записи">
                   {entries.length === 0 && <Cell subtitle="Пока пусто">Нет записей</Cell>}
                   {entries.map((e) => (
                     <Cell
@@ -135,6 +135,7 @@ export function BookEditPage() {
                       Добавить запись
                     </Button>
                   </div>
+                  <p className="section-note">Записи always_on всегда попадают в промпт истории</p>
                 </Section>
               )}
             </>

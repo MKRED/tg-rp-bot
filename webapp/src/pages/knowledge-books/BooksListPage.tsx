@@ -17,7 +17,7 @@ export function BooksListPage() {
     <PageTransition>
       <div className="kb-page">
         <List>
-          <Section header="Книги знаний" footer="Персонажи и факты мира для режима «Режиссёр истории»">
+          <Section header="Книги знаний">
             {loading && (
               <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
                 <Spinner size="m" />
@@ -45,6 +45,7 @@ export function BooksListPage() {
                   </Cell>
                 </motion.div>
               ))}
+            <p className="section-note">Персонажи и факты мира для режима «Режиссёр истории»</p>
           </Section>
 
           <div style={{ padding: 16 }}>

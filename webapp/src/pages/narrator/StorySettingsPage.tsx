@@ -207,7 +207,7 @@ export function StorySettingsPage() {
             )}
           </Section>
 
-          <Section header="Сценарий">
+          <Section className="section-blend-inputs" header="Сценарий">
             <PromptField
               label="Сценарий / премиза"
               hint="Куда вести сцену, тон, завязка. В текст истории не попадает, но влияет на следующие биты."

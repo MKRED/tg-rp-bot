@@ -37,7 +37,7 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
   const valid = name.trim().length > 0;
 
   return (
-    <Section header="Narrator-шаблон" footer="Сэмплинг (температура и пр.) задаётся не здесь, а в пресете генерации.">
+    <Section className="section-blend-inputs" header="Narrator-шаблон">
       <Input
         header="Название"
         placeholder="Напр. «Кинематографичный рассказчик»"
@@ -66,14 +66,15 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
         value={postHistory}
         onChange={setPostHistory}
       />
-      <div style={{ padding: "12px 16px 0", fontWeight: 600 }}>Порядок промптов</div>
+      {/* Гуттер 22px — как у полей tgui внутри карточки (выравнивание заголовка с рядами ниже). */}
+      <div style={{ padding: "12px 22px 0", fontWeight: 600 }}>Порядок промптов</div>
       <PromptOrderEditor
         order={promptOrder}
         onChange={setPromptOrder}
         labels={NARRATOR_PROMPT_COMPONENT_LABELS}
         sources={NARRATOR_PROMPT_COMPONENT_SOURCES}
       />
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 16px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 24, padding: "0 22px" }}>
         <Button
           size="l"
           stretched
@@ -91,11 +92,15 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
           {initial ? "Сохранить" : "Создать шаблон"}
         </Button>
         {onDelete && (
-          <Button size="m" mode="plain" stretched onClick={onDelete} disabled={submitting}>
+          <Button size="l" mode="outline" stretched onClick={onDelete} disabled={submitting}>
             Удалить шаблон
           </Button>
         )}
       </div>
+      {/* Бывший проп footer Section — рендерим внутри карточки, чтобы он не выбивался по фону. */}
+      <p className="section-note">
+        Сэмплинг (температура и пр.) задаётся не здесь, а в пресете генерации.
+      </p>
     </Section>
   );
 }

@@ -17,7 +17,7 @@ export function TemplatesListPage() {
     <PageTransition>
       <div className="nt-page">
         <List>
-          <Section header="Narrator-шаблоны" footer="Инструкция нарратора для режима «Режиссёр истории»">
+          <Section header="Narrator-шаблоны">
             {loading && (
               <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
                 <Spinner size="m" />
@@ -44,6 +44,7 @@ export function TemplatesListPage() {
                   </Cell>
                 </motion.div>
               ))}
+            <p className="section-note">Инструкция нарратора для режима «Режиссёр истории»</p>
           </Section>
           <div style={{ padding: 16 }}>
             <Button

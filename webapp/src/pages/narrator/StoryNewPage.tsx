@@ -146,7 +146,7 @@ export function StoryNewPage() {
             </motion.div>
           </Section>
 
-          <Section header="Старт истории">
+          <Section className="section-blend-inputs" header="Старт истории">
             <PromptField
               label="Стартовое сообщение (обязательно)"
               hint="Показывается дословно как первый бит истории и уходит в контекст модели."

@@ -15,7 +15,7 @@ export function DebugLlmView() {
   return (
     <div className="debug-llm">
       <List>
-        <Section header="Перехват" footer="Лог хранится в памяти сервера и сбрасывается при перезапуске.">
+        <Section header="Перехват">
           <Cell
             after={
               <Switch
@@ -34,9 +34,10 @@ export function DebugLlmView() {
             min={1}
             onCommit={(n) => updateSettings({ maxRequests: n })}
           />
+          <p className="section-note">Лог хранится в памяти сервера и сбрасывается при перезапуске.</p>
         </Section>
 
-        <Section header="Показ" footer="Усечение длинного messages[] — только на показе, на сам запрос не влияет. Хранится на сервере, одинаково на всех устройствах.">
+        <Section header="Показ">
           <NumberRow
             label="Сообщений с начала"
             value={settings.headMessages}
@@ -49,6 +50,10 @@ export function DebugLlmView() {
             min={0}
             onCommit={(n) => updateSettings({ tailMessages: n })}
           />
+          <p className="section-note">
+            Усечение длинного messages[] — только на показе, на сам запрос не влияет. Хранится на
+            сервере, одинаково на всех устройствах.
+          </p>
         </Section>
 
         <Section header={`Запросы (${records.length})`}>

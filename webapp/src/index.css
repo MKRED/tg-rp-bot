@@ -23,3 +23,26 @@ body {
   */
   background: var(--tg-bg-color, var(--tg-theme-bg-color, #17212b));
 }
+
+/*
+  Инпут tgui (Input/Textarea) красит свой фон цветом --tgui--bg_color, а карточка Section —
+  --tgui--section_bg_color. Это РАЗНЫЕ токены темы Telegram; на мобильной тёмной теме они различаются,
+  и поле, лежащее прямо внутри Section, «выпрыгивает» из карточки. Приравниваем bg_color к
+  section_bg_color в пределах секции-формы — поле сливается с карточкой. Карточка/ячейки/футер красятся
+  section_bg/secondary_bg напрямую, поэтому не затрагиваются. Вешать ТОЛЬКО на секции: standalone-поля
+  на фоне страницы (bg_color) должны остаться bg_color, иначе наоборот начнут выпрыгивать.
+*/
+.section-blend-inputs {
+  --tgui--bg_color: var(--tgui--section_bg_color);
+}
+
+/*
+  Заметка-«футер» внутри карточки Section. Используется вместо пропа footer, который tgui рендерит ВНЕ
+  карточки (на фоне страницы) — там он выбивается по фону. Рендерим как последний ребёнок секции.
+*/
+.section-note {
+  padding: 12px 22px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--tgui--hint_color, #7d8b99);
+}
