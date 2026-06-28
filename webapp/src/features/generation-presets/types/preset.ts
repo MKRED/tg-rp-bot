@@ -117,5 +117,5 @@ export interface PresetListItem {
   reasoningEffort: ReasoningEffort | null;
 }
 
-/** Мягкий лимит — дублирует серверный (bot/src/server/presets.ts), блокирует UI заранее. */
+/** Мягкий лимит — дублирует серверный (bot/src/server/presets/presets.constants.ts), блокирует UI заранее. */
 export const MAX_PRESETS_PER_USER = 50;

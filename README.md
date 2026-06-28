@@ -32,11 +32,13 @@ tg-rp-bot/
 │  │  ├─ config.ts     # переменные окружения
 │  │  ├─ logger.ts     # pino
 │  │  ├─ proxy.ts      # HttpsProxyAgent (https-proxy-agent) только для Telegram
-│  │  ├─ db/           # drizzle: schema + клиент + DAO по таблицам (chats — папка)
+│  │  ├─ db/           # drizzle: schema + клиент + DAO-папки по таблицам (characters/ personas/
+│  │  │                #   presets/ chats/ stories/ knowledge/ … — у каждой DAO + types/constants + barrel)
 │  │  ├─ llm/          # клиент LLM (OpenRouter / DeepSeek, выбор через LLM_PROVIDER)
 │  │  ├─ handlers/     # обработчики команд бота (/start …)
-│  │  ├─ server/       # Hono HTTP API (/health, /api): CRUD + стриминговая RP-генерация (SSE)
-│  │  │                #   + impersonate + перевод + раздача статики Mini App + seam initData
+│  │  ├─ server/       # Hono HTTP API (/health, /api), доменные папки (зеркало webapp): routes —
+│  │  │                #   карта эндпоинтов, у каждого домена *.controller.ts + validation/constants/
+│  │  │                #   types; chats/ stories/ — SSE-генерация; prompt/ media/ shared/ + статика
 │  │  ├─ scripts/      # разовые скрипты (backfill шифрования сообщений)
 │  │  └─ utils/        # retry, crypto (per-user шифрование)
 │  └─ drizzle/         # SQL-миграции

@@ -46,6 +46,6 @@ export interface CharacterInput {
   imageFull: string | null;
 }
 
-/** Мягкие лимиты — дублируют серверные (bot/src/server/characters.ts), блокируют UI заранее. */
+/** Мягкие лимиты — дублируют серверные (bot/src/server/characters/characters.constants.ts), блокируют UI заранее. */
 export const MAX_CHARACTERS_PER_USER = 50;
 export const MAX_FIRST_MESSAGES = 10;

@@ -24,9 +24,9 @@ ssh -p 2222 aoshi@home.aoshiloli.ru 'docker logs --since 1h kvach_tg_rp_bot 2>&1
 Логи — pino-JSON: поля `level`, `time` (ms), `msg`, `err`, плюс контекст (`durationMs`, `userId`, `chatId`…). Соотноси `msg` и контекст с местом в коде, которое этот лог пишет.
 
 ## Опорные места проекта
-- RP-генерация (SSE): `bot/src/server/messageHandlers.ts`, `impersonateHandlers.ts`, `streamGeneration.ts`, `promptBuilder.ts`.
+- RP-генерация (SSE): `bot/src/server/chats/messages.handlers.ts`, `chats/impersonate.handlers.ts`, `shared/streamGeneration.ts`, `prompt/promptBuilder.ts`.
 - LLM: `bot/src/llm/client.ts` (стриминг, ретраи пустых/отказных ответов).
-- Граница webapp↔API: `webapp/src/shared/api/client.ts`, `bot/src/server/initData.ts` (валидация подписи; в проде без подписи → 401).
+- Граница webapp↔API: `webapp/src/shared/api/client.ts`, `bot/src/server/middleware/initData.ts` (валидация подписи; в проде без подписи → 401).
 - БД: `bot/src/db/` (DAO по таблицам).
 - Прокси Telegram: только grammY через node-fetch `agent` (`bot.ts`); OpenRouter идёт напрямую.
 

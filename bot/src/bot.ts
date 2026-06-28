@@ -1,4 +1,5 @@
 import { Bot } from "grammy";
+import { REQUEST_TIMEOUT_MS } from "./bot.constants.js";
 import { config } from "./config.js";
 import { createTelegramProxyAgent } from "./proxy.js";
 
@@ -11,13 +12,6 @@ type FetchConfig = NonNullable<
 // тот же прокси и тот же агент — без повторного создания/логирования на каждый запрос.
 export const telegramProxyAgent = createTelegramProxyAgent();
 const agent = telegramProxyAgent;
-
-// Страховочный таймаут запроса для node-fetch@2 (мс). Long polling grammY ждёт по умолчанию
-// до 30с, поэтому берём с запасом — 50с. Назначение: зависший сокет (наблюдалось на первом
-// холодном соединении через прокси/PuTTY-туннель) иначе стопорит поллер БЕЗ ошибки и навсегда —
-// getUpdates не возвращается, апдейты не забираются. С таймаутом node-fetch прерывает запрос,
-// grammY ловит сетевую ошибку (handlePollingError) и переподключается с бэкоффом.
-const REQUEST_TIMEOUT_MS = 50_000;
 
 // agent кладём в baseFetchConfig grammY-клиента — так прокси действует только на Telegram.
 // baseFetchConfig типизирован под нативный fetch (где нет ни `agent`, ни `timeout`), а реально

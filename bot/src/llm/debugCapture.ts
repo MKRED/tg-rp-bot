@@ -1,9 +1,13 @@
 import logger from "../logger.js";
+import type { LlmDebugRecord } from "./debug.types.js";
 import {
   clampMaxRequests,
   DEFAULT_DEBUG_SETTINGS,
   type LlmDebugSettings,
 } from "./debugSettings.js";
+
+// Типы перехвата живут в debug.types.ts; реэкспорт сохраняет прежнюю точку импорта (client.ts).
+export type { LlmCallLabel, LlmDebugRecord, LlmDebugResponse } from "./debug.types.js";
 
 /**
  * In-memory перехват RAW-запросов к LLM для отладочного экрана Mini App.
@@ -20,36 +24,6 @@ import {
  * Усечение длинного `messages[]` здесь НЕ делаем: храним запрос целиком, а сколько сообщений
  * показать с краёв — настраивается на самом экране и применяется на клиенте.
  */
-
-/** Ярлык типа вызова — чтобы в списке было видно, что за запрос. */
-export type LlmCallLabel = "rp" | "impersonate" | "narrator" | "translate" | "other";
-
-/** Ответ LLM в записи: успех (content/usage) либо провал (status/error). */
-export interface LlmDebugResponse {
-  ok: boolean;
-  /** HTTP-статус провайдера при ошибке (LlmHttpError) — если был. */
-  status?: number;
-  content?: string;
-  model?: string;
-  usage?: { promptTokens: number; completionTokens: number; totalTokens?: number };
-  /** Текст ошибки/тела при провале (4xx/5xx, пустой/отказной ответ). */
-  error?: string;
-}
-
-/** Одна запись перехвата: что ушло в LLM и что вернулось. */
-export interface LlmDebugRecord {
-  id: number;
-  at: string; // ISO-время
-  userId: number | null;
-  label: LlmCallLabel;
-  provider: string;
-  model: string;
-  streaming: boolean;
-  durationMs: number;
-  /** RAW-тело запроса (после buildBody) со всеми сэмплинг-полями и полным messages[]. */
-  request: Record<string, unknown>;
-  response: LlmDebugResponse;
-}
 
 // Перехвату нужны только эти два поля (headMessages/tailMessages — про показ, на сервере не нужны).
 type CaptureSettings = { enabled: boolean; maxRequests: number };

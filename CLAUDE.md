@@ -41,20 +41,24 @@ bot/src/
   logger.ts     — pino logger (daily rolling, pino-pretty in TTY)
   proxy.ts      — HttpsProxyAgent (https-proxy-agent) ТОЛЬКО для Telegram
   config.ts     — env vars (requireEnv для обязательных)
-  db/           — drizzle: schema.ts + клиент + DAO по таблицам (chats, characters, personas,
-                  presets, impersonations, users, userSettings); chats — папка (queries/messages/settings/crypto)
-  llm/          — LLM client (client/types/constants/completionGuard/providers) — серверно,
-                  провайдер (OpenRouter | DeepSeek) выбирается env LLM_PROVIDER;
-                  debugCapture — in-memory перехват RAW-запросов к LLM для экрана отладки
+  db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + клиент +
+                  DAO-папки по таблицам: characters/ personas/ presets/ impersonations/
+                  narratorTemplates/ (у каждой DAO-файл + types.ts/constants.ts + barrel index.ts),
+                  chats/ stories/ knowledge/ (деревья/лорбук), users.ts, userSettings.ts
+  llm/          — LLM client (client/request/errors/types/constants/completionGuard/providers) —
+                  серверно, провайдер (OpenRouter | DeepSeek) выбирается env LLM_PROVIDER;
+                  debugCapture (+debug.types) — in-memory перехват RAW-запросов к LLM для экрана отладки
   handlers/     — обработчики команд/кнопок бота (index = registerHandlers, start.ts,
                   photoActions.ts — callback «Закрыть» под фото из лайтбокса)
-  server/       — Hono HTTP API: index=startServer, routes.ts, initData.ts (валидация подписи),
-                  CRUD-роуты (characters/personas/presets/chats), messageHandlers +
-                  impersonateHandlers (стриминговая RP-генерация по SSE), promptBuilder,
-                  translate (Google Translate + ИИ-перевод по промпту пресета), profilePhoto,
-                  photoToChat (POST /me/send-photo — бот шлёт фото из лайтбокса юзеру в чат
-                  с web_app-кнопкой deep-link на персонажа/персону + «Закрыть»),
-                  debug (GET/PATCH/DELETE /debug/llm — RAW-запросы к LLM и настройки перехвата)
+  server/       — Hono HTTP API, разложен по доменным папкам (зеркало webapp): index=startServer,
+                  routes.ts — карта эндпоинтов (монтаж контроллеров), middleware/ (initData — валидация
+                  подписи), доменные папки me/ characters/ personas/ presets/ books/ narrator-templates/
+                  chats/ stories/ debug/ — у каждого <домен>.controller.ts (Hono-роуты) + validation/
+                  constants/types рядом + barrel index.ts; chats/ — messages.handlers + impersonate.handlers
+                  + stats.handler; stories/ — story.handlers (SSE-генерация RP/narrator); prompt/ —
+                  promptBuilder + storyPromptBuilder + общий budget (у каждого constants/types/test рядом);
+                  media/ — profilePhoto + photoToChat (POST /me/send-photo); shared/ — fkViolation,
+                  imageValidation, streamGeneration, translate (переиспользуемое между доменами)
                   + раздача собранной статики Mini App из ./public (SPA-fallback) — один процесс
   scripts/      — разовые скрипты (backfill-message-encryption)
   utils/        — retry, crypto (per-user шифрование сообщений)
@@ -114,10 +118,11 @@ RP-чата), переиспользуя только реально переи�
   **обяз.**, FK без onDelete = restrict → удаление используемого шаблона/пресета даёт 409 in_use)
   + `story_messages` (дерево, `kind: beat|continue|directive`; `translations` — JSON-кэш переводов,
   зашифрован per-user, как у `messages`) + `story_settings` (перевод истории, зеркало `chat_settings`).
-- **Сервер:** `db/knowledge/`, `db/narratorTemplates.ts`, `db/stories/` (зеркало `db/chats/`,
-  вкл. `settings.ts` и `crypto.ts` — расшифровка кэша переводов); `server/storyPromptBuilder.ts` (+тест),
-  `server/storyHandlers.ts` (вкл. перевод бита/директивы через `googleTranslate`), роуты
-  `books`/`narrator-templates`/`stories` (у `stories` — `settings` GET/PUT + `messages/:id/translate`).
+- **Сервер:** `db/knowledge/`, `db/narratorTemplates/`, `db/stories/` (зеркало `db/chats/`,
+  вкл. `settings.ts` и `crypto.ts` — расшифровка кэша переводов); `server/prompt/storyPromptBuilder.ts`
+  (+тест), `server/stories/story.handlers.ts` (вкл. перевод бита/директивы через `googleTranslate`) +
+  контроллер `server/stories/stories.controller.ts`, домены-роуты `books/`/`narrator-templates/`/`stories/`
+  (у `stories` — `settings` GET/PUT + `messages/:id/translate`).
 - **Webapp:** фичи `narrator`/`knowledge-books`/`narrator-templates`, страницы `pages/narrator/*`,
   `pages/knowledge-books/*`, `pages/narrator-templates/*`; кнопки на главной (Режим игры + Библиотека).
   Перевод истории — раздел в `StorySettingsPage` + кнопка-Globe на битах/директивах в ленте
@@ -157,7 +162,7 @@ leading-user + нейтрализованный путь. Leading-user и ней
 HTTP API бота (`server/`), а не напрямую из webapp.
 
 Запросы webapp → `/api/*` несут подписанный Telegram `initData` в заголовке `Authorization: tma <initData>`
-(webapp: `shared/api/client.ts`). Сервер (`server/initData.ts`) **проверяет HMAC-подпись** по `BOT_TOKEN`
+(webapp: `shared/api/client.ts`). Сервер (`server/middleware/initData.ts`) **проверяет HMAC-подпись** по `BOT_TOKEN`
 через **`@tma.js/init-data-node`** (`validate` бросает при подделке/просрочке, `parse` достаёт юзера в
 `c.get("tgUser")`). Без подписи: в проде → 401, в dev → пропускаем (отладка webapp из браузера).
 

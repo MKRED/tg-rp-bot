@@ -3,65 +3,15 @@ import { retry } from "../utils/index.js";
 import { isUnusableCompletion } from "./completionGuard.js";
 import { CHAT_COMPLETIONS_PATH } from "./constants.js";
 import { type LlmDebugResponse, recordLlmCall } from "./debugCapture.js";
+import { EmptyCompletionError, LlmHttpError } from "./errors.js";
 import { getActiveProvider, type LlmProvider } from "./providers.js";
+import { buildBody, makeHeaders } from "./request.js";
 import type {
   ChatCompletionOptions,
   ChatCompletionResult,
   LlmResponse,
   LlmStreamDelta,
 } from "./types.js";
-
-/** Ошибка с HTTP-статусом LLM-провайдера — по статусу решаем, ретраить ли. */
-class LlmHttpError extends Error {
-  constructor(
-    readonly provider: string,
-    readonly status: number,
-    readonly bodyText: string,
-  ) {
-    super(`${provider} ${status}: ${bodyText}`);
-    this.name = "LlmHttpError";
-  }
-}
-
-/** Ответ пришёл, но непригоден (пустой текст или отказ модели) — ретраибл. */
-class EmptyCompletionError extends Error {
-  constructor() {
-    super("LLM returned an empty or refusal completion");
-    this.name = "EmptyCompletionError";
-  }
-}
-
-function buildBody(
-  options: ChatCompletionOptions,
-  stream: boolean,
-  provider: LlmProvider,
-): Record<string, unknown> {
-  return {
-    model: options.model ?? provider.defaultModel,
-    messages: options.messages,
-    stream,
-    // Передаём только заданные параметры — провайдер применяет дефолты на undefined.
-    ...(options.temperature !== undefined && { temperature: options.temperature }),
-    ...(options.maxTokens !== undefined && { max_tokens: options.maxTokens }),
-    ...(options.topP !== undefined && { top_p: options.topP }),
-    ...(options.topK !== undefined && { top_k: options.topK }),
-    ...(options.frequencyPenalty !== undefined && { frequency_penalty: options.frequencyPenalty }),
-    ...(options.presencePenalty !== undefined && { presence_penalty: options.presencePenalty }),
-    ...(options.repetitionPenalty !== undefined && { repetition_penalty: options.repetitionPenalty }),
-    ...(options.minP !== undefined && { min_p: options.minP }),
-    ...(options.topA !== undefined && { top_a: options.topA }),
-    // Reasoning подключается провайдеро-специфично (для DeepSeek — thinking-режим).
-    ...provider.reasoningBody(options),
-  };
-}
-
-function makeHeaders(provider: LlmProvider): Record<string, string> {
-  return {
-    Authorization: `Bearer ${provider.apiKey}`,
-    "Content-Type": "application/json",
-    ...provider.appHeaders,
-  };
-}
 
 /**
  * Вызывает chat completion активного LLM-провайдера (OpenRouter или DeepSeek — выбор по

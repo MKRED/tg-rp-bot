@@ -4,7 +4,7 @@ import { initData } from "@telegram-apps/sdk-react";
  * Граница webapp → серверное API бота (/api/*).
  *
  * Каждый запрос несёт подписанную Telegram строку initData в заголовке
- * `Authorization: tma <initData>` — сервер проверяет её подпись (см. bot/src/server/initData.ts)
+ * `Authorization: tma <initData>` — сервер проверяет её подпись (см. bot/src/server/middleware/initData.ts)
  * и только тогда доверяет пользователю. Ключ OpenRouter живёт ТОЛЬКО на сервере, поэтому
  * вся RP-генерация/перевод идут через этот слой, а не напрямую из браузера.
  */

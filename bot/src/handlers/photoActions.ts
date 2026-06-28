@@ -1,8 +1,6 @@
 import type { Bot } from "grammy";
 import logger from "../logger.js";
-
-/** callback_data кнопки «Закрыть» под фото, отправленным из лайтбокса Mini App (см. server/photoToChat.ts). */
-export const PHOTO_CLOSE_CALLBACK = "photo:close";
+import { PHOTO_CLOSE_CALLBACK } from "./photoActions.constants.js";
 
 /**
  * Регистрирует обработчик инлайн-кнопки «Закрыть» под фото, которое пользователь отправил себе

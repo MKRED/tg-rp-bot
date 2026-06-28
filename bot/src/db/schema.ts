@@ -10,6 +10,16 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
+import type { PromptOrderItem, StoryPromptOrderItem } from "./schema.types.js";
+
+// Типы компонентов промптов живут в schema.types.ts; реэкспорт сохраняет прежнюю точку
+// импорта `db/schema.js` для пресетов, narrator-шаблонов и билдеров промптов.
+export type {
+  PromptComponentId,
+  PromptOrderItem,
+  StoryPromptComponentId,
+  StoryPromptOrderItem,
+} from "./schema.types.js";
 
 /**
  * Пользователи бота. id — это Telegram user id (помещается в безопасный диапазон integer).
@@ -126,19 +136,6 @@ export const personas = pgTable("personas", {
 export type Persona = typeof personas.$inferSelect;
 export type NewPersona = typeof personas.$inferInsert;
 
-/** Компонент запроса к нейросети, чей порядок и включённость настраиваются в пресете. */
-export type PromptComponentId =
-  | "system"
-  | "characterDescription"
-  | "characterScenario"
-  | "userDescription"
-  | "auxiliary"
-  | "history"
-  | "postHistory";
-
-/** Элемент порядка промптов: какой компонент и включён ли он в запрос. */
-export type PromptOrderItem = { id: PromptComponentId; enabled: boolean };
-
 /**
  * Пресеты настроек генерации («Настройки ответа ИИ»). Один пользователь — много пресетов,
  * описывающих, КАК нейросеть отвечает (сэмплинг, лимиты токенов, системные промпты, порядок их
@@ -184,7 +181,7 @@ export const generationPresets = pgTable("generation_presets", {
   userPersonaStreaming: boolean("user_persona_streaming").notNull().default(true),
   // Служебный: системный промпт для ИИ-перевода черновика сообщения (режим «ИИ» в шторе перевода).
   // Плейсхолдер {{target_lang}} — полное англ. название целевого языка; текст уходит ролью user.
-  // Пусто → дефолтный шаблон (DEFAULT_TRANSLATION_TEMPLATE в server/translate.ts).
+  // Пусто → дефолтный шаблон (DEFAULT_TRANSLATION_TEMPLATE в server/shared/translate.constants.ts).
   translationSystemPrompt: text("translation_system_prompt").notNull().default(""),
 
   // Рассуждение (reasoning). effort: minimal | low | medium | high | xhigh (или null).
@@ -381,18 +378,6 @@ export const knowledgeBookEntries = pgTable("knowledge_book_entries", {
 
 export type KnowledgeBookEntry = typeof knowledgeBookEntries.$inferSelect;
 export type NewKnowledgeBookEntry = typeof knowledgeBookEntries.$inferInsert;
-
-/** Компонент narrator-запроса, чей порядок и включённость настраиваются в шаблоне. */
-export type StoryPromptComponentId =
-  | "system"
-  | "premise"
-  | "lorebook"
-  | "auxiliary"
-  | "history"
-  | "postHistory";
-
-/** Элемент порядка narrator-промптов: какой компонент и включён ли он в запрос. */
-export type StoryPromptOrderItem = { id: StoryPromptComponentId; enabled: boolean };
 
 /**
  * Narrator-шаблон — переиспользуемый источник промптов narrator-режима (нарратор-инструкция:

@@ -35,7 +35,7 @@ export interface SamplingSpec {
  * Единый источник описаний параметров сэмплинга: им управляются и слайдеры формы, и подписи.
  * Диапазоны/дефолты — официальные значения OpenRouter (docs/api/reference/parameters).
  * topK без верхней границы у провайдера («0 or above») — в UI кап 100 ради удобства слайдера;
- * серверная валидация (bot/src/server/presets.ts) ограничивает только снизу.
+ * серверная валидация (bot/src/server/presets/presets.validation.ts) ограничивает только снизу.
  * Порядок массива = порядок отображения в форме.
  */
 export const SAMPLING_SPECS: SamplingSpec[] = [

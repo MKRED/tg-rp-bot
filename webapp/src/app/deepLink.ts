@@ -1,6 +1,6 @@
 /**
  * Имя query-параметра deep-link от web_app-кнопки бота. Согласовано с сервером
- * (bot/src/server/photoToChat.ts) — менять только синхронно.
+ * (bot/src/server/media/photoToChat.ts) — менять только синхронно.
  */
 const DEEP_LINK_PARAM = "dl";
 /** Разрешённые внутренние пути (та же защита, что на сервере) — без внешних URL/мусора. */
