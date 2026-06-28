@@ -1,21 +1,11 @@
 import { config } from "../config.js";
 import { OPENROUTER_APP_HEADERS } from "./constants.js";
+import type { LlmProvider, LlmProviderName } from "./providers.types.js";
 import type { ChatCompletionOptions } from "./types.js";
 
-/** Имя LLM-провайдера. */
-export type LlmProviderName = "openrouter" | "deepseek";
-
-/** Описание провайдера: всё, чем отличается один OpenAI-совместимый бэкенд от другого. */
-export interface LlmProvider {
-  name: LlmProviderName;
-  baseUrl: string;
-  apiKey: string | undefined;
-  defaultModel: string;
-  /** Доп. заголовки атрибуции приложения (есть у OpenRouter, нет у DeepSeek). */
-  appHeaders?: Record<string, string>;
-  /** Провайдеро-специфичные поля reasoning в теле запроса (пустой объект — не добавлять ничего). */
-  reasoningBody: (opts: ChatCompletionOptions) => Record<string, unknown>;
-}
+// Типы провайдера живут в providers.types.ts; реэкспорт сохраняет прежние точки импорта
+// (client.ts, request.ts).
+export type { LlmProvider, LlmProviderName } from "./providers.types.js";
 
 /**
  * Схлопывает 5-уровневый enum пресета (minimal|low|medium|high|xhigh) в значения,
