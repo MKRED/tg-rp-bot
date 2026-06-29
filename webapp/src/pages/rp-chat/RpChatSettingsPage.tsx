@@ -8,8 +8,9 @@ import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { CharacterAvatar } from "../../features/characters/components/CharacterAvatar";
 import { PersonaAvatar } from "../../features/personas/components/PersonaAvatar";
-import { deleteChat, renameChat, TokenBudgetBar, useChat, useChatSettings, useChatStats } from "../../features/rp-chat";
+import { deleteChat, renameChat, useChat, useChatSettings, useChatStats } from "../../features/rp-chat";
 import { ExpandableSelect } from "../../shared/components/ExpandableSelect";
+import { TokenBudgetBar } from "../../shared/components/TokenBudgetBar";
 import {
   AUTO_SCOPE_OPTIONS,
   LANG_OPTIONS,
@@ -95,25 +96,22 @@ export function RpChatSettingsPage() {
   return (
     <PageTransition>
       <div className="rp-chat-settings-page">
-        {/* Название чата: пусто → в списке и шапке показываем имя персонажа.
-            Standalone <Input> на фоне страницы (как в форме персонажа), а НЕ внутри
-            Section — иначе рамка-«коробка» FormInput вкладывается в карточку секции. */}
-        {chat && (
-          <div className="rp-chat-settings-page__title-field">
-            <Input
-              header="Название"
-              placeholder={chat.character.name}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onBlur={handleTitleBlur}
-            />
-            <p className="rp-chat-settings-page__title-hint">
-              Оставьте пустым, чтобы показывать имя персонажа
-            </p>
-          </div>
-        )}
-
         <List>
+          {/* Название чата: пусто → в списке и шапке показываем имя персонажа.
+              section-blend-inputs убирает «коробку»-фон у FormInput, чтобы поле сливалось
+              с карточкой секции; подсказка — section-note (последний ребёнок секции). */}
+          {chat && (
+            <Section className="section-blend-inputs" header="Название">
+              <Input
+                placeholder={chat.character.name}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onBlur={handleTitleBlur}
+              />
+              <p className="section-note">Оставьте пустым, чтобы показывать имя персонажа</p>
+            </Section>
+          )}
+
           {/* Секция с текущим персонажем, персоной и пресетом */}
           <Section header="Чат">
             {chatLoading ? (

@@ -77,7 +77,13 @@ export function buildStoryMessages(opts: StoryPromptOptions): ChatMessage[] {
   // История эмитируется (и расходует бюджет) только если компонент включён в порядке. Если выключен —
   // обрезку не считаем, leading-user не резервируем (его стоимость учитывается внутри resolveHistory).
   const historyEnabled = opts.promptOrder.some((i) => i.id === "history" && i.enabled);
-  const history = historyEnabled ? resolveHistory(opts, fixedSystemTokens) : [];
+  // trim:false (экран статистики) — берём историю целиком, без урезания под бюджет контекста.
+  const trim = opts.trim ?? true;
+  const history = historyEnabled
+    ? trim
+      ? resolveHistory(opts, fixedSystemTokens)
+      : opts.history
+    : [];
   const lastIndex = history.length - 1;
 
   const result: ChatMessage[] = [];

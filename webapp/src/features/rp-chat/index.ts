@@ -1,5 +1,4 @@
 export { ChatCard } from "./components/ChatCard";
-export { TokenBudgetBar } from "./components/TokenBudgetBar";
 export { useRecentChats } from "./hooks/useRecentChats";
 export { useAllChats } from "./hooks/useAllChats";
 export { useChat } from "./hooks/useChat";

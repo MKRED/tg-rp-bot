@@ -32,6 +32,12 @@ export type StoryTreeNode = {
   createdAt: string;
 };
 
+/** Оценка объёма истории в токенах: вся история (все ветки) и текущая активная ветка. */
+export type StoryTokenStats = {
+  tokensTotal: number;
+  tokensActiveBranch: number;
+};
+
 /** Настройки перевода истории (значения из story_settings либо дефолты). */
 export type StorySettingsRow = {
   translateEnabled: boolean;

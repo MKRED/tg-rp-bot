@@ -16,6 +16,7 @@ import {
 import { ensureUser } from "../../db/users.js";
 import logger from "../../logger.js";
 import type { AppVariables } from "../middleware/initData.types.js";
+import { handleStoryStats } from "./stats.handler.js";
 import {
   handleAdvanceStory,
   handleDeleteStoryMessage,
@@ -202,6 +203,9 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
       return c.json({ error: "Internal error" }, 500);
     }
   });
+
+  // ─── Статистика истории (токены) ─────────────────────────────────────────
+  app.get("/:id/stats", handleStoryStats);
 
   // ─── Граф (дерево истории для React Flow) ─────────────────────────────────
   app.get("/:id/tree", async (c) => {

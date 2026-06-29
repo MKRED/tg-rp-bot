@@ -4,6 +4,7 @@ export { useRecentStories } from "./hooks/useRecentStories";
 export { useAllStories } from "./hooks/useAllStories";
 export { useStory } from "./hooks/useStory";
 export { useStorySettings } from "./hooks/useStorySettings";
+export { useStoryStats } from "./hooks/useStoryStats";
 export { useStoryAutoTranslate } from "./hooks/useStoryAutoTranslate";
 export { useStoryTree } from "./hooks/useStoryTree";
 export { StoryCard } from "./components/StoryCard";
@@ -26,6 +27,7 @@ export {
   type StoryStreamEvents,
 } from "./api/stories-api";
 export { getStorySettings, updateStorySettings } from "./api/settings-api";
+export { getStoryStats } from "./api/stats-api";
 export { LANG_OPTIONS, SCOPE_OPTIONS, AUTO_SCOPE_OPTIONS } from "./lib/translate-options";
 export type {
   StoryListItem,
@@ -35,4 +37,5 @@ export type {
   StoryDetail,
   StoryCreateInput,
   StorySettings,
+  StoryStats,
 } from "./types/story";

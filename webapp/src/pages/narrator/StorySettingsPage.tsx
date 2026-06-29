@@ -23,12 +23,17 @@ import {
   updateStoryPremise,
   useStory,
   useStorySettings,
+  useStoryStats,
 } from "../../features/narrator";
+import { TokenBudgetBar } from "../../shared/components/TokenBudgetBar";
 import { confirmAction } from "../../shared/telegram/confirm";
 import { useToast } from "../../shared/toast";
 import "./narrator.css";
 
 const ITEM_T = { duration: 0.2, ease: "easeOut" as const };
+
+// Токены — оценка (~), показываем с разделителями разрядов для читаемости.
+const fmtTokens = (n: number) => `~${n.toLocaleString("ru-RU")}`;
 
 // Какой из выпадающих списков перевода раскрыт — открытие одного закрывает остальные (как в RP).
 type OpenSelect = "lang" | "scope" | "auto" | null;
@@ -43,6 +48,7 @@ export function StorySettingsPage() {
   const navigate = useTransitionNavigate();
   const { story, loading } = useStory(id);
   const { settings, loading: settingsLoading, update: updateSettings } = useStorySettings(id);
+  const { stats, loading: statsLoading } = useStoryStats(id);
   const { showToast } = useToast();
 
   const [deleting, setDeleting] = useState(false);
@@ -137,21 +143,19 @@ export function StorySettingsPage() {
   return (
     <PageTransition>
       <div className="story-settings-page">
-        {/* Название истории: пусто → в ленте/шапке показываем имя книги. Standalone <Input>. */}
-        <div className="story-settings-page__title-field">
-          <Input
-            header="Название"
-            placeholder={story.book.name}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={handleTitleBlur}
-          />
-          <p className="story-settings-page__title-hint">
-            Оставьте пустым, чтобы показывать имя книги знаний
-          </p>
-        </div>
-
         <List>
+          {/* Название истории: пусто → в ленте/шапке показываем имя книги. section-blend-inputs
+              убирает «коробку»-фон у FormInput; подсказка — section-note (последний ребёнок). */}
+          <Section className="section-blend-inputs" header="Название">
+            <Input
+              placeholder={story.book.name}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onBlur={handleTitleBlur}
+            />
+            <p className="section-note">Оставьте пустым, чтобы показывать имя книги знаний</p>
+          </Section>
+
           <Section header="История">
             <motion.div
               initial={{ opacity: 0, y: 8 }}
@@ -280,6 +284,54 @@ export function StorySettingsPage() {
                     />
                   </>
                 )}
+              </>
+            )}
+          </Section>
+
+          <Section header="Статистика">
+            {statsLoading ? (
+              <div style={{ display: "flex", justifyContent: "center", padding: 16 }}>
+                <Spinner size="m" />
+              </div>
+            ) : (
+              <>
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ ...ITEM_T, delay: 0 }}
+                >
+                  <Cell
+                    after={<span style={{ color: "var(--tg-theme-hint-color)" }}>{fmtTokens(stats.tokensTotal)}</span>}
+                    subtitle="Токенов в сообщениях всех веток"
+                  >
+                    Вся история
+                  </Cell>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ ...ITEM_T, delay: 0.07 }}
+                >
+                  <Cell
+                    after={<span style={{ color: "var(--tg-theme-hint-color)" }}>{fmtTokens(stats.tokensActiveBranch)}</span>}
+                    subtitle="Токенов в сообщениях текущей ветки"
+                  >
+                    Активная ветка
+                  </Cell>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ ...ITEM_T, delay: 0.14 }}
+                >
+                  <Cell subtitle="Полный запрос к ИИ: активная ветка + промпты">
+                    Запрос с промптами
+                  </Cell>
+                  {/* Полоса «использовано / лимит контекста»; при безграничном пресете лимит = ∞ */}
+                  <TokenBudgetBar used={stats.tokensPrompt} limit={stats.contextLimit} />
+                </motion.div>
               </>
             )}
           </Section>

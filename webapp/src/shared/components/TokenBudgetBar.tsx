@@ -1,4 +1,5 @@
-import { tokenBudget } from "../lib/token-budget";
+import { tokenBudget } from "../text/token-budget";
+import "./TokenBudgetBar.css";
 
 interface TokenBudgetBarProps {
   /** Использовано токенов (оценка). */
@@ -12,6 +13,7 @@ const fmt = (n: number) => n.toLocaleString("ru-RU");
 /**
  * Полоса «использовано / доступно» токенов запроса. При безграничном контексте полосу не рисуем —
  * показываем только «~used / ∞». Цвет полосы меняется в жёлтой/красной зоне (см. tokenBudget).
+ * Переиспользуется секцией «Статистика» в настройках RP-чата и истории (narrator).
  */
 export function TokenBudgetBar({ used, limit }: TokenBudgetBarProps) {
   const { pct, level, unlimited } = tokenBudget(used, limit);

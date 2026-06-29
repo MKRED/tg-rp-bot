@@ -21,4 +21,6 @@ export type StoryPromptOptions = {
   contextSize?: number | null;
   maxTokens?: number | null;
   onTrim?: (info: TrimInfo) => void;
+  /** Урезать историю под лимит контекста. false → история целиком (для экрана статистики). Дефолт true. */
+  trim?: boolean;
 };

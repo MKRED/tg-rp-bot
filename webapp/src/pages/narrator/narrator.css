@@ -99,19 +99,6 @@
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
 }
 
-/* Поле названия истории — standalone <Input> на фоне страницы (как в настройках чата). */
-.story-settings-page__title-field {
-  padding: 8px 0;
-}
-
-.story-settings-page__title-hint {
-  margin: 4px 0 0;
-  padding: 0 22px;
-  font-size: 13px;
-  line-height: 1.35;
-  color: var(--tg-theme-hint-color, #999);
-}
-
 /* Иконка привязанной сущности (книга/шаблон/пресет) в ячейках раздела «История». */
 .story-settings-page__icon {
   color: var(--tg-theme-link-color, #2481cc);

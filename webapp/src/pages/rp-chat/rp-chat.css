@@ -827,20 +827,6 @@
   flex-shrink: 0;
 }
 
-/* Поле названия чата — telegram-ui <Input> standalone на фоне страницы (как в форме
-   персонажа), потому НЕ внутри Section. Под ним — подсказка в стиле footer секции. */
-.rp-chat-settings-page__title-field {
-  padding: 8px 0;
-}
-
-.rp-chat-settings-page__title-hint {
-  margin: 4px 0 0;
-  padding: 0 22px;
-  font-size: 13px;
-  line-height: 1.35;
-  color: var(--tg-theme-hint-color, #999);
-}
-
 .rp-chat-settings-page {
   min-height: 100dvh;
   padding-top: calc(
@@ -849,46 +835,6 @@
     var(--tg-viewport-content-safe-area-inset-top, 0px)
   );
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
-}
-
-/* Полоса бюджета токенов (использовано / лимит контекста) в секции статистики */
-.token-budget {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 4px 24px 8px;
-}
-
-.token-budget__caption {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  color: var(--tg-theme-hint-color, #999);
-}
-
-.token-budget__track {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
-  overflow: hidden;
-}
-
-.token-budget__fill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.3s ease;
-}
-
-.token-budget__fill--ok {
-  background: var(--tg-theme-link-color, #2481cc);
-}
-
-.token-budget__fill--warn {
-  background: #f5a623;
-}
-
-.token-budget__fill--over {
-  background: #e53935;
 }
 
 /* ─── Страница графа ─────────────────────────────────────────────────────────── */

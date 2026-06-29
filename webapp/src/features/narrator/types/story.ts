@@ -57,6 +57,15 @@ export type StoryDetail = {
   messages: StoryMessage[];
 };
 
+/** Статистика истории (токены) для экрана настроек — зеркало ChatStats без impersonate-вариантов. */
+export type StoryStats = {
+  tokensTotal: number;
+  tokensActiveBranch: number;
+  tokensPrompt: number;
+  /** Лимит контекста из пресета; null — безграничный или не задан. */
+  contextLimit: number | null;
+};
+
 export type StoryCreateInput = {
   bookId: number;
   // Шаблон и пресет обязательны (валидируется на сервере и в БД).

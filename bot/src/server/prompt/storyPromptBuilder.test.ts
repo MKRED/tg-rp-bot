@@ -235,4 +235,18 @@ describe("buildStoryMessages — обрезка под контекст", () => 
     buildStoryMessages(baseOpts({ history: sampleHistory(), onTrim }));
     expect(onTrim).not.toHaveBeenCalled();
   });
+
+  it("trim:false → история не урезается, onTrim не зовётся (режим статистики)", () => {
+    const onTrim = vi.fn();
+    // contextSize:60/maxTokens:16 в режиме trim урезали бы историю (см. тест выше), но trim:false
+    // отключает обрезку — все узлы остаются на месте.
+    const result = buildStoryMessages(
+      baseOpts({ history: sampleHistory(), contextSize: 60, maxTokens: 16, trim: false, onTrim }),
+    );
+    expect(onTrim).not.toHaveBeenCalled();
+    // system + leading-user + 6 узлов истории.
+    expect(result).toHaveLength(8);
+    // Самый старый узел (openingBeat) не отброшен.
+    expect(result.some((m) => m.content.includes("Once upon a time"))).toBe(true);
+  });
 });
