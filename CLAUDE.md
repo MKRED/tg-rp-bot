@@ -84,6 +84,10 @@ webapp/src/
 ```
 
 ### Структура webapp — pages vs features
+> 📘 **Стили и режимы Mini App** — Telegram UI (tgui), темы/платформы, viewport, safe area,
+> compact/full-screen, mobile vs desktop: см. [docs/telegram-ui.md](docs/telegram-ui.md).
+> Свериться с ним перед правкой UI webapp или обновлением tgui/SDK.
+
 - **`pages/<screen>/`** — цель маршрута, по одной на `ROUTES.*`. Тонкая обёртка, собирающая фичи.
 - **`features/<feature>/`** — самодостаточный доменный модуль (UI + логика): `characters`, `generation-presets`,
   `rp-chat`, далее `prompts`, `translator`.
