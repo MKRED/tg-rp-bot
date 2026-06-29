@@ -43,6 +43,7 @@ export function parseNarratorTemplateInput(
       systemPrompt: str(b.systemPrompt),
       auxiliarySystemPrompt: str(b.auxiliarySystemPrompt),
       postHistoryInstruction: str(b.postHistoryInstruction),
+      translationSystemPrompt: str(b.translationSystemPrompt),
       promptOrder,
     },
   };

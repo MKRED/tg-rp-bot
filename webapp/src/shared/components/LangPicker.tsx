@@ -1,10 +1,16 @@
 import { Check, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { LANG_OPTIONS } from "../lib/translate-options";
+
+export interface LangOption {
+  value: string;
+  label: string;
+}
 
 interface LangPickerProps {
   value: string;
   onChange: (value: string) => void;
+  /** Список языков (передаётся фичей: LANG_OPTIONS у RP/narrator одинаков, но живёт в каждой фиче). */
+  options: LangOption[];
 }
 
 // Сколько места по вертикали меню хочет занять и какой зазор оставить от края экрана.
@@ -15,7 +21,7 @@ const VIEWPORT_MARGIN = 8;
  * Пикер целевого языка перевода. Вместо нативного <select> рисует свой список прямо в интерфейсе
  * шторы (нативное меню в Telegram webview выглядит чужеродно). Закрывается по выбору или клику вне.
  */
-export function LangPicker({ value, onChange }: LangPickerProps) {
+export function LangPicker({ value, onChange, options }: LangPickerProps) {
   const [open, setOpen] = useState(false);
   // Направление и максимальная высота меню считаются при открытии по реальному месту вокруг
   // триггера: штора растёт вверх от появления результата и сдвигает переключатель к верху экрана,
@@ -49,7 +55,7 @@ export function LangPicker({ value, onChange }: LangPickerProps) {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [open]);
 
-  const current = LANG_OPTIONS.find((o) => o.value === value);
+  const current = options.find((o) => o.value === value);
 
   return (
     <div className="lang-picker" ref={rootRef}>
@@ -74,7 +80,7 @@ export function LangPicker({ value, onChange }: LangPickerProps) {
           role="listbox"
           style={{ maxHeight: drop.maxHeight }}
         >
-          {LANG_OPTIONS.map((o) => (
+          {options.map((o) => (
             <li key={o.value}>
               <button
                 type="button"

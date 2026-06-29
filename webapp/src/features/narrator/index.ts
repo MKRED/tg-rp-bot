@@ -8,7 +8,7 @@ export { useStoryStats } from "./hooks/useStoryStats";
 export { useStoryAutoTranslate } from "./hooks/useStoryAutoTranslate";
 export { useStoryTree } from "./hooks/useStoryTree";
 export { StoryCard } from "./components/StoryCard";
-export { StoryInput } from "./components/StoryInput";
+export { StoryInput, type StoryInputHandle } from "./components/StoryInput";
 export { StoryHeader } from "./components/StoryHeader";
 export { StoryMessageItem } from "./components/StoryMessageItem";
 export { BeatDivider } from "./components/BeatDivider";
@@ -24,6 +24,7 @@ export {
   switchBranch,
   deleteStoryMessage,
   translateStoryMessage,
+  composeStoryTranslate,
   type StoryStreamEvents,
 } from "./api/stories-api";
 export { getStorySettings, updateStorySettings } from "./api/settings-api";

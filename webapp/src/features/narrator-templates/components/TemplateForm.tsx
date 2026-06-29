@@ -30,6 +30,9 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
     initial?.auxiliarySystemPrompt ?? "",
   );
   const [postHistory, setPostHistory] = useState(initial?.postHistoryInstruction ?? "");
+  const [translationSystemPrompt, setTranslationSystemPrompt] = useState(
+    initial?.translationSystemPrompt ?? "",
+  );
   const [promptOrder, setPromptOrder] = useState<StoryPromptOrderItem[]>(
     initial?.promptOrder ?? DEFAULT_NARRATOR_PROMPT_ORDER,
   );
@@ -66,6 +69,14 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
         value={postHistory}
         onChange={setPostHistory}
       />
+      <PromptField
+        label="Системный промпт перевода"
+        hint="Указания для ИИ-режима перевода черновика директивы (штора перевода в истории). Пусто → перевод без спец-инструкций."
+        placeholder="Напр.: Переводи бережно, сохраняя стиль и формат; не добавляй пояснений."
+        rows={4}
+        value={translationSystemPrompt}
+        onChange={setTranslationSystemPrompt}
+      />
       {/* Гуттер 22px — как у полей tgui внутри карточки (выравнивание заголовка с рядами ниже). */}
       <div style={{ padding: "12px 22px 0", fontWeight: 600 }}>Порядок промптов</div>
       <PromptOrderEditor
@@ -85,6 +96,7 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
               systemPrompt: systemPrompt,
               auxiliarySystemPrompt: auxiliarySystemPrompt,
               postHistoryInstruction: postHistory,
+              translationSystemPrompt: translationSystemPrompt,
               promptOrder: promptOrder,
             })
           }

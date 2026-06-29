@@ -10,7 +10,9 @@ import { deleteMessage, switchBranch, translateMessage } from "../../features/rp
 import { ChatHeader } from "../../features/rp-chat/components/ChatHeader";
 import { ChatInput, type ChatInputHandle } from "../../features/rp-chat/components/ChatInput";
 import { ImpersonateSheet } from "../../features/rp-chat/components/ImpersonateSheet";
-import { TranslateSheet } from "../../features/rp-chat/components/TranslateSheet";
+import { TranslateSheet } from "../../shared/components/TranslateSheet";
+import { composeTranslate } from "../../features/rp-chat/api/translate-api";
+import { LANG_OPTIONS } from "../../features/rp-chat/lib/translate-options";
 import { MessageBubble } from "../../features/rp-chat/components/MessageBubble";
 import { StreamingBubble } from "../../features/rp-chat/components/StreamingBubble";
 import type { MessageInPath } from "../../features/rp-chat";
@@ -303,7 +305,8 @@ export function RpChatPage() {
           {translateOpen && chat && (
             <TranslateSheet
               key="translate-sheet"
-              chatId={chatId}
+              translate={(p) => composeTranslate(chatId, p)}
+              langOptions={LANG_OPTIONS}
               onPick={handlePickSuggestion}
               onClose={() => setTranslateOpen(false)}
             />

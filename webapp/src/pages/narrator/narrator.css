@@ -194,6 +194,27 @@
   cursor: default;
 }
 
+/* Кнопка перевода черновика — вторичная, слева от поля; видна при пустом инпуте */
+.story-input__translate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: var(--tgui--secondary_bg_color);
+  color: var(--tgui--link_color);
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.story-input__translate:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 /* ─── Граф веток истории ──────────────────────────────────────────────────────── */
 .story-graph-page {
   height: 100dvh;

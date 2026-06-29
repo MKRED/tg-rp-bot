@@ -1,21 +1,31 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
-import { ChevronsRight, SendHorizontal } from "lucide-react";
-import { useRef, useState } from "react";
+import { ChevronsRight, Languages, SendHorizontal } from "lucide-react";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+
+export interface StoryInputHandle {
+  /** Подставить текст в поле как редактируемый черновик директивы (ресайз + фокус). */
+  setDraft: (text: string) => void;
+}
 
 interface StoryInputProps {
   /** Пустая строка → «Дальше» (continue); непустая → режиссёрская директива. */
   onAdvance: (directive: string) => void;
+  /** Открыть штору перевода черновика (кнопка при пустом поле). */
+  onTranslate: () => void;
   disabled: boolean;
 }
 
 /** Поле режиссёра: пишет директиву или жмёт «Дальше» при пустом поле. */
-export function StoryInput({ onAdvance, disabled }: StoryInputProps) {
+export const StoryInput = forwardRef<StoryInputHandle, StoryInputProps>(function StoryInput(
+  { onAdvance, onTranslate, disabled },
+  ref,
+) {
   const [value, setValue] = useState("");
-  const ref = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Авторазмер: сбрасываем до auto, потом ставим по scrollHeight (макс 160px).
   const resize = () => {
-    const el = ref.current;
+    const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
     // box-sizing: border-box — scrollHeight не включает рамку, а style.height её учитывает.
@@ -24,19 +34,46 @@ export function StoryInput({ onAdvance, disabled }: StoryInputProps) {
     el.style.height = `${Math.min(el.scrollHeight + borderY, 160)}px`;
   };
 
+  useImperativeHandle(ref, () => ({
+    setDraft: (text: string) => {
+      setValue(text);
+      // value применится после рендера — ресайз/фокус/курсор в конец на следующем кадре
+      requestAnimationFrame(() => {
+        resize();
+        const el = textareaRef.current;
+        if (el) {
+          el.focus();
+          el.setSelectionRange(el.value.length, el.value.length);
+        }
+      });
+    },
+  }));
+
   const submit = () => {
     if (disabled) return;
     onAdvance(value.trim());
     setValue("");
-    if (ref.current) ref.current.style.height = "auto";
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
   };
 
   const hasText = value.trim().length > 0;
 
   return (
     <div className="story-input">
+      {/* Кнопка перевода видна только при пустом поле — исчезает, как только режиссёр начал печатать. */}
+      {!hasText && (
+        <button
+          className="story-input__translate"
+          onClick={onTranslate}
+          disabled={disabled}
+          type="button"
+          aria-label="Перевод"
+        >
+          <Languages size={22} />
+        </button>
+      )}
       <textarea
-        ref={ref}
+        ref={textareaRef}
         className="story-input__textarea"
         value={value}
         onChange={(e) => {
@@ -58,4 +95,4 @@ export function StoryInput({ onAdvance, disabled }: StoryInputProps) {
       </button>
     </div>
   );
-}
+});

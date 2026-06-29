@@ -396,6 +396,8 @@ export const narratorTemplates = pgTable("narrator_templates", {
   auxiliarySystemPrompt: text("auxiliary_system_prompt").notNull().default(""),
   // Инструкция «после истории» (по образцу postHistoryInstruction у пресета).
   postHistoryInstruction: text("post_history_instruction").notNull().default(""),
+  // Системный промпт ИИ-перевода (для шторы перевода черновика в narrator; зеркало пресета).
+  translationSystemPrompt: text("translation_system_prompt").notNull().default(""),
   // Порядок и включённость компонентов narrator-запроса. Дефолт — канонический порядок;
   // premise идёт после auxiliary, postHistory выключен (включается вручную).
   promptOrder: jsonb("prompt_order")

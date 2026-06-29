@@ -58,6 +58,7 @@ export type NarratorTemplate = {
   systemPrompt: string;
   auxiliarySystemPrompt: string;
   postHistoryInstruction: string;
+  translationSystemPrompt: string;
   promptOrder: StoryPromptOrderItem[];
 };
 
@@ -66,6 +67,7 @@ export type NarratorTemplateInput = {
   systemPrompt: string;
   auxiliarySystemPrompt: string;
   postHistoryInstruction: string;
+  translationSystemPrompt: string;
   promptOrder: StoryPromptOrderItem[];
 };
 

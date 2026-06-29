@@ -2,29 +2,35 @@ import { Spinner } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import { Languages, SendHorizontal, X } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
-import { useComposeTranslate } from "../hooks/useComposeTranslate";
-import type { TranslateMode } from "../api/translate-api";
-import { RpText } from "../../../shared/components/RpText";
-import { LangPicker } from "./LangPicker";
+import { LangPicker, type LangOption } from "./LangPicker";
+import { RpText } from "./RpText";
+import { useComposeTranslate, type ComposeTranslateParams } from "../hooks/useComposeTranslate";
+import "./TranslateSheet.css";
+
+/** Режим перевода черновика: обычный Google Translate либо запрос к нейросети. */
+export type TranslateMode = "google" | "ai";
 
 interface TranslateSheetProps {
-  chatId: number;
+  /** Функция перевода черновика (RP → /chats/:id, narrator → /stories/:id). */
+  translate: (params: ComposeTranslateParams) => Promise<string>;
+  /** Список языков для пикера (LANG_OPTIONS вызывающей фичи). */
+  langOptions: LangOption[];
   onPick: (text: string) => void;
   onClose: () => void;
 }
 
 const SHEET_T = { duration: 0.25, ease: "easeOut" as const };
 
-const MODE_KEY = "rp-translate-mode";
-const LANG_KEY = "rp-translate-lang";
+const MODE_KEY = "translate-mode";
+const LANG_KEY = "translate-lang";
 
 /**
  * Нижняя «штора» перевода черновика сообщения. Внизу — поле исходного текста, сверху — результат
- * (клик вставляет его в инпут чата). Тумблер переключает Google ↔ ИИ; язык и режим хранятся в
- * localStorage. Управляется AnimatePresence в RpChatPage (exit-анимации играют там).
+ * (клик вставляет его в инпут). Тумблер переключает Google ↔ ИИ; язык и режим хранятся в
+ * localStorage. Управляется AnimatePresence у вызывающей страницы (exit-анимации играют там).
  */
-export function TranslateSheet({ chatId, onPick, onClose }: TranslateSheetProps) {
-  const { loading, result, error, translate, reset } = useComposeTranslate(chatId);
+export function TranslateSheet({ translate: translateFn, langOptions, onPick, onClose }: TranslateSheetProps) {
+  const { loading, result, error, translate, reset } = useComposeTranslate(translateFn);
   const [text, setText] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -78,7 +84,7 @@ export function TranslateSheet({ chatId, onPick, onClose }: TranslateSheetProps)
 
   return (
     <motion.div
-      className="impersonate-sheet__backdrop"
+      className="translate-sheet__backdrop"
       onClick={onClose}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -86,17 +92,17 @@ export function TranslateSheet({ chatId, onPick, onClose }: TranslateSheetProps)
       transition={SHEET_T}
     >
       <motion.div
-        className="impersonate-sheet translate-sheet"
+        className="translate-sheet"
         onClick={(e) => e.stopPropagation()}
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={SHEET_T}
       >
-        <div className="impersonate-sheet__header">
-          <span className="impersonate-sheet__title">Перевод</span>
+        <div className="translate-sheet__header">
+          <span className="translate-sheet__title">Перевод</span>
           <button
-            className="impersonate-sheet__close"
+            className="translate-sheet__close"
             onClick={onClose}
             type="button"
             aria-label="Закрыть"
@@ -136,10 +142,10 @@ export function TranslateSheet({ chatId, onPick, onClose }: TranslateSheetProps)
               </button>
             ))}
           </div>
-          <LangPicker value={targetLang} onChange={setLangPersist} />
+          <LangPicker value={targetLang} onChange={setLangPersist} options={langOptions} />
         </div>
 
-        {/* Результат сверху: клик вставляет перевод в поле ввода чата. */}
+        {/* Результат сверху: клик вставляет перевод в поле ввода. */}
         <div className="translate-sheet__result">
           {loading ? (
             <div className="translate-sheet__placeholder">
@@ -167,7 +173,7 @@ export function TranslateSheet({ chatId, onPick, onClose }: TranslateSheetProps)
         <div className="translate-sheet__input">
           <textarea
             ref={textareaRef}
-            className="chat-input__textarea"
+            className="translate-sheet__textarea"
             value={text}
             onChange={(e) => {
               setText(e.target.value);
@@ -178,7 +184,7 @@ export function TranslateSheet({ chatId, onPick, onClose }: TranslateSheetProps)
             rows={1}
           />
           <button
-            className="chat-input__send"
+            className="translate-sheet__send"
             onClick={run}
             disabled={loading || !text.trim()}
             type="button"

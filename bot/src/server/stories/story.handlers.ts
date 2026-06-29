@@ -9,10 +9,11 @@ import {
   setActiveStoryMessage,
   updateActiveStoryMessage,
 } from "../../db/stories/index.js";
+import { getNarratorTemplate } from "../../db/narratorTemplates/index.js";
 import logger from "../../logger.js";
 import { CONTINUE_MARKER } from "../prompt/storyPromptBuilder.js";
 import { streamCompletion } from "../shared/streamGeneration.js";
-import { googleTranslate } from "../shared/translate.js";
+import { aiTranslate, englishLangName, googleTranslate } from "../shared/translate.js";
 import { buildStoryCompletionInput } from "./storyContext.js";
 import type { Ctx } from "./stories.types.js";
 
@@ -194,6 +195,59 @@ export async function handleStoryTranslateMessage(c: Ctx) {
     return c.json({ translation });
   } catch (err) {
     logger.error({ err, userId, storyId, msgId }, "Failed to translate story message");
+    return c.json({ error: "Internal error" }, 500);
+  }
+}
+
+/**
+ * POST /:id/translate-text — перевод произвольного текста черновика (эфемерно, без кэша в БД).
+ * mode: "google" (по умолчанию) или "ai" (запрос к LLM с промптом перевода из narrator-шаблона
+ * истории). Используется шторой перевода черновика директивы. Зеркало handleTranslateText из RP,
+ * но ИИ-промпт берётся из шаблона (не из пресета): шаблон — управляющая поверхность narrator.
+ */
+export async function handleStoryTranslateText(c: Ctx) {
+  const user = c.get("tgUser");
+  if (!user) return c.json({ error: "Auth required" }, 401);
+  const userId = user.id;
+  const storyId = Number(c.req.param("id"));
+
+  const body = (await c.req.json().catch(() => ({}))) as {
+    text?: string;
+    targetLang?: string;
+    mode?: string;
+  };
+  const text = typeof body.text === "string" ? body.text : "";
+  const targetLang = typeof body.targetLang === "string" ? body.targetLang.trim() : "";
+  const mode = body.mode === "ai" ? "ai" : "google";
+  if (!text.trim() || !targetLang) return c.json({ error: "text and targetLang are required" }, 400);
+
+  const t0 = Date.now();
+  try {
+    // Принадлежность истории пользователю.
+    const story = await getStory(userId, storyId);
+    if (!story) return c.json({ error: "Story not found" }, 404);
+
+    let translation: string;
+    if (mode === "ai") {
+      // ИИ-режиму нужен промпт перевода из narrator-шаблона истории. Сэмплинг пресета НЕ
+      // переиспользуем (как в RP): высокие temperature/penalties портят верность перевода.
+      const template = story.template ? await getNarratorTemplate(userId, story.template.id) : null;
+      translation = await aiTranslate(
+        template?.translationSystemPrompt ?? "",
+        text,
+        englishLangName(targetLang),
+        userId,
+      );
+    } else {
+      translation = await googleTranslate(text, targetLang);
+    }
+    logger.info(
+      { durationMs: Date.now() - t0, userId, storyId, targetLang, mode },
+      "Story draft translated",
+    );
+    return c.json({ translation });
+  } catch (err) {
+    logger.error({ err, userId, storyId, targetLang, mode }, "Failed to translate story draft");
     return c.json({ error: "Internal error" }, 500);
   }
 }

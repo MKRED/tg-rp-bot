@@ -1,7 +1,5 @@
 import { apiFetch } from "../../../shared/api/client";
-
-/** Режим перевода черновика: обычный Google Translate либо запрос к нейросети. */
-export type TranslateMode = "google" | "ai";
+import type { TranslateMode } from "../../../shared/components/TranslateSheet";
 
 /**
  * Перевод черновика сообщения перед отправкой (эфемерно, без кэша). Тот же эндпоинт, что и у

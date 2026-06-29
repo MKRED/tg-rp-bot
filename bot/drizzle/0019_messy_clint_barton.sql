@@ -1,0 +1,1 @@
+ALTER TABLE "narrator_templates" ADD COLUMN "translation_system_prompt" text DEFAULT '' NOT NULL;

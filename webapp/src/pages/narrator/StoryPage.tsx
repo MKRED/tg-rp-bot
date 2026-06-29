@@ -1,16 +1,20 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
+import { AnimatePresence } from "framer-motion";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { storyGraphPath, storySettingsPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { RpText } from "../../shared/components/RpText";
+import { TranslateSheet } from "../../shared/components/TranslateSheet";
 import {
   BeatDivider,
   StoryHeader,
   StoryInput,
   StoryMessageItem,
+  LANG_OPTIONS,
   advanceStory,
+  composeStoryTranslate,
   deleteStoryMessage,
   regenerateBeat,
   switchBranch,
@@ -21,7 +25,7 @@ import {
 } from "../../features/narrator";
 import { confirmAction } from "../../shared/telegram/confirm";
 import { useToast } from "../../shared/toast";
-import type { StoryMessage } from "../../features/narrator";
+import type { StoryInputHandle, StoryMessage } from "../../features/narrator";
 import "./narrator.css";
 
 /** Экран истории: лента битов + директив, поле режиссёра, стриминг следующего бита. */
@@ -35,6 +39,8 @@ export function StoryPage() {
   const { showToast } = useToast();
   const [sending, setSending] = useState(false);
   const [streamingText, setStreamingText] = useState<string | null>(null);
+  const [translateOpen, setTranslateOpen] = useState(false);
+  const storyInputRef = useRef<StoryInputHandle>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   // Первый скролл к низу при открытии истории — мгновенный (без видимой долгой прокрутки
   // от верха), далее новые биты/стриминг скроллим плавно.
@@ -213,8 +219,28 @@ export function StoryPage() {
           <div ref={bottomRef} />
         </div>
 
-        <StoryInput onAdvance={advance} disabled={sending} />
+        <StoryInput
+          ref={storyInputRef}
+          onAdvance={advance}
+          onTranslate={() => setTranslateOpen(true)}
+          disabled={sending}
+        />
       </div>
+
+      <AnimatePresence>
+        {translateOpen && (
+          <TranslateSheet
+            key="story-translate-sheet"
+            translate={(p) => composeStoryTranslate(id, p)}
+            langOptions={LANG_OPTIONS}
+            onPick={(t) => {
+              storyInputRef.current?.setDraft(t);
+              setTranslateOpen(false);
+            }}
+            onClose={() => setTranslateOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </PageTransition>
   );
 }

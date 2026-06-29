@@ -22,6 +22,7 @@ import {
   handleDeleteStoryMessage,
   handleRegenerateStoryBeat,
   handleStoryTranslateMessage,
+  handleStoryTranslateText,
   handleSwitchStoryBranch,
 } from "./story.handlers.js";
 
@@ -229,6 +230,7 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
   app.post("/:id/messages/:msgId/regenerate", handleRegenerateStoryBeat);
   app.post("/:id/messages/:msgId/branch", handleSwitchStoryBranch);
   app.post("/:id/messages/:msgId/translate", handleStoryTranslateMessage);
+  app.post("/:id/translate-text", handleStoryTranslateText);
   app.delete("/:id/messages/:msgId", handleDeleteStoryMessage);
 
   return app;

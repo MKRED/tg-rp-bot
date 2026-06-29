@@ -1,4 +1,5 @@
 import { apiFetch } from "../../../shared/api/client";
+import type { TranslateMode } from "../../../shared/components/TranslateSheet";
 import type { StoryCreateInput, StoryDetail, StoryListItem, StoryMessage } from "../types/story";
 import { readStorySSE } from "./sse";
 
@@ -105,4 +106,19 @@ export async function translateStoryMessage(
 
 export function deleteStoryMessage(storyId: number, msgId: number): Promise<void> {
   return apiFetch(`/stories/${storyId}/messages/${msgId}`, { method: "DELETE" });
+}
+
+/**
+ * Перевод черновика директивы перед отправкой (эфемерно, без кэша). mode переключает
+ * Google ↔ ИИ-промпт перевода из narrator-шаблона истории. Зеркало composeTranslate из RP.
+ */
+export async function composeStoryTranslate(
+  storyId: number,
+  params: { text: string; targetLang: string; mode: TranslateMode },
+): Promise<string> {
+  const res = await apiFetch<{ translation: string }>(`/stories/${storyId}/translate-text`, {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+  return res.translation;
 }
