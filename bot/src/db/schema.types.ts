@@ -22,6 +22,7 @@ export type StoryPromptComponentId =
   | "premise"
   | "lorebook"
   | "auxiliary"
+  | "compact"
   | "history"
   | "postHistory";
 

@@ -39,6 +39,8 @@ export function StoryPage() {
   const { showToast } = useToast();
   const [sending, setSending] = useState(false);
   const [streamingText, setStreamingText] = useState<string | null>(null);
+  // Фаза фонового статуса перед битом (напр. "compacting" — авто-сжатие истории).
+  const [statusPhase, setStatusPhase] = useState<string | null>(null);
   const [translateOpen, setTranslateOpen] = useState(false);
   const storyInputRef = useRef<StoryInputHandle>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -83,14 +85,20 @@ export function StoryPage() {
     setStreamingText("");
     advanceStory(id, directive, {
       onUserMessage: (msg: StoryMessage) => setMessages((prev) => [...prev, msg]),
-      onToken: (text) => setStreamingText((prev) => (prev ?? "") + text),
+      onStatus: (phase) => setStatusPhase(phase),
+      onToken: (text) => {
+        setStatusPhase(null); // первый токен бита → фаза статуса (сжатие) завершена
+        setStreamingText((prev) => (prev ?? "") + text);
+      },
       onReset: () => setStreamingText(""),
       // Стрим снимаем в одном батче с появлением реального бита (onApplied внутри reload) —
       // иначе лента на миг укоротилась бы (скролл вверх) до прихода бита (скролл обратно вниз).
       onDone: () => {
+        setStatusPhase(null);
         reload(() => setStreamingText(null));
       },
       onError: () => {
+        setStatusPhase(null);
         setStreamingText(null);
         showToast({ type: "error", message: "Не удалось продолжить историю" });
       },
@@ -211,7 +219,14 @@ export function StoryPage() {
               {/* Стримящийся бит тоже отделяем, если двинули историю «Дальше» (последний ход — continue). */}
               {messages[messages.length - 1]?.kind === "continue" && <BeatDivider />}
               <div style={{ margin: "8px 0", whiteSpace: "pre-wrap", lineHeight: 1.5, color: "var(--tgui--text_color)" }}>
-                {streamingText ? <RpText text={streamingText} /> : <Spinner size="s" />}
+                {streamingText ? (
+                  <RpText text={streamingText} />
+                ) : (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--tg-theme-hint-color)" }}>
+                    <Spinner size="s" />
+                    {statusPhase === "compacting" && "Сжимаю историю…"}
+                  </span>
+                )}
               </div>
             </>
           )}

@@ -16,6 +16,7 @@ import { PromptField } from "../../shared/components/PromptField";
 import { ExpandableSelect } from "../../shared/components/ExpandableSelect";
 import {
   AUTO_SCOPE_OPTIONS,
+  CompactSettingsSection,
   LANG_OPTIONS,
   SCOPE_OPTIONS,
   removeStory,
@@ -48,7 +49,7 @@ export function StorySettingsPage() {
   const navigate = useTransitionNavigate();
   const { story, loading } = useStory(id);
   const { settings, loading: settingsLoading, update: updateSettings } = useStorySettings(id);
-  const { stats, loading: statsLoading } = useStoryStats(id);
+  const { stats, loading: statsLoading, reload: reloadStats } = useStoryStats(id);
   const { showToast } = useToast();
 
   const [deleting, setDeleting] = useState(false);
@@ -287,6 +288,16 @@ export function StorySettingsPage() {
               </>
             )}
           </Section>
+
+          {!settingsLoading && (
+            <CompactSettingsSection
+              storyId={id}
+              settings={settings}
+              updateSettings={updateSettings}
+              stats={stats}
+              onChanged={reloadStats}
+            />
+          )}
 
           <Section header="Статистика">
             {statsLoading ? (

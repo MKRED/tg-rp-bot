@@ -1,7 +1,7 @@
 /** Типы перехвата RAW-запросов к LLM — вынесены из debugCapture.ts (там остаётся логика кольца). */
 
 /** Ярлык типа вызова — чтобы в списке было видно, что за запрос. */
-export type LlmCallLabel = "rp" | "impersonate" | "narrator" | "translate" | "other";
+export type LlmCallLabel = "rp" | "impersonate" | "narrator" | "translate" | "compact" | "other";
 
 /** Ответ LLM в записи: успех (content/usage) либо провал (status/error). */
 export interface LlmDebugResponse {

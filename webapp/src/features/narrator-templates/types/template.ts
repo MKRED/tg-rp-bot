@@ -14,6 +14,7 @@ export type StoryPromptComponentId =
   | "premise"
   | "lorebook"
   | "auxiliary"
+  | "compact"
   | "history"
   | "postHistory";
 
@@ -28,6 +29,7 @@ export const NARRATOR_PROMPT_COMPONENT_LABELS: Record<StoryPromptComponentId, st
   premise: "Вводная истории",
   lorebook: "Книга знаний",
   auxiliary: "Вспомогательный промпт",
+  compact: "Краткое содержание",
   history: "Лента истории",
   postHistory: "Инструкция после истории",
 };
@@ -38,16 +40,18 @@ export const NARRATOR_PROMPT_COMPONENT_SOURCES: Record<StoryPromptComponentId, s
   premise: "из истории",
   lorebook: "из книги знаний истории",
   auxiliary: "из этого шаблона",
+  compact: "пересказы сжатых сообщений",
   history: "сообщения истории",
   postHistory: "из этого шаблона",
 };
 
-/** Дефолтный порядок: premise после auxiliary; postHistory выключен (включается вручную). */
+/** Дефолтный порядок: premise после auxiliary; compact перед history; postHistory выключен. */
 export const DEFAULT_NARRATOR_PROMPT_ORDER: StoryPromptOrderItem[] = [
   { id: "system", enabled: true },
   { id: "lorebook", enabled: true },
   { id: "auxiliary", enabled: true },
   { id: "premise", enabled: true },
+  { id: "compact", enabled: true },
   { id: "history", enabled: true },
   { id: "postHistory", enabled: false },
 ];
@@ -59,6 +63,7 @@ export type NarratorTemplate = {
   auxiliarySystemPrompt: string;
   postHistoryInstruction: string;
   translationSystemPrompt: string;
+  compactionPrompt: string;
   promptOrder: StoryPromptOrderItem[];
 };
 
@@ -68,6 +73,7 @@ export type NarratorTemplateInput = {
   auxiliarySystemPrompt: string;
   postHistoryInstruction: string;
   translationSystemPrompt: string;
+  compactionPrompt: string;
   promptOrder: StoryPromptOrderItem[];
 };
 

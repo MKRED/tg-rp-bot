@@ -7,6 +7,9 @@ const EMPTY_STATS: StoryStats = {
   tokensActiveBranch: 0,
   tokensPrompt: 0,
   contextLimit: null,
+  compactAvailable: false,
+  compactReason: null,
+  templateCompactEnabled: false,
 };
 
 /**
@@ -29,5 +32,5 @@ export function useStoryStats(storyId: number) {
     reload();
   }, [reload]);
 
-  return { stats, loading };
+  return { stats, loading, reload };
 }

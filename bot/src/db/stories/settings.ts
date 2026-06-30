@@ -8,6 +8,10 @@ const DEFAULT_SETTINGS: StorySettingsRow = {
   translateTargetLang: "ru",
   translateScope: "assistant",
   autoTranslateScope: "none",
+  compactEnabled: false,
+  compactAutoEnabled: false,
+  compactFloorTokens: 0,
+  compactWords: 200,
 };
 
 /** Читает настройки истории; если строки нет — возвращает дефолт. Зеркало getChatSettings. */
@@ -28,6 +32,10 @@ export async function getStorySettings(storyChatId: number): Promise<StorySettin
     translateTargetLang: r.translateTargetLang,
     translateScope: r.translateScope,
     autoTranslateScope: r.autoTranslateScope,
+    compactEnabled: r.compactEnabled,
+    compactAutoEnabled: r.compactAutoEnabled,
+    compactFloorTokens: r.compactFloorTokens,
+    compactWords: r.compactWords,
   };
 }
 

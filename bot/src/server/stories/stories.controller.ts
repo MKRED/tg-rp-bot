@@ -16,6 +16,12 @@ import {
 import { ensureUser } from "../../db/users.js";
 import logger from "../../logger.js";
 import type { AppVariables } from "../middleware/initData.types.js";
+import { COMPACT_FLOOR_MIN } from "./compact.gate.js";
+import {
+  handleCompactStory,
+  handleDeleteCompaction,
+  handleListCompactions,
+} from "./compact.handler.js";
 import { handleStoryStats } from "./stats.handler.js";
 import {
   handleAdvanceStory,
@@ -25,6 +31,11 @@ import {
   handleStoryTranslateText,
   handleSwitchStoryBranch,
 } from "./story.handlers.js";
+
+/** Границы compactWords (зеркало слайдера webapp). */
+const COMPACT_WORDS_MIN = 50;
+const COMPACT_WORDS_MAX = 800;
+const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(v, hi));
 
 /** CRUD narrator-историй + ведение (advance/regenerate/branch/delete) под /api/stories. */
 export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
@@ -177,6 +188,10 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
       translateTargetLang?: unknown;
       translateScope?: unknown;
       autoTranslateScope?: unknown;
+      compactEnabled?: unknown;
+      compactAutoEnabled?: unknown;
+      compactFloorTokens?: unknown;
+      compactWords?: unknown;
     };
 
     const patch: Record<string, unknown> = {};
@@ -188,10 +203,26 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
     if (["none", "all", "assistant", "user"].includes(body.autoTranslateScope as string)) {
       patch.autoTranslateScope = body.autoTranslateScope;
     }
+    if (typeof body.compactEnabled === "boolean") patch.compactEnabled = body.compactEnabled;
+    if (typeof body.compactAutoEnabled === "boolean") patch.compactAutoEnabled = body.compactAutoEnabled;
+    if (typeof body.compactWords === "number" && Number.isFinite(body.compactWords)) {
+      patch.compactWords = clamp(Math.round(body.compactWords), COMPACT_WORDS_MIN, COMPACT_WORDS_MAX);
+    }
 
     try {
       const story = await getStory(user.id, storyId);
       if (!story) return c.json({ error: "Story not found" }, 404);
+      // Пол клампим по лимиту пресета (UI-границы): [1000, round(contextSize*0.9)]. Если контекст
+      // безграничен/не задан — фича недоступна, но значение всё равно сохраняем как сырое (≥ 0).
+      if (typeof body.compactFloorTokens === "number" && Number.isFinite(body.compactFloorTokens)) {
+        const preset = story.preset ? await getPreset(user.id, story.preset.id) : null;
+        const contextSize = preset && !preset.contextUnlimited ? preset.contextSize : null;
+        const raw = Math.round(body.compactFloorTokens);
+        patch.compactFloorTokens =
+          contextSize != null
+            ? clamp(raw, COMPACT_FLOOR_MIN, Math.round(contextSize * 0.9))
+            : Math.max(0, raw);
+      }
       // Пустой патч (ни одного валидного поля) → upsert дал бы `SET {}` и SQL-ошибку при конфликте;
       // просто возвращаем текущие настройки без записи.
       if (Object.keys(patch).length === 0) {
@@ -207,6 +238,11 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
 
   // ─── Статистика истории (токены) ─────────────────────────────────────────
   app.get("/:id/stats", handleStoryStats);
+
+  // ─── Сжатие истории (compact) ─────────────────────────────────────────────
+  app.post("/:id/compact", handleCompactStory);
+  app.get("/:id/compactions", handleListCompactions);
+  app.delete("/:id/compactions/:cid", handleDeleteCompaction);
 
   // ─── Граф (дерево истории для React Flow) ─────────────────────────────────
   app.get("/:id/tree", async (c) => {

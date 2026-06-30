@@ -47,6 +47,8 @@ export type StoryStreamEvents = {
   onUserMessage?: (msg: StoryMessage) => void;
   onToken?: (text: string) => void;
   onReset?: () => void;
+  /** Статус-событие фоновой фазы перед битом (напр. phase:"compacting" — авто-сжатие истории). */
+  onStatus?: (phase: string) => void;
   onDone?: (msg: StoryMessage) => void;
   onError?: (message: string) => void;
 };
@@ -55,6 +57,7 @@ function dispatch(events: StoryStreamEvents, event: string, data: Record<string,
   if (event === "userMessage") events.onUserMessage?.(data as unknown as StoryMessage);
   else if (event === "token") events.onToken?.(data.text as string);
   else if (event === "reset") events.onReset?.();
+  else if (event === "status") events.onStatus?.(data.phase as string);
   else if (event === "done") events.onDone?.(data as unknown as StoryMessage);
   else if (event === "error") events.onError?.(data.message as string);
 }

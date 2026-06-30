@@ -9,6 +9,7 @@ const LABEL_TEXT: Record<LlmDebugRecord["label"], string> = {
   impersonate: "Impersonate",
   narrator: "Нарратор",
   translate: "Перевод",
+  compact: "Сжатие",
   other: "Другое",
 };
 

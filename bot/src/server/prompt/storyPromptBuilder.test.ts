@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { StoryMessageInPath } from "../../db/stories/index.js";
 import {
   buildStoryMessages,
+  COMPACT_SUMMARY_HEADER,
   CONTINUE_MARKER,
   DEFAULT_NARRATOR_PROMPT_ORDER,
   LEADING_USER_MARKER,
@@ -211,6 +212,55 @@ describe("buildStoryMessages — порядок промптов", () => {
     // Живой триггер остаётся отдельным user-сообщением, не слит с postHistory.
     const trigger = result.find((m) => m.content === "make the mood tense");
     expect(trigger?.role).toBe("user");
+  });
+});
+
+describe("buildStoryMessages — компонент compact (пересказы)", () => {
+  it("эмитит блок «story so far» на позиции compact, когда пересказы есть", () => {
+    const result = buildStoryMessages(
+      baseOpts({
+        compactSummaries: ["Recap one.", "Recap two."],
+        history: sampleHistory(),
+      }),
+    );
+    const compactMsg = result.find((m) => m.content.startsWith(COMPACT_SUMMARY_HEADER));
+    expect(compactMsg?.role).toBe("system");
+    expect(compactMsg!.content).toContain("Recap one.");
+    expect(compactMsg!.content).toContain("Recap two.");
+    // compact в дефолтном порядке стоит перед history (leading-user).
+    const compactIdx = result.indexOf(compactMsg!);
+    const leadingIdx = result.findIndex((m) => m.content === LEADING_USER_MARKER);
+    expect(compactIdx).toBeLessThan(leadingIdx);
+  });
+
+  it("пустые/отсутствующие compactSummaries → блок пропускается (число системных блоков не меняется)", () => {
+    const withEmpty = buildStoryMessages(baseOpts({ compactSummaries: [], history: sampleHistory() }));
+    const without = buildStoryMessages(baseOpts({ history: sampleHistory() }));
+    const countSystem = (r: ReturnType<typeof buildStoryMessages>) =>
+      r.filter((m) => m.role === "system").length;
+    expect(countSystem(withEmpty)).toBe(countSystem(without));
+    expect(withEmpty.some((m) => m.content.startsWith(COMPACT_SUMMARY_HEADER))).toBe(false);
+  });
+
+  it("compact учитывается в бюджете обрезки (его токены съедают историю сильнее)", () => {
+    const onTrimNoCompact = vi.fn();
+    buildStoryMessages(
+      baseOpts({ history: sampleHistory(), contextSize: 80, maxTokens: 8, onTrim: onTrimNoCompact }),
+    );
+    const onTrimWithCompact = vi.fn();
+    buildStoryMessages(
+      baseOpts({
+        history: sampleHistory(),
+        // Большой пересказ съедает фиксированный бюджет → истории отбрасывается больше.
+        compactSummaries: ["word ".repeat(40)],
+        contextSize: 80,
+        maxTokens: 8,
+        onTrim: onTrimWithCompact,
+      }),
+    );
+    const droppedNoCompact = onTrimNoCompact.mock.calls[0]?.[0]?.dropped ?? 0;
+    const droppedWithCompact = onTrimWithCompact.mock.calls[0]?.[0]?.dropped ?? 0;
+    expect(droppedWithCompact).toBeGreaterThanOrEqual(droppedNoCompact);
   });
 });
 

@@ -13,6 +13,8 @@ export type StoryPromptOptions = {
   premise: string;
   /** Тексты always_on-записей книги знаний (уже отфильтрованы и резолвнуты). */
   lorebook: string[];
+  /** Готовые пересказы сжатых сообщений активной ветки (compact), по порядку. Пусто/нет = нет сжатия. */
+  compactSummaries?: string[];
   /** Активный путь истории; последний узел — живой триггер (user-ход текущей генерации). */
   history: StoryMessageInPath[];
   /** Порядок и включённость компонентов запроса (из шаблона или DEFAULT_NARRATOR_PROMPT_ORDER). */

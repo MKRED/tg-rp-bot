@@ -4,7 +4,7 @@
  * (bot/src/llm/debugSettings.ts), поля LlmDebugRecord/LlmDebugResponse (bot/src/llm/debugCapture.ts).
  */
 
-export type LlmCallLabel = "rp" | "impersonate" | "narrator" | "translate" | "other";
+export type LlmCallLabel = "rp" | "impersonate" | "narrator" | "translate" | "compact" | "other";
 
 export interface LlmDebugResponse {
   ok: boolean;

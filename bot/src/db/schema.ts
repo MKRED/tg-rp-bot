@@ -398,13 +398,16 @@ export const narratorTemplates = pgTable("narrator_templates", {
   postHistoryInstruction: text("post_history_instruction").notNull().default(""),
   // Системный промпт ИИ-перевода (для шторы перевода черновика в narrator; зеркало пресета).
   translationSystemPrompt: text("translation_system_prompt").notNull().default(""),
+  // Инструкция сжатия истории (compact): summarization-промпт с плейсхолдером {{words}}.
+  // Пусто → фолбэк DEFAULT_COMPACTION_PROMPT.
+  compactionPrompt: text("compaction_prompt").notNull().default(""),
   // Порядок и включённость компонентов narrator-запроса. Дефолт — канонический порядок;
-  // premise идёт после auxiliary, postHistory выключен (включается вручную).
+  // premise идёт после auxiliary, compact — перед history, postHistory выключен (включается вручную).
   promptOrder: jsonb("prompt_order")
     .$type<StoryPromptOrderItem[]>()
     .notNull()
     .default(
-      sql`'[{"id":"system","enabled":true},{"id":"lorebook","enabled":true},{"id":"auxiliary","enabled":true},{"id":"premise","enabled":true},{"id":"history","enabled":true},{"id":"postHistory","enabled":false}]'::jsonb`,
+      sql`'[{"id":"system","enabled":true},{"id":"lorebook","enabled":true},{"id":"auxiliary","enabled":true},{"id":"premise","enabled":true},{"id":"compact","enabled":true},{"id":"history","enabled":true},{"id":"postHistory","enabled":false}]'::jsonb`,
     ),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
@@ -500,6 +503,14 @@ export const storySettings = pgTable("story_settings", {
     .$type<"none" | "all" | "assistant" | "user">()
     .notNull()
     .default("none"),
+  // Сжатие истории (compact). compactEnabled — мастер-тумблер чата (вместе с компонентом compact
+  // шаблона гейтит и создание, и применение пересказов). compactAutoEnabled — авто-триггер по лимиту.
+  // compactFloorTokens — целевой «пол» в токенах (0 = не задано → round(contextSize*0.7) на использовании).
+  // compactWords — рекомендованное число слов пересказа (плейсхолдер {{words}}).
+  compactEnabled: boolean("compact_enabled").notNull().default(false),
+  compactAutoEnabled: boolean("compact_auto_enabled").notNull().default(false),
+  compactFloorTokens: integer("compact_floor_tokens").notNull().default(0),
+  compactWords: integer("compact_words").notNull().default(200),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow()
@@ -508,3 +519,31 @@ export const storySettings = pgTable("story_settings", {
 
 export type StorySettings = typeof storySettings.$inferSelect;
 export type NewStorySettings = typeof storySettings.$inferInsert;
+
+/**
+ * Сжатые пересказы narrator-истории (compact). Один ряд = пересказ диапазона активного пути,
+ * привязанного к id сообщений-якорей (fromAnchorId эксклюзивно/null = от корня; toAnchorId инклюзивно).
+ * Якоря намеренно НЕ FK (зеркало storyChats.activeMessageId) — инвалидцию при удалении сообщений
+ * делаем вручную (invalidateCompactionsByRemovedIds). Пересказы сцеплены в префикс по seq; применяются
+ * к ветке, только если оба якоря лежат на её активном пути. summary зашифрован per-user (как content).
+ */
+export const storyCompactions = pgTable("story_compactions", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  storyChatId: bigint("story_chat_id", { mode: "number" })
+    .notNull()
+    .references(() => storyChats.id, { onDelete: "cascade" }),
+  // Порядок в цепочке (0,1,2…) — пересказы образуют префикс от корня.
+  seq: integer("seq").notNull(),
+  // Границы покрытого диапазона активного пути. НЕ FK (как activeMessageId).
+  fromAnchorId: bigint("from_anchor_id", { mode: "number" }),
+  toAnchorId: bigint("to_anchor_id", { mode: "number" }).notNull(),
+  // Текст пересказа, зашифрован per-user.
+  summary: text("summary").notNull(),
+  // Метаданные диапазона (для статистики/отладки).
+  coveredCount: integer("covered_count").notNull().default(0),
+  coveredTokens: integer("covered_tokens").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type StoryCompaction = typeof storyCompactions.$inferSelect;
+export type NewStoryCompaction = typeof storyCompactions.$inferInsert;

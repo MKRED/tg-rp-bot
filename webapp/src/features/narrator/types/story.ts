@@ -37,13 +37,28 @@ export type StoryTreeNode = {
   createdAt: string;
 };
 
-/** Настройки перевода истории — зеркало ChatSettings под narrator. */
+/** Настройки истории (перевод + сжатие) — зеркало ChatSettings под narrator. */
 export type StorySettings = {
   translateEnabled: boolean;
   translateTargetLang: string;
   /** На каких ходах показывать кнопку: all — все, assistant — биты ИИ, user — директивы. */
   translateScope: "all" | "assistant" | "user";
   autoTranslateScope: "none" | "all" | "assistant" | "user";
+  /** Сжатие истории (compact). */
+  compactEnabled: boolean;
+  compactAutoEnabled: boolean;
+  /** Целевой «пол» в токенах (0 = не задано → дефолт на сервере). */
+  compactFloorTokens: number;
+  compactWords: number;
+};
+
+/** Пересказ сжатых сообщений активной ветки (для списка в настройках). */
+export type StoryCompaction = {
+  id: number;
+  seq: number;
+  summary: string;
+  coveredCount: number;
+  coveredTokens: number;
 };
 
 export type StoryDetail = {
@@ -64,6 +79,12 @@ export type StoryStats = {
   tokensPrompt: number;
   /** Лимит контекста из пресета; null — безграничный или не задан. */
   contextLimit: number | null;
+  /** Доступно ли сжатие (есть лимит, достаточно большой, и компонент `compact` включён в шаблоне). */
+  compactAvailable: boolean;
+  /** Причина недоступности: unlimited | too_small | template_off | null. */
+  compactReason: "unlimited" | "too_small" | "template_off" | null;
+  /** Включён ли компонент `compact` в шаблоне истории. */
+  templateCompactEnabled: boolean;
 };
 
 export type StoryCreateInput = {

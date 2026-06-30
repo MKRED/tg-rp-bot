@@ -1,6 +1,7 @@
 import { getStoryTokenStats } from "../../db/stories/index.js";
 import logger from "../../logger.js";
 import { countTokens } from "../../utils/index.js";
+import { compactUnavailableReason } from "./compact.gate.js";
 import { buildStoryCompletionInput } from "./storyContext.js";
 import type { Ctx } from "./stories.types.js";
 
@@ -31,9 +32,24 @@ export async function handleStoryStats(c: Ctx) {
     // Лимит контекста как знаменатель полосы: безграничный/незаданный → null (полоса покажет «∞»).
     const contextLimit = input.preset?.contextUnlimited ? null : (input.preset?.contextSize ?? null);
 
+    // Доступность сжатия (для гейта секции в настройках): причина недоступности по пресету +
+    // включён ли компонент `compact` в шаблоне. compactAvailable требует обоих.
+    const reason = compactUnavailableReason(input.preset);
+    const compactAvailable = reason === null && input.compactComponentEnabled;
+    const compactReason = !input.compactComponentEnabled && reason === null ? "template_off" : reason;
+
     const tokens = await getStoryTokenStats(userId, storyId);
 
-    return c.json({ stats: { ...tokens, tokensPrompt, contextLimit } });
+    return c.json({
+      stats: {
+        ...tokens,
+        tokensPrompt,
+        contextLimit,
+        compactAvailable,
+        compactReason,
+        templateCompactEnabled: input.compactComponentEnabled,
+      },
+    });
   } catch (err) {
     logger.error({ err, userId, storyId }, "Failed to compute story stats");
     return c.json({ error: "Internal error" }, 500);

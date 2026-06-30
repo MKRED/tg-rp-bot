@@ -38,12 +38,28 @@ export type StoryTokenStats = {
   tokensActiveBranch: number;
 };
 
-/** Настройки перевода истории (значения из story_settings либо дефолты). */
+/** Настройки истории (значения из story_settings либо дефолты): перевод + сжатие (compact). */
 export type StorySettingsRow = {
   translateEnabled: boolean;
   translateTargetLang: string;
   translateScope: "all" | "assistant" | "user";
   autoTranslateScope: "none" | "all" | "assistant" | "user";
+  compactEnabled: boolean;
+  compactAutoEnabled: boolean;
+  compactFloorTokens: number;
+  compactWords: number;
+};
+
+/** Пересказ сжатого диапазона активной ветки (summary расшифрован). */
+export type StoryCompactionRow = {
+  id: number;
+  seq: number;
+  fromAnchorId: number | null;
+  toAnchorId: number;
+  summary: string;
+  coveredCount: number;
+  coveredTokens: number;
+  createdAt: string;
 };
 
 export type StoryDetail = {

@@ -4,6 +4,7 @@ import type { ChatMessage } from "../../llm/types.js";
 import { countTokens } from "../../utils/index.js";
 import { DEFAULT_OUTPUT_RESERVE, PER_MESSAGE_OVERHEAD, trimHistoryToBudget } from "./budget.js";
 import {
+  COMPACT_SUMMARY_HEADER,
   CONTINUE_MARKER,
   DEFAULT_NARRATOR_PROMPT_ORDER,
   LEADING_USER_MARKER,
@@ -12,7 +13,10 @@ import type { StoryPromptOptions } from "./storyPromptBuilder.types.js";
 
 // Реэкспорт публичной поверхности билдера для потребителей (storyHandlers/narrator-templates).
 export {
+  COMPACT_SUMMARY_HEADER,
+  COMPACTION_CONTEXT_HEADER,
   CONTINUE_MARKER,
+  DEFAULT_COMPACTION_PROMPT,
   DEFAULT_NARRATOR_PROMPT_ORDER,
   DEFAULT_NARRATOR_TEMPLATE,
   LEADING_USER_MARKER,
@@ -33,6 +37,11 @@ function componentText(
       return opts.lorebook.length > 0 ? `World and characters:\n\n${opts.lorebook.join("\n\n")}` : null;
     case "auxiliary":
       return opts.auxiliarySystemPrompt.trim() ? opts.auxiliarySystemPrompt : null;
+    case "compact": {
+      // Сжатые пересказы активной ветки одним блоком (хронологически). Пусто → компонент пропускается.
+      const summaries = opts.compactSummaries ?? [];
+      return summaries.length > 0 ? `${COMPACT_SUMMARY_HEADER}\n\n${summaries.join("\n\n")}` : null;
+    }
     case "postHistory":
       return opts.postHistoryInstruction.trim() ? opts.postHistoryInstruction : null;
   }

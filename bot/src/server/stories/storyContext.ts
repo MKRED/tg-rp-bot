@@ -1,14 +1,16 @@
 import { getActiveEntriesForPrompt } from "../../db/knowledge/index.js";
 import { getNarratorTemplate } from "../../db/narratorTemplates/index.js";
 import { getPreset } from "../../db/presets/index.js";
-import { getStory } from "../../db/stories/index.js";
+import { getStory, getStorySettings, listCompactions } from "../../db/stories/index.js";
 import logger from "../../logger.js";
+import { selectValidChain } from "../prompt/compactionPlan.js";
 import { presetToCompletionOptions } from "../prompt/promptBuilder.js";
 import {
   buildStoryMessages,
   DEFAULT_NARRATOR_PROMPT_ORDER,
   DEFAULT_NARRATOR_TEMPLATE,
 } from "../prompt/storyPromptBuilder.js";
+import { normalizeStoryPromptOrder } from "../prompt/storyPromptOrder.js";
 
 /**
  * Собирает вход для narrator-генерации из текущего состояния истории: системный промпт (из шаблона
@@ -32,7 +34,10 @@ export async function buildStoryCompletionInput(
     template && template.systemPrompt.trim() ? template.systemPrompt : DEFAULT_NARRATOR_TEMPLATE;
   const auxiliarySystemPrompt = template?.auxiliarySystemPrompt ?? "";
   const postHistoryInstruction = template?.postHistoryInstruction ?? "";
-  const promptOrder = template?.promptOrder ?? DEFAULT_NARRATOR_PROMPT_ORDER;
+  // Нормализуем порядок (старые шаблоны без `compact` дополняются на дефолтную позицию).
+  const promptOrder = template
+    ? normalizeStoryPromptOrder(template.promptOrder)
+    : DEFAULT_NARRATOR_PROMPT_ORDER;
 
   const preset = story.preset ? await getPreset(userId, story.preset.id) : null;
 
@@ -43,14 +48,33 @@ export async function buildStoryCompletionInput(
     .map((e) => e.text)
     .filter((t) => t.trim());
 
+  // Применение пересказов (compact). Гейт: компонент `compact` шаблона включён И compactEnabled чата.
+  // При выключенном любом — пересказы не подставляются, history = весь активный путь (как до фичи).
+  const settings = await getStorySettings(storyId);
+  const compactComponentOn = promptOrder.some((i) => i.id === "compact" && i.enabled);
+  let compactSummaries: string[] = [];
+  let history = story.messages;
+  if (compactComponentOn && settings.compactEnabled && story.activeMessageId != null) {
+    const pathIds = new Set(story.messages.map((m) => m.id));
+    const chain = selectValidChain(await listCompactions(userId, storyId), pathIds);
+    if (chain.length > 0) {
+      compactSummaries = chain.map((c) => c.summary);
+      const lastAnchorId = chain[chain.length - 1]!.toAnchorId;
+      const anchorIdx = story.messages.findIndex((m) => m.id === lastAnchorId);
+      // Живой хвост = сообщения пути после последнего якоря.
+      if (anchorIdx >= 0) history = story.messages.slice(anchorIdx + 1);
+    }
+  }
+
   const msgs = buildStoryMessages({
     systemPrompt,
     auxiliarySystemPrompt,
     postHistoryInstruction,
     premise: story.premise,
     lorebook,
+    compactSummaries,
     promptOrder,
-    history: story.messages,
+    history,
     contextUnlimited: preset?.contextUnlimited,
     contextSize: preset?.contextSize,
     maxTokens: preset?.maxTokens,
@@ -60,5 +84,7 @@ export async function buildStoryCompletionInput(
   });
 
   const samplingOpts = preset ? presetToCompletionOptions(preset) : {};
-  return { msgs, samplingOpts, preset };
+  // compactComponentEnabled — включён ли компонент `compact` в шаблоне (мастер-гейт фичи), нужен
+  // экрану статистики и авто-триггеру, чтобы не загружать шаблон повторно.
+  return { msgs, samplingOpts, preset, compactComponentEnabled: compactComponentOn };
 }

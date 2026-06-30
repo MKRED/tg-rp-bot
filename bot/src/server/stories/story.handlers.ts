@@ -14,6 +14,7 @@ import logger from "../../logger.js";
 import { CONTINUE_MARKER } from "../prompt/storyPromptBuilder.js";
 import { streamCompletion } from "../shared/streamGeneration.js";
 import { aiTranslate, englishLangName, googleTranslate } from "../shared/translate.js";
+import { compactStory, shouldAutoCompact } from "./compact.handler.js";
 import { buildStoryCompletionInput } from "./storyContext.js";
 import type { Ctx } from "./stories.types.js";
 
@@ -47,6 +48,20 @@ export async function handleAdvanceStory(c: Ctx) {
       steerId = steer.id;
       await setActiveStoryMessage(storyId, steer.id);
       await stream.writeSSE({ event: "userMessage", data: JSON.stringify(steer) });
+
+      // Авто-сжатие перед битом: если вход достиг лимита контекста — синхронно сжимаем (статус в ленте),
+      // затем генерируем уже на освобождённом контексте. Сжатие — оптимизация: ни проверка, ни само
+      // сжатие НЕ роняют advance (генерация продолжится со штатной обрезкой trimHistoryToBudget).
+      const auto = await shouldAutoCompact(userId, storyId).catch((err) => {
+        logger.warn({ err, userId, storyId }, "Auto-compaction check failed; skipping");
+        return false;
+      });
+      if (auto) {
+        await stream.writeSSE({ event: "status", data: JSON.stringify({ phase: "compacting" }) });
+        await compactStory(userId, storyId).catch((err) =>
+          logger.error({ err, userId, storyId }, "Auto-compaction failed; proceeding with trim"),
+        );
+      }
 
       const input = await buildStoryCompletionInput(userId, storyId);
       if (!input) throw new Error("Failed to build story context");

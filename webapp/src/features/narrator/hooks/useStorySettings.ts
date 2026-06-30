@@ -7,6 +7,10 @@ const DEFAULT_SETTINGS: StorySettings = {
   translateTargetLang: "ru",
   translateScope: "assistant",
   autoTranslateScope: "none",
+  compactEnabled: false,
+  compactAutoEnabled: false,
+  compactFloorTokens: 0,
+  compactWords: 200,
 };
 
 /** Загружает настройки перевода истории; update — оптимистичный PUT с откатом при ошибке. */

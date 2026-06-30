@@ -3,6 +3,7 @@ import logger from "../../logger.js";
 import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/index.js";
 import { db, schema } from "../index.js";
 import type { StoryMessage } from "../schema.js";
+import { invalidateCompactionsByRemovedIds } from "./compactions.js";
 import { decryptStoryTranslations } from "./crypto.js";
 import { findStoryLeaf } from "./queries.js";
 
@@ -219,6 +220,10 @@ export async function deleteStoryMessage(
       await setActiveStoryMessage(storyChatId, null);
     }
   }
+
+  // Инвалидция пересказов: если якорь какого-то компакта попал в удалённые id — убираем его и все
+  // последующие (каскад вперёд), иначе пересказ повис бы над удалённым контентом.
+  await invalidateCompactionsByRemovedIds(storyChatId, removed);
 
   logger.info(
     {

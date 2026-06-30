@@ -10,6 +10,7 @@ export type NarratorTemplateInput = {
   auxiliarySystemPrompt: string;
   postHistoryInstruction: string;
   translationSystemPrompt: string;
+  compactionPrompt: string;
   promptOrder: StoryPromptOrderItem[];
 };
 

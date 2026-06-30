@@ -33,6 +33,7 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
   const [translationSystemPrompt, setTranslationSystemPrompt] = useState(
     initial?.translationSystemPrompt ?? "",
   );
+  const [compactionPrompt, setCompactionPrompt] = useState(initial?.compactionPrompt ?? "");
   const [promptOrder, setPromptOrder] = useState<StoryPromptOrderItem[]>(
     initial?.promptOrder ?? DEFAULT_NARRATOR_PROMPT_ORDER,
   );
@@ -77,6 +78,14 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
         value={translationSystemPrompt}
         onChange={setTranslationSystemPrompt}
       />
+      <PromptField
+        label="Промпт сжатия истории"
+        hint="Инструкция для сжатия старых сообщений в краткий пересказ (compact). Плейсхолдер {{words}} — рекомендованное число слов из настроек истории. Работает, только если в порядке промптов включён «Краткое содержание». Пусто → встроенный дефолт."
+        placeholder="Напр.: Сожми события в связный пересказ примерно на {{words}} слов; сохрани факты, имена и нерешённые линии."
+        rows={4}
+        value={compactionPrompt}
+        onChange={setCompactionPrompt}
+      />
       {/* Гуттер 22px — как у полей tgui внутри карточки (выравнивание заголовка с рядами ниже). */}
       <div style={{ padding: "12px 22px 0", fontWeight: 600 }}>Порядок промптов</div>
       <PromptOrderEditor
@@ -97,6 +106,7 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
               auxiliarySystemPrompt: auxiliarySystemPrompt,
               postHistoryInstruction: postHistory,
               translationSystemPrompt: translationSystemPrompt,
+              compactionPrompt: compactionPrompt,
               promptOrder: promptOrder,
             })
           }
