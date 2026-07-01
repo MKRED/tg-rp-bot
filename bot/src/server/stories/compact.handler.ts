@@ -96,7 +96,10 @@ export async function compactStory(userId: number, storyId: number): Promise<Com
     const tailSum = tailItems.reduce((s, t) => s + t.tokens, 0);
     const planOverhead = currentTotal - tailSum;
 
-    const segments = planCompactionSegments(tailItems, planOverhead, floor, segmentSize);
+    // Вес последнего пересказа цепочки — уже вбит в planOverhead предыдущим проходом и дальше не
+    // сжимается, поэтому не считаем его «поводом» для нового сжатия (см. JSDoc planCompactionSegments).
+    const lastRecapWeight = chain.length > 0 ? countTokens(chain[chain.length - 1]!.summary) : 0;
+    const segments = planCompactionSegments(tailItems, planOverhead, floor, segmentSize, lastRecapWeight);
     if (segments.length === 0) {
       logger.info({ userId, storyId, currentTotal, floor }, "Story compaction no-op (nothing to compact)");
       return { ok: true, created: 0 };
@@ -133,7 +136,17 @@ export async function compactStory(userId: number, storyId: number): Promise<Com
       messages.push({ role: "user", content: beatTexts.join("\n\n") });
 
       const result = await retry(
-        () => chatCompletion({ messages, userId, debugLabel: "compact" }),
+        // Сжатие — задача на рассуждение (выделить главное, связать события), поэтому всегда
+        // просим «мышление» вне зависимости от пресета. Уровень берём из пресета истории
+        // (для DeepSeek — thinking-режим; на OpenRouter reasoningBody пустой, тело не меняется).
+        () =>
+          chatCompletion({
+            messages,
+            userId,
+            debugLabel: "compact",
+            requestReasoning: true,
+            reasoningEffort: preset!.reasoningEffort ?? undefined,
+          }),
         3,
         1500,
         "compactStory",

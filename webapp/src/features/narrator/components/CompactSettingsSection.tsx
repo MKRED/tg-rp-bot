@@ -197,24 +197,58 @@ export function CompactSettingsSection({
             <p className="section-note">Пересказов пока нет.</p>
           ) : (
             compactions.map((c, i) => (
-              <Cell
-                key={c.id}
-                multiline
-                after={
+              // Свой layout вместо Cell+after: иначе кнопка в `after` центрируется по всей высоте
+              // многострочного пересказа и забирает правую колонку у текста. Шапка (заголовок +
+              // удаление) сверху, текст пересказа — на всю ширину под ней.
+              <div key={c.id} style={{ padding: "10px 22px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 4,
+                  }}
+                >
+                  <span style={{ fontWeight: 500 }}>Пересказ {i + 1}</span>
                   <button
                     type="button"
                     disabled={busy}
                     onClick={() => handleRemove(c.id)}
                     aria-label="Удалить пересказ"
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "#e53935" }}
+                    style={{
+                      display: "flex",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: "#e53935",
+                      padding: 4,
+                      margin: -4, // компенсируем padding, чтобы иконка вставала вровень с краем
+                    }}
                   >
                     <Trash2 size={18} />
                   </button>
-                }
-                subtitle={c.summary}
-              >
-                Пересказ {i + 1}
-              </Cell>
+                </div>
+                <p
+                  style={{
+                    margin: 0,
+                    color: "var(--tg-theme-hint-color)",
+                    fontSize: 14,
+                    lineHeight: 1.4,
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {c.summary}
+                </p>
+                <p
+                  style={{
+                    margin: "4px 0 0",
+                    color: "var(--tg-theme-hint-color)",
+                    fontSize: 12,
+                  }}
+                >
+                  Сжато сообщений: {c.coveredCount}, токенов: {fmt(c.coveredTokens)}
+                </p>
+              </div>
             ))
           )}
         </>

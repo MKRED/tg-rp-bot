@@ -95,4 +95,29 @@ describe("planCompactionSegments", () => {
     expect(t[anchor]!.isBeat).toBe(true);
     expect(anchor).toBeLessThan(t.length - 1);
   });
+
+  it("lastRecapWeight не задан (0) → поведение как раньше", () => {
+    const t = tail([100, 100, 100]);
+    // total = 50 + 200(беседа) ~ чуть выше floor 200 → без поправки это уже no-op сценарий ниже,
+    // здесь просто проверяем явный дефолт 0 не меняет старые случаи.
+    expect(planCompactionSegments(t, 50, 5000, 1000)).toEqual([]);
+    expect(planCompactionSegments(t, 50, 5000, 1000, 0)).toEqual([]);
+  });
+
+  it("total чуть выше floor только за счёт последнего пересказа → no-op", () => {
+    // total = overhead(30200) + tail(0) = 30200, floor 30000 — без поправки сжало бы ещё.
+    // lastRecapWeight 217 (вес пересказа, уже сидящего в overhead) гасит именно этот излишек.
+    // Хвост из 2 бит (лист не трогаем), оба нулевой стоимости — вся разница идёт из overhead.
+    const t: CompactionTailItem[] = [
+      { isBeat: true, tokens: 0 },
+      { isBeat: true, tokens: 0 },
+    ];
+    expect(planCompactionSegments(t, 30200, 30000, 15000, 217)).toEqual([]);
+  });
+
+  it("lastRecapWeight недостаточен, чтобы погасить реальный избыток → всё равно сжимаем", () => {
+    const t = tail([5000, 5000]);
+    const segs = planCompactionSegments(t, 30200, 30000, 15000, 217);
+    expect(segs.length).toBeGreaterThan(0);
+  });
 });

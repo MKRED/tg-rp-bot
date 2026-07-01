@@ -46,12 +46,20 @@ export function selectValidChain<T extends ChainLink>(compactions: T[], pathIds:
  *                    + leading-user). Вместе с суммой хвоста даёт «всего вход».
  * @param floor       Целевой «пол» — до скольких токенов общего входа сжимаем.
  * @param segment     Размер сегмента S (контекст − floor): сколько токенов копим в один пересказ.
+ * @param lastRecapWeight Вес (в токенах) уже существующего последнего пересказа цепочки (0, если
+ *                    цепочки нет). Он уже сидит в `overhead` как «вбитый» пересказом предыдущего
+ *                    прохода вес — не сокращаемый дальнейшим сжатием. Без поправки на него сразу
+ *                    после прохода `total` снова оказывается чуть выше `floor` (на его же вес), и
+ *                    следующий клик отгрызает почти бесполезный мини-сегмент. Вычитаем его вес из
+ *                    `total` в no-op-проверке — не из цели среза (targetRemainder), сама обрезка
+ *                    при реальном сжатии не меняется.
  */
 export function planCompactionSegments(
   tail: CompactionTailItem[],
   overhead: number,
   floor: number,
   segment: number,
+  lastRecapWeight = 0,
 ): number[][] {
   const lastIndex = tail.length - 1;
   // Кандидаты-якоря: биты строго до последнего элемента (лист/триггер не трогаем).
@@ -60,7 +68,7 @@ export function planCompactionSegments(
   if (beatIndices.length === 0) return [];
 
   const total = overhead + tail.reduce((s, m) => s + m.tokens, 0);
-  if (total <= floor) return [];
+  if (total - lastRecapWeight <= floor) return [];
 
   // Сколько токенов хвоста оставляем живыми, чтобы общий вход уложился в floor.
   const targetRemainder = floor - overhead;
