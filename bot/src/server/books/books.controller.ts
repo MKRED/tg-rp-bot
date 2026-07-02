@@ -18,7 +18,7 @@ import logger from "../../logger.js";
 import type { AppVariables } from "../middleware/initData.types.js";
 import { isFkViolation } from "../shared/fkViolation.js";
 import { MAX_BOOKS_PER_USER, MAX_ENTRIES_PER_BOOK } from "./books.constants.js";
-import { parseBookInput, parseEntryInput } from "./books.validation.js";
+import { characterNeedsUserAlias, parseBookInput, parseEntryInput } from "./books.validation.js";
 
 /** CRUD книг знаний (+ их записей) под /api/books. Монтируется после requireInitData. */
 export function createBookRoutes(): Hono<{ Variables: AppVariables }> {
@@ -110,10 +110,14 @@ export function createBookRoutes(): Hono<{ Variables: AppVariables }> {
     const parsed = parseEntryInput(await c.req.json().catch(() => null));
     if ("error" in parsed) return c.json({ error: parsed.error }, 400);
 
-    // Запись-персонаж: персонаж должен принадлежать пользователю.
+    // Запись-персонаж: персонаж должен принадлежать пользователю; если его промпт/сценарий
+    // ссылается на {{user}}, значение для подстановки обязательно (карточка не знает, кто играет за юзера).
     if (parsed.input.characterId !== null) {
       const ch = await getCharacter(user.id, parsed.input.characterId);
       if (!ch) return c.json({ error: "Character not found" }, 404);
+      if (characterNeedsUserAlias(ch) && !parsed.input.userAlias) {
+        return c.json({ error: "User alias required" }, 400);
+      }
     }
     if ((await countEntries(user.id, id)) >= MAX_ENTRIES_PER_BOOK) {
       return c.json({ error: `Entry limit reached (max ${MAX_ENTRIES_PER_BOOK})` }, 400);
@@ -133,6 +137,9 @@ export function createBookRoutes(): Hono<{ Variables: AppVariables }> {
     if (parsed.input.characterId !== null) {
       const ch = await getCharacter(user.id, parsed.input.characterId);
       if (!ch) return c.json({ error: "Character not found" }, 404);
+      if (characterNeedsUserAlias(ch) && !parsed.input.userAlias) {
+        return c.json({ error: "User alias required" }, 400);
+      }
     }
     const ok = await updateEntry(user.id, entryId, parsed.input);
     if (!ok) return c.json({ error: "Not found" }, 404);

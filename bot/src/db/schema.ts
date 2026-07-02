@@ -363,6 +363,9 @@ export const knowledgeBookEntries = pgTable("knowledge_book_entries", {
   characterId: bigint("character_id", { mode: "number" }).references(() => characters.id, {
     onDelete: "set null",
   }),
+  // Значение для {{user}} в промпте персонажа (у narrator нет персоны, играющей за пользователя).
+  // Обязательно на уровне контроллера, если промпт/сценарий персонажа содержит {{user}}.
+  userAlias: text("user_alias").notNull().default(""),
   content: text("content").notNull().default(""),
   keywords: text("keywords")
     .array()

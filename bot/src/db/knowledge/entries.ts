@@ -10,12 +10,13 @@ function ownedBooks(userId: number) {
 }
 
 /**
- * Резолв плейсхолдеров карточки персонажа для narrator-промпта: {{char}} → имя персонажа записи.
- * {{user}} в narrator-режиме игнорируем (нет отыгрываемой персоны — пользователь режиссёр), вырезая
- * сам токен, чтобы фигурные скобки не утекли в промпт. Регистронезависимо, как replacePlaceholders в RP.
+ * Резолв плейсхолдеров карточки персонажа для narrator-промпта: {{char}} → имя персонажа записи,
+ * {{user}} → userAlias, заданный при выборе персонажа в записи книги (в narrator-режиме нет
+ * отыгрываемой персоны — пользователь режиссёр, поэтому значение вводится вручную). Пустой userAlias
+ * (записи без плейсхолдера в промпте) просто вырезает токен. Регистронезависимо, как replacePlaceholders в RP.
  */
-function subPlaceholders(text: string, charName: string): string {
-  return text.replace(/\{\{char\}\}/gi, charName).replace(/\{\{user\}\}/gi, "");
+function subPlaceholders(text: string, charName: string, userAlias: string): string {
+  return text.replace(/\{\{char\}\}/gi, charName).replace(/\{\{user\}\}/gi, userAlias);
 }
 
 /**
@@ -27,7 +28,7 @@ export async function listEntries(userId: number, bookId: number): Promise<Entry
   const rows = await db.execute(sql`
     SELECT
       e.id, e.name, e.enabled, e.activation, e.character_id,
-      e.content, e.keywords, e.sort_order,
+      e.user_alias, e.content, e.keywords, e.sort_order,
       ch.name AS char_name,
       ch.image IS NOT NULL AS char_has_image
     FROM knowledge_book_entries e
@@ -47,6 +48,7 @@ export async function listEntries(userId: number, bookId: number): Promise<Entry
     characterId: r.character_id != null ? Number(r.character_id) : null,
     characterName: (r.char_name as string | null) ?? null,
     characterHasImage: (r.char_has_image as boolean | null) ?? false,
+    userAlias: decryptField(r.user_alias as string, key),
     content: decryptField(r.content as string, key),
     keywords: ((r.keywords as string[] | null) ?? []).map((k) => decryptField(k, key)),
     sortOrder: r.sort_order as number,
@@ -89,6 +91,7 @@ export async function createEntry(
       enabled: input.enabled,
       activation: input.activation,
       characterId: input.characterId,
+      userAlias: encryptField(input.userAlias, key),
       content: encryptField(input.content, key),
       keywords: input.keywords.map((k) => encryptField(k, key)),
       sortOrder: input.sortOrder,
@@ -113,6 +116,7 @@ export async function updateEntry(
       enabled: input.enabled,
       activation: input.activation,
       characterId: input.characterId,
+      userAlias: encryptField(input.userAlias, key),
       content: encryptField(input.content, key),
       keywords: input.keywords.map((k) => encryptField(k, key)),
       sortOrder: input.sortOrder,
@@ -148,8 +152,9 @@ export async function deleteEntry(userId: number, entryId: number): Promise<bool
 
 /**
  * Включённые записи книги, готовые к подстановке в промпт. Для записи-персонажа текст собирается из
- * карточки (имя + описание + сценарий, расшифрованные), для свободной — из content. Имя записи (UI-метка)
- * в текст НЕ попадает. Фильтрацию по activation (always_on vs keyword) делает сборщик промпта.
+ * карточки (имя + описание + сценарий, расшифрованные), для свободной — из content. Итог оборачивается
+ * в блок <имя записи>…</имя записи> — так LLM видит, к какому факту/персонажу относится текст, и записи
+ * не сливаются в промпте друг с другом. Фильтрацию по activation (always_on vs keyword) делает сборщик промпта.
  */
 export async function getActiveEntriesForPrompt(
   userId: number,
@@ -158,7 +163,7 @@ export async function getActiveEntriesForPrompt(
   const t0 = Date.now();
   const rows = await db.execute(sql`
     SELECT
-      e.activation, e.content, e.keywords, e.character_id,
+      e.name, e.activation, e.content, e.keywords, e.character_id, e.user_alias,
       ch.name AS char_name, ch.prompt AS char_prompt, ch.scenario AS char_scenario
     FROM knowledge_book_entries e
     LEFT JOIN characters ch ON ch.id = e.character_id
@@ -176,17 +181,28 @@ export async function getActiveEntriesForPrompt(
   return (rows as Record<string, unknown>[]).map((r) => {
     const activation = r.activation as "always_on" | "keyword";
     const keywords = ((r.keywords as string[] | null) ?? []).map((k) => decryptField(k, key));
+    const entryName = decryptField(r.name as string, key);
 
-    let text: string;
+    let body: string;
     if (r.character_id != null && r.char_name != null) {
       // Запись-персонаж: описание + сценарий из карточки (prompt/scenario зашифрованы как у character).
-      const name = r.char_name as string;
-      const prompt = subPlaceholders(decryptField((r.char_prompt as string | null) ?? "", key), name);
-      const scenario = subPlaceholders(decryptField((r.char_scenario as string | null) ?? "", key), name);
-      text = [`${name}`, prompt, scenario].filter((s) => s.trim()).join("\n");
+      const charName = r.char_name as string;
+      const userAlias = decryptField(r.user_alias as string, key);
+      const prompt = subPlaceholders(
+        decryptField((r.char_prompt as string | null) ?? "", key),
+        charName,
+        userAlias,
+      );
+      const scenario = subPlaceholders(
+        decryptField((r.char_scenario as string | null) ?? "", key),
+        charName,
+        userAlias,
+      );
+      body = [charName, prompt, scenario].filter((s) => s.trim()).join("\n");
     } else {
-      text = decryptField((r.content as string | null) ?? "", key);
+      body = decryptField((r.content as string | null) ?? "", key);
     }
+    const text = `<${entryName}>\n${body}\n</${entryName}>`;
     return { activation, keywords, text };
   });
 }

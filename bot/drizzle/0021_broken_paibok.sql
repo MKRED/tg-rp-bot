@@ -1,0 +1,1 @@
+ALTER TABLE "knowledge_book_entries" ADD COLUMN "user_alias" text DEFAULT '' NOT NULL;

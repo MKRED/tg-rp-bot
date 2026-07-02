@@ -1,8 +1,8 @@
-import { Button, Cell, Input, List, Modal, Section, Switch } from "@telegram-apps/telegram-ui";
+import { Button, Caption, Cell, Input, List, Modal, Section, Switch } from "@telegram-apps/telegram-ui";
 import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { PromptField } from "../../../shared/components/PromptField";
-import { CharacterAvatar, useCharacters } from "../../characters";
+import { CharacterAvatar, useCharacter, useCharacters } from "../../characters";
 import { createEntry, removeEntry, updateEntry } from "../api/books-api";
 import type { Entry } from "../types/book";
 
@@ -16,10 +16,13 @@ interface EntryEditorProps {
 
 type Mode = "character" | "free";
 
+const USER_PLACEHOLDER_RE = /\{\{user\}\}/i;
+
 /**
  * Редактор одной записи книги знаний. Два вида: «персонаж» (ссылка на карточку) или «свободный текст».
  * Активация always_on активна; «по ключу» (keyword) — задел, пока выключена. keywords в UI не вводим
- * (нужны только keyword-режиму). name — метка только для вас (в промпт не уходит).
+ * (нужны только keyword-режиму). name обязателен — в промпте им оборачивается текст записи:
+ * <name>…</name> (getActiveEntriesForPrompt).
  */
 export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorProps) {
   const { items: characters } = useCharacters();
@@ -28,13 +31,27 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
   const [mode, setMode] = useState<Mode>(initial?.characterId != null ? "character" : "free");
   const [characterId, setCharacterId] = useState<number | null>(initial?.characterId ?? null);
   const [content, setContent] = useState(initial?.content ?? "");
+  const [userAlias, setUserAlias] = useState(initial?.userAlias ?? "");
   const [enabled, setEnabled] = useState(initial?.enabled ?? true);
   const [submitting, setSubmitting] = useState(false);
   const [charOpen, setCharOpen] = useState(false);
 
   const selectedCharacter = characters.find((c) => c.id === characterId) ?? null;
 
-  const valid = mode === "character" ? characterId != null : content.trim().length > 0;
+  // Полная карточка (с промптом/сценарием) нужна только чтобы проверить {{user}} — список её не отдаёт.
+  const { character: selectedCharacterFull, loading: characterLoading } = useCharacter(
+    mode === "character" && characterId != null ? characterId : undefined,
+  );
+  const needsUserAlias =
+    selectedCharacterFull != null &&
+    (USER_PLACEHOLDER_RE.test(selectedCharacterFull.prompt) ||
+      USER_PLACEHOLDER_RE.test(selectedCharacterFull.scenario));
+
+  const valid =
+    name.trim().length > 0 &&
+    (mode === "character"
+      ? characterId != null && !characterLoading && (!needsUserAlias || userAlias.trim().length > 0)
+      : content.trim().length > 0);
 
   const handleSave = () => {
     if (!valid || submitting) return;
@@ -44,6 +61,7 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
       enabled,
       activation: "always_on" as const,
       characterId: mode === "character" ? characterId : null,
+      userAlias: mode === "character" ? userAlias.trim() : "",
       content: mode === "free" ? content : "",
       keywords: [],
       sortOrder: initial?.sortOrder ?? 0,
@@ -63,11 +81,14 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
   return (
     <Section className="section-blend-inputs" header={initial ? "Редактирование записи" : "Новая запись"}>
       <Input
-        header="Название (только для вас)"
+        header="Название"
         placeholder="Напр. «Анна» или «Таверна»"
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
+      <Caption level="1" weight="3" style={{ padding: "0 22px 8px", opacity: 0.6 }}>
+        Обязательно — этим названием текст записи оборачивается в промпте модели.
+      </Caption>
 
       <div style={{ display: "flex", gap: 8, padding: "8px 22px" }}>
         <Button
@@ -106,7 +127,23 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
         >
           {selectedCharacter?.name ?? "Выберите персонажа"}
         </Cell>
-      ) : (
+      ) : null}
+
+      {mode === "character" && needsUserAlias ? (
+        <>
+          <Input
+            header="Обращение к пользователю"
+            placeholder="Напр. «Михаил» или «Странник»"
+            value={userAlias}
+            onChange={(e) => setUserAlias(e.target.value)}
+          />
+          <Caption level="1" weight="3" style={{ display: "block", padding: "4px 22px 0", color: "var(--tgui--hint_color)" }}>
+            Промпт этого персонажа содержит {"{{user}}"} — narrator не отыгрывает персону, укажите текст для подстановки.
+          </Caption>
+        </>
+      ) : null}
+
+      {mode === "free" ? (
         <PromptField
           label="Текст записи"
           hint="Факт о мире / предмете / месте. Записи always_on уходят в промпт модели при каждом бите истории."
@@ -115,7 +152,7 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
           value={content}
           onChange={setContent}
         />
-      )}
+      ) : null}
 
       <div style={{ padding: "8px 22px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>Включена</span>

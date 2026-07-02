@@ -21,6 +21,8 @@ export type EntryInput = {
   enabled: boolean;
   activation: "always_on" | "keyword";
   characterId: number | null;
+  // Значение для {{user}} в промпте персонажа записи (обязательно, если промпт/сценарий его содержит).
+  userAlias: string;
   content: string;
   keywords: string[];
   sortOrder: number;
@@ -35,6 +37,7 @@ export type EntryListItem = {
   characterId: number | null;
   characterName: string | null;
   characterHasImage: boolean;
+  userAlias: string;
   content: string;
   keywords: string[];
   sortOrder: number;

@@ -30,6 +30,7 @@ export type Entry = {
   characterId: number | null;
   characterName: string | null;
   characterHasImage: boolean;
+  userAlias: string;
   content: string;
   keywords: string[];
   sortOrder: number;
@@ -40,6 +41,7 @@ export type EntryInput = {
   enabled: boolean;
   activation: EntryActivation;
   characterId: number | null;
+  userAlias: string;
   content: string;
   keywords: string[];
   sortOrder: number;
