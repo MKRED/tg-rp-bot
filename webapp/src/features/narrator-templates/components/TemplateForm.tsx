@@ -2,6 +2,7 @@ import { Button, Input } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { PromptField } from "../../../shared/components/PromptField";
 import { PromptOrderEditor } from "../../../shared/components/PromptOrderEditor";
+import { SectionActions } from "../../../shared/components/SectionActions";
 import { SectionWithFooter } from "../../../shared/components/SectionWithFooter";
 import {
   DEFAULT_NARRATOR_PROMPT_ORDER,
@@ -99,7 +100,7 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
         labels={NARRATOR_PROMPT_COMPONENT_LABELS}
         sources={NARRATOR_PROMPT_COMPONENT_SOURCES}
       />
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 24, padding: "0 22px" }}>
+      <SectionActions>
         <Button
           size="l"
           stretched
@@ -123,7 +124,7 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
             Удалить шаблон
           </Button>
         )}
-      </div>
+      </SectionActions>
     </SectionWithFooter>
   );
 }

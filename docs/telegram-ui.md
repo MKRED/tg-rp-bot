@@ -217,6 +217,39 @@ children: Children.map(children, (child, index) => <>
 последним top-level ребёнком секции (получает разделитель сверху — это ожидаемо, отделяет её от
 последнего поля формы).
 
+### 1.4.3. `Button` не несёт своего гуттера — в отличие от `Cell`/`Input`/`Textarea`
+
+`Cell`, `Input`, `Textarea` сами кладут внутренний `padding` под 22px-гуттер карточки — поставленные
+прямо в `Section`, они сами выравниваются по её краям. `Button` — нет: в исходнике
+(`node_modules/@telegram-apps/telegram-ui/dist/components/Blocks/Button/Button.js`) это `Tappable`
+с `display: inline-flex`, без единого `padding`/`margin` по горизонтали; `stretched` лишь растягивает
+его на 100% ширины **родителя**. Родитель у `Button` внутри `Section` — сама карточка без отступов
+(раздел 1.4 показывает: `.tgui-4b78bed6e925088e{background:...;border-radius:12px}` — фона и радиуса
+достаточно для полей, которые несут padding сами, но не для голых блоков вроде кнопок).
+
+Следствие: `Button`, положенная в `Section` без обёртки, прижимается к боковым краям карточки, а если
+она ещё и последний ребёнок — прижимается и к нижнему краю (см. скриншот-баг в `BookForm`: кнопка
+«Удалить книгу» упиралась в самый низ карточки без единого пикселя отступа).
+
+**Решение — `SectionActions`** (`webapp/src/shared/components/SectionActions.tsx`): обёртка для блока
+кнопок в подвале секции, задаёт тот же 22px-гуттер по бокам + отступ сверху/снизу:
+
+```tsx
+<Section header="…">
+  {/* поля Cell/Input/Textarea — сами выровнены */}
+  <SectionActions>
+    <Button size="l" stretched onClick={handleSave}>Сохранить</Button>
+    {onDelete && <Button size="l" mode="outline" stretched onClick={onDelete}>Удалить</Button>}
+  </SectionActions>
+</Section>
+```
+
+Используется в `BookForm`, `EntryEditor`, `TemplateForm`. **Не подходит** для форм, которые не лежат
+в `Section` (карточки нет) — `CharacterForm`/`PersonaForm`/`PresetForm` (раздел 1.4.1) рендерят кнопки
+плоско на фоне страницы через свои локальные CSS-классы (`char-form__actions` и т. п.): без карточки нет
+края, о который кнопка могла бы «обрезаться», так что тот же паддинг там не баг, а просто другой контекст
+— компонент их не заменяет.
+
 ### 1.5. Порталы выходят из-под `<AppRoot>` — гочта
 
 Компонент, отрисованный через `createPortal(..., document.body)`, **покидает поддерево AppRoot**,

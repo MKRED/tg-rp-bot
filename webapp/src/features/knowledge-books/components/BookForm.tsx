@@ -1,5 +1,6 @@
 import { Button, Input, Section, Textarea } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
+import { SectionActions } from "../../../shared/components/SectionActions";
 import type { Book, BookInput } from "../types/book";
 
 interface BookFormProps {
@@ -30,7 +31,7 @@ export function BookForm({ initial, submitting, onSubmit, onDelete }: BookFormPr
         value={description}
         onChange={(e) => setDescription(e.target.value)}
       />
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 24, padding: "0 22px" }}>
+      <SectionActions>
         <Button
           size="l"
           stretched
@@ -44,7 +45,7 @@ export function BookForm({ initial, submitting, onSubmit, onDelete }: BookFormPr
             Удалить книгу
           </Button>
         )}
-      </div>
+      </SectionActions>
     </Section>
   );
 }

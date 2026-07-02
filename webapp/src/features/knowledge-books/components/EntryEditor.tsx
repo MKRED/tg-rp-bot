@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { HintedInput } from "../../../shared/components/HintedInput";
 import { PromptField } from "../../../shared/components/PromptField";
+import { SectionActions } from "../../../shared/components/SectionActions";
 import { CharacterAvatar, useCharacter, useCharacters } from "../../characters";
 import { createEntry, removeEntry, updateEntry } from "../api/books-api";
 import type { Entry } from "../types/book";
@@ -154,7 +155,7 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
         <Switch checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 24, padding: "0 22px" }}>
+      <SectionActions>
         <Button size="l" stretched disabled={!valid || submitting} onClick={handleSave}>
           {initial ? "Сохранить" : "Добавить"}
         </Button>
@@ -166,7 +167,7 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
             Удалить запись
           </Button>
         )}
-      </div>
+      </SectionActions>
 
       {/* Модал выбора персонажа — вместо нативного select */}
       <Modal
