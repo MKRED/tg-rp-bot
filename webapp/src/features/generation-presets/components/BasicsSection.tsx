@@ -1,4 +1,5 @@
 import { Input } from "@telegram-apps/telegram-ui";
+import { HintedInput } from "../../../shared/components/HintedInput";
 import { SwitchRow } from "./SwitchRow";
 
 interface BasicsSectionProps {
@@ -46,38 +47,26 @@ export function BasicsSection({
 
       {/* Размер контекста скрыт, когда выбран неограниченный. */}
       {!contextUnlimited && (
-        <div className="preset-field">
-          <Input
-            header="Размер контекста (токены)"
-            type="number"
-            inputMode="numeric"
-            placeholder="Например, 8192"
-            value={contextSize}
-            onChange={(e) => onContextSize(e.target.value)}
-          />
-          <div className="preset-field__meta">
-            <span className="preset-field__hint">
-              Сколько токенов истории удерживать в запросе.
-            </span>
-          </div>
-        </div>
-      )}
-
-      <div className="preset-field">
-        <Input
-          header="Максимальная длина ответа (токены)"
+        <HintedInput
+          header="Размер контекста (токены)"
           type="number"
           inputMode="numeric"
-          placeholder="Например, 1024"
-          value={maxTokens}
-          onChange={(e) => onMaxTokens(e.target.value)}
+          placeholder="Например, 8192"
+          hint="Сколько токенов истории удерживать в запросе."
+          value={contextSize}
+          onChange={(e) => onContextSize(e.target.value)}
         />
-        <div className="preset-field__meta">
-          <span className="preset-field__hint">
-            Верхняя граница длины ответа модели в токенах.
-          </span>
-        </div>
-      </div>
+      )}
+
+      <HintedInput
+        header="Максимальная длина ответа (токены)"
+        type="number"
+        inputMode="numeric"
+        placeholder="Например, 1024"
+        hint="Верхняя граница длины ответа модели в токенах."
+        value={maxTokens}
+        onChange={(e) => onMaxTokens(e.target.value)}
+      />
 
       <SwitchRow
         label="Стриминг текста"

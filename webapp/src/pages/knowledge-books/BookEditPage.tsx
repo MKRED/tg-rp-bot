@@ -1,10 +1,11 @@
-import { Button, Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
+import { Button, Cell, List, Spinner } from "@telegram-apps/telegram-ui";
 import { Plus, User, FileText } from "lucide-react";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { ROUTES, bookEditPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
+import { SectionWithFooter } from "../../shared/components/SectionWithFooter";
 import {
   BookForm,
   EntryEditor,
@@ -106,7 +107,10 @@ export function BookEditPage() {
                   onCancel={() => setEntryEdit(null)}
                 />
               ) : (
-                <Section header="Записи">
+                <SectionWithFooter
+                  header="Записи"
+                  footer="Записи always_on всегда попадают в промпт истории"
+                >
                   {entries.length === 0 && <Cell subtitle="Пока пусто">Нет записей</Cell>}
                   {entries.map((e) => (
                     <Cell
@@ -135,8 +139,7 @@ export function BookEditPage() {
                       Добавить запись
                     </Button>
                   </div>
-                  <p className="section-note">Записи always_on всегда попадают в промпт истории</p>
-                </Section>
+                </SectionWithFooter>
               )}
             </>
           )}

@@ -1,9 +1,10 @@
-import { Button, Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
+import { Button, Cell, List, Spinner } from "@telegram-apps/telegram-ui";
 import { ScrollText } from "lucide-react";
 import { motion } from "framer-motion";
 import { ROUTES, narratorTemplateEditPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
+import { SectionWithFooter } from "../../shared/components/SectionWithFooter";
 import { MAX_TEMPLATES_PER_USER, useTemplates } from "../../features/narrator-templates";
 import "./narrator-templates.css";
 
@@ -17,7 +18,10 @@ export function TemplatesListPage() {
     <PageTransition>
       <div className="nt-page">
         <List>
-          <Section header="Narrator-шаблоны">
+          <SectionWithFooter
+            header="Narrator-шаблоны"
+            footer="Инструкция нарратора для режима «Режиссёр истории»"
+          >
             {loading && (
               <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
                 <Spinner size="m" />
@@ -44,8 +48,7 @@ export function TemplatesListPage() {
                   </Cell>
                 </motion.div>
               ))}
-            <p className="section-note">Инструкция нарратора для режима «Режиссёр истории»</p>
-          </Section>
+          </SectionWithFooter>
           <div style={{ padding: 16 }}>
             <Button
               size="l"

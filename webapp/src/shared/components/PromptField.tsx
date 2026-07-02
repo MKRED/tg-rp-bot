@@ -1,4 +1,5 @@
 import { ExpandableTextarea } from "./ExpandableTextarea";
+import { FieldHint } from "./FieldHint";
 import { estimateTokens } from "../text/tokens";
 import "./PromptField.css";
 
@@ -34,7 +35,7 @@ export function PromptField({
         onBlur={onBlur}
       />
       <div className="prompt-field__meta">
-        <span className="prompt-field__hint">{hint}</span>
+        <FieldHint>{hint}</FieldHint>
         <span className="prompt-field__tokens">~{estimateTokens(value)} токенов</span>
       </div>
     </div>

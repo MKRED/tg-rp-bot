@@ -1,4 +1,5 @@
 import { Switch } from "@telegram-apps/telegram-ui";
+import { FieldHint } from "../../../shared/components/FieldHint";
 
 interface SwitchRowProps {
   label: string;
@@ -14,7 +15,7 @@ export function SwitchRow({ label, hint, checked, disabled, onChange }: SwitchRo
     <div className="preset-switchrow">
       <div className="preset-switchrow__text">
         <span className="preset-switchrow__label">{label}</span>
-        {hint && <span className="preset-field__hint">{hint}</span>}
+        {hint && <FieldHint>{hint}</FieldHint>}
       </div>
       {/* Обёртка с flex-shrink:0 — иначе длинный текст слева ужимает Switch и ломает его вид. */}
       <span className="preset-switch">

@@ -1,6 +1,7 @@
 import { Button, Cell, List, Section, Spinner, Switch } from "@telegram-apps/telegram-ui";
 import { RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { SectionWithFooter } from "../../../shared/components/SectionWithFooter";
 import { useDebugLlm } from "../hooks/useDebugLlm";
 import { DebugRecordItem } from "./DebugRecordItem";
 import "./debug.css";
@@ -15,7 +16,10 @@ export function DebugLlmView() {
   return (
     <div className="debug-llm">
       <List>
-        <Section header="Перехват">
+        <SectionWithFooter
+          header="Перехват"
+          footer="Лог хранится в памяти сервера и сбрасывается при перезапуске."
+        >
           <Cell
             after={
               <Switch
@@ -34,10 +38,12 @@ export function DebugLlmView() {
             min={1}
             onCommit={(n) => updateSettings({ maxRequests: n })}
           />
-          <p className="section-note">Лог хранится в памяти сервера и сбрасывается при перезапуске.</p>
-        </Section>
+        </SectionWithFooter>
 
-        <Section header="Показ">
+        <SectionWithFooter
+          header="Показ"
+          footer="Усечение длинного messages[] — только на показе, на сам запрос не влияет. Хранится на сервере, одинаково на всех устройствах."
+        >
           <NumberRow
             label="Сообщений с начала"
             value={settings.headMessages}
@@ -50,11 +56,7 @@ export function DebugLlmView() {
             min={0}
             onCommit={(n) => updateSettings({ tailMessages: n })}
           />
-          <p className="section-note">
-            Усечение длинного messages[] — только на показе, на сам запрос не влияет. Хранится на
-            сервере, одинаково на всех устройствах.
-          </p>
-        </Section>
+        </SectionWithFooter>
 
         <Section header={`Запросы (${records.length})`}>
           <div className="debug-llm__actions">

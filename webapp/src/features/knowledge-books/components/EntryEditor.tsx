@@ -1,6 +1,7 @@
-import { Button, Caption, Cell, Input, List, Modal, Section, Switch } from "@telegram-apps/telegram-ui";
+import { Button, Cell, List, Modal, Section, Switch } from "@telegram-apps/telegram-ui";
 import { ChevronRight } from "lucide-react";
 import { useState } from "react";
+import { HintedInput } from "../../../shared/components/HintedInput";
 import { PromptField } from "../../../shared/components/PromptField";
 import { CharacterAvatar, useCharacter, useCharacters } from "../../characters";
 import { createEntry, removeEntry, updateEntry } from "../api/books-api";
@@ -80,15 +81,13 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
 
   return (
     <Section className="section-blend-inputs" header={initial ? "Редактирование записи" : "Новая запись"}>
-      <Input
+      <HintedInput
         header="Название"
         placeholder="Напр. «Анна» или «Таверна»"
+        hint="Обязательно — этим названием текст записи оборачивается в промпте модели."
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
-      <Caption level="1" weight="3" style={{ padding: "0 22px 8px", opacity: 0.6 }}>
-        Обязательно — этим названием текст записи оборачивается в промпте модели.
-      </Caption>
 
       <div style={{ display: "flex", gap: 8, padding: "8px 22px" }}>
         <Button
@@ -130,17 +129,13 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
       ) : null}
 
       {mode === "character" && needsUserAlias ? (
-        <>
-          <Input
-            header="Обращение к пользователю"
-            placeholder="Напр. «Михаил» или «Странник»"
-            value={userAlias}
-            onChange={(e) => setUserAlias(e.target.value)}
-          />
-          <Caption level="1" weight="3" style={{ display: "block", padding: "4px 22px 0", color: "var(--tgui--hint_color)" }}>
-            Промпт этого персонажа содержит {"{{user}}"} — narrator не отыгрывает персону, укажите текст для подстановки.
-          </Caption>
-        </>
+        <HintedInput
+          header="Обращение к пользователю"
+          placeholder="Напр. «Михаил» или «Странник»"
+          hint="Промпт этого персонажа содержит {{user}} — narrator не отыгрывает персону, укажите текст для подстановки."
+          value={userAlias}
+          onChange={(e) => setUserAlias(e.target.value)}
+        />
       ) : null}
 
       {mode === "free" ? (

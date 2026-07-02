@@ -1,0 +1,8 @@
+/* Текст подсказки под полем формы — общий для Input/Textarea/Slider/Switch. Горизонтальные отступы
+   задаёт обёртка-потребитель (у контролов они разные), здесь только типографика. */
+.field-hint {
+  display: block;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--tgui--hint_color, #7d8b99);
+}

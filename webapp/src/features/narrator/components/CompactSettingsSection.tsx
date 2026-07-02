@@ -1,6 +1,7 @@
 import { Button, Cell, Section, Slider, Spinner, Switch } from "@telegram-apps/telegram-ui";
 import { ChevronDown, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { FieldHint } from "../../../shared/components/FieldHint";
 import { confirmAction } from "../../../shared/telegram/confirm";
 import { useToast } from "../../../shared/toast";
 import { useCompactions } from "../hooks/useCompactions";
@@ -121,178 +122,182 @@ export function CompactSettingsSection({
 
   return (
     <Section header="Сжатие истории">
-      <Cell
-        after={
-          <Switch
-            checked={settings.compactEnabled}
-            disabled={!available}
-            onChange={(e) => updateSettings({ compactEnabled: e.target.checked })}
-          />
-        }
-        subtitle="Сжимать старые сообщения в краткий пересказ, освобождая контекст"
-      >
-        Сжатие истории
-      </Cell>
+      {/* Один top-level child (Fragment) — иначе Section считает соседние {cond && …} отдельными
+          «слотами» и вставляет Divider по позиции, даже когда слот пуст (docs/telegram-ui.md, 1.4.2). */}
+      <>
+        <Cell
+          after={
+            <Switch
+              checked={settings.compactEnabled}
+              disabled={!available}
+              onChange={(e) => updateSettings({ compactEnabled: e.target.checked })}
+            />
+          }
+          subtitle="Сжимать старые сообщения в краткий пересказ, освобождая контекст"
+        >
+          Сжатие истории
+        </Cell>
 
-      {!available && stats.compactReason && (
-        <p className="section-note">{REASON_TEXT[stats.compactReason]}</p>
-      )}
+        {!available && stats.compactReason && (
+          <p className="section-note">{REASON_TEXT[stats.compactReason]}</p>
+        )}
 
-      {available && settings.compactEnabled && (
-        <>
-          <Cell
-            after={
-              <Switch
-                checked={settings.compactAutoEnabled}
-                onChange={(e) => updateSettings({ compactAutoEnabled: e.target.checked })}
+        {available && settings.compactEnabled && (
+          <>
+            <Cell
+              after={
+                <Switch
+                  checked={settings.compactAutoEnabled}
+                  onChange={(e) => updateSettings({ compactAutoEnabled: e.target.checked })}
+                />
+              }
+              subtitle="Сжимать автоматически при приближении к лимиту контекста"
+            >
+              Авто-сжатие
+            </Cell>
+
+            <div style={{ padding: "8px 22px 0" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 500 }}>
+                <span>Сжимать до</span>
+                <span style={{ color: "var(--tg-theme-hint-color)" }}>{fmt(floor)} ток.</span>
+              </div>
+              <Slider
+                min={FLOOR_MIN}
+                max={floorMax}
+                step={FLOOR_STEP}
+                value={floor}
+                onChange={(v) => {
+                  setFloor(v);
+                  commit({ compactFloorTokens: v });
+                }}
               />
-            }
-            subtitle="Сжимать автоматически при приближении к лимиту контекста"
-          >
-            Авто-сжатие
-          </Cell>
-
-          <div style={{ padding: "8px 22px 0" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 500 }}>
-              <span>Сжимать до</span>
-              <span style={{ color: "var(--tg-theme-hint-color)" }}>{fmt(floor)} ток.</span>
+              <FieldHint>
+                При сжатии оставляем примерно столько токенов живой истории (из {fmt(limit)} лимита).
+              </FieldHint>
             </div>
-            <Slider
-              min={FLOOR_MIN}
-              max={floorMax}
-              step={FLOOR_STEP}
-              value={floor}
-              onChange={(v) => {
-                setFloor(v);
-                commit({ compactFloorTokens: v });
-              }}
-            />
-            <span className="section-note" style={{ padding: 0 }}>
-              При сжатии оставляем примерно столько токенов живой истории (из {fmt(limit)} лимита).
-            </span>
-          </div>
 
-          <div style={{ padding: "8px 22px 0" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 500 }}>
-              <span>Слов в пересказе</span>
-              <span style={{ color: "var(--tg-theme-hint-color)" }}>~{words}</span>
+            <div style={{ padding: "8px 22px 0" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 500 }}>
+                <span>Слов в пересказе</span>
+                <span style={{ color: "var(--tg-theme-hint-color)" }}>~{words}</span>
+              </div>
+              <Slider
+                min={WORDS_MIN}
+                max={WORDS_MAX}
+                step={WORDS_STEP}
+                value={words}
+                onChange={(v) => {
+                  setWords(v);
+                  commit({ compactWords: v });
+                }}
+              />
+              <FieldHint>
+                Рекомендованный объём каждого пересказа (плейсхолдер {"{{words}}"} в промпте сжатия).
+              </FieldHint>
             </div>
-            <Slider
-              min={WORDS_MIN}
-              max={WORDS_MAX}
-              step={WORDS_STEP}
-              value={words}
-              onChange={(v) => {
-                setWords(v);
-                commit({ compactWords: v });
-              }}
-            />
-            <span className="section-note" style={{ padding: 0 }}>
-              Рекомендованный объём каждого пересказа (плейсхолдер {"{{words}}"} в промпте сжатия).
-            </span>
-          </div>
 
-          <div style={{ padding: "12px 22px 4px" }}>
-            <Button size="m" stretched disabled={busy} onClick={handleCompact}>
-              {busy ? "Сжимаю…" : "Сжать сейчас"}
-            </Button>
-          </div>
-
-          {loading ? (
-            <div style={{ display: "flex", justifyContent: "center", padding: 16 }}>
-              <Spinner size="s" />
+            <div style={{ padding: "12px 22px 4px" }}>
+              <Button size="m" stretched disabled={busy} onClick={handleCompact}>
+                {busy ? "Сжимаю…" : "Сжать сейчас"}
+              </Button>
             </div>
-          ) : compactions.length === 0 ? (
-            <p className="section-note">Пересказов пока нет.</p>
-          ) : (
-            compactions.map((c, i) => {
-              const isExpanded = expanded.has(c.id);
-              return (
-                // Свой layout вместо Cell+after: иначе кнопка в `after` центрируется по всей высоте
-                // многострочного пересказа и забирает правую колонку у текста. Шапка (заголовок +
-                // удаление) сверху, текст пересказа — на всю ширину под ней, свёрнут по умолчанию.
-                <div key={c.id} style={{ padding: "10px 22px" }}>
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => toggleExpanded(c.id)}
-                    onKeyDown={(e) => {
-                      if (e.key !== "Enter" && e.key !== " ") return;
-                      e.preventDefault();
-                      toggleExpanded(c.id);
-                    }}
-                    aria-expanded={isExpanded}
-                    style={{
-                      display: "flex",
-                      width: "100%",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <ChevronDown
-                        size={16}
-                        style={{
-                          transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)",
-                          transition: "transform 0.15s",
-                          flexShrink: 0,
-                        }}
-                      />
-                      <span style={{ fontWeight: 500 }}>Пересказ {i + 1}</span>
-                    </span>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemove(c.id);
+
+            {loading ? (
+              <div style={{ display: "flex", justifyContent: "center", padding: 16 }}>
+                <Spinner size="s" />
+              </div>
+            ) : compactions.length === 0 ? (
+              <p className="section-note">Пересказов пока нет.</p>
+            ) : (
+              compactions.map((c, i) => {
+                const isExpanded = expanded.has(c.id);
+                return (
+                  // Свой layout вместо Cell+after: иначе кнопка в `after` центрируется по всей высоте
+                  // многострочного пересказа и забирает правую колонку у текста. Шапка (заголовок +
+                  // удаление) сверху, текст пересказа — на всю ширину под ней, свёрнут по умолчанию.
+                  <div key={c.id} style={{ padding: "10px 22px" }}>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => toggleExpanded(c.id)}
+                      onKeyDown={(e) => {
+                        if (e.key !== "Enter" && e.key !== " ") return;
+                        e.preventDefault();
+                        toggleExpanded(c.id);
                       }}
-                      aria-label="Удалить пересказ"
+                      aria-expanded={isExpanded}
                       style={{
                         display: "flex",
-                        background: "none",
-                        border: "none",
+                        width: "100%",
+                        alignItems: "center",
+                        justifyContent: "space-between",
                         cursor: "pointer",
-                        color: "#e53935",
-                        padding: 4,
-                        margin: -4, // компенсируем padding, чтобы иконка вставала вровень с краем
                       }}
                     >
-                      <Trash2 size={18} />
-                    </button>
+                      <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <ChevronDown
+                          size={16}
+                          style={{
+                            transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)",
+                            transition: "transform 0.15s",
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span style={{ fontWeight: 500 }}>Пересказ {i + 1}</span>
+                      </span>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemove(c.id);
+                        }}
+                        aria-label="Удалить пересказ"
+                        style={{
+                          display: "flex",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: "#e53935",
+                          padding: 4,
+                          margin: -4, // компенсируем padding, чтобы иконка вставала вровень с краем
+                        }}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                    {isExpanded && (
+                      <>
+                        <p
+                          style={{
+                            margin: "4px 0 0",
+                            color: "var(--tg-theme-hint-color)",
+                            fontSize: 14,
+                            lineHeight: 1.4,
+                            whiteSpace: "pre-wrap",
+                          }}
+                        >
+                          {c.summary}
+                        </p>
+                        <p
+                          style={{
+                            margin: "4px 0 0",
+                            color: "var(--tg-theme-text-color)",
+                            fontSize: 12,
+                            fontWeight: 500,
+                          }}
+                        >
+                          Сжато сообщений: {c.coveredCount}, токенов: {fmt(c.coveredTokens)}
+                        </p>
+                      </>
+                    )}
                   </div>
-                  {isExpanded && (
-                    <>
-                      <p
-                        style={{
-                          margin: "4px 0 0",
-                          color: "var(--tg-theme-hint-color)",
-                          fontSize: 14,
-                          lineHeight: 1.4,
-                          whiteSpace: "pre-wrap",
-                        }}
-                      >
-                        {c.summary}
-                      </p>
-                      <p
-                        style={{
-                          margin: "4px 0 0",
-                          color: "var(--tg-theme-text-color)",
-                          fontSize: 12,
-                          fontWeight: 500,
-                        }}
-                      >
-                        Сжато сообщений: {c.coveredCount}, токенов: {fmt(c.coveredTokens)}
-                      </p>
-                    </>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </>
-      )}
+                );
+              })
+            )}
+          </>
+        )}
+      </>
     </Section>
   );
 }

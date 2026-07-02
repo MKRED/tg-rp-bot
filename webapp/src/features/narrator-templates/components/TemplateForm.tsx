@@ -1,7 +1,8 @@
-import { Button, Input, Section } from "@telegram-apps/telegram-ui";
+import { Button, Input } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { PromptField } from "../../../shared/components/PromptField";
 import { PromptOrderEditor } from "../../../shared/components/PromptOrderEditor";
+import { SectionWithFooter } from "../../../shared/components/SectionWithFooter";
 import {
   DEFAULT_NARRATOR_PROMPT_ORDER,
   NARRATOR_PROMPT_COMPONENT_LABELS,
@@ -41,7 +42,11 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
   const valid = name.trim().length > 0;
 
   return (
-    <Section className="section-blend-inputs" header="Narrator-шаблон">
+    <SectionWithFooter
+      className="section-blend-inputs"
+      header="Narrator-шаблон"
+      footer="Сэмплинг (температура и пр.) задаётся не здесь, а в пресете генерации."
+    >
       <Input
         header="Название"
         placeholder="Напр. «Кинематографичный рассказчик»"
@@ -119,10 +124,6 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
           </Button>
         )}
       </div>
-      {/* Бывший проп footer Section — рендерим внутри карточки, чтобы он не выбивался по фону. */}
-      <p className="section-note">
-        Сэмплинг (температура и пр.) задаётся не здесь, а в пресете генерации.
-      </p>
-    </Section>
+    </SectionWithFooter>
   );
 }

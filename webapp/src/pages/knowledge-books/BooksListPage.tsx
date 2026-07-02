@@ -1,9 +1,10 @@
-import { Button, Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
+import { Button, Cell, List, Spinner } from "@telegram-apps/telegram-ui";
 import { BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { ROUTES, bookEditPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
+import { SectionWithFooter } from "../../shared/components/SectionWithFooter";
 import { MAX_BOOKS_PER_USER, useBooks } from "../../features/knowledge-books";
 import "./knowledge-books.css";
 
@@ -17,7 +18,10 @@ export function BooksListPage() {
     <PageTransition>
       <div className="kb-page">
         <List>
-          <Section header="Книги знаний">
+          <SectionWithFooter
+            header="Книги знаний"
+            footer="Персонажи и факты мира для режима «Режиссёр истории»"
+          >
             {loading && (
               <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
                 <Spinner size="m" />
@@ -45,8 +49,7 @@ export function BooksListPage() {
                   </Cell>
                 </motion.div>
               ))}
-            <p className="section-note">Персонажи и факты мира для режима «Режиссёр истории»</p>
-          </Section>
+          </SectionWithFooter>
 
           <div style={{ padding: 16 }}>
             <Button size="l" stretched disabled={atLimit} onClick={() => navigate(ROUTES.bookNew)}>

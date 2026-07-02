@@ -78,32 +78,6 @@
   padding: 0 22px;
 }
 
-/* --- Поле с подсказкой/счётчиком (промпты, числовые лимиты) --- */
-.preset-field {
-  display: flex;
-  flex-direction: column;
-}
-
-.preset-field__meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-  padding: 4px 22px 0;
-}
-
-.preset-field__hint {
-  font-size: 13px;
-  line-height: 1.35;
-  color: var(--tgui--hint_color, #7d8b99);
-}
-
-.preset-field__tokens {
-  font-size: 13px;
-  white-space: nowrap;
-  color: var(--tgui--hint_color, #7d8b99);
-}
-
 /* --- Строка-галочка (Switch) --- */
 .preset-switchrow {
   display: flex;

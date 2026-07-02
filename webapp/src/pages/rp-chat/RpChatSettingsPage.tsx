@@ -1,10 +1,11 @@
-import { Cell, Input, List, Section, Spinner, Switch } from "@telegram-apps/telegram-ui";
+import { Cell, List, Section, Spinner, Switch } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import { Bot, ChevronRight, Eraser, Trash2, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { ROUTES, characterEditPath, chatSettingsPath, personaEditPath, presetEditPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
+import { HintedInput } from "../../shared/components/HintedInput";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { CharacterAvatar } from "../../features/characters/components/CharacterAvatar";
 import { PersonaAvatar } from "../../features/personas/components/PersonaAvatar";
@@ -99,16 +100,16 @@ export function RpChatSettingsPage() {
         <List>
           {/* Название чата: пусто → в списке и шапке показываем имя персонажа.
               section-blend-inputs убирает «коробку»-фон у FormInput, чтобы поле сливалось
-              с карточкой секции; подсказка — section-note (последний ребёнок секции). */}
+              с карточкой секции. */}
           {chat && (
             <Section className="section-blend-inputs" header="Название">
-              <Input
+              <HintedInput
                 placeholder={chat.character.name}
+                hint="Оставьте пустым, чтобы показывать имя персонажа"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 onBlur={handleTitleBlur}
               />
-              <p className="section-note">Оставьте пустым, чтобы показывать имя персонажа</p>
             </Section>
           )}
 

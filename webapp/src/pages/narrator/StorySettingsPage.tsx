@@ -1,4 +1,4 @@
-import { Cell, Input, List, Section, Spinner, Switch } from "@telegram-apps/telegram-ui";
+import { Cell, List, Section, Spinner, Switch } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import { BookOpen, ChevronRight, Clapperboard, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -11,6 +11,7 @@ import {
   storySettingsPath,
 } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
+import { HintedInput } from "../../shared/components/HintedInput";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { PromptField } from "../../shared/components/PromptField";
 import { ExpandableSelect } from "../../shared/components/ExpandableSelect";
@@ -146,15 +147,15 @@ export function StorySettingsPage() {
       <div className="story-settings-page">
         <List>
           {/* Название истории: пусто → в ленте/шапке показываем имя книги. section-blend-inputs
-              убирает «коробку»-фон у FormInput; подсказка — section-note (последний ребёнок). */}
+              убирает «коробку»-фон у FormInput. */}
           <Section className="section-blend-inputs" header="Название">
-            <Input
+            <HintedInput
               placeholder={story.book.name}
+              hint="Оставьте пустым, чтобы показывать имя книги знаний"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               onBlur={handleTitleBlur}
             />
-            <p className="section-note">Оставьте пустым, чтобы показывать имя книги знаний</p>
           </Section>
 
           <Section header="История">

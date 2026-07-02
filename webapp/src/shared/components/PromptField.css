@@ -12,12 +12,6 @@
   padding: 4px 22px 0;
 }
 
-.prompt-field__hint {
-  font-size: 13px;
-  line-height: 1.35;
-  color: var(--tgui--hint_color, #7d8b99);
-}
-
 .prompt-field__tokens {
   font-size: 13px;
   white-space: nowrap;

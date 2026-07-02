@@ -1,4 +1,5 @@
 import { Slider, Switch } from "@telegram-apps/telegram-ui";
+import { FieldHint } from "../../../shared/components/FieldHint";
 import type { SamplingSpec } from "../lib/param-specs";
 
 interface SamplingSliderProps {
@@ -42,7 +43,7 @@ export function SamplingSlider({ spec, value, enabled, onValue, onEnabled }: Sam
         disabled={!enabled}
         onChange={(v) => onValue(v)}
       />
-      <span className="preset-field__hint">{spec.hint}</span>
+      <FieldHint>{spec.hint}</FieldHint>
     </div>
   );
 }

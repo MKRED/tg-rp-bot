@@ -1,0 +1,9 @@
+/* Input с подсказкой под ним. */
+.hinted-input {
+  display: flex;
+  flex-direction: column;
+}
+
+.hinted-input__hint {
+  padding: 4px 22px 8px;
+}
