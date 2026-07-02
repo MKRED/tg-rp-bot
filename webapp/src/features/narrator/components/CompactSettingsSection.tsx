@@ -1,5 +1,5 @@
 import { Button, Cell, Section, Slider, Spinner, Switch } from "@telegram-apps/telegram-ui";
-import { Trash2 } from "lucide-react";
+import { ChevronDown, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { confirmAction } from "../../../shared/telegram/confirm";
 import { useToast } from "../../../shared/toast";
@@ -45,6 +45,15 @@ export function CompactSettingsSection({
 }: CompactSettingsSectionProps) {
   const { showToast } = useToast();
   const { compactions, loading, busy, compact, remove } = useCompactions(storyId);
+  // Пересказы свёрнуты по умолчанию (текст длинный, не должен занимать место в настройках).
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const toggleExpanded = (id: number) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const available = stats.compactAvailable;
   const limit = stats.contextLimit ?? 0;
@@ -196,60 +205,91 @@ export function CompactSettingsSection({
           ) : compactions.length === 0 ? (
             <p className="section-note">Пересказов пока нет.</p>
           ) : (
-            compactions.map((c, i) => (
-              // Свой layout вместо Cell+after: иначе кнопка в `after` центрируется по всей высоте
-              // многострочного пересказа и забирает правую колонку у текста. Шапка (заголовок +
-              // удаление) сверху, текст пересказа — на всю ширину под ней.
-              <div key={c.id} style={{ padding: "10px 22px" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 4,
-                  }}
-                >
-                  <span style={{ fontWeight: 500 }}>Пересказ {i + 1}</span>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => handleRemove(c.id)}
-                    aria-label="Удалить пересказ"
+            compactions.map((c, i) => {
+              const isExpanded = expanded.has(c.id);
+              return (
+                // Свой layout вместо Cell+after: иначе кнопка в `after` центрируется по всей высоте
+                // многострочного пересказа и забирает правую колонку у текста. Шапка (заголовок +
+                // удаление) сверху, текст пересказа — на всю ширину под ней, свёрнут по умолчанию.
+                <div key={c.id} style={{ padding: "10px 22px" }}>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggleExpanded(c.id)}
+                    onKeyDown={(e) => {
+                      if (e.key !== "Enter" && e.key !== " ") return;
+                      e.preventDefault();
+                      toggleExpanded(c.id);
+                    }}
+                    aria-expanded={isExpanded}
                     style={{
                       display: "flex",
-                      background: "none",
-                      border: "none",
+                      width: "100%",
+                      alignItems: "center",
+                      justifyContent: "space-between",
                       cursor: "pointer",
-                      color: "#e53935",
-                      padding: 4,
-                      margin: -4, // компенсируем padding, чтобы иконка вставала вровень с краем
                     }}
                   >
-                    <Trash2 size={18} />
-                  </button>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <ChevronDown
+                        size={16}
+                        style={{
+                          transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)",
+                          transition: "transform 0.15s",
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span style={{ fontWeight: 500 }}>Пересказ {i + 1}</span>
+                    </span>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemove(c.id);
+                      }}
+                      aria-label="Удалить пересказ"
+                      style={{
+                        display: "flex",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "#e53935",
+                        padding: 4,
+                        margin: -4, // компенсируем padding, чтобы иконка вставала вровень с краем
+                      }}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                  {isExpanded && (
+                    <>
+                      <p
+                        style={{
+                          margin: "4px 0 0",
+                          color: "var(--tg-theme-hint-color)",
+                          fontSize: 14,
+                          lineHeight: 1.4,
+                          whiteSpace: "pre-wrap",
+                        }}
+                      >
+                        {c.summary}
+                      </p>
+                      <p
+                        style={{
+                          margin: "4px 0 0",
+                          color: "var(--tg-theme-text-color)",
+                          fontSize: 12,
+                          fontWeight: 500,
+                        }}
+                      >
+                        Сжато сообщений: {c.coveredCount}, токенов: {fmt(c.coveredTokens)}
+                      </p>
+                    </>
+                  )}
                 </div>
-                <p
-                  style={{
-                    margin: 0,
-                    color: "var(--tg-theme-hint-color)",
-                    fontSize: 14,
-                    lineHeight: 1.4,
-                    whiteSpace: "pre-wrap",
-                  }}
-                >
-                  {c.summary}
-                </p>
-                <p
-                  style={{
-                    margin: "4px 0 0",
-                    color: "var(--tg-theme-hint-color)",
-                    fontSize: 12,
-                  }}
-                >
-                  Сжато сообщений: {c.coveredCount}, токенов: {fmt(c.coveredTokens)}
-                </p>
-              </div>
-            ))
+              );
+            })
           )}
         </>
       )}
