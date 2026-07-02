@@ -21,6 +21,7 @@ export { getStoryTokenStats } from "./stats.js";
 
 export {
   listCompactions,
+  listCompactionAnchors,
   nextCompactionSeq,
   insertCompaction,
   deleteCompactionCascade,

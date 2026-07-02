@@ -34,6 +34,8 @@ export type StoryTreeNode = {
   kind: StoryMessageKind;
   content: string;
   isOnActivePath: boolean;
+  /** Сообщение попало в диапазон какого-то пересказа — свёрнуто в summary (компонент compact). */
+  isCompacted: boolean;
   createdAt: string;
 };
 

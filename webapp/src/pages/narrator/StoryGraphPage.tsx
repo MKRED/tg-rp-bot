@@ -47,7 +47,13 @@ function StoryNode({ data }: NodeProps<Node<StoryNodeData>>) {
         : node.content;
 
   return (
-    <div className={`story-graph-node${node.isOnActivePath ? " story-graph-node--active" : ""}`}>
+    <div
+      className={
+        "story-graph-node" +
+        (node.isOnActivePath ? " story-graph-node--active" : "") +
+        (node.isCompacted ? " story-graph-node--compacted" : "")
+      }
+    >
       <Handle type="target" position={Position.Top} className="story-graph-node__handle" />
       <div className="story-graph-node__role">{KIND_LABEL[node.kind]}</div>
       <div className="story-graph-node__text">{preview}</div>

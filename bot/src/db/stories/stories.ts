@@ -3,6 +3,7 @@ import logger from "../../logger.js";
 import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/index.js";
 import { db, schema } from "../index.js";
 import type { StoryChat } from "../schema.js";
+import { listCompactionAnchors } from "./compactions.js";
 import { decryptStoryTranslations } from "./crypto.js";
 import { findLastStoryLeaf, queryStoryActivePath, queryStoryActivePathIds } from "./queries.js";
 import type {
@@ -177,6 +178,9 @@ export async function getStoryTree(userId: number, storyId: number): Promise<Sto
     .where(eq(schema.storyMessages.storyChatId, storyId))
     .orderBy(schema.storyMessages.createdAt);
 
+  const anchors = await listCompactionAnchors(storyId);
+  const compactedIds = collectCompactedIds(anchors, allRows);
+
   logger.debug(
     { durationMs: Date.now() - t0, userId, storyId, count: allRows.length },
     "Story tree loaded",
@@ -191,8 +195,30 @@ export async function getStoryTree(userId: number, storyId: number): Promise<Sto
     kind: r.kind as "beat" | "continue" | "directive",
     content: decryptField(r.content, key),
     isOnActivePath: activePath.has(r.id),
+    isCompacted: compactedIds.has(r.id),
     createdAt: r.createdAt.toISOString(),
   }));
+}
+
+/**
+ * Сообщения, попавшие в диапазон (fromAnchorId, toAnchorId] какого-то пересказа — структурно,
+ * по цепочке parentId (якоря ссылаются на конкретные id, не зависят от того, какая ветка активна
+ * сейчас). Так подсвечиваем на графе именно ту ветку, где реально было сжатие.
+ */
+function collectCompactedIds(
+  anchors: { fromAnchorId: number | null; toAnchorId: number }[],
+  rows: { id: number; parentId: number | null }[],
+): Set<number> {
+  const parentOf = new Map(rows.map((r) => [r.id, r.parentId]));
+  const compacted = new Set<number>();
+  for (const { fromAnchorId, toAnchorId } of anchors) {
+    let cur: number | null = toAnchorId;
+    while (cur !== null && cur !== fromAnchorId) {
+      compacted.add(cur);
+      cur = parentOf.get(cur) ?? null;
+    }
+  }
+  return compacted;
 }
 
 /**

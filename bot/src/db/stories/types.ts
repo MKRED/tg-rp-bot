@@ -29,6 +29,8 @@ export type StoryTreeNode = {
   kind: "beat" | "continue" | "directive";
   content: string;
   isOnActivePath: boolean;
+  /** Сообщение попало в диапазон какого-то пересказа (fromAnchorId, toAnchorId] — свёрнуто в summary. */
+  isCompacted: boolean;
   createdAt: string;
 };
 

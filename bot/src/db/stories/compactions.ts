@@ -32,6 +32,22 @@ export async function listCompactions(
   return rows.map((r) => mapRow(r, key));
 }
 
+/**
+ * Якоря пересказов без расшифровки summary — для подсветки сжатых сообщений на графе, где
+ * сам текст пересказа не нужен.
+ */
+export async function listCompactionAnchors(
+  storyChatId: number,
+): Promise<{ fromAnchorId: number | null; toAnchorId: number }[]> {
+  return db
+    .select({
+      fromAnchorId: schema.storyCompactions.fromAnchorId,
+      toAnchorId: schema.storyCompactions.toAnchorId,
+    })
+    .from(schema.storyCompactions)
+    .where(eq(schema.storyCompactions.storyChatId, storyChatId));
+}
+
 /** Следующий seq для истории (длина цепочки = max(seq)+1). */
 export async function nextCompactionSeq(storyChatId: number): Promise<number> {
   const rows = await db
