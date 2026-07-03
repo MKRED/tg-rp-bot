@@ -15,6 +15,9 @@ interface TranslateSheetProps {
   translate: (params: ComposeTranslateParams) => Promise<string>;
   /** Список языков для пикера (LANG_OPTIONS вызывающей фичи). */
   langOptions: LangOption[];
+  /** Текст исходного поля — хранится у вызывающей страницы, чтобы не пропадать при закрытии шторы. */
+  text: string;
+  onTextChange: (text: string) => void;
   onPick: (text: string) => void;
   onClose: () => void;
 }
@@ -29,9 +32,15 @@ const LANG_KEY = "translate-lang";
  * (клик вставляет его в инпут). Тумблер переключает Google ↔ ИИ; язык и режим хранятся в
  * localStorage. Управляется AnimatePresence у вызывающей страницы (exit-анимации играют там).
  */
-export function TranslateSheet({ translate: translateFn, langOptions, onPick, onClose }: TranslateSheetProps) {
+export function TranslateSheet({
+  translate: translateFn,
+  langOptions,
+  text,
+  onTextChange,
+  onPick,
+  onClose,
+}: TranslateSheetProps) {
   const { loading, result, error, translate, reset } = useComposeTranslate(translateFn);
-  const [text, setText] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Авторазмер инпута как в основном поле чата, но потолок — 5 строк (дальше внутренний скролл).
@@ -46,6 +55,11 @@ export function TranslateSheet({ translate: translateFn, langOptions, onPick, on
     const max = lineHeight * 5 + padY + borderY;
     el.style.height = `${Math.min(el.scrollHeight + borderY, max)}px`;
   };
+  // Восстанавливаем высоту поля при повторном открытии шторы с сохранённым черновиком.
+  useLayoutEffect(() => {
+    resize();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [mode, setMode] = useState<TranslateMode>(
     () => (localStorage.getItem(MODE_KEY) === "ai" ? "ai" : "google"),
   );
@@ -176,7 +190,7 @@ export function TranslateSheet({ translate: translateFn, langOptions, onPick, on
             className="translate-sheet__textarea"
             value={text}
             onChange={(e) => {
-              setText(e.target.value);
+              onTextChange(e.target.value);
               if (result || error) reset();
               resize();
             }}

@@ -39,6 +39,9 @@ export function RpChatPage() {
   const suppressNextAutoTranslate = useRef(false);
   const [impersonateOpen, setImpersonateOpen] = useState(false);
   const [translateOpen, setTranslateOpen] = useState(false);
+  // Черновик текста в шторе перевода — хранится здесь, а не в самой шторе, чтобы не пропадать
+  // при закрытии (штора размонтируется через AnimatePresence).
+  const [translateDraft, setTranslateDraft] = useState("");
 
   const { chat, loading, error, refresh, setChat } = useChat(chatId);
   const { settings } = useChatSettings(chatId);
@@ -307,6 +310,8 @@ export function RpChatPage() {
               key="translate-sheet"
               translate={(p) => composeTranslate(chatId, p)}
               langOptions={LANG_OPTIONS}
+              text={translateDraft}
+              onTextChange={setTranslateDraft}
               onPick={handlePickSuggestion}
               onClose={() => setTranslateOpen(false)}
             />
