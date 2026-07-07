@@ -296,6 +296,7 @@ export async function handleTranslateMessage(c: Ctx) {
         msg.content,
         englishLangName(targetLang),
         userId,
+        preset?.reasoningEffort,
       );
     } else {
       translation = await googleTranslate(msg.content, targetLang);

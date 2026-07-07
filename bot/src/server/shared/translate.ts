@@ -50,12 +50,16 @@ export function englishLangName(code: string): string {
  * пресета (плейсхолдер {{target_lang}} → полное англ. название языка), исходный текст уходит
  * ролью user, ответ ждём от assistant. Нестриминговый вызов chatCompletion (без onChunk).
  * Сэмплинг не передаём — параметры пресета настроены под RP и навредили бы переводу (см. вызов).
+ * Рассуждение («мышление») запрашиваем всегда, вне зависимости от тумблера пресета — перевод
+ * выигрывает от разбора смысла/идиом (для DeepSeek — thinking-режим, на OpenRouter reasoningBody
+ * пустой, тело не меняется), эффорт берём из пресета (см. compactStory — тот же паттерн).
  */
 export async function aiTranslate(
   systemPromptTemplate: string,
   text: string,
   targetLangName: string,
   userId: number,
+  reasoningEffort?: string | null,
 ): Promise<string> {
   const t0 = Date.now();
   const template = systemPromptTemplate.trim() || DEFAULT_TRANSLATION_TEMPLATE;
@@ -69,6 +73,8 @@ export async function aiTranslate(
     // Тегируем для отладочного перехвата (фильтр «только мои запросы» + ярлык типа вызова).
     userId,
     debugLabel: "translate",
+    requestReasoning: true,
+    reasoningEffort: reasoningEffort ?? undefined,
   });
 
   logger.info(

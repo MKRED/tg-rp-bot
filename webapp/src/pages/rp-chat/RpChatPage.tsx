@@ -138,43 +138,46 @@ export function RpChatPage() {
   }, [chatId, setChat]);
 
   // Пересчитывает перевод сообщения заново (игнорируя кэш) — меню долгого нажатия на Globe.
-  const handleRetranslate = useCallback((messageId: number, lang: string) => {
-    translateMessage(chatId, messageId, lang, { force: true })
-      .then((translation) => {
-        setChat((prev) =>
-          prev
-            ? {
-                ...prev,
-                messages: prev.messages.map((m) =>
-                  m.id === messageId
-                    ? { ...m, translations: { ...(m.translations ?? {}), [lang]: translation } }
-                    : m,
-                ),
-              }
-            : prev,
-        );
-      })
-      .catch((err) => console.error("Failed to retranslate message", err));
+  // Promise возвращаем, чтобы MessageBubble мог показать спиннер на кнопке на время запроса.
+  const handleRetranslate = useCallback(async (messageId: number, lang: string) => {
+    try {
+      const translation = await translateMessage(chatId, messageId, lang, { force: true });
+      setChat((prev) =>
+        prev
+          ? {
+              ...prev,
+              messages: prev.messages.map((m) =>
+                m.id === messageId
+                  ? { ...m, translations: { ...(m.translations ?? {}), [lang]: translation } }
+                  : m,
+              ),
+            }
+          : prev,
+      );
+    } catch (err) {
+      console.error("Failed to retranslate message", err);
+    }
   }, [chatId, setChat]);
 
   // Убирает закэшированный перевод сообщения — меню долгого нажатия на Globe.
-  const handleDeleteTranslation = useCallback((messageId: number, lang: string) => {
-    deleteTranslation(chatId, messageId, lang)
-      .then(() => {
-        setChat((prev) =>
-          prev
-            ? {
-                ...prev,
-                messages: prev.messages.map((m) => {
-                  if (m.id !== messageId || !m.translations) return m;
-                  const { [lang]: _removed, ...rest } = m.translations;
-                  return { ...m, translations: rest };
-                }),
-              }
-            : prev,
-        );
-      })
-      .catch((err) => console.error("Failed to delete translation", err));
+  const handleDeleteTranslation = useCallback(async (messageId: number, lang: string) => {
+    try {
+      await deleteTranslation(chatId, messageId, lang);
+      setChat((prev) =>
+        prev
+          ? {
+              ...prev,
+              messages: prev.messages.map((m) => {
+                if (m.id !== messageId || !m.translations) return m;
+                const { [lang]: _removed, ...rest } = m.translations;
+                return { ...m, translations: rest };
+              }),
+            }
+          : prev,
+      );
+    } catch (err) {
+      console.error("Failed to delete translation", err);
+    }
   }, [chatId, setChat]);
 
   // Убираем регенерируемое assistant-сообщение оптимистично — оно заменится

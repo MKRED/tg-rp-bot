@@ -79,33 +79,36 @@ export function StoryPage() {
   );
 
   // Пересчитывает перевод бита/директивы заново (игнорируя кэш) — меню долгого нажатия на Globe.
-  const handleRetranslate = useCallback((msgId: number, lang: string) => {
-    translateStoryMessage(id, msgId, lang, { force: true })
-      .then((translation) => {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === msgId
-              ? { ...m, translations: { ...(m.translations ?? {}), [lang]: translation } }
-              : m,
-          ),
-        );
-      })
-      .catch((err) => console.error("Failed to retranslate story message", err));
+  // Promise возвращаем, чтобы StoryMessageItem мог показать спиннер на кнопке на время запроса.
+  const handleRetranslate = useCallback(async (msgId: number, lang: string) => {
+    try {
+      const translation = await translateStoryMessage(id, msgId, lang, { force: true });
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === msgId
+            ? { ...m, translations: { ...(m.translations ?? {}), [lang]: translation } }
+            : m,
+        ),
+      );
+    } catch (err) {
+      console.error("Failed to retranslate story message", err);
+    }
   }, [id, setMessages]);
 
   // Убирает закэшированный перевод бита/директивы — меню долгого нажатия на Globe.
-  const handleDeleteTranslation = useCallback((msgId: number, lang: string) => {
-    deleteStoryTranslation(id, msgId, lang)
-      .then(() => {
-        setMessages((prev) =>
-          prev.map((m) => {
-            if (m.id !== msgId || !m.translations) return m;
-            const { [lang]: _removed, ...rest } = m.translations;
-            return { ...m, translations: rest };
-          }),
-        );
-      })
-      .catch((err) => console.error("Failed to delete story translation", err));
+  const handleDeleteTranslation = useCallback(async (msgId: number, lang: string) => {
+    try {
+      await deleteStoryTranslation(id, msgId, lang);
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.id !== msgId || !m.translations) return m;
+          const { [lang]: _removed, ...rest } = m.translations;
+          return { ...m, translations: rest };
+        }),
+      );
+    } catch (err) {
+      console.error("Failed to delete story translation", err);
+    }
   }, [id, setMessages]);
 
   // Авто-перевод новых сообщений вынесен в хук; suppressNextRun зовём при смене ветки.

@@ -12,6 +12,7 @@ import {
   updateActiveStoryMessage,
 } from "../../db/stories/index.js";
 import { getNarratorTemplate } from "../../db/narratorTemplates/index.js";
+import { getPreset } from "../../db/presets/index.js";
 import logger from "../../logger.js";
 import { CONTINUE_MARKER } from "../prompt/storyPromptBuilder.js";
 import { streamCompletion } from "../shared/streamGeneration.js";
@@ -212,13 +213,16 @@ export async function handleStoryTranslateMessage(c: Ctx) {
     const { translateMethod } = await getStorySettings(storyId);
     let translation: string;
     if (translateMethod === "ai") {
-      // Промпт перевода — из narrator-шаблона истории (как в handleStoryTranslateText).
+      // Промпт перевода — из narrator-шаблона истории (как в handleStoryTranslateText), эффорт
+      // рассуждения — из пресета истории (шаблон промптов не хранит сэмплинг).
       const template = story.template ? await getNarratorTemplate(userId, story.template.id) : null;
+      const preset = story.preset ? await getPreset(userId, story.preset.id) : null;
       translation = await aiTranslate(
         template?.translationSystemPrompt ?? "",
         msg.content,
         englishLangName(targetLang),
         userId,
+        preset?.reasoningEffort,
       );
     } else {
       translation = await googleTranslate(msg.content, targetLang);
@@ -292,12 +296,15 @@ export async function handleStoryTranslateText(c: Ctx) {
     if (mode === "ai") {
       // ИИ-режиму нужен промпт перевода из narrator-шаблона истории. Сэмплинг пресета НЕ
       // переиспользуем (как в RP): высокие temperature/penalties портят верность перевода.
+      // Эффорт рассуждения — исключение, его берём из пресета истории (см. aiTranslate).
       const template = story.template ? await getNarratorTemplate(userId, story.template.id) : null;
+      const preset = story.preset ? await getPreset(userId, story.preset.id) : null;
       translation = await aiTranslate(
         template?.translationSystemPrompt ?? "",
         text,
         englishLangName(targetLang),
         userId,
+        preset?.reasoningEffort,
       );
     } else {
       translation = await googleTranslate(text, targetLang);

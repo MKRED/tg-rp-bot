@@ -4,6 +4,10 @@ import { useState } from "react";
 import { RpText } from "../../../shared/components/RpText";
 import { TranslateActionMenu } from "../../../shared/components/TranslateActionMenu";
 import { useLongPress } from "../../../shared/hooks/useLongPress";
+import {
+  isTranslateActionsPopupAvailable,
+  showTranslateActionsPopup,
+} from "../../../shared/telegram/translateActionsPopup";
 import { useTranslatable } from "../hooks/useTranslatable";
 import type { StoryMessage } from "../types/story";
 
@@ -20,9 +24,9 @@ interface StoryMessageItemProps {
   autoShowTranslation?: boolean;
   onTranslate: (messageId: number, targetLang: string) => Promise<string>;
   /** Пересчитывает перевод заново (игнорируя кэш) — из меню долгого нажатия на Globe. */
-  onRetranslate: (messageId: number, targetLang: string) => void;
+  onRetranslate: (messageId: number, targetLang: string) => Promise<void>;
   /** Удаляет закэшированный перевод — из меню долгого нажатия на Globe. */
-  onDeleteTranslation: (messageId: number, targetLang: string) => void;
+  onDeleteTranslation: (messageId: number, targetLang: string) => Promise<void>;
   onRegenerate: () => void;
   onDelete: () => void;
   onSwitchSibling: (siblingId: number) => void;
@@ -54,9 +58,42 @@ export function StoryMessageItem({
     autoShowTranslation,
     onTranslate,
   );
+  // Плавающее меню — фоллбэк только для дев-браузера вне Telegram, где нативный попап недоступен.
   const [translateMenuOpen, setTranslateMenuOpen] = useState(false);
-  const longPress = useLongPress(() => setTranslateMenuOpen(true));
+  // Пендинг регенерации/удаления перевода из меню долгого нажатия — отдельно от translating
+  // (тот только для первого перевода по тапу), чтобы кнопка Globe крутила спиннер и на этих действиях.
+  const [translateActionPending, setTranslateActionPending] = useState(false);
+  const longPress = useLongPress(() => {
+    if (isTranslateActionsPopupAvailable()) {
+      showTranslateActionsPopup()
+        .then((action) => {
+          if (action === "regenerate") void handleRegenerateTranslation();
+          else if (action === "delete") void handleDeleteTranslationAction();
+        })
+        .catch((err) => console.error("Failed to show translate actions popup", err));
+    } else {
+      setTranslateMenuOpen(true);
+    }
+  });
   const hasCachedTranslation = Boolean(message.translations?.[targetLang]);
+
+  const handleRegenerateTranslation = async () => {
+    setTranslateActionPending(true);
+    try {
+      await onRetranslate(message.id, targetLang);
+    } finally {
+      setTranslateActionPending(false);
+    }
+  };
+
+  const handleDeleteTranslationAction = async () => {
+    setTranslateActionPending(true);
+    try {
+      await onDeleteTranslation(message.id, targetLang);
+    } finally {
+      setTranslateActionPending(false);
+    }
+  };
 
   // Технические «Дальше» в ленте не показываем.
   if (message.kind === "continue") return null;
@@ -84,18 +121,18 @@ export function StoryMessageItem({
           <span style={{ position: "relative" }}>
             <button
               type="button"
-              disabled={translating}
+              disabled={translating || translateActionPending}
               onClick={toggle}
               style={{ ...iconBtn, color: showTranslation ? "var(--tgui--link_color)" : "inherit" }}
               aria-label="Перевести директиву"
               {...(hasCachedTranslation ? longPress : {})}
             >
-              {translating ? <Spinner size="s" /> : <Globe size={14} />}
+              {translating || translateActionPending ? <Spinner size="s" /> : <Globe size={14} />}
             </button>
             {translateMenuOpen && (
               <TranslateActionMenu
-                onRegenerate={() => onRetranslate(message.id, targetLang)}
-                onDelete={() => onDeleteTranslation(message.id, targetLang)}
+                onRegenerate={handleRegenerateTranslation}
+                onDelete={handleDeleteTranslationAction}
                 onClose={() => setTranslateMenuOpen(false)}
               />
             )}
@@ -133,18 +170,18 @@ export function StoryMessageItem({
             <span style={{ position: "relative" }}>
               <button
                 type="button"
-                disabled={translating}
+                disabled={translating || translateActionPending}
                 onClick={toggle}
                 style={{ ...iconBtn, color: showTranslation ? "var(--tgui--link_color)" : "inherit" }}
                 aria-label="Перевести бит"
                 {...(hasCachedTranslation ? longPress : {})}
               >
-                {translating ? <Spinner size="s" /> : <Globe size={16} />}
+                {translating || translateActionPending ? <Spinner size="s" /> : <Globe size={16} />}
               </button>
               {translateMenuOpen && (
                 <TranslateActionMenu
-                  onRegenerate={() => onRetranslate(message.id, targetLang)}
-                  onDelete={() => onDeleteTranslation(message.id, targetLang)}
+                  onRegenerate={handleRegenerateTranslation}
+                  onDelete={handleDeleteTranslationAction}
                   onClose={() => setTranslateMenuOpen(false)}
                 />
               )}

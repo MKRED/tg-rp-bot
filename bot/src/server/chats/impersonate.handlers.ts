@@ -139,6 +139,7 @@ export async function handleTranslateText(c: Ctx) {
       text,
       englishLangName(targetLang),
       userId,
+      preset?.reasoningEffort,
     );
     return c.json({ translation });
   }

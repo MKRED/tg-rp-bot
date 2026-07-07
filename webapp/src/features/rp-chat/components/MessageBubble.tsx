@@ -2,6 +2,10 @@ import { Spinner } from "@telegram-apps/telegram-ui";
 import { Check, ChevronLeft, ChevronRight, Copy, Globe, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { confirmAction } from "../../../shared/telegram/confirm";
+import {
+  isTranslateActionsPopupAvailable,
+  showTranslateActionsPopup,
+} from "../../../shared/telegram/translateActionsPopup";
 import { RpText } from "../../../shared/components/RpText";
 import { TranslateActionMenu } from "../../../shared/components/TranslateActionMenu";
 import { useLongPress } from "../../../shared/hooks/useLongPress";
@@ -20,9 +24,9 @@ interface MessageBubbleProps {
   onSwitchBranch: (siblingId: number) => void;
   onTranslate: (messageId: number, targetLang: string) => Promise<string>;
   /** Пересчитывает перевод заново (игнорируя кэш) — из меню долгого нажатия на Globe. */
-  onRetranslate: (messageId: number, targetLang: string) => void;
+  onRetranslate: (messageId: number, targetLang: string) => Promise<void>;
   /** Удаляет закэшированный перевод — из меню долгого нажатия на Globe. */
-  onDeleteTranslation: (messageId: number, targetLang: string) => void;
+  onDeleteTranslation: (messageId: number, targetLang: string) => Promise<void>;
   onEdit: (messageId: number) => void;
   onRegenerate: (messageId: number) => void;
   onDelete: (messageId: number) => void;
@@ -43,8 +47,20 @@ export function MessageBubble({
   onDelete,
 }: MessageBubbleProps) {
   const [showTranslation, setShowTranslation] = useState(false);
+  // Плавающее меню — фоллбэк только для дев-браузера вне Telegram, где нативный попап недоступен.
   const [translateMenuOpen, setTranslateMenuOpen] = useState(false);
-  const longPress = useLongPress(() => setTranslateMenuOpen(true));
+  const longPress = useLongPress(() => {
+    if (isTranslateActionsPopupAvailable()) {
+      showTranslateActionsPopup()
+        .then((action) => {
+          if (action === "regenerate") void handleRegenerateTranslation();
+          else if (action === "delete") void handleDeleteTranslationAction();
+        })
+        .catch((err) => console.error("Failed to show translate actions popup", err));
+    } else {
+      setTranslateMenuOpen(true);
+    }
+  });
 
   // Когда авто-перевод доставляет перевод в message.translations — автоматически показываем его.
   useEffect(() => {
@@ -53,6 +69,9 @@ export function MessageBubble({
     }
   }, [message.translations, targetLang, autoShowTranslation]);
   const [translating, setTranslating] = useState(false);
+  // Пендинг регенерации/удаления перевода из меню долгого нажатия — отдельно от translating
+  // (тот только для первого перевода по тапу), чтобы кнопка Globe крутила спиннер и на этих действиях.
+  const [translateActionPending, setTranslateActionPending] = useState(false);
   const [copied, setCopied] = useState(false);
   const isAssistant = message.role === "assistant";
 
@@ -78,6 +97,25 @@ export function MessageBubble({
       setShowTranslation(true);
     } finally {
       setTranslating(false);
+    }
+  };
+
+  const handleRegenerateTranslation = async () => {
+    setTranslateActionPending(true);
+    try {
+      await onRetranslate(message.id, targetLang);
+    } finally {
+      setTranslateActionPending(false);
+    }
+  };
+
+  const handleDeleteTranslationAction = async () => {
+    setShowTranslation(false);
+    setTranslateActionPending(true);
+    try {
+      await onDeleteTranslation(message.id, targetLang);
+    } finally {
+      setTranslateActionPending(false);
     }
   };
 
@@ -142,20 +180,17 @@ export function MessageBubble({
               <button
                 className={`message-bubble__action-btn${showTranslation ? " message-bubble__action-btn--active" : ""}`}
                 onClick={handleTranslateToggle}
-                disabled={translating}
+                disabled={translating || translateActionPending}
                 type="button"
                 aria-label="Перевести"
                 {...(message.translations?.[targetLang] ? longPress : {})}
               >
-                {translating ? <Spinner size="s" /> : <Globe size={20} />}
+                {translating || translateActionPending ? <Spinner size="s" /> : <Globe size={20} />}
               </button>
               {translateMenuOpen && (
                 <TranslateActionMenu
-                  onRegenerate={() => onRetranslate(message.id, targetLang)}
-                  onDelete={() => {
-                    setShowTranslation(false);
-                    onDeleteTranslation(message.id, targetLang);
-                  }}
+                  onRegenerate={handleRegenerateTranslation}
+                  onDelete={handleDeleteTranslationAction}
                   onClose={() => setTranslateMenuOpen(false)}
                 />
               )}
