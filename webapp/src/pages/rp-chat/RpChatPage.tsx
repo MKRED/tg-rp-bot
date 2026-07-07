@@ -6,7 +6,12 @@ import { chatGraphPath, chatSettingsPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { useChat, useChatSettings, useSendMessage } from "../../features/rp-chat";
-import { deleteMessage, switchBranch, translateMessage } from "../../features/rp-chat/api/messages-api";
+import {
+  deleteMessage,
+  deleteTranslation,
+  switchBranch,
+  translateMessage,
+} from "../../features/rp-chat/api/messages-api";
 import { ChatHeader } from "../../features/rp-chat/components/ChatHeader";
 import { ChatInput, type ChatInputHandle } from "../../features/rp-chat/components/ChatInput";
 import { ImpersonateSheet } from "../../features/rp-chat/components/ImpersonateSheet";
@@ -132,6 +137,46 @@ export function RpChatPage() {
     return translation;
   }, [chatId, setChat]);
 
+  // Пересчитывает перевод сообщения заново (игнорируя кэш) — меню долгого нажатия на Globe.
+  const handleRetranslate = useCallback((messageId: number, lang: string) => {
+    translateMessage(chatId, messageId, lang, { force: true })
+      .then((translation) => {
+        setChat((prev) =>
+          prev
+            ? {
+                ...prev,
+                messages: prev.messages.map((m) =>
+                  m.id === messageId
+                    ? { ...m, translations: { ...(m.translations ?? {}), [lang]: translation } }
+                    : m,
+                ),
+              }
+            : prev,
+        );
+      })
+      .catch((err) => console.error("Failed to retranslate message", err));
+  }, [chatId, setChat]);
+
+  // Убирает закэшированный перевод сообщения — меню долгого нажатия на Globe.
+  const handleDeleteTranslation = useCallback((messageId: number, lang: string) => {
+    deleteTranslation(chatId, messageId, lang)
+      .then(() => {
+        setChat((prev) =>
+          prev
+            ? {
+                ...prev,
+                messages: prev.messages.map((m) => {
+                  if (m.id !== messageId || !m.translations) return m;
+                  const { [lang]: _removed, ...rest } = m.translations;
+                  return { ...m, translations: rest };
+                }),
+              }
+            : prev,
+        );
+      })
+      .catch((err) => console.error("Failed to delete translation", err));
+  }, [chatId, setChat]);
+
   // Убираем регенерируемое assistant-сообщение оптимистично — оно заменится
   // новым после завершения генерации и refresh(). User-сообщения не трогаем.
   const handleRegenerate = useCallback((msgId: number) => {
@@ -244,6 +289,8 @@ export function RpChatPage() {
                   isLastAssistant={msg.id === lastAssistantId}
                   onSwitchBranch={handleSwitchBranch}
                   onTranslate={handleTranslate}
+                  onRetranslate={handleRetranslate}
+                  onDeleteTranslation={handleDeleteTranslation}
                   onEdit={(msgId) => setEditingId(msgId)}
                   onRegenerate={handleRegenerate}
                   onDelete={handleDeleteMessage}

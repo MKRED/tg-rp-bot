@@ -1,9 +1,11 @@
 import { streamSSE } from "hono/streaming";
 import {
   deleteStoryMessage,
+  deleteStoryTranslation,
   findNewestStoryChild,
   getStory,
   getStoryMessage,
+  getStorySettings,
   insertStoryMessage,
   saveStoryTranslation,
   setActiveStoryMessage,
@@ -176,7 +178,11 @@ export async function handleSwitchStoryBranch(c: Ctx) {
   }
 }
 
-/** POST /:id/messages/:msgId/translate — переводит бит/директиву и кэширует результат (зеркало RP). */
+/**
+ * POST /:id/messages/:msgId/translate — переводит бит/директиву и кэширует результат (зеркало RP).
+ * body.force=true пропускает кэш и пересчитывает перевод текущим методом (перезаписывая его).
+ * Метод (google/ai) берётся из storySettings.translateMethod, не из тела запроса.
+ */
 export async function handleStoryTranslateMessage(c: Ctx) {
   const user = c.get("tgUser");
   if (!user) return c.json({ error: "Auth required" }, 401);
@@ -184,8 +190,9 @@ export async function handleStoryTranslateMessage(c: Ctx) {
   const storyId = Number(c.req.param("id"));
   const msgId = Number(c.req.param("msgId"));
 
-  const body = (await c.req.json().catch(() => ({}))) as { targetLang?: string };
+  const body = (await c.req.json().catch(() => ({}))) as { targetLang?: string; force?: unknown };
   const targetLang = typeof body.targetLang === "string" ? body.targetLang.trim() : "";
+  const force = body.force === true;
   if (!targetLang) return c.json({ error: "targetLang is required" }, 400);
 
   const t0 = Date.now();
@@ -197,19 +204,58 @@ export async function handleStoryTranslateMessage(c: Ctx) {
     const msg = await getStoryMessage(userId, msgId);
     if (!msg || msg.storyChatId !== storyId) return c.json({ error: "Message not found" }, 404);
 
-    // Кэш уже есть (translations расшифрованы в getStoryMessage) — не дёргаем переводчик повторно.
+    // Кэш уже есть (translations расшифрованы в getStoryMessage) и пересчёт не запрошен —
+    // не дёргаем переводчик повторно.
     const cached = (msg.translations as Record<string, string> | null)?.[targetLang];
-    if (cached) return c.json({ translation: cached });
+    if (cached && !force) return c.json({ translation: cached });
 
-    const translation = await googleTranslate(msg.content, targetLang);
+    const { translateMethod } = await getStorySettings(storyId);
+    let translation: string;
+    if (translateMethod === "ai") {
+      // Промпт перевода — из narrator-шаблона истории (как в handleStoryTranslateText).
+      const template = story.template ? await getNarratorTemplate(userId, story.template.id) : null;
+      translation = await aiTranslate(
+        template?.translationSystemPrompt ?? "",
+        msg.content,
+        englishLangName(targetLang),
+        userId,
+      );
+    } else {
+      translation = await googleTranslate(msg.content, targetLang);
+    }
     await saveStoryTranslation(userId, msgId, targetLang, translation);
     logger.info(
-      { durationMs: Date.now() - t0, userId, storyId, msgId, targetLang },
+      { durationMs: Date.now() - t0, userId, storyId, msgId, targetLang, translateMethod },
       "Story message translated",
     );
     return c.json({ translation });
   } catch (err) {
     logger.error({ err, userId, storyId, msgId }, "Failed to translate story message");
+    return c.json({ error: "Internal error" }, 500);
+  }
+}
+
+/** DELETE /:id/messages/:msgId/translate?lang=xx — убирает закэшированный перевод для языка. */
+export async function handleDeleteStoryTranslation(c: Ctx) {
+  const user = c.get("tgUser");
+  if (!user) return c.json({ error: "Auth required" }, 401);
+  const userId = user.id;
+  const storyId = Number(c.req.param("id"));
+  const msgId = Number(c.req.param("msgId"));
+  const targetLang = c.req.query("lang")?.trim() ?? "";
+  if (!targetLang) return c.json({ error: "lang is required" }, 400);
+
+  try {
+    const story = await getStory(userId, storyId);
+    if (!story) return c.json({ error: "Story not found" }, 404);
+
+    const msg = await getStoryMessage(userId, msgId);
+    if (!msg || msg.storyChatId !== storyId) return c.json({ error: "Message not found" }, 404);
+
+    await deleteStoryTranslation(msgId, targetLang);
+    return c.json({ ok: true });
+  } catch (err) {
+    logger.error({ err, userId, storyId, msgId }, "Failed to delete story translation");
     return c.json({ error: "Internal error" }, 500);
   }
 }

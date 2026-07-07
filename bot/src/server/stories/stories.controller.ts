@@ -26,6 +26,7 @@ import { handleStoryStats } from "./stats.handler.js";
 import {
   handleAdvanceStory,
   handleDeleteStoryMessage,
+  handleDeleteStoryTranslation,
   handleRegenerateStoryBeat,
   handleStoryTranslateMessage,
   handleStoryTranslateText,
@@ -188,6 +189,7 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
       translateTargetLang?: unknown;
       translateScope?: unknown;
       autoTranslateScope?: unknown;
+      translateMethod?: unknown;
       compactEnabled?: unknown;
       compactAutoEnabled?: unknown;
       compactFloorTokens?: unknown;
@@ -202,6 +204,9 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
     }
     if (["none", "all", "assistant", "user"].includes(body.autoTranslateScope as string)) {
       patch.autoTranslateScope = body.autoTranslateScope;
+    }
+    if (["google", "ai"].includes(body.translateMethod as string)) {
+      patch.translateMethod = body.translateMethod;
     }
     if (typeof body.compactEnabled === "boolean") patch.compactEnabled = body.compactEnabled;
     if (typeof body.compactAutoEnabled === "boolean") patch.compactAutoEnabled = body.compactAutoEnabled;
@@ -266,6 +271,7 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
   app.post("/:id/messages/:msgId/regenerate", handleRegenerateStoryBeat);
   app.post("/:id/messages/:msgId/branch", handleSwitchStoryBranch);
   app.post("/:id/messages/:msgId/translate", handleStoryTranslateMessage);
+  app.delete("/:id/messages/:msgId/translate", handleDeleteStoryTranslation);
   app.post("/:id/translate-text", handleStoryTranslateText);
   app.delete("/:id/messages/:msgId", handleDeleteStoryMessage);
 

@@ -26,13 +26,14 @@ export {
   switchBranch,
   deleteStoryMessage,
   translateStoryMessage,
+  deleteStoryTranslation,
   composeStoryTranslate,
   type StoryStreamEvents,
 } from "./api/stories-api";
 export { getStorySettings, updateStorySettings } from "./api/settings-api";
 export { getStoryStats } from "./api/stats-api";
 export { compactStory, listCompactions, deleteCompaction } from "./api/compact-api";
-export { LANG_OPTIONS, SCOPE_OPTIONS, AUTO_SCOPE_OPTIONS } from "./lib/translate-options";
+export { LANG_OPTIONS, SCOPE_OPTIONS, AUTO_SCOPE_OPTIONS, METHOD_OPTIONS } from "./lib/translate-options";
 export type {
   StoryListItem,
   StoryMessage,

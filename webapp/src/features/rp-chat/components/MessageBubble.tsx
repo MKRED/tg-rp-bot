@@ -3,6 +3,8 @@ import { Check, ChevronLeft, ChevronRight, Copy, Globe, Pencil, RefreshCw, Trash
 import { useEffect, useState } from "react";
 import { confirmAction } from "../../../shared/telegram/confirm";
 import { RpText } from "../../../shared/components/RpText";
+import { TranslateActionMenu } from "../../../shared/components/TranslateActionMenu";
+import { useLongPress } from "../../../shared/hooks/useLongPress";
 import type { MessageInPath } from "../types/chat";
 
 interface MessageBubbleProps {
@@ -17,6 +19,10 @@ interface MessageBubbleProps {
   isLastAssistant: boolean;
   onSwitchBranch: (siblingId: number) => void;
   onTranslate: (messageId: number, targetLang: string) => Promise<string>;
+  /** Пересчитывает перевод заново (игнорируя кэш) — из меню долгого нажатия на Globe. */
+  onRetranslate: (messageId: number, targetLang: string) => void;
+  /** Удаляет закэшированный перевод — из меню долгого нажатия на Globe. */
+  onDeleteTranslation: (messageId: number, targetLang: string) => void;
   onEdit: (messageId: number) => void;
   onRegenerate: (messageId: number) => void;
   onDelete: (messageId: number) => void;
@@ -30,11 +36,15 @@ export function MessageBubble({
   isLastAssistant,
   onSwitchBranch,
   onTranslate,
+  onRetranslate,
+  onDeleteTranslation,
   onEdit,
   onRegenerate,
   onDelete,
 }: MessageBubbleProps) {
   const [showTranslation, setShowTranslation] = useState(false);
+  const [translateMenuOpen, setTranslateMenuOpen] = useState(false);
+  const longPress = useLongPress(() => setTranslateMenuOpen(true));
 
   // Когда авто-перевод доставляет перевод в message.translations — автоматически показываем его.
   useEffect(() => {
@@ -128,15 +138,28 @@ export function MessageBubble({
             {copied ? <Check size={20} /> : <Copy size={20} />}
           </button>
           {showTranslateButton && (
-            <button
-              className={`message-bubble__action-btn${showTranslation ? " message-bubble__action-btn--active" : ""}`}
-              onClick={handleTranslateToggle}
-              disabled={translating}
-              type="button"
-              aria-label="Перевести"
-            >
-              {translating ? <Spinner size="s" /> : <Globe size={20} />}
-            </button>
+            <span style={{ position: "relative" }}>
+              <button
+                className={`message-bubble__action-btn${showTranslation ? " message-bubble__action-btn--active" : ""}`}
+                onClick={handleTranslateToggle}
+                disabled={translating}
+                type="button"
+                aria-label="Перевести"
+                {...(message.translations?.[targetLang] ? longPress : {})}
+              >
+                {translating ? <Spinner size="s" /> : <Globe size={20} />}
+              </button>
+              {translateMenuOpen && (
+                <TranslateActionMenu
+                  onRegenerate={() => onRetranslate(message.id, targetLang)}
+                  onDelete={() => {
+                    setShowTranslation(false);
+                    onDeleteTranslation(message.id, targetLang);
+                  }}
+                  onClose={() => setTranslateMenuOpen(false)}
+                />
+              )}
+            </span>
           )}
           <button
             className="message-bubble__action-btn"

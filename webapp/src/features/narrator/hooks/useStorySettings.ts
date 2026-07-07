@@ -7,6 +7,7 @@ const DEFAULT_SETTINGS: StorySettings = {
   translateTargetLang: "ru",
   translateScope: "assistant",
   autoTranslateScope: "none",
+  translateMethod: "google",
   compactEnabled: false,
   compactAutoEnabled: false,
   compactFloorTokens: 0,

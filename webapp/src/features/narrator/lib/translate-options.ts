@@ -18,6 +18,11 @@ export const SCOPE_OPTIONS: { value: StorySettings["translateScope"]; label: str
 export const AUTO_SCOPE_OPTIONS: { value: StorySettings["autoTranslateScope"]; label: string }[] = [
   { value: "none", label: "Отключён" },
   { value: "all", label: "Все сообщения" },
-  { value: "assistant", label: "Биты ИИ" },
+  { value: "assistant", label: "Ответы ИИ" },
   { value: "user", label: "Директивы" },
+];
+
+export const METHOD_OPTIONS: { value: StorySettings["translateMethod"]; label: string }[] = [
+  { value: "google", label: "Google" },
+  { value: "ai", label: "ИИ" },
 ];

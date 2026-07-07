@@ -53,6 +53,8 @@ export interface ChatSettings {
   translateTargetLang: string;
   translateScope: "all" | "assistant" | "user";
   autoTranslateScope: "none" | "all" | "assistant" | "user";
+  /** Метод перевода закэшированных сообщений (кнопка Globe): Google Translate либо ИИ. */
+  translateMethod: "google" | "ai";
 }
 
 /**

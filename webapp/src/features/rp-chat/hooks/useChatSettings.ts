@@ -7,6 +7,7 @@ const DEFAULT_SETTINGS: ChatSettings = {
   translateTargetLang: "ru",
   translateScope: "assistant",
   autoTranslateScope: "none",
+  translateMethod: "google",
 };
 
 export function useChatSettings(chatId: number) {

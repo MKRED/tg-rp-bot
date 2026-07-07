@@ -16,6 +16,7 @@ import logger from "../../logger.js";
 import type { AppVariables } from "../middleware/initData.types.js";
 import {
   handleDeleteMessage,
+  handleDeleteTranslation,
   handleEditMessage,
   handleRegenerateMessage,
   handleSendMessage,
@@ -158,6 +159,7 @@ export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
       translateTargetLang?: unknown;
       translateScope?: unknown;
       autoTranslateScope?: unknown;
+      translateMethod?: unknown;
     };
 
     const patch: Record<string, unknown> = {};
@@ -168,6 +170,9 @@ export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
     }
     if (["none", "all", "assistant", "user"].includes(body.autoTranslateScope as string)) {
       patch.autoTranslateScope = body.autoTranslateScope;
+    }
+    if (["google", "ai"].includes(body.translateMethod as string)) {
+      patch.translateMethod = body.translateMethod;
     }
 
     const settings = await upsertChatSettings(chatId, patch);
@@ -182,6 +187,7 @@ export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
   app.post("/:id/messages/:msgId/regenerate", handleRegenerateMessage);
   app.post("/:id/messages/:msgId/branch", handleSwitchBranch);
   app.post("/:id/messages/:msgId/translate", handleTranslateMessage);
+  app.delete("/:id/messages/:msgId/translate", handleDeleteTranslation);
 
   // ─── Impersonate (генерация реплики от лица пользователя) ──────────────────
   // Регистрируем вне ветки /:id/messages/:msgId, чтобы не конфликтовать с :msgId.

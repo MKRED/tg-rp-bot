@@ -16,6 +16,7 @@ import {
   advanceStory,
   composeStoryTranslate,
   deleteStoryMessage,
+  deleteStoryTranslation,
   regenerateBeat,
   switchBranch,
   translateStoryMessage,
@@ -76,6 +77,36 @@ export function StoryPage() {
     },
     [id, setMessages],
   );
+
+  // Пересчитывает перевод бита/директивы заново (игнорируя кэш) — меню долгого нажатия на Globe.
+  const handleRetranslate = useCallback((msgId: number, lang: string) => {
+    translateStoryMessage(id, msgId, lang, { force: true })
+      .then((translation) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === msgId
+              ? { ...m, translations: { ...(m.translations ?? {}), [lang]: translation } }
+              : m,
+          ),
+        );
+      })
+      .catch((err) => console.error("Failed to retranslate story message", err));
+  }, [id, setMessages]);
+
+  // Убирает закэшированный перевод бита/директивы — меню долгого нажатия на Globe.
+  const handleDeleteTranslation = useCallback((msgId: number, lang: string) => {
+    deleteStoryTranslation(id, msgId, lang)
+      .then(() => {
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.id !== msgId || !m.translations) return m;
+            const { [lang]: _removed, ...rest } = m.translations;
+            return { ...m, translations: rest };
+          }),
+        );
+      })
+      .catch((err) => console.error("Failed to delete story translation", err));
+  }, [id, setMessages]);
 
   // Авто-перевод новых сообщений вынесен в хук; suppressNextRun зовём при смене ветки.
   const { suppressNextRun } = useStoryAutoTranslate(messages, settings, handleTranslate);
@@ -209,6 +240,8 @@ export function StoryPage() {
                   targetLang={settings.translateTargetLang}
                   autoShowTranslation={autoShowTranslation}
                   onTranslate={handleTranslate}
+                  onRetranslate={handleRetranslate}
+                  onDeleteTranslation={handleDeleteTranslation}
                   onRegenerate={() => regenerate(m.id)}
                   onDelete={() => handleDelete(m.id)}
                   onSwitchSibling={handleSwitch}

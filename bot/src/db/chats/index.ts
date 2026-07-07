@@ -27,6 +27,7 @@ export {
   setActiveMessage,
   deleteMessage,
   saveTranslation,
+  deleteTranslation,
 } from "./messages.js";
 
 export { getChatSettings, upsertChatSettings } from "./settings.js";

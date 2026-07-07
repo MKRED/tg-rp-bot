@@ -8,6 +8,7 @@ export {
   insertStoryMessage,
   getStoryMessage,
   saveStoryTranslation,
+  deleteStoryTranslation,
   updateActiveStoryMessage,
   setActiveStoryMessage,
   deleteStoryMessage,

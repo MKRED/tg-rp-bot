@@ -1,0 +1,2 @@
+ALTER TABLE "chat_settings" ADD COLUMN "translate_method" text DEFAULT 'google' NOT NULL;--> statement-breakpoint
+ALTER TABLE "story_settings" ADD COLUMN "translate_method" text DEFAULT 'google' NOT NULL;

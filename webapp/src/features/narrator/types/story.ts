@@ -46,6 +46,8 @@ export type StorySettings = {
   /** На каких ходах показывать кнопку: all — все, assistant — биты ИИ, user — директивы. */
   translateScope: "all" | "assistant" | "user";
   autoTranslateScope: "none" | "all" | "assistant" | "user";
+  /** Метод перевода закэшированных сообщений (кнопка Globe): Google Translate либо ИИ. */
+  translateMethod: "google" | "ai";
   /** Сжатие истории (compact). */
   compactEnabled: boolean;
   compactAutoEnabled: boolean;

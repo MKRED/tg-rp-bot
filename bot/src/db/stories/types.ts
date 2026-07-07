@@ -46,6 +46,7 @@ export type StorySettingsRow = {
   translateTargetLang: string;
   translateScope: "all" | "assistant" | "user";
   autoTranslateScope: "none" | "all" | "assistant" | "user";
+  translateMethod: "google" | "ai";
   compactEnabled: boolean;
   compactAutoEnabled: boolean;
   compactFloorTokens: number;

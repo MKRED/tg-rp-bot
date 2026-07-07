@@ -7,6 +7,7 @@ const DEFAULT_SETTINGS: ChatSettingsRow = {
   translateTargetLang: "ru",
   translateScope: "assistant",
   autoTranslateScope: "none",
+  translateMethod: "google",
 };
 
 /** Читает настройки чата; если строки нет — возвращает дефолт. */
@@ -22,6 +23,7 @@ export async function getChatSettings(chatId: number): Promise<ChatSettingsRow> 
     translateTargetLang: r.translateTargetLang,
     translateScope: r.translateScope,
     autoTranslateScope: r.autoTranslateScope,
+    translateMethod: r.translateMethod,
   };
 }
 

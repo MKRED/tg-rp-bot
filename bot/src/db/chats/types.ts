@@ -63,4 +63,5 @@ export type ChatSettingsRow = {
   translateTargetLang: string;
   translateScope: "all" | "assistant" | "user";
   autoTranslateScope: "none" | "all" | "assistant" | "user";
+  translateMethod: "google" | "ai";
 };

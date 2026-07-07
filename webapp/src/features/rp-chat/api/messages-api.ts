@@ -84,14 +84,31 @@ export async function switchBranch(chatId: number, messageId: number): Promise<v
   await apiFetch(`/chats/${chatId}/messages/${messageId}/branch`, { method: "POST" });
 }
 
+/**
+ * Переводит сообщение и кэширует результат на сервере (метод google/ai берётся из настроек чата).
+ * force=true пропускает кэш и пересчитывает перевод заново, перезаписывая его.
+ */
 export async function translateMessage(
   chatId: number,
   messageId: number,
   targetLang: string,
+  opts?: { force?: boolean },
 ): Promise<string> {
   const res = await apiFetch<{ translation: string }>(
     `/chats/${chatId}/messages/${messageId}/translate`,
-    { method: "POST", body: JSON.stringify({ targetLang }) },
+    { method: "POST", body: JSON.stringify({ targetLang, force: opts?.force ?? false }) },
   );
   return res.translation;
+}
+
+/** Убирает закэшированный перевод сообщения для одного языка. */
+export async function deleteTranslation(
+  chatId: number,
+  messageId: number,
+  targetLang: string,
+): Promise<void> {
+  await apiFetch(
+    `/chats/${chatId}/messages/${messageId}/translate?lang=${encodeURIComponent(targetLang)}`,
+    { method: "DELETE" },
+  );
 }

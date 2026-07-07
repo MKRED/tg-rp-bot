@@ -94,17 +94,33 @@ export function switchBranch(storyId: number, msgId: number): Promise<void> {
   return apiFetch(`/stories/${storyId}/messages/${msgId}/branch`, { method: "POST" });
 }
 
-/** Переводит бит/директиву; сервер кэширует результат в translations сообщения. */
+/**
+ * Переводит бит/директиву; сервер кэширует результат в translations сообщения (метод google/ai —
+ * из настроек истории). force=true пропускает кэш и пересчитывает перевод заново.
+ */
 export async function translateStoryMessage(
   storyId: number,
   msgId: number,
   targetLang: string,
+  opts?: { force?: boolean },
 ): Promise<string> {
   const res = await apiFetch<{ translation: string }>(
     `/stories/${storyId}/messages/${msgId}/translate`,
-    { method: "POST", body: JSON.stringify({ targetLang }) },
+    { method: "POST", body: JSON.stringify({ targetLang, force: opts?.force ?? false }) },
   );
   return res.translation;
+}
+
+/** Убирает закэшированный перевод бита/директивы для одного языка. */
+export async function deleteStoryTranslation(
+  storyId: number,
+  msgId: number,
+  targetLang: string,
+): Promise<void> {
+  await apiFetch(
+    `/stories/${storyId}/messages/${msgId}/translate?lang=${encodeURIComponent(targetLang)}`,
+    { method: "DELETE" },
+  );
 }
 
 export function deleteStoryMessage(storyId: number, msgId: number): Promise<void> {

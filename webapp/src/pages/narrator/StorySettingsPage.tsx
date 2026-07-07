@@ -15,10 +15,12 @@ import { HintedInput } from "../../shared/components/HintedInput";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { PromptField } from "../../shared/components/PromptField";
 import { ExpandableSelect } from "../../shared/components/ExpandableSelect";
+import { SegmentedToggle } from "../../shared/components/SegmentedToggle";
 import {
   AUTO_SCOPE_OPTIONS,
   CompactSettingsSection,
   LANG_OPTIONS,
+  METHOD_OPTIONS,
   SCOPE_OPTIONS,
   removeStory,
   renameStory,
@@ -252,6 +254,25 @@ export function StorySettingsPage() {
 
                 {settings.translateEnabled && (
                   <>
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ ...ITEM_T, delay: 0.07 }}
+                    >
+                      <Cell
+                        subtitle="Google Translate или запрос к ИИ"
+                        after={
+                          <SegmentedToggle
+                            options={METHOD_OPTIONS}
+                            value={settings.translateMethod}
+                            onChange={(value) => updateSettings({ translateMethod: value })}
+                          />
+                        }
+                      >
+                        Метод перевода
+                      </Cell>
+                    </motion.div>
+
                     <ExpandableSelect
                       title="Язык"
                       subtitle="Язык перевода"
@@ -260,7 +281,7 @@ export function StorySettingsPage() {
                       onChange={(value) => { updateSettings({ translateTargetLang: value }); setOpenSelect(null); }}
                       open={openSelect === "lang"}
                       onToggle={() => toggleSelect("lang")}
-                      delay={0.07}
+                      delay={0.14}
                     />
 
                     <ExpandableSelect
@@ -271,7 +292,7 @@ export function StorySettingsPage() {
                       onChange={(value) => { updateSettings({ translateScope: value }); setOpenSelect(null); }}
                       open={openSelect === "scope"}
                       onToggle={() => toggleSelect("scope")}
-                      delay={0.14}
+                      delay={0.21}
                     />
 
                     <ExpandableSelect
@@ -282,7 +303,7 @@ export function StorySettingsPage() {
                       onChange={(value) => { updateSettings({ autoTranslateScope: value }); setOpenSelect(null); }}
                       open={openSelect === "auto"}
                       onToggle={() => toggleSelect("auto")}
-                      delay={0.21}
+                      delay={0.28}
                     />
                   </>
                 )}

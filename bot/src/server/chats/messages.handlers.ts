@@ -1,6 +1,8 @@
 import { streamSSE } from "hono/streaming";
 import {
   deleteMessage,
+  deleteTranslation,
+  getChatSettings,
   getMessage,
   getChat,
   insertMessage,
@@ -14,7 +16,7 @@ import { getPreset } from "../../db/presets/index.js";
 import logger from "../../logger.js";
 import { buildMessages, makeDefaultPreset, presetToCompletionOptions } from "../prompt/promptBuilder.js";
 import { streamCompletion } from "../shared/streamGeneration.js";
-import { googleTranslate } from "../shared/translate.js";
+import { aiTranslate, englishLangName, googleTranslate } from "../shared/translate.js";
 import type { ChatContext, Ctx } from "./chats.types.js";
 
 /**
@@ -254,28 +256,77 @@ export async function handleDeleteMessage(c: Ctx) {
   return c.json({ ok: true });
 }
 
-/** POST /:id/messages/:msgId/translate — переводит сообщение и кэширует результат. */
+/**
+ * POST /:id/messages/:msgId/translate — переводит сообщение и кэширует результат.
+ * body.force=true пропускает кэш и пересчитывает перевод текущим методом (перезаписывая его) —
+ * нужно для кнопки «Перевести заново» и при смене метода перевода в настройках.
+ * Метод (google/ai) берётся из chatSettings.translateMethod, не из тела запроса.
+ */
 export async function handleTranslateMessage(c: Ctx) {
   const userId = c.get("tgUser")!.id;
   const chatId = Number(c.req.param("id"));
   const msgId = Number(c.req.param("msgId"));
 
-  const body = (await c.req.json().catch(() => ({}))) as { targetLang?: string };
+  const body = (await c.req.json().catch(() => ({}))) as { targetLang?: string; force?: unknown };
   const targetLang = typeof body.targetLang === "string" ? body.targetLang.trim() : "";
+  const force = body.force === true;
   if (!targetLang) return c.json({ error: "targetLang is required" }, 400);
 
-  // Проверяем принадлежность через chatId→userId
-  const chat = await getChat(userId, chatId);
-  if (!chat) return c.json({ error: "Chat not found" }, 404);
+  try {
+    // Проверяем принадлежность через chatId→userId
+    const chat = await getChat(userId, chatId);
+    if (!chat) return c.json({ error: "Chat not found" }, 404);
 
-  const msg = await getMessage(userId, msgId);
-  if (!msg || msg.chatId !== chatId) return c.json({ error: "Message not found" }, 404);
+    const msg = await getMessage(userId, msgId);
+    if (!msg || msg.chatId !== chatId) return c.json({ error: "Message not found" }, 404);
 
-  // Если кэш уже есть — вернём без повторного запроса (translations расшифрованы в getMessage)
-  const cached = (msg.translations as Record<string, string> | null)?.[targetLang];
-  if (cached) return c.json({ translation: cached });
+    // Если кэш уже есть и не запрошен пересчёт — вернём без повторного запроса
+    // (translations расшифрованы в getMessage).
+    const cached = (msg.translations as Record<string, string> | null)?.[targetLang];
+    if (cached && !force) return c.json({ translation: cached });
 
-  const translation = await googleTranslate(msg.content, targetLang);
-  await saveTranslation(userId, msgId, targetLang, translation);
-  return c.json({ translation });
+    const { translateMethod } = await getChatSettings(chatId);
+    let translation: string;
+    if (translateMethod === "ai") {
+      // Промпт перевода — из пресета чата (управляющая поверхность ИИ-режима), сэмплинг не переиспользуем
+      // (см. handleTranslateText/aiTranslate — параметры RP испортили бы верность перевода).
+      const preset = chat.preset ? await getPreset(userId, chat.preset.id) : null;
+      translation = await aiTranslate(
+        preset?.translationSystemPrompt ?? "",
+        msg.content,
+        englishLangName(targetLang),
+        userId,
+      );
+    } else {
+      translation = await googleTranslate(msg.content, targetLang);
+    }
+    await saveTranslation(userId, msgId, targetLang, translation);
+    return c.json({ translation });
+  } catch (err) {
+    logger.error({ err, userId, chatId, msgId }, "Failed to translate message");
+    return c.json({ error: "Internal error" }, 500);
+  }
+}
+
+/** DELETE /:id/messages/:msgId/translate?lang=xx — убирает закэшированный перевод для языка. */
+export async function handleDeleteTranslation(c: Ctx) {
+  const userId = c.get("tgUser")!.id;
+  const chatId = Number(c.req.param("id"));
+  const msgId = Number(c.req.param("msgId"));
+  const targetLang = c.req.query("lang")?.trim() ?? "";
+  if (!targetLang) return c.json({ error: "lang is required" }, 400);
+
+  try {
+    const chat = await getChat(userId, chatId);
+    if (!chat) return c.json({ error: "Chat not found" }, 404);
+
+    const msg = await getMessage(userId, msgId);
+    if (!msg || msg.chatId !== chatId) return c.json({ error: "Message not found" }, 404);
+
+    await deleteTranslation(msgId, targetLang);
+    return c.json({ ok: true });
+  } catch (err) {
+    logger.error({ err, userId, chatId, msgId }, "Failed to delete translation");
+    return c.json({ error: "Internal error" }, 500);
+  }
 }

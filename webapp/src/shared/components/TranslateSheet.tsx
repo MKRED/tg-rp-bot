@@ -4,6 +4,7 @@ import { Languages, SendHorizontal, X } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { LangPicker, type LangOption } from "./LangPicker";
 import { RpText } from "./RpText";
+import { SegmentedToggle } from "./SegmentedToggle";
 import { useComposeTranslate, type ComposeTranslateParams } from "../hooks/useComposeTranslate";
 import "./TranslateSheet.css";
 
@@ -26,6 +27,11 @@ const SHEET_T = { duration: 0.25, ease: "easeOut" as const };
 
 const MODE_KEY = "translate-mode";
 const LANG_KEY = "translate-lang";
+
+const MODE_OPTIONS = [
+  { value: "google", label: "Google" },
+  { value: "ai", label: "ИИ" },
+] as const satisfies { value: TranslateMode; label: string }[];
 
 /**
  * Нижняя «штора» перевода черновика сообщения. Внизу — поле исходного текста, сверху — результат
@@ -66,21 +72,6 @@ export function TranslateSheet({
   const [targetLang, setTargetLang] = useState(
     () => localStorage.getItem(LANG_KEY) ?? "en",
   );
-
-  // Геометрия скользящей подсветки считается по реальной ширине активной кнопки (Google шире ИИ),
-  // чтобы таблетка точно перекрывала сегмент. Измеряем offsetLeft/offsetWidth — они привязаны к
-  // контейнеру и НЕ меняются, когда штора растёт вверх от появления результата (в отличие от
-  // layout-проекции framer, которая мерила позицию во вьюпорте и дёргала таблетку по вертикали).
-  const btnRefs = useRef<Record<TranslateMode, HTMLButtonElement | null>>({
-    google: null,
-    ai: null,
-  });
-  const [thumb, setThumb] = useState<{ left: number; width: number } | null>(null);
-
-  useLayoutEffect(() => {
-    const el = btnRefs.current[mode];
-    if (el) setThumb({ left: el.offsetLeft, width: el.offsetWidth });
-  }, [mode]);
 
   const setModePersist = (m: TranslateMode) => {
     setMode(m);
@@ -126,36 +117,7 @@ export function TranslateSheet({
         </div>
 
         <div className="translate-sheet__controls">
-          {/* Сегмент-переключатель Google ↔ ИИ. Таблетка позиционируется по измеренной геометрии
-              активной кнопки (left/width), а не layout-проекцией — поэтому рефлоу шторы её не дёргает. */}
-          <div className="translate-sheet__mode" role="tablist">
-            {thumb && (
-              <motion.span
-                aria-hidden
-                className="translate-sheet__mode-thumb"
-                initial={false}
-                animate={{ left: thumb.left, width: thumb.width }}
-                transition={{ type: "spring", stiffness: 400, damping: 32 }}
-              />
-            )}
-            {(["google", "ai"] as const).map((m) => (
-              <button
-                key={m}
-                ref={(el) => {
-                  btnRefs.current[m] = el;
-                }}
-                type="button"
-                role="tab"
-                aria-selected={mode === m}
-                className={`translate-sheet__mode-btn${mode === m ? " is-active" : ""}`}
-                onClick={() => setModePersist(m)}
-              >
-                <span className="translate-sheet__mode-btn-label">
-                  {m === "ai" ? "ИИ" : "Google"}
-                </span>
-              </button>
-            ))}
-          </div>
+          <SegmentedToggle options={MODE_OPTIONS} value={mode} onChange={setModePersist} />
           <LangPicker value={targetLang} onChange={setLangPersist} options={langOptions} />
         </div>
 

@@ -1,0 +1,44 @@
+/* Сегмент-переключатель («таблетка» с подсветкой активного сегмента) — переиспользуется
+   в TranslateSheet (режим Google/ИИ черновика) и в настройках чата/истории (метод перевода). */
+
+.segmented-toggle {
+  position: relative;
+  display: flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+}
+
+.segmented-toggle__btn {
+  position: relative;
+  border: none;
+  background: none;
+  padding: 7px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--tg-theme-hint-color, #999);
+  cursor: pointer;
+  transition: color 0.18s;
+}
+
+.segmented-toggle__btn.is-active {
+  color: var(--tg-theme-button-text-color, #fff);
+}
+
+/* Скользящая подсветка под активным сегментом. left/width задаёт motion по геометрии кнопки;
+   вертикальные границы — от паддинга контейнера (3px). */
+.segmented-toggle__thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  z-index: 0;
+  border-radius: 999px;
+  background: var(--tg-theme-button-color, #2481cc);
+}
+
+.segmented-toggle__btn-label {
+  position: relative;
+  z-index: 1;
+}

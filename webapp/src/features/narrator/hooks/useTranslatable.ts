@@ -21,6 +21,11 @@ export function useTranslatable(
     if (autoShow && message.translations?.[targetLang]) setShowTranslation(true);
   }, [message.translations, targetLang, autoShow]);
 
+  // Перевод удалили (меню долгого нажатия на Globe) — прячем показанный перевод вместе с кэшем.
+  useEffect(() => {
+    if (!message.translations?.[targetLang]) setShowTranslation(false);
+  }, [message.translations, targetLang]);
+
   const cached = message.translations?.[targetLang];
   const displayText = showTranslation && cached ? cached : message.content;
 

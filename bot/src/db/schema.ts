@@ -284,6 +284,9 @@ export const chatSettings = pgTable("chat_settings", {
     .$type<"none" | "all" | "assistant" | "user">()
     .notNull()
     .default("none"),
+  // Метод перевода закэшированных сообщений (кнопка Globe): "google" — Google Translate,
+  // "ai" — LLM с промптом перевода из пресета (translationSystemPrompt).
+  translateMethod: text("translate_method").$type<"google" | "ai">().notNull().default("google"),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow()
@@ -506,6 +509,8 @@ export const storySettings = pgTable("story_settings", {
     .$type<"none" | "all" | "assistant" | "user">()
     .notNull()
     .default("none"),
+  // Метод перевода закэшированных сообщений — зеркало chatSettings.translateMethod.
+  translateMethod: text("translate_method").$type<"google" | "ai">().notNull().default("google"),
   // Сжатие истории (compact). compactEnabled — мастер-тумблер чата (вместе с компонентом compact
   // шаблона гейтит и создание, и применение пересказов). compactAutoEnabled — авто-триггер по лимиту.
   // compactFloorTokens — целевой «пол» в токенах (0 = не задано → round(contextSize*0.7) на использовании).

@@ -1,6 +1,9 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
 import { ChevronLeft, ChevronRight, Clapperboard, Globe, RefreshCw, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { RpText } from "../../../shared/components/RpText";
+import { TranslateActionMenu } from "../../../shared/components/TranslateActionMenu";
+import { useLongPress } from "../../../shared/hooks/useLongPress";
 import { useTranslatable } from "../hooks/useTranslatable";
 import type { StoryMessage } from "../types/story";
 
@@ -16,6 +19,10 @@ interface StoryMessageItemProps {
   /** Сразу показывать перевод, когда он появится (авто-перевод). */
   autoShowTranslation?: boolean;
   onTranslate: (messageId: number, targetLang: string) => Promise<string>;
+  /** Пересчитывает перевод заново (игнорируя кэш) — из меню долгого нажатия на Globe. */
+  onRetranslate: (messageId: number, targetLang: string) => void;
+  /** Удаляет закэшированный перевод — из меню долгого нажатия на Globe. */
+  onDeleteTranslation: (messageId: number, targetLang: string) => void;
   onRegenerate: () => void;
   onDelete: () => void;
   onSwitchSibling: (siblingId: number) => void;
@@ -34,6 +41,8 @@ export function StoryMessageItem({
   targetLang,
   autoShowTranslation = false,
   onTranslate,
+  onRetranslate,
+  onDeleteTranslation,
   onRegenerate,
   onDelete,
   onSwitchSibling,
@@ -45,6 +54,9 @@ export function StoryMessageItem({
     autoShowTranslation,
     onTranslate,
   );
+  const [translateMenuOpen, setTranslateMenuOpen] = useState(false);
+  const longPress = useLongPress(() => setTranslateMenuOpen(true));
+  const hasCachedTranslation = Boolean(message.translations?.[targetLang]);
 
   // Технические «Дальше» в ленте не показываем.
   if (message.kind === "continue") return null;
@@ -69,15 +81,25 @@ export function StoryMessageItem({
         <Clapperboard size={14} style={{ flexShrink: 0 }} />
         <span>{displayText}</span>
         {showTranslateButton && (
-          <button
-            type="button"
-            disabled={translating}
-            onClick={toggle}
-            style={{ ...iconBtn, color: showTranslation ? "var(--tgui--link_color)" : "inherit" }}
-            aria-label="Перевести директиву"
-          >
-            {translating ? <Spinner size="s" /> : <Globe size={14} />}
-          </button>
+          <span style={{ position: "relative" }}>
+            <button
+              type="button"
+              disabled={translating}
+              onClick={toggle}
+              style={{ ...iconBtn, color: showTranslation ? "var(--tgui--link_color)" : "inherit" }}
+              aria-label="Перевести директиву"
+              {...(hasCachedTranslation ? longPress : {})}
+            >
+              {translating ? <Spinner size="s" /> : <Globe size={14} />}
+            </button>
+            {translateMenuOpen && (
+              <TranslateActionMenu
+                onRegenerate={() => onRetranslate(message.id, targetLang)}
+                onDelete={() => onDeleteTranslation(message.id, targetLang)}
+                onClose={() => setTranslateMenuOpen(false)}
+              />
+            )}
+          </span>
         )}
       </div>
     );
@@ -108,15 +130,25 @@ export function StoryMessageItem({
       {(showTranslateButton || showActions) && (
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6, color: "var(--tgui--hint_color)" }}>
           {showTranslateButton && (
-            <button
-              type="button"
-              disabled={translating}
-              onClick={toggle}
-              style={{ ...iconBtn, color: showTranslation ? "var(--tgui--link_color)" : "inherit" }}
-              aria-label="Перевести бит"
-            >
-              {translating ? <Spinner size="s" /> : <Globe size={16} />}
-            </button>
+            <span style={{ position: "relative" }}>
+              <button
+                type="button"
+                disabled={translating}
+                onClick={toggle}
+                style={{ ...iconBtn, color: showTranslation ? "var(--tgui--link_color)" : "inherit" }}
+                aria-label="Перевести бит"
+                {...(hasCachedTranslation ? longPress : {})}
+              >
+                {translating ? <Spinner size="s" /> : <Globe size={16} />}
+              </button>
+              {translateMenuOpen && (
+                <TranslateActionMenu
+                  onRegenerate={() => onRetranslate(message.id, targetLang)}
+                  onDelete={() => onDeleteTranslation(message.id, targetLang)}
+                  onClose={() => setTranslateMenuOpen(false)}
+                />
+              )}
+            </span>
           )}
           {canSwitch && showActions && (
             <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13 }}>

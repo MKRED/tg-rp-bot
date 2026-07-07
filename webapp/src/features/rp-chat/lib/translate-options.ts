@@ -17,3 +17,8 @@ export const AUTO_SCOPE_OPTIONS: { value: ChatSettings["autoTranslateScope"]; la
   { value: "assistant", label: "Ответы ИИ" },
   { value: "user", label: "Мои сообщения" },
 ];
+
+export const METHOD_OPTIONS: { value: ChatSettings["translateMethod"]; label: string }[] = [
+  { value: "google", label: "Google" },
+  { value: "ai", label: "ИИ" },
+];

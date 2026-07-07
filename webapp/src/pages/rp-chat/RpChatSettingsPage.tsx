@@ -11,10 +11,12 @@ import { CharacterAvatar } from "../../features/characters/components/CharacterA
 import { PersonaAvatar } from "../../features/personas/components/PersonaAvatar";
 import { deleteChat, renameChat, useChat, useChatSettings, useChatStats } from "../../features/rp-chat";
 import { ExpandableSelect } from "../../shared/components/ExpandableSelect";
+import { SegmentedToggle } from "../../shared/components/SegmentedToggle";
 import { TokenBudgetBar } from "../../shared/components/TokenBudgetBar";
 import {
   AUTO_SCOPE_OPTIONS,
   LANG_OPTIONS,
+  METHOD_OPTIONS,
   SCOPE_OPTIONS,
 } from "../../features/rp-chat/lib/translate-options";
 import { confirmAction } from "../../shared/telegram/confirm";
@@ -228,6 +230,25 @@ export function RpChatSettingsPage() {
 
                 {settings.translateEnabled && (
                   <>
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ ...ITEM_T, delay: 0.07 }}
+                    >
+                      <Cell
+                        subtitle="Google Translate или запрос к ИИ"
+                        after={
+                          <SegmentedToggle
+                            options={METHOD_OPTIONS}
+                            value={settings.translateMethod}
+                            onChange={(value) => update({ translateMethod: value })}
+                          />
+                        }
+                      >
+                        Метод перевода
+                      </Cell>
+                    </motion.div>
+
                     <ExpandableSelect
                       title="Язык"
                       subtitle="Язык перевода"
@@ -236,7 +257,7 @@ export function RpChatSettingsPage() {
                       onChange={(value) => { update({ translateTargetLang: value }); setOpenSelect(null); }}
                       open={openSelect === "lang"}
                       onToggle={() => toggle("lang")}
-                      delay={0.07}
+                      delay={0.14}
                     />
 
                     <ExpandableSelect
@@ -247,7 +268,7 @@ export function RpChatSettingsPage() {
                       onChange={(value) => { update({ translateScope: value }); setOpenSelect(null); }}
                       open={openSelect === "scope"}
                       onToggle={() => toggle("scope")}
-                      delay={0.14}
+                      delay={0.21}
                     />
 
                     <ExpandableSelect
@@ -258,7 +279,7 @@ export function RpChatSettingsPage() {
                       onChange={(value) => { update({ autoTranslateScope: value }); setOpenSelect(null); }}
                       open={openSelect === "auto"}
                       onToggle={() => toggle("auto")}
-                      delay={0.21}
+                      delay={0.28}
                     />
                   </>
                 )}

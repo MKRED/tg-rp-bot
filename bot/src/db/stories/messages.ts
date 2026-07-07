@@ -77,6 +77,20 @@ export async function saveStoryTranslation(
   logger.debug({ durationMs: Date.now() - t0, userId, messageId, lang }, "Story translation cached");
 }
 
+/**
+ * Убирает закэшированный перевод для одного языка (остальные языки не трогает).
+ * Зеркало deleteTranslation (RP).
+ */
+export async function deleteStoryTranslation(messageId: number, lang: string): Promise<void> {
+  const t0 = Date.now();
+  await db.execute(sql`
+    UPDATE story_messages
+    SET translations = translations - ${lang}::text
+    WHERE id = ${messageId}
+  `);
+  logger.debug({ durationMs: Date.now() - t0, messageId, lang }, "Story translation deleted");
+}
+
 /** Ставит курсор истории на messageId, опускаясь до листа (как в RP). */
 export async function updateActiveStoryMessage(
   storyChatId: number,

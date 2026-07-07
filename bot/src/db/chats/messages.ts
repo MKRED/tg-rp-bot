@@ -150,3 +150,12 @@ export async function saveTranslation(
     WHERE id = ${messageId}
   `);
 }
+
+/** Убирает закэшированный перевод для одного языка (остальные языки не трогает). */
+export async function deleteTranslation(messageId: number, lang: string): Promise<void> {
+  await db.execute(sql`
+    UPDATE messages
+    SET translations = translations - ${lang}::text
+    WHERE id = ${messageId}
+  `);
+}
