@@ -164,7 +164,7 @@ export async function getActiveEntriesForPrompt(
   const rows = await db.execute(sql`
     SELECT
       e.name, e.activation, e.content, e.keywords, e.character_id, e.user_alias,
-      ch.name AS char_name, ch.prompt AS char_prompt, ch.scenario AS char_scenario
+      ch.name AS char_name, ch.prompt AS char_prompt
     FROM knowledge_book_entries e
     LEFT JOIN characters ch ON ch.id = e.character_id
     WHERE e.book_id = ${bookId}
@@ -185,20 +185,15 @@ export async function getActiveEntriesForPrompt(
 
     let body: string;
     if (r.character_id != null && r.char_name != null) {
-      // Запись-персонаж: описание + сценарий из карточки (prompt/scenario зашифрованы как у character).
+      // Запись-персонаж: в промпт идёт только описание из карточки (prompt зашифрован как у character).
+      // Имя не дублируем — его несёт оборачивающий тег <name>; сценарий карточки в книгу знаний не тянем.
       const charName = r.char_name as string;
       const userAlias = decryptField(r.user_alias as string, key);
-      const prompt = subPlaceholders(
+      body = subPlaceholders(
         decryptField((r.char_prompt as string | null) ?? "", key),
         charName,
         userAlias,
       );
-      const scenario = subPlaceholders(
-        decryptField((r.char_scenario as string | null) ?? "", key),
-        charName,
-        userAlias,
-      );
-      body = [charName, prompt, scenario].filter((s) => s.trim()).join("\n");
     } else {
       body = decryptField((r.content as string | null) ?? "", key);
     }
