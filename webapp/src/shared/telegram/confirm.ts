@@ -39,8 +39,8 @@ export async function confirmAction(
       title,
       message,
       buttons: [
-        { id: "cancel", type: "cancel" },
         { id: "confirm", type: "destructive", text: confirmText },
+        { id: "cancel", type: "cancel" },
       ],
     });
     return pressed === "confirm";

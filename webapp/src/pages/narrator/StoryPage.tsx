@@ -112,7 +112,7 @@ export function StoryPage() {
   }, [id, setMessages]);
 
   // Авто-перевод новых сообщений вынесен в хук; suppressNextRun зовём при смене ветки.
-  const { suppressNextRun } = useStoryAutoTranslate(messages, settings, handleTranslate);
+  const { suppressNextRun, autoTranslatingIds } = useStoryAutoTranslate(messages, settings, handleTranslate);
 
   const lastBeatId = [...messages].reverse().find((m) => m.role === "assistant")?.id;
 
@@ -244,6 +244,7 @@ export function StoryPage() {
                   showTranslateButton={showTranslateButton}
                   targetLang={settings.translateTargetLang}
                   autoShowTranslation={autoShowTranslation}
+                  autoTranslating={autoTranslatingIds.has(m.id)}
                   onTranslate={handleTranslate}
                   onRetranslate={handleRetranslate}
                   onDeleteTranslation={handleDeleteTranslation}

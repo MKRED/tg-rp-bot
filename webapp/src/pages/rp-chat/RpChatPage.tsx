@@ -42,6 +42,9 @@ export function RpChatPage() {
   const seenMessageIds = useRef<Set<number>>(new Set());
   // Подавляет авто-перевод при смене ветки (сообщения исторические, не новые).
   const suppressNextAutoTranslate = useRef(false);
+  // Id сообщений, для которых авто-перевод сейчас в полёте — MessageBubble крутит на кнопке
+  // Globe спиннер, а не только при ручном тапе (иначе фоновый запрос выглядел бы «зависшим»).
+  const [autoTranslatingIds, setAutoTranslatingIds] = useState<Set<number>>(new Set());
   const [impersonateOpen, setImpersonateOpen] = useState(false);
   const [translateOpen, setTranslateOpen] = useState(false);
   // Черновик текста в шторе перевода — хранится здесь, а не в самой шторе, чтобы не пропадать
@@ -220,7 +223,16 @@ export function RpChatPage() {
         (autoTranslateScope === "all" || autoTranslateScope === msg.role) &&
         !msg.translations?.[translateTargetLang]
       ) {
-        handleTranslate(msg.id, translateTargetLang).catch(() => {});
+        setAutoTranslatingIds((prev) => new Set(prev).add(msg.id));
+        handleTranslate(msg.id, translateTargetLang)
+          .catch(() => {})
+          .finally(() => {
+            setAutoTranslatingIds((prev) => {
+              const next = new Set(prev);
+              next.delete(msg.id);
+              return next;
+            });
+          });
       }
     }
   }, [chat?.messages, settings, handleTranslate]);
@@ -289,6 +301,7 @@ export function RpChatPage() {
                   showTranslateButton={showTranslateButton}
                   targetLang={settings.translateTargetLang}
                   autoShowTranslation={autoShowTranslation}
+                  autoTranslating={autoTranslatingIds.has(msg.id)}
                   isLastAssistant={msg.id === lastAssistantId}
                   onSwitchBranch={handleSwitchBranch}
                   onTranslate={handleTranslate}

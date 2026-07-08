@@ -19,6 +19,8 @@ interface MessageBubbleProps {
   targetLang: string;
   /** Автоматически отображать перевод, когда он появится (авто-перевод). */
   autoShowTranslation?: boolean;
+  /** Авто-перевод этого сообщения сейчас в полёте — крутить спиннер на кнопке Globe. */
+  autoTranslating?: boolean;
   /** Это последнее assistant-сообщение в чате (для кнопки регенерации). */
   isLastAssistant: boolean;
   onSwitchBranch: (siblingId: number) => void;
@@ -37,6 +39,7 @@ export function MessageBubble({
   showTranslateButton,
   targetLang,
   autoShowTranslation = false,
+  autoTranslating = false,
   isLastAssistant,
   onSwitchBranch,
   onTranslate,
@@ -180,12 +183,12 @@ export function MessageBubble({
               <button
                 className={`message-bubble__action-btn${showTranslation ? " message-bubble__action-btn--active" : ""}`}
                 onClick={handleTranslateToggle}
-                disabled={translating || translateActionPending}
+                disabled={translating || translateActionPending || autoTranslating}
                 type="button"
                 aria-label="Перевести"
                 {...(message.translations?.[targetLang] ? longPress : {})}
               >
-                {translating || translateActionPending ? <Spinner size="s" /> : <Globe size={20} />}
+                {translating || translateActionPending || autoTranslating ? <Spinner size="s" /> : <Globe size={20} />}
               </button>
               {translateMenuOpen && (
                 <TranslateActionMenu

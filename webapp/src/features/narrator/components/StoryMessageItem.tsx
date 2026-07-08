@@ -22,6 +22,8 @@ interface StoryMessageItemProps {
   targetLang: string;
   /** Сразу показывать перевод, когда он появится (авто-перевод). */
   autoShowTranslation?: boolean;
+  /** Авто-перевод этого сообщения сейчас в полёте — крутить спиннер на кнопке Globe. */
+  autoTranslating?: boolean;
   onTranslate: (messageId: number, targetLang: string) => Promise<string>;
   /** Пересчитывает перевод заново (игнорируя кэш) — из меню долгого нажатия на Globe. */
   onRetranslate: (messageId: number, targetLang: string) => Promise<void>;
@@ -44,6 +46,7 @@ export function StoryMessageItem({
   showTranslateButton,
   targetLang,
   autoShowTranslation = false,
+  autoTranslating = false,
   onTranslate,
   onRetranslate,
   onDeleteTranslation,
@@ -121,13 +124,13 @@ export function StoryMessageItem({
           <span style={{ position: "relative" }}>
             <button
               type="button"
-              disabled={translating || translateActionPending}
+              disabled={translating || translateActionPending || autoTranslating}
               onClick={toggle}
               style={{ ...iconBtn, color: showTranslation ? "var(--tgui--link_color)" : "inherit" }}
               aria-label="Перевести директиву"
               {...(hasCachedTranslation ? longPress : {})}
             >
-              {translating || translateActionPending ? <Spinner size="s" /> : <Globe size={14} />}
+              {translating || translateActionPending || autoTranslating ? <Spinner size="s" /> : <Globe size={14} />}
             </button>
             {translateMenuOpen && (
               <TranslateActionMenu
@@ -170,13 +173,13 @@ export function StoryMessageItem({
             <span style={{ position: "relative" }}>
               <button
                 type="button"
-                disabled={translating || translateActionPending}
+                disabled={translating || translateActionPending || autoTranslating}
                 onClick={toggle}
                 style={{ ...iconBtn, color: showTranslation ? "var(--tgui--link_color)" : "inherit" }}
                 aria-label="Перевести бит"
                 {...(hasCachedTranslation ? longPress : {})}
               >
-                {translating || translateActionPending ? <Spinner size="s" /> : <Globe size={16} />}
+                {translating || translateActionPending || autoTranslating ? <Spinner size="s" /> : <Globe size={16} />}
               </button>
               {translateMenuOpen && (
                 <TranslateActionMenu
