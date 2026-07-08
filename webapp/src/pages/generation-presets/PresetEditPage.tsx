@@ -40,7 +40,9 @@ export function PresetEditPage() {
   const handleDelete = async () => {
     if (id === undefined) return;
     // Подтверждение перед необратимым удалением — нативный попап Telegram (см. confirmAction).
-    const confirmed = await confirmAction("Удалить пресет? Это действие необратимо.");
+    const confirmed = await confirmAction("Удалить пресет? Это действие необратимо.", {
+      title: "Удаление пресета",
+    });
     if (!confirmed) return;
     setSubmitting(true);
     removePreset(id)

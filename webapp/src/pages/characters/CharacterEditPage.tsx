@@ -58,7 +58,9 @@ export function CharacterEditPage() {
   const handleDelete = async () => {
     if (id === undefined) return;
     // Подтверждение перед необратимым удалением — нативный попап Telegram (см. confirmAction).
-    const confirmed = await confirmAction("Удалить персонажа? Это действие необратимо.");
+    const confirmed = await confirmAction("Удалить персонажа? Это действие необратимо.", {
+      title: "Удаление персонажа",
+    });
     if (!confirmed) return;
     setSubmitting(true);
     removeCharacter(id)

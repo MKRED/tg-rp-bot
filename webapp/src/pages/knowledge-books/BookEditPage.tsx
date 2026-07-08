@@ -50,7 +50,9 @@ export function BookEditPage() {
 
   const handleDeleteBook = async () => {
     if (id === undefined) return;
-    const confirmed = await confirmAction("Удалить книгу знаний? Это действие необратимо.");
+    const confirmed = await confirmAction("Удалить книгу знаний? Это действие необратимо.", {
+      title: "Удаление книги знаний",
+    });
     if (!confirmed) return;
     setSubmitting(true);
     removeBook(id)

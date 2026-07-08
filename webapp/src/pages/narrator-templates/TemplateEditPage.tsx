@@ -33,7 +33,9 @@ export function TemplateEditPage() {
 
   const handleDelete = async () => {
     if (id === undefined) return;
-    const confirmed = await confirmAction("Удалить шаблон? Это действие необратимо.");
+    const confirmed = await confirmAction("Удалить шаблон? Это действие необратимо.", {
+      title: "Удаление шаблона",
+    });
     if (!confirmed) return;
     setSubmitting(true);
     removeTemplate(id)

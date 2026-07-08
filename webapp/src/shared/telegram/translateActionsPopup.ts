@@ -17,7 +17,8 @@ export function isTranslateActionsPopupAvailable(): boolean {
  */
 export async function showTranslateActionsPopup(): Promise<TranslateAction | null> {
   const pressed = await popup.show({
-    message: "Действия с переводом",
+    title: "Перевод",
+    message: "Выберите действие",
     buttons: [
       { id: "regenerate", type: "default", text: "Перевести заново" },
       { id: "delete", type: "destructive", text: "Удалить перевод" },

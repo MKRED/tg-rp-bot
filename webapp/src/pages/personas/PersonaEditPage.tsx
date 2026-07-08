@@ -52,7 +52,9 @@ export function PersonaEditPage() {
 
   const handleDelete = async () => {
     if (id === undefined) return;
-    const confirmed = await confirmAction("Удалить персону? Это действие необратимо.");
+    const confirmed = await confirmAction("Удалить персону? Это действие необратимо.", {
+      title: "Удаление персоны",
+    });
     if (!confirmed) return;
     setSubmitting(true);
     removePersona(id)

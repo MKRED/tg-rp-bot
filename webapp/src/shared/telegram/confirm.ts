@@ -1,7 +1,8 @@
 import { popup } from "@telegram-apps/sdk-react";
 
 interface ConfirmOptions {
-  title?: string;
+  /** Обязателен — попап без хедера выглядит как случайная подсказка, а не как диалог. */
+  title: string;
   /** Текст подтверждающей (деструктивной) кнопки. */
   confirmText?: string;
 }
@@ -17,7 +18,7 @@ interface ConfirmOptions {
  * Показывает информационный попап с единственной кнопкой «ОК».
  * Используется для не-деструктивных уведомлений (ошибки, предупреждения).
  */
-export async function showAlert(message: string, title = ""): Promise<void> {
+export async function showAlert(message: string, title: string): Promise<void> {
   if (popup.show.isAvailable()) {
     await popup.show({
       title,
@@ -31,7 +32,7 @@ export async function showAlert(message: string, title = ""): Promise<void> {
 
 export async function confirmAction(
   message: string,
-  { title = "", confirmText = "Удалить" }: ConfirmOptions = {},
+  { title, confirmText = "Удалить" }: ConfirmOptions,
 ): Promise<boolean> {
   if (popup.show.isAvailable()) {
     const pressed = await popup.show({

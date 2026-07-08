@@ -171,7 +171,9 @@ export function StoryPage() {
 
   const handleDelete = async (msgId: number) => {
     if (sending) return;
-    const confirmed = await confirmAction("Удалить этот бит и всё, что после него?");
+    const confirmed = await confirmAction("Удалить этот бит и всё, что после него?", {
+      title: "Удаление бита",
+    });
     if (!confirmed) return;
     try {
       await deleteStoryMessage(id, msgId);
