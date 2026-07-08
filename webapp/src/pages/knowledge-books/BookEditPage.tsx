@@ -1,10 +1,11 @@
-import { Button, Cell, List, Spinner } from "@telegram-apps/telegram-ui";
+import { Button, Cell, List } from "@telegram-apps/telegram-ui";
+import { AnimatePresence, motion } from "framer-motion";
 import { Plus, User, FileText } from "lucide-react";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { ROUTES, bookEditPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
-import { PageTransition } from "../../shared/components/PageTransition";
+import { PageStateBoundary } from "../../shared/components/PageStateBoundary";
 import { SectionWithFooter } from "../../shared/components/SectionWithFooter";
 import {
   BookForm,
@@ -23,6 +24,14 @@ import "./knowledge-books.css";
 
 /** «new» при создании, объект Entry при правке записи, null — список без редактора. */
 type EntryEdit = "new" | Entry | null;
+
+// Анимация свапа «список записей ⇄ редактор записи»: лёгкий fade+slide, как у ExpandableSelect.
+const swapAnim = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: 8 },
+  transition: { duration: 0.2, ease: "easeOut" as const },
+};
 
 /** Экран создания/редактирования книги знаний: форма книги + список записей с редактором. */
 export function BookEditPage() {
@@ -65,27 +74,15 @@ export function BookEditPage() {
       });
   };
 
-  if (loading) {
-    return (
-      <PageTransition>
-        <div className="kb-page__fullcenter">
-          <Spinner size="m" />
-        </div>
-      </PageTransition>
-    );
-  }
-  if (error || (id !== undefined && !book)) {
-    return (
-      <PageTransition>
-        <div className="kb-page__fullcenter">Книга не найдена</div>
-      </PageTransition>
-    );
-  }
-
   const atLimit = entries.length >= MAX_ENTRIES_PER_BOOK;
 
   return (
-    <PageTransition>
+    <PageStateBoundary
+      loading={loading}
+      error={Boolean(error) || (id !== undefined && !book)}
+      errorText="Книга не найдена"
+    >
+      {() => (
       <div className="kb-page">
         <List>
           <BookForm
@@ -97,56 +94,63 @@ export function BookEditPage() {
 
           {/* Записи доступны только у сохранённой книги (нужен её id). */}
           {id !== undefined && (
-            <>
+            // mode="wait" — уходящий вид доигрывает exit до входа нового (без наложения/скачка высоты);
+            // initial={false} — на первом монтировании экрана список не анимируем (это делает PageTransition).
+            <AnimatePresence mode="wait" initial={false}>
               {entryEdit !== null ? (
-                <EntryEditor
-                  bookId={id}
-                  initial={entryEdit === "new" ? undefined : entryEdit}
-                  onSaved={() => {
-                    setEntryEdit(null);
-                    reloadEntries();
-                  }}
-                  onCancel={() => setEntryEdit(null)}
-                />
+                <motion.div key="editor" {...swapAnim}>
+                  <EntryEditor
+                    bookId={id}
+                    initial={entryEdit === "new" ? undefined : entryEdit}
+                    onSaved={() => {
+                      setEntryEdit(null);
+                      reloadEntries();
+                    }}
+                    onCancel={() => setEntryEdit(null)}
+                  />
+                </motion.div>
               ) : (
-                <SectionWithFooter
-                  header="Записи"
-                  footer="Записи always_on всегда попадают в промпт истории"
-                >
-                  {entries.length === 0 && <Cell subtitle="Пока пусто">Нет записей</Cell>}
-                  {entries.map((e) => (
-                    <Cell
-                      key={e.id}
-                      before={e.characterId != null ? <User size={20} /> : <FileText size={20} />}
-                      subtitle={
-                        e.characterId != null
-                          ? (e.characterName ?? "персонаж удалён")
-                          : e.content.slice(0, 60)
-                      }
-                      onClick={() => setEntryEdit(e)}
-                    >
-                      {e.name || (e.characterId != null ? e.characterName : "Без названия") || "Запись"}
-                      {!e.enabled && " (выкл.)"}
-                    </Cell>
-                  ))}
-                  <div style={{ padding: 16 }}>
-                    <Button
-                      size="m"
-                      stretched
-                      mode="outline"
-                      disabled={atLimit}
-                      before={<Plus size={18} />}
-                      onClick={() => setEntryEdit("new")}
-                    >
-                      Добавить запись
-                    </Button>
-                  </div>
-                </SectionWithFooter>
+                <motion.div key="list" {...swapAnim}>
+                  <SectionWithFooter
+                    header="Записи"
+                    footer="Записи always_on всегда попадают в промпт истории"
+                  >
+                    {entries.length === 0 && <Cell subtitle="Пока пусто">Нет записей</Cell>}
+                    {entries.map((e) => (
+                      <Cell
+                        key={e.id}
+                        before={e.characterId != null ? <User size={20} /> : <FileText size={20} />}
+                        subtitle={
+                          e.characterId != null
+                            ? (e.characterName ?? "персонаж удалён")
+                            : e.content.slice(0, 60)
+                        }
+                        onClick={() => setEntryEdit(e)}
+                      >
+                        {e.name || (e.characterId != null ? e.characterName : "Без названия") || "Запись"}
+                        {!e.enabled && " (выкл.)"}
+                      </Cell>
+                    ))}
+                    <div style={{ padding: 16 }}>
+                      <Button
+                        size="m"
+                        stretched
+                        mode="outline"
+                        disabled={atLimit}
+                        before={<Plus size={18} />}
+                        onClick={() => setEntryEdit("new")}
+                      >
+                        Добавить запись
+                      </Button>
+                    </div>
+                  </SectionWithFooter>
+                </motion.div>
               )}
-            </>
+            </AnimatePresence>
           )}
         </List>
       </div>
-    </PageTransition>
+      )}
+    </PageStateBoundary>
   );
 }

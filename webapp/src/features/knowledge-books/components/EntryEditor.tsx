@@ -1,4 +1,5 @@
 import { Button, Cell, List, Modal, Section, Switch } from "@telegram-apps/telegram-ui";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { HintedInput } from "../../../shared/components/HintedInput";
@@ -40,14 +41,23 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
 
   const selectedCharacter = characters.find((c) => c.id === characterId) ?? null;
 
-  // Полная карточка (с промптом/сценарием) нужна только чтобы проверить {{user}} — список её не отдаёт.
+  // Полная карточка (с промптом) нужна только чтобы проверить {{user}} — список её не отдаёт.
+  // Сценарий карточки в промпт книги знаний не идёт, поэтому его на {{user}} не проверяем.
   const { character: selectedCharacterFull, loading: characterLoading } = useCharacter(
     mode === "character" && characterId != null ? characterId : undefined,
   );
   const needsUserAlias =
-    selectedCharacterFull != null &&
-    (USER_PLACEHOLDER_RE.test(selectedCharacterFull.prompt) ||
-      USER_PLACEHOLDER_RE.test(selectedCharacterFull.scenario));
+    selectedCharacterFull != null && USER_PLACEHOLDER_RE.test(selectedCharacterFull.prompt);
+
+  // Пока полная карточка грузится, для уже сохранённой записи предсказываем нужность инпута по
+  // непустому initial.userAlias (при сохранении он непуст ⇔ промпт содержал {{user}}). Иначе инпут
+  // «доскакивал» бы после загрузки карточки и дёргал layout при открытии редактирования. Как только
+  // карточка подгрузилась — источник истины только needsUserAlias (валидатор ниже на нём же).
+  const predictUserAlias =
+    characterLoading &&
+    characterId === initial?.characterId &&
+    (initial?.userAlias?.trim().length ?? 0) > 0;
+  const showUserAlias = needsUserAlias || predictUserAlias;
 
   const valid =
     name.trim().length > 0 &&
@@ -129,15 +139,28 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
         </Cell>
       ) : null}
 
-      {mode === "character" && needsUserAlias ? (
-        <HintedInput
-          header="Обращение к пользователю"
-          placeholder="Напр. «Михаил» или «Странник»"
-          hint="Промпт этого персонажа содержит {{user}} — narrator не отыгрывает персону, укажите текст для подстановки."
-          value={userAlias}
-          onChange={(e) => setUserAlias(e.target.value)}
-        />
-      ) : null}
+      {/* Инпут появляется/схлопывается плавно: needsUserAlias зависит от асинхронно подгружаемой
+          карточки, без анимации он бы резко «доскакивал» при смене персонажа/новой записи. */}
+      <AnimatePresence>
+        {mode === "character" && showUserAlias ? (
+          <motion.div
+            key="user-alias"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            style={{ overflow: "hidden" }}
+          >
+            <HintedInput
+              header="Обращение к пользователю"
+              placeholder="Напр. «Михаил» или «Странник»"
+              hint="Промпт этого персонажа содержит {{user}} — narrator не отыгрывает персону, укажите текст для подстановки."
+              value={userAlias}
+              onChange={(e) => setUserAlias(e.target.value)}
+            />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       {mode === "free" ? (
         <PromptField

@@ -1,0 +1,11 @@
+/* Полноэкранные состояния страницы (спиннер загрузки / «не найдено») — по центру экрана.
+   Кросс-каттинг: заменяет скопированные по страницам классы *-page__fullcenter. */
+.page-state__center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100dvh;
+  padding: 16px;
+  text-align: center;
+  color: var(--tgui--hint_color, #7d8b99);
+}
