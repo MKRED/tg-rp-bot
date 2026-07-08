@@ -136,9 +136,30 @@ export function MessageBubble({
       <div className="message-bubble__body">
         <p className="message-bubble__text"><RpText text={displayText} /></p>
 
-        {/* Единая строка: сиблинги (← N/M →) + действия — как в Narrator (StoryMessageItem),
-            вместо двух отдельных строк. */}
+        {/* Единая строка: перевод, сиблинги (← N/M →) + остальные действия — как в Narrator
+            (StoryMessageItem, где Globe идёт первой кнопкой). */}
         <div className="message-bubble__actions">
+          {showTranslateButton && (
+            <span style={{ position: "relative" }}>
+              <button
+                className={`message-bubble__action-btn${showTranslation ? " message-bubble__action-btn--active" : ""}`}
+                onClick={handleTranslateToggle}
+                disabled={translating || translateActionPending || autoTranslating}
+                type="button"
+                aria-label="Перевести"
+                {...(message.translations?.[targetLang] ? longPress : {})}
+              >
+                {translating || translateActionPending || autoTranslating ? <Spinner size="s" /> : <Globe size={16} />}
+              </button>
+              {translateMenuOpen && (
+                <TranslateActionMenu
+                  onRegenerate={handleRegenerateTranslation}
+                  onDelete={handleDeleteTranslationAction}
+                  onClose={() => setTranslateMenuOpen(false)}
+                />
+              )}
+            </span>
+          )}
           {message.siblingCount > 1 && (
             <span className="message-bubble__siblings">
               <button
@@ -177,27 +198,6 @@ export function MessageBubble({
           >
             {copied ? <Check size={16} /> : <Copy size={16} />}
           </button>
-          {showTranslateButton && (
-            <span style={{ position: "relative" }}>
-              <button
-                className={`message-bubble__action-btn${showTranslation ? " message-bubble__action-btn--active" : ""}`}
-                onClick={handleTranslateToggle}
-                disabled={translating || translateActionPending || autoTranslating}
-                type="button"
-                aria-label="Перевести"
-                {...(message.translations?.[targetLang] ? longPress : {})}
-              >
-                {translating || translateActionPending || autoTranslating ? <Spinner size="s" /> : <Globe size={16} />}
-              </button>
-              {translateMenuOpen && (
-                <TranslateActionMenu
-                  onRegenerate={handleRegenerateTranslation}
-                  onDelete={handleDeleteTranslationAction}
-                  onClose={() => setTranslateMenuOpen(false)}
-                />
-              )}
-            </span>
-          )}
           <button
             className="message-bubble__action-btn"
             onClick={() => onEdit(message.id)}
