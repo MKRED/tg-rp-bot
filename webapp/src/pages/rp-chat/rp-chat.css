@@ -251,70 +251,53 @@
   50% { opacity: 0; }
 }
 
-/* ─── Навигация по сиблингам ─────────────────────────────────────────────────── */
-
-.message-bubble__siblings {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 4px;
-}
-
-.message-bubble__sibling-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--tg-theme-hint-color, #999);
-  background: transparent;
-  color: var(--tg-theme-hint-color, #999);
-  border-radius: 50%;
-  cursor: pointer;
-  padding: 0;
-}
-
-.message-bubble__sibling-btn:disabled {
-  opacity: 0.3;
-  cursor: default;
-}
-
-.message-bubble__sibling-count {
-  font-size: 14px;
-  color: var(--tg-theme-hint-color, #999);
-  min-width: 28px;
-  text-align: center;
-}
-
-/* ─── Кнопки действий (перевод, редактировать, регенерировать) ───────────────── */
+/* ─── Строка действий (сиблинги + перевод/копирование/редактирование/регенерация/удаление) ────
+   Единая строка, как в Narrator (StoryMessageItem) — раньше сиблинги и действия были в двух
+   отдельных строках. */
 
 .message-bubble__actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 12px;
   padding: 0 4px;
+}
+
+.message-bubble__siblings {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.message-bubble__sibling-count {
+  min-width: 20px;
+  text-align: center;
 }
 
 .message-bubble__action-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
   background: transparent;
+  border: none;
   color: var(--tg-theme-hint-color, #999);
-  border-radius: 50%;
   cursor: pointer;
-  padding: 0;
+  padding: 2px;
+  flex-shrink: 0;
   transition: color 0.15s;
 }
 
-/* Спиннер TGUI рендерится 24×24 — в тулбаре иконки 20px, поэтому ужимаем
-   svg спиннера до 20, чтобы кнопка перевода не «прыгала» при загрузке */
+.message-bubble__action-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* Спиннер TGUI рендерится 24×24 — иконки в строке 16px (как в Narrator), поэтому ужимаем
+   svg спиннера до 16, чтобы кнопка перевода не «прыгала» при загрузке */
 .message-bubble__action-btn svg {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
 }
 
 .message-bubble__action-btn:active,

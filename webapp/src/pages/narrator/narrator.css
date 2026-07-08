@@ -1,3 +1,16 @@
+/* Спиннер TGUI рендерится 24×24 независимо от size="s" (см. аналогичный фикс в rp-chat.css) —
+   ужимаем svg до размера иконки Globe, которую спиннер подменяет, иначе кнопка перевода
+   «прыгает» в размере при переключении иконка ↔ спиннер. */
+.story-translate-btn--directive svg {
+  width: 14px;
+  height: 14px;
+}
+
+.story-translate-btn--beat svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* Хаб историй и список — верхний отступ под Full Screen (тот же приём, что в characters.css). */
 .story-list-page {
   min-height: 100dvh;

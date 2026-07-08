@@ -126,6 +126,7 @@ export function StoryMessageItem({
               type="button"
               disabled={translating || translateActionPending || autoTranslating}
               onClick={toggle}
+              className="story-translate-btn story-translate-btn--directive"
               style={{ ...iconBtn, color: showTranslation ? "var(--tgui--link_color)" : "inherit" }}
               aria-label="Перевести директиву"
               {...(hasCachedTranslation ? longPress : {})}
@@ -175,6 +176,7 @@ export function StoryMessageItem({
                 type="button"
                 disabled={translating || translateActionPending || autoTranslating}
                 onClick={toggle}
+                className="story-translate-btn story-translate-btn--beat"
                 style={{ ...iconBtn, color: showTranslation ? "var(--tgui--link_color)" : "inherit" }}
                 aria-label="Перевести бит"
                 {...(hasCachedTranslation ? longPress : {})}

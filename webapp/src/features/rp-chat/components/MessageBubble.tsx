@@ -136,35 +136,34 @@ export function MessageBubble({
       <div className="message-bubble__body">
         <p className="message-bubble__text"><RpText text={displayText} /></p>
 
-        {/* Строка сиблингов: стрелки ← N/M → */}
-        {message.siblingCount > 1 && (
-          <div className="message-bubble__siblings">
-            <button
-              className="message-bubble__sibling-btn"
-              onClick={() => prevSiblingId != null && onSwitchBranch(prevSiblingId)}
-              disabled={prevSiblingId == null}
-              type="button"
-              aria-label="Предыдущий вариант"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <span className="message-bubble__sibling-count">
-              {message.siblingIndex + 1}/{message.siblingCount}
-            </span>
-            <button
-              className="message-bubble__sibling-btn"
-              onClick={() => nextSiblingId != null && onSwitchBranch(nextSiblingId)}
-              disabled={nextSiblingId == null}
-              type="button"
-              aria-label="Следующий вариант"
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
-        )}
-
-        {/* Действия: перевод, копирование, редактирование, регенерация */}
+        {/* Единая строка: сиблинги (← N/M →) + действия — как в Narrator (StoryMessageItem),
+            вместо двух отдельных строк. */}
         <div className="message-bubble__actions">
+          {message.siblingCount > 1 && (
+            <span className="message-bubble__siblings">
+              <button
+                className="message-bubble__action-btn"
+                onClick={() => prevSiblingId != null && onSwitchBranch(prevSiblingId)}
+                disabled={prevSiblingId == null}
+                type="button"
+                aria-label="Предыдущий вариант"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span className="message-bubble__sibling-count">
+                {message.siblingIndex + 1}/{message.siblingCount}
+              </span>
+              <button
+                className="message-bubble__action-btn"
+                onClick={() => nextSiblingId != null && onSwitchBranch(nextSiblingId)}
+                disabled={nextSiblingId == null}
+                type="button"
+                aria-label="Следующий вариант"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </span>
+          )}
           <button
             className="message-bubble__action-btn"
             onClick={() => {
@@ -176,7 +175,7 @@ export function MessageBubble({
             type="button"
             aria-label="Скопировать"
           >
-            {copied ? <Check size={20} /> : <Copy size={20} />}
+            {copied ? <Check size={16} /> : <Copy size={16} />}
           </button>
           {showTranslateButton && (
             <span style={{ position: "relative" }}>
@@ -188,7 +187,7 @@ export function MessageBubble({
                 aria-label="Перевести"
                 {...(message.translations?.[targetLang] ? longPress : {})}
               >
-                {translating || translateActionPending || autoTranslating ? <Spinner size="s" /> : <Globe size={20} />}
+                {translating || translateActionPending || autoTranslating ? <Spinner size="s" /> : <Globe size={16} />}
               </button>
               {translateMenuOpen && (
                 <TranslateActionMenu
@@ -205,7 +204,7 @@ export function MessageBubble({
             type="button"
             aria-label="Редактировать"
           >
-            <Pencil size={20} />
+            <Pencil size={16} />
           </button>
           {isAssistant && isLastAssistant && (
             <button
@@ -214,7 +213,7 @@ export function MessageBubble({
               type="button"
               aria-label="Регенерировать"
             >
-              <RefreshCw size={20} />
+              <RefreshCw size={16} />
             </button>
           )}
           <button
@@ -229,7 +228,7 @@ export function MessageBubble({
             type="button"
             aria-label="Удалить"
           >
-            <Trash2 size={20} />
+            <Trash2 size={16} />
           </button>
         </div>
       </div>
