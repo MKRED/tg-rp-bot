@@ -126,12 +126,12 @@ export function BookEditPage() {
                               id={e.characterId}
                               hasImage={e.characterHasImage}
                               name={e.characterName ?? ""}
-                              size={48}
+                              size={40}
                             />
                           ) : (
-                            // Иконка 48px — тот же футпринт, что аватар персонажа, чтобы строки
+                            // Иконка 40px — тот же футпринт, что аватар персонажа, чтобы строки
                             // свободного текста и персонажа были одной высоты и текст не «прыгал».
-                            <FileText size={48} strokeWidth={1.5} className="kb-entry-icon" />
+                            <FileText size={40} strokeWidth={1.5} className="kb-entry-icon" />
                           )
                         }
                         subtitle={
