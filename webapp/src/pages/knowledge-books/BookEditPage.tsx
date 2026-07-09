@@ -150,14 +150,18 @@ export function BookEditPage() {
                             )
                           }
                           after={
-                            // stopPropagation — тап по стрелке не должен всплыть до onClick строки
-                            // и открыть редактор.
-                            <div className="kb-entry-order" onClick={(ev) => ev.stopPropagation()}>
+                            // stopPropagation вешаем на сам button (проверенный в проекте паттерн —
+                            // CharacterAvatar/PersonaAvatar): на обёртке он ненадёжен, и тап по стрелке
+                            // всё равно всплывал до onClick строки и открывал редактор.
+                            <div className="kb-entry-order">
                               <button
                                 type="button"
                                 className="kb-order-btn"
                                 disabled={index === 0}
-                                onClick={() => moveEntry(index, -1)}
+                                onClick={(ev) => {
+                                  ev.stopPropagation();
+                                  moveEntry(index, -1);
+                                }}
                                 aria-label="Выше"
                               >
                                 <ChevronUp size={18} />
@@ -166,7 +170,10 @@ export function BookEditPage() {
                                 type="button"
                                 className="kb-order-btn"
                                 disabled={index === entries.length - 1}
-                                onClick={() => moveEntry(index, 1)}
+                                onClick={(ev) => {
+                                  ev.stopPropagation();
+                                  moveEntry(index, 1);
+                                }}
                                 aria-label="Ниже"
                               >
                                 <ChevronDown size={18} />
