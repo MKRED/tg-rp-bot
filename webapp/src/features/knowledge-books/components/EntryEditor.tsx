@@ -40,6 +40,15 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
   const [charOpen, setCharOpen] = useState(false);
 
   const selectedCharacter = characters.find((c) => c.id === characterId) ?? null;
+  // Пока список персонажей (useCharacters) грузится, для уже сохранённой записи берём имя/аватар из
+  // initial (сервер отдаёт их резолвом) — иначе Cell на миг мигает «Выберите персонажа». Как только
+  // список пришёл, он источник истины (свежее имя при переименовании). Выбор через модал берётся из
+  // уже загруженного списка, поэтому гейт по characterId === initial.characterId.
+  const selectedDisplay =
+    selectedCharacter ??
+    (characterId != null && characterId === initial?.characterId && initial?.characterName != null
+      ? { id: characterId, name: initial.characterName, hasImage: initial.characterHasImage }
+      : null);
 
   // Полная карточка (с промптом) нужна только чтобы проверить {{user}} — список её не отдаёт.
   // Сценарий карточки в промпт книги знаний не идёт, поэтому его на {{user}} не проверяем.
@@ -122,20 +131,20 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
       {mode === "character" ? (
         <Cell
           before={
-            selectedCharacter ? (
+            selectedDisplay ? (
               <CharacterAvatar
-                id={selectedCharacter.id}
-                hasImage={selectedCharacter.hasImage}
-                name={selectedCharacter.name}
+                id={selectedDisplay.id}
+                hasImage={selectedDisplay.hasImage}
+                name={selectedDisplay.name}
                 size={40}
               />
             ) : undefined
           }
           after={<ChevronRight size={20} style={{ opacity: 0.4 }} />}
-          subtitle={selectedCharacter ? "Персонаж" : "Обязательно"}
+          subtitle={selectedDisplay ? "Персонаж" : "Обязательно"}
           onClick={() => setCharOpen(true)}
         >
-          {selectedCharacter?.name ?? "Выберите персонажа"}
+          {selectedDisplay?.name ?? "Выберите персонажа"}
         </Cell>
       ) : null}
 

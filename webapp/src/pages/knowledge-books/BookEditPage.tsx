@@ -1,12 +1,13 @@
 import { Button, Cell, List } from "@telegram-apps/telegram-ui";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, User, FileText } from "lucide-react";
+import { Plus, FileText } from "lucide-react";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { ROUTES, bookEditPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageStateBoundary } from "../../shared/components/PageStateBoundary";
 import { SectionWithFooter } from "../../shared/components/SectionWithFooter";
+import { CharacterAvatar } from "../../features/characters";
 import {
   BookForm,
   EntryEditor,
@@ -119,7 +120,18 @@ export function BookEditPage() {
                     {entries.map((e) => (
                       <Cell
                         key={e.id}
-                        before={e.characterId != null ? <User size={20} /> : <FileText size={20} />}
+                        before={
+                          e.characterId != null ? (
+                            <CharacterAvatar
+                              id={e.characterId}
+                              hasImage={e.characterHasImage}
+                              name={e.characterName ?? ""}
+                              size={48}
+                            />
+                          ) : (
+                            <FileText size={20} />
+                          )
+                        }
                         subtitle={
                           e.characterId != null
                             ? (e.characterName ?? "персонаж удалён")
