@@ -129,7 +129,9 @@ export function BookEditPage() {
                               size={48}
                             />
                           ) : (
-                            <FileText size={20} />
+                            // Иконка 48px — тот же футпринт, что аватар персонажа, чтобы строки
+                            // свободного текста и персонажа были одной высоты и текст не «прыгал».
+                            <FileText size={48} strokeWidth={1.5} className="kb-entry-icon" />
                           )
                         }
                         subtitle={
