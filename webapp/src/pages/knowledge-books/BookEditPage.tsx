@@ -129,12 +129,16 @@ export function BookEditPage() {
                     {entries.map((e, index) => (
                       // layout + стабильный key={e.id} — при перестановке строки плавно переезжают
                       // на новые позиции (FLIP), как в редакторе порядка промптов, а не перескакивают.
+                      // Стрелки — СОСЕДИ Cell (flex-строка), а не в слоте after: клик по disabled-кнопке
+                      // в Chromium/WebKit «проваливается» на родителя, и внутри Cell открывал бы редактор.
                       <motion.div
                         key={e.id}
                         layout
                         transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                        className="kb-entry-row"
                       >
                         <Cell
+                          className="kb-entry-cell"
                           before={
                             e.characterId != null ? (
                               <CharacterAvatar
@@ -149,37 +153,6 @@ export function BookEditPage() {
                               <FileText size={40} strokeWidth={1.5} className="kb-entry-icon" />
                             )
                           }
-                          after={
-                            // stopPropagation вешаем на сам button (проверенный в проекте паттерн —
-                            // CharacterAvatar/PersonaAvatar): на обёртке он ненадёжен, и тап по стрелке
-                            // всё равно всплывал до onClick строки и открывал редактор.
-                            <div className="kb-entry-order">
-                              <button
-                                type="button"
-                                className="kb-order-btn"
-                                disabled={index === 0}
-                                onClick={(ev) => {
-                                  ev.stopPropagation();
-                                  moveEntry(index, -1);
-                                }}
-                                aria-label="Выше"
-                              >
-                                <ChevronUp size={18} />
-                              </button>
-                              <button
-                                type="button"
-                                className="kb-order-btn"
-                                disabled={index === entries.length - 1}
-                                onClick={(ev) => {
-                                  ev.stopPropagation();
-                                  moveEntry(index, 1);
-                                }}
-                                aria-label="Ниже"
-                              >
-                                <ChevronDown size={18} />
-                              </button>
-                            </div>
-                          }
                           subtitle={
                             e.characterId != null
                               ? (e.characterName ?? "персонаж удалён")
@@ -190,6 +163,26 @@ export function BookEditPage() {
                           {e.name || (e.characterId != null ? e.characterName : "Без названия") || "Запись"}
                           {!e.enabled && " (выкл.)"}
                         </Cell>
+                        <div className="kb-entry-order">
+                          <button
+                            type="button"
+                            className="kb-order-btn"
+                            disabled={index === 0}
+                            onClick={() => moveEntry(index, -1)}
+                            aria-label="Выше"
+                          >
+                            <ChevronUp size={18} />
+                          </button>
+                          <button
+                            type="button"
+                            className="kb-order-btn"
+                            disabled={index === entries.length - 1}
+                            onClick={() => moveEntry(index, 1)}
+                            aria-label="Ниже"
+                          >
+                            <ChevronDown size={18} />
+                          </button>
+                        </div>
                       </motion.div>
                     ))}
                     <div style={{ padding: 16 }}>

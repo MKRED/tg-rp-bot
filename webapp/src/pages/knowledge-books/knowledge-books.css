@@ -15,10 +15,24 @@
   color: var(--tgui--hint_color, #7d8b99);
 }
 
-/* Кнопки порядка записи (↑/↓) в слоте after строки — как в редакторе порядка промптов. */
+/* Строка записи: Cell + стрелки порядка как flex-соседи (стрелки НЕ внутри Cell — см. коммент в
+   BookEditPage: клик по disabled-кнопке внутри Cell «проваливается» на родителя и открывает редактор). */
+.kb-entry-row {
+  display: flex;
+  align-items: center;
+}
+
+.kb-entry-cell {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Кнопки порядка записи (↑/↓) — как в редакторе порядка промптов. */
 .kb-entry-order {
   display: flex;
   gap: 4px;
+  flex-shrink: 0;
+  padding-right: 16px;
 }
 
 .kb-order-btn {
