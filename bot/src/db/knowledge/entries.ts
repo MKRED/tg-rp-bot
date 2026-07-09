@@ -2,6 +2,7 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import logger from "../../logger.js";
 import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/index.js";
 import { db, schema } from "../index.js";
+import { isPermutationOf } from "./entriesOrder.js";
 import type { EntryInput, EntryListItem, PromptEntry } from "./types.js";
 
 /** Подзапрос «книги этого пользователя» — для проверки владения записью без явного join. */
@@ -82,6 +83,11 @@ export async function createEntry(
     .where(and(eq(schema.knowledgeBooks.id, bookId), eq(schema.knowledgeBooks.userId, userId)));
   if (owns.length === 0) return undefined;
 
+  // Порядок записи определяет сервер: новая падает в хвост (sort_order = число уже существующих).
+  // Порядком владеет только reorderEntries. В «старых» книгах, где у всех sort_order = 0, новая
+  // получит count > 0 и детерминированно встанет в конец списка.
+  const sortOrder = await countEntries(userId, bookId);
+
   const key = getUserEncryptionKey(userId);
   const rows = await db
     .insert(schema.knowledgeBookEntries)
@@ -94,7 +100,7 @@ export async function createEntry(
       userAlias: encryptField(input.userAlias, key),
       content: encryptField(input.content, key),
       keywords: input.keywords.map((k) => encryptField(k, key)),
-      sortOrder: input.sortOrder,
+      sortOrder,
     })
     .returning({ id: schema.knowledgeBookEntries.id });
   logger.info({ durationMs: Date.now() - t0, userId, bookId, entryId: rows[0]!.id }, "Book entry created");
@@ -119,7 +125,7 @@ export async function updateEntry(
       userAlias: encryptField(input.userAlias, key),
       content: encryptField(input.content, key),
       keywords: input.keywords.map((k) => encryptField(k, key)),
-      sortOrder: input.sortOrder,
+      // sort_order НЕ трогаем — порядком владеет только reorderEntries, правка записи его не сбивает.
     })
     .where(
       and(
@@ -148,6 +154,51 @@ export async function deleteEntry(userId: number, entryId: number): Promise<bool
   const deleted = rows.length > 0;
   logger.info({ durationMs: Date.now() - t0, userId, entryId, deleted }, "Book entry delete attempted");
   return deleted;
+}
+
+/**
+ * Переставляет записи книги в порядок orderedIds (id в новом порядке). Возвращает "invalid", если
+ * orderedIds — не ровно перестановка текущих id записей книги (тот же набор, без чужих/дублей/
+ * пропусков): защита от порчи порядка при рассинхроне клиента. sort_order переписывается плотно
+ * 0,1,2… одним атомарным UPDATE ... FROM (VALUES …). Владение книгой проверяется через ownedBooks.
+ */
+export async function reorderEntries(
+  userId: number,
+  bookId: number,
+  orderedIds: number[],
+): Promise<"ok" | "invalid"> {
+  const t0 = Date.now();
+  // SELECT текущих id и UPDATE — в одной транзакции: иначе параллельное создание/удаление записи
+  // между ними прошло бы проверку перестановки, но применилось бы к устаревшему набору.
+  const result = await db.transaction(async (tx) => {
+    const current = await tx.execute(sql`
+      SELECT id FROM knowledge_book_entries
+      WHERE book_id = ${bookId} AND book_id IN ${ownedBooks(userId)}
+    `);
+    // bigint из сырого SQL приходит строкой — приводим явно (как в listEntries).
+    const currentIds = (current as Record<string, unknown>[]).map((r) => Number(r.id));
+    if (!isPermutationOf(orderedIds, currentIds)) return "invalid" as const;
+    if (orderedIds.length === 0) return "ok" as const; // пустая книга — переставлять нечего
+
+    // (id, позиция) списком; оба параметра кастуем, иначе тип колонок VALUES остаётся unknown.
+    const values = orderedIds.map((id, i) => sql`(${id}::bigint, ${i}::int)`);
+    await tx.execute(sql`
+      UPDATE knowledge_book_entries AS e
+      SET sort_order = v.ord, updated_at = now()
+      FROM (VALUES ${sql.join(values, sql`, `)}) AS v(id, ord)
+      WHERE e.id = v.id
+        AND e.book_id = ${bookId}
+        AND e.book_id IN ${ownedBooks(userId)}
+    `);
+    return "ok" as const;
+  });
+
+  if (result === "invalid") {
+    logger.warn({ userId, bookId, given: orderedIds.length }, "Entry reorder rejected: not a permutation");
+  } else {
+    logger.info({ durationMs: Date.now() - t0, userId, bookId, count: orderedIds.length }, "Entries reordered");
+  }
+  return result;
 }
 
 /**

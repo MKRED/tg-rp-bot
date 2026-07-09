@@ -85,7 +85,6 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
       userAlias: mode === "character" ? userAlias.trim() : "",
       content: mode === "free" ? content : "",
       keywords: [],
-      sortOrder: initial?.sortOrder ?? 0,
     };
     const op = initial
       ? updateEntry(bookId, initial.id, input)

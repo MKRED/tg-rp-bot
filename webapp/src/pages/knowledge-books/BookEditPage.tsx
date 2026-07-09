@@ -1,6 +1,6 @@
 import { Button, Cell, List } from "@telegram-apps/telegram-ui";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, FileText } from "lucide-react";
+import { Plus, FileText, ChevronUp, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { ROUTES, bookEditPath } from "../../app/routes";
@@ -40,9 +40,18 @@ export function BookEditPage() {
   const params = useParams();
   const id = params.id ? Number(params.id) : undefined;
 
-  const { book, entries, loading, error, reloadEntries } = useBookEditor(id);
+  const { book, entries, loading, error, reloadEntries, reorder } = useBookEditor(id);
   const [submitting, setSubmitting] = useState(false);
   const [entryEdit, setEntryEdit] = useState<EntryEdit>(null);
+
+  // Сдвиг записи на одну позицию (↑/↓): порядок влияет на очередь вставки в промпт истории.
+  const moveEntry = (index: number, dir: -1 | 1) => {
+    const target = index + dir;
+    if (target < 0 || target >= entries.length) return;
+    const ids = entries.map((en) => en.id);
+    [ids[index], ids[target]] = [ids[target]!, ids[index]!];
+    reorder(ids);
+  };
 
   const handleSubmitBook = (input: BookInput) => {
     setSubmitting(true);
@@ -117,33 +126,64 @@ export function BookEditPage() {
                     footer="Записи always_on всегда попадают в промпт истории"
                   >
                     {entries.length === 0 && <Cell subtitle="Пока пусто">Нет записей</Cell>}
-                    {entries.map((e) => (
-                      <Cell
+                    {entries.map((e, index) => (
+                      // layout + стабильный key={e.id} — при перестановке строки плавно переезжают
+                      // на новые позиции (FLIP), как в редакторе порядка промптов, а не перескакивают.
+                      <motion.div
                         key={e.id}
-                        before={
-                          e.characterId != null ? (
-                            <CharacterAvatar
-                              id={e.characterId}
-                              hasImage={e.characterHasImage}
-                              name={e.characterName ?? ""}
-                              size={40}
-                            />
-                          ) : (
-                            // Иконка 40px — тот же футпринт, что аватар персонажа, чтобы строки
-                            // свободного текста и персонажа были одной высоты и текст не «прыгал».
-                            <FileText size={40} strokeWidth={1.5} className="kb-entry-icon" />
-                          )
-                        }
-                        subtitle={
-                          e.characterId != null
-                            ? (e.characterName ?? "персонаж удалён")
-                            : e.content.slice(0, 60)
-                        }
-                        onClick={() => setEntryEdit(e)}
+                        layout
+                        transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                       >
-                        {e.name || (e.characterId != null ? e.characterName : "Без названия") || "Запись"}
-                        {!e.enabled && " (выкл.)"}
-                      </Cell>
+                        <Cell
+                          before={
+                            e.characterId != null ? (
+                              <CharacterAvatar
+                                id={e.characterId}
+                                hasImage={e.characterHasImage}
+                                name={e.characterName ?? ""}
+                                size={40}
+                              />
+                            ) : (
+                              // Иконка 40px — тот же футпринт, что аватар персонажа, чтобы строки
+                              // свободного текста и персонажа были одной высоты и текст не «прыгал».
+                              <FileText size={40} strokeWidth={1.5} className="kb-entry-icon" />
+                            )
+                          }
+                          after={
+                            // stopPropagation — тап по стрелке не должен всплыть до onClick строки
+                            // и открыть редактор.
+                            <div className="kb-entry-order" onClick={(ev) => ev.stopPropagation()}>
+                              <button
+                                type="button"
+                                className="kb-order-btn"
+                                disabled={index === 0}
+                                onClick={() => moveEntry(index, -1)}
+                                aria-label="Выше"
+                              >
+                                <ChevronUp size={18} />
+                              </button>
+                              <button
+                                type="button"
+                                className="kb-order-btn"
+                                disabled={index === entries.length - 1}
+                                onClick={() => moveEntry(index, 1)}
+                                aria-label="Ниже"
+                              >
+                                <ChevronDown size={18} />
+                              </button>
+                            </div>
+                          }
+                          subtitle={
+                            e.characterId != null
+                              ? (e.characterName ?? "персонаж удалён")
+                              : e.content.slice(0, 60)
+                          }
+                          onClick={() => setEntryEdit(e)}
+                        >
+                          {e.name || (e.characterId != null ? e.characterName : "Без названия") || "Запись"}
+                          {!e.enabled && " (выкл.)"}
+                        </Cell>
+                      </motion.div>
                     ))}
                     <div style={{ padding: 16 }}>
                       <Button

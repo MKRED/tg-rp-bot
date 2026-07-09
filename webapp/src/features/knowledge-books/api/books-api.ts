@@ -44,3 +44,11 @@ export function updateEntry(bookId: number, entryId: number, input: EntryInput):
 export function removeEntry(bookId: number, entryId: number): Promise<{ ok: true }> {
   return apiFetch<{ ok: true }>(`/books/${bookId}/entries/${entryId}`, { method: "DELETE" });
 }
+
+/** Переставляет записи книги: orderedIds — id в новом порядке (полная перестановка). */
+export function reorderEntries(bookId: number, orderedIds: number[]): Promise<{ ok: true }> {
+  return apiFetch<{ ok: true }>(`/books/${bookId}/entries/reorder`, {
+    method: "PUT",
+    body: JSON.stringify({ order: orderedIds }),
+  });
+}

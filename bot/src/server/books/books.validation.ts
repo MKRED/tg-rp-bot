@@ -29,7 +29,6 @@ export function parseEntryInput(body: unknown): { input: EntryInput } | { error:
   const keywords = Array.isArray(b.keywords)
     ? b.keywords.filter((k): k is string => typeof k === "string").map((k) => k.trim()).filter(Boolean)
     : [];
-  const sortOrder = typeof b.sortOrder === "number" && Number.isInteger(b.sortOrder) ? b.sortOrder : 0;
 
   // Имя обязательно — оно оборачивает текст записи в промпте как <имя>…</имя> (getActiveEntriesForPrompt).
   if (!name) return { error: "Name is required" };
@@ -37,5 +36,15 @@ export function parseEntryInput(body: unknown): { input: EntryInput } | { error:
   if (characterId === null && !content.trim()) {
     return { error: "Entry needs a character or content" };
   }
-  return { input: { name, enabled, activation, characterId, userAlias, content, keywords, sortOrder } };
+  return { input: { name, enabled, activation, characterId, userAlias, content, keywords } };
+}
+
+/** Тело reorder-запроса: { order: number[] } — id записей книги в новом порядке (полная перестановка). */
+export function parseReorderInput(body: unknown): { order: number[] } | { error: string } {
+  if (typeof body !== "object" || body === null) return { error: "Body must be an object" };
+  const order = (body as Record<string, unknown>).order;
+  if (!Array.isArray(order) || !order.every((n) => Number.isInteger(n))) {
+    return { error: "order must be an array of integers" };
+  }
+  return { order: order as number[] };
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { getBook, listEntries } from "../api/books-api";
+import { getBook, listEntries, reorderEntries } from "../api/books-api";
 import type { Book, Entry } from "../types/book";
 
 /**
@@ -18,6 +18,24 @@ export function useBookEditor(id: number | undefined) {
       .then((res) => setEntries(res.entries))
       .catch(() => setError(true));
   }, [id]);
+
+  /**
+   * Переставляет записи в порядок orderedIds. Оптимистично: локальный порядок меняется сразу (строки
+   * едут по FLIP), запрос уходит в фон; при ошибке откатываемся перечитыванием списка с сервера.
+   */
+  const reorder = useCallback(
+    (orderedIds: number[]) => {
+      if (id === undefined) return;
+      setEntries((prev) => {
+        const byId = new Map(prev.map((e) => [e.id, e]));
+        return orderedIds
+          .map((eid) => byId.get(eid))
+          .filter((e): e is Entry => e != null);
+      });
+      reorderEntries(id, orderedIds).catch(() => reloadEntries());
+    },
+    [id, reloadEntries],
+  );
 
   useEffect(() => {
     if (id === undefined) {
@@ -40,5 +58,5 @@ export function useBookEditor(id: number | undefined) {
     };
   }, [id]);
 
-  return { book, entries, loading, error, reloadEntries };
+  return { book, entries, loading, error, reloadEntries, reorder };
 }

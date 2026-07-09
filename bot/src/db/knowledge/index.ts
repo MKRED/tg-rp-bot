@@ -10,5 +10,6 @@ export {
   createEntry,
   updateEntry,
   deleteEntry,
+  reorderEntries,
   getActiveEntriesForPrompt,
 } from "./entries.js";

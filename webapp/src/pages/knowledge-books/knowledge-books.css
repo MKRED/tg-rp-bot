@@ -14,3 +14,27 @@
 .kb-entry-icon {
   color: var(--tgui--hint_color, #7d8b99);
 }
+
+/* Кнопки порядка записи (↑/↓) в слоте after строки — как в редакторе порядка промптов. */
+.kb-entry-order {
+  display: flex;
+  gap: 4px;
+}
+
+.kb-order-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--tgui--text_color, #000);
+  background: var(--tgui--secondary_fill, rgba(127, 139, 153, 0.12));
+}
+
+.kb-order-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}

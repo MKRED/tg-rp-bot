@@ -25,7 +25,6 @@ export type EntryInput = {
   userAlias: string;
   content: string;
   keywords: string[];
-  sortOrder: number;
 };
 
 /** Запись книги для UI: + резолв персонажа (имя/наличие картинки), если это запись-персонаж. */

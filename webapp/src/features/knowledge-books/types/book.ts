@@ -44,7 +44,6 @@ export type EntryInput = {
   userAlias: string;
   content: string;
   keywords: string[];
-  sortOrder: number;
 };
 
 export const MAX_BOOKS_PER_USER = 50;

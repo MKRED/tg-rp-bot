@@ -10,6 +10,7 @@ import {
   getBook,
   listBooks,
   listEntries,
+  reorderEntries,
   updateBook,
   updateEntry,
 } from "../../db/knowledge/index.js";
@@ -18,7 +19,12 @@ import logger from "../../logger.js";
 import type { AppVariables } from "../middleware/initData.types.js";
 import { isFkViolation } from "../shared/fkViolation.js";
 import { MAX_BOOKS_PER_USER, MAX_ENTRIES_PER_BOOK } from "./books.constants.js";
-import { characterNeedsUserAlias, parseBookInput, parseEntryInput } from "./books.validation.js";
+import {
+  characterNeedsUserAlias,
+  parseBookInput,
+  parseEntryInput,
+  parseReorderInput,
+} from "./books.validation.js";
 
 /** CRUD книг знаний (+ их записей) под /api/books. Монтируется после requireInitData. */
 export function createBookRoutes(): Hono<{ Variables: AppVariables }> {
@@ -125,6 +131,25 @@ export function createBookRoutes(): Hono<{ Variables: AppVariables }> {
     const created = await createEntry(user.id, id, parsed.input);
     if (!created) return c.json({ error: "Book not found" }, 404);
     return c.json({ entry: { id: created.id } }, 201);
+  });
+
+  // Перестановка записей. Регистрируется РАНЬШЕ "/:id/entries/:entryId", иначе "reorder" ушёл бы
+  // в :entryId. Тело { order: [id…] } — полный новый порядок; DAO принимает только валидную перестановку.
+  api.put("/:id/entries/reorder", async (c) => {
+    const user = c.get("tgUser");
+    if (!user) return c.json({ error: "Auth required" }, 401);
+    const id = Number(c.req.param("id"));
+    if (!Number.isInteger(id)) return c.json({ error: "Invalid id" }, 400);
+    const parsed = parseReorderInput(await c.req.json().catch(() => null));
+    if ("error" in parsed) return c.json({ error: parsed.error }, 400);
+    try {
+      const result = await reorderEntries(user.id, id, parsed.order);
+      if (result === "invalid") return c.json({ error: "Invalid order" }, 400);
+      return c.json({ ok: true });
+    } catch (err) {
+      logger.error({ err, userId: user.id, id }, "Failed to reorder entries");
+      return c.json({ error: "Internal error" }, 500);
+    }
   });
 
   api.put("/:id/entries/:entryId", async (c) => {
