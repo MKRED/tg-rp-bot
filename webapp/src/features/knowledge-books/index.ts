@@ -3,6 +3,7 @@
 export { useBooks } from "./hooks/useBooks";
 export { useBookEditor } from "./hooks/useBookEditor";
 export { BookForm } from "./components/BookForm";
+export { BookCard } from "./components/BookCard";
 export { EntryEditor } from "./components/EntryEditor";
 export {
   listBooks,

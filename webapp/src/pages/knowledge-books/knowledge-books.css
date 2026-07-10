@@ -9,6 +9,42 @@
   padding-bottom: 24px;
 }
 
+/* Хаб книг знаний: страница НЕ скроллится целиком — фиксированная высота вьюпорта,
+   скролл только у блока списка (kb-hub__scroll), кнопки докнуты снизу и всегда видны. */
+.kb-hub {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* Единственная скроллящаяся область хаба. Верхний отступ под Full Screen — как у .kb-page. */
+.kb-hub__scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-top: calc(
+    8px +
+    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
+}
+
+/* Спиннер загрузки списка — по центру области. */
+.kb-hub__center {
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* Докнутая панель действий: две кнопки в ряд, safe-area снизу (как инпут RP-чата). */
+.kb-hub__actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px calc(env(safe-area-inset-bottom, 0px) + 12px);
+  border-top: 1px solid var(--tg-theme-secondary-bg-color, #f4f4f5);
+  background: var(--tg-theme-bg-color, #fff);
+}
+
 /* Иконка записи «свободный текст»: 40×40 — тот же размер, что аватар персонажа, чтобы строки
    списка не различались по высоте и текст не смещался. */
 .kb-entry-icon {
