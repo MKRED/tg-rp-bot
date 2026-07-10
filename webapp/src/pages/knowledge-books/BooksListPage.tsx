@@ -1,9 +1,9 @@
-import { Button, Cell, List, Spinner } from "@telegram-apps/telegram-ui";
+import { Banner, Button, Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
+import { BookOpen } from "lucide-react";
 import { ROUTES, bookEditPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
-import { SectionWithFooter } from "../../shared/components/SectionWithFooter";
 import { BookCard, MAX_BOOKS_PER_USER, useBooks } from "../../features/knowledge-books";
 import "./knowledge-books.css";
 
@@ -12,8 +12,9 @@ const RECENT_LIMIT = 5;
 
 /**
  * Хаб «Книги знаний»: последние 5 книг + докнутые снизу кнопки. Страница НЕ скроллится целиком —
- * скролл только у блока списка (kb-hub__scroll), поэтому кнопки всегда на экране (в отличие от
- * хаба, где крутится вся страница и кнопки уезжают за край).
+ * скролл только у блока списка (kb-hub__scroll), поэтому кнопки всегда на экране. Заголовок и
+ * описание вынесены в Banner-шапку сверху (вместо хедера/футера секции — так описание не «висит»
+ * снизу списка).
  */
 export function BooksListPage() {
   const navigate = useTransitionNavigate();
@@ -25,12 +26,16 @@ export function BooksListPage() {
   return (
     <PageTransition>
       <div className="kb-hub">
+        <Banner
+          type="inline"
+          before={<BookOpen size={28} className="kb-hub__banner-icon" />}
+          header="Книги знаний"
+          description="Персонажи и факты мира для режима «Режиссёр истории»"
+        />
+
         <div className="kb-hub__scroll">
           <List>
-            <SectionWithFooter
-              header="Книги знаний"
-              footer="Персонажи и факты мира для режима «Режиссёр истории»"
-            >
+            <Section>
               {loading && (
                 <div className="kb-hub__center">
                   <Spinner size="m" />
@@ -52,7 +57,7 @@ export function BooksListPage() {
                     <BookCard book={b} onClick={() => navigate(bookEditPath(b.id))} />
                   </motion.div>
                 ))}
-            </SectionWithFooter>
+            </Section>
           </List>
         </div>
 

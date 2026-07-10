@@ -11,27 +11,32 @@
 
 /* Хаб книг знаний: страница НЕ скроллится целиком — фиксированная высота вьюпорта,
    скролл только у блока списка (kb-hub__scroll), кнопки докнуты снизу и всегда видны.
-   Фон — подложка сгруппированного списка (secondary_bg): ни List, ни AppRoot фон не красят,
-   его красит только карточка Section. Без явной подложки области ниже карточки и панель кнопок
-   показывали бы РАЗНЫЕ фоны (body --tg-bg-color vs --tg-theme-bg-color панели) → видимый «шов».
-   Задаём один токен → карточка Section «плавает» островом, всё остальное однотонно. */
+   Фон — цвет карточки Section (section_bg): ни List, ни AppRoot фон не красят, его красит
+   только Section. Красим всю раму тем же токеном → карточка сливается с фоном в ОДНУ сплошную
+   поверхность от заголовка до кнопок (вместо трёх разных фонов, дававших «шов»). */
 .kb-hub {
   display: flex;
   flex-direction: column;
   height: 100dvh;
   overflow: hidden;
-  background: var(--tgui--secondary_bg_color, var(--tg-theme-secondary-bg-color, #efeff4));
-}
-
-/* Единственная скроллящаяся область хаба. Верхний отступ под Full Screen — как у .kb-page. */
-.kb-hub__scroll {
-  flex: 1;
-  overflow-y: auto;
+  background: var(--tgui--section_bg_color, var(--tg-theme-secondary-bg-color, #fff));
+  /* Верхний отступ под Full Screen — на самом хабе, чтобы Banner-шапка ушла из-под чёлки/шапки. */
   padding-top: calc(
     8px +
     var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
     var(--tg-viewport-content-safe-area-inset-top, 0px)
   );
+}
+
+/* Иконка в Banner-шапке. */
+.kb-hub__banner-icon {
+  color: var(--tg-theme-link-color, #2481cc);
+}
+
+/* Единственная скроллящаяся область хаба (список книг под Banner-шапкой). */
+.kb-hub__scroll {
+  flex: 1;
+  overflow-y: auto;
 }
 
 /* Спиннер загрузки списка — по центру области. */
@@ -41,9 +46,9 @@
   padding: 24px;
 }
 
-/* Докнутая панель действий: две кнопки в ряд, safe-area снизу. Прозрачна — показывает подложку
-   .kb-hub (secondary_bg), чтобы не вносить третий фон и не давать «шов». Границы сверху нет:
-   на однотонной подложке она всё равно не читалась бы, а без карточки-края не нужна. */
+/* Докнутая панель действий: две кнопки в ряд, safe-area снизу. Прозрачна — показывает фон
+   .kb-hub (section_bg), чтобы поверхность была сплошной и без «шва». Границы сверху нет —
+   кнопки лежат на той же поверхности, что и список. */
 .kb-hub__actions {
   display: flex;
   gap: 8px;
