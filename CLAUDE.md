@@ -7,6 +7,21 @@
 и рассуждает, код не правит. Не полагайся только на собственное суждение в сложных моментах —
 сначала спроси совета у `advisor`.
 
+### Субагенты проекта (`.claude/agents/`)
+Специализированные агенты — используй их вместо ручной работы, когда задача под них подходит:
+
+| Агент | Когда звать | Правит код? |
+|---|---|---|
+| **`advisor`** | Совет по архитектуре/подходу (см. выше — **mandatory**) | нет |
+| **`test-runner`** | Гейт тестов+сборки перед коммитом/деплоем (см. «Задеплой» — **mandatory** там) | да, по запросу |
+| **`code-reviewer`** | Ревью текущего диффа перед коммитом (конвенции + корректность) | нет |
+| **`docs-updater`** | Актуализация README/CLAUDE.md после заметных правок кода | да |
+| **`bug-investigator`** | Найти корень бага по симптому (трассировка + прод-логи) | нет |
+| **`codebase-explorer`** | «Где у меня X / как устроено Y» без дампа файлов в контекст | нет |
+| **`log-analyzer`** | Разбор прод-логов бота из Docker по SSH | нет |
+| **`dep-auditor`** | Аудит зависимостей (уязвимости, устаревшее) | нет |
+| **`web-researcher`** | Свежая инфа извне (доки библиотек, API, модели OpenRouter) | нет |
+
 ## Package manager
 Always use **yarn**. Never use npm.
 
@@ -27,68 +42,40 @@ Always use **yarn**. Never use npm.
 
 ## Dev workflow
 Команды запускаются из корня монорепо. Drizzle-kit работает в контексте `bot/`.
+
+**Окружение разработки — Windows** (shell — Git Bash / POSIX sh). Не предлагай unix-only команды
+(`pkill`, `lsof`, `kill $(...)`); стоп бота — `Stop-Process -Name "node"` (PowerShell).
+
 ```
 yarn dev           # start bot (= yarn workspace bot dev) — run in background
 yarn dev:web       # start Mini App (Vite dev server)
 Stop-Process -Name "node"  # stop bot
 yarn workspace bot drizzle-kit generate  # generate migration from schema changes
 yarn workspace bot drizzle-kit migrate   # apply migrations to DB
-yarn test          # run bot unit tests once (vitest run)
-yarn test:watch    # run tests in watch mode
+yarn test          # run bot + webapp unit tests once (vitest run)
+yarn test:watch    # run bot tests in watch mode
+cd bot && yarn vitest run src/path/file.test.ts   # один файл (отладка); webapp — cd webapp
 yarn build         # build bot + webapp
 ```
 
-## Architecture
+**Env:** локальные переменные — `bot/.env` (шаблон `bot/.env.example`), обязательны `BOT_TOKEN` +
+`DATABASE_URL`. Без `.env` падает `config.ts` (`requireEnv`) — отсюда правило про мок `logger` в тестах.
+
+## Architecture — карта верхнего уровня
+
+> 📘 **Полный инвентарь дерева** (`bot/src`, `webapp/src`, раскладка фичи) + детали границ
+> (прокси Telegram, Mini App API) — см. [docs/architecture.md](docs/architecture.md).
 
 ```
-bot/src/
-  index.ts      — entry point (thin: register handlers + start server + start bot)
-  bot.ts        — grammY bot instance (+ прокси для Telegram через baseFetchConfig)
-  config.ts     — env vars (requireEnv for mandatory, process.env for optional)
-  logger.ts     — pino logger (daily rolling, pino-pretty in TTY)
-  proxy.ts      — HttpsProxyAgent (https-proxy-agent) ТОЛЬКО для Telegram
-  config.ts     — env vars (requireEnv для обязательных)
-  db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + клиент +
-                  DAO-папки по таблицам: characters/ personas/ presets/ impersonations/
-                  narratorTemplates/ (у каждой DAO-файл + types.ts/constants.ts + barrel index.ts),
-                  chats/ stories/ knowledge/ (деревья/лорбук), users.ts, userSettings.ts
-  llm/          — LLM client (client/request/errors/types/constants/completionGuard/providers) —
-                  серверно, провайдер (OpenRouter | DeepSeek) выбирается env LLM_PROVIDER;
-                  debugCapture (+debug.types) — in-memory перехват RAW-запросов к LLM для экрана отладки
-  handlers/     — обработчики команд/кнопок бота (index = registerHandlers, start.ts,
-                  photoActions.ts — callback «Закрыть» под фото из лайтбокса)
-  server/       — Hono HTTP API, разложен по доменным папкам (зеркало webapp): index=startServer,
-                  routes.ts — карта эндпоинтов (монтаж контроллеров), middleware/ (initData — валидация
-                  подписи), доменные папки me/ characters/ personas/ presets/ books/ narrator-templates/
-                  chats/ stories/ debug/ — у каждого <домен>.controller.ts (Hono-роуты) + validation/
-                  constants/types рядом + barrel index.ts; chats/ — messages.handlers + impersonate.handlers
-                  + stats.handler; stories/ — story.handlers (SSE-генерация RP/narrator); prompt/ —
-                  promptBuilder + storyPromptBuilder + общий budget (у каждого constants/types/test рядом);
-                  media/ — profilePhoto + photoToChat (POST /me/send-photo); shared/ — fkViolation,
-                  imageValidation, streamGeneration, translate (переиспользуемое между доменами)
-                  + раздача собранной статики Mini App из ./public (SPA-fallback) — один процесс
-  scripts/      — разовые скрипты (backfill-message-encryption)
-  utils/        — retry, crypto (per-user шифрование сообщений)
-
-webapp/src/
-  main.tsx      — точка входа: initTelegram() + рендер <App/>
-  init.ts       — инициализация @telegram-apps SDK (защищённая) + initData.restore()
-  app/          — оболочка: App.tsx (AppRoot + HashRouter), routes.ts, BackButtonBridge
-  pages/        — экраны-маршруты (один на маршрут): home/ characters/ personas/
-                  generation-presets/ rp-chat/
-  shared/       — кросс-каттинг: telegram/ (initData, confirm, profile photo), api/ (client с
-                  Authorization), text/, image/, components/ (AvatarPicker, ImageCropEditor,
-                  ImageLightbox, PageTransition)
-  features/<feature>/  — доменный модуль, разложенный по подпапкам-категориям + barrel index.ts.
-                  Фичи: characters, personas, generation-presets, rp-chat, debug (экран RAW-запросов к LLM).
-                  index.ts    — публичная поверхность фичи (то, что нужно страницам)
-                  api/        — обёртки над apiFetch (граница к /api), доменные файлы (НЕ один barrel)
-                  hooks/      — React-хуки фичи
-                  components/ — .tsx-компоненты (+ фичевый .css рядом, если есть)
-                  types/      — типы фичи (один файл с доменным именем, напр. character.ts)
-                  lib/        — чистые хелперы и данные (форматтеры, спеки, парсеры, mock)
-                  (категории без файлов не заводим)
+bot/src/    — index (thin entry) · bot.ts (grammY) · config · logger · proxy · db/ (drizzle DAO
+              по таблицам) · llm/ (LLM client, провайдер по env) · handlers/ · server/ (Hono API +
+              раздача статики Mini App) · utils/ (retry, crypto)
+webapp/src/ — main/init (Telegram SDK) · app/ (оболочка, HashRouter) · pages/ (экран на маршрут) ·
+              features/ (доменные модули) · shared/ (кросс-каттинг)
 ```
+
+Домены bot и webapp зеркалят друг друга: characters, personas, generation-presets, rp-chat,
+narrator, knowledge-books, narrator-templates, debug.
 
 ### Структура webapp — pages vs features
 > 📘 **Стили и режимы Mini App** — Telegram UI (tgui), темы/платформы, viewport, safe area,
@@ -96,130 +83,47 @@ webapp/src/
 > Свериться с ним перед правкой UI webapp или обновлением tgui/SDK.
 
 - **`pages/<screen>/`** — цель маршрута, по одной на `ROUTES.*`. Тонкая обёртка, собирающая фичи.
-- **`features/<feature>/`** — самодостаточный доменный модуль (UI + логика): `characters`, `generation-presets`,
-  `rp-chat`, далее `prompts`, `translator`.
+- **`features/<feature>/`** — самодостаточный доменный модуль (UI + логика).
 - **Раскладка фичи по категориям — mandatory.** Внутри фичи файлы лежат в подпапках `api/ hooks/ components/
-  types/ lib/` (см. дерево выше), а не россыпью в корне. Категории без файлов не создаём.
+  types/ lib/`, а не россыпью в корне. Категории без файлов не создаём. (Дерево — в docs/architecture.md.)
 - **Barrel `index.ts` на фичу.** У каждой фичи `index.ts` реэкспортирует **только публичную поверхность**
   (то, что потребляют страницы/`App`); внутренние под-компоненты в barrel не выносим. Потребители импортируют
   фичу как модуль: `import { CharacterForm, useCharacter } from "../../features/characters"`.
 - **Внутрифичевые импорты — напрямую к файлам, НЕ через свой barrel** (`../types/character`, `../api/...`):
   импорт собственного `index.ts` создаёт цикл, который компилируется, но даёт `undefined` в рантайме.
-- **`shared/`** — только переиспользуемое между фичами: `api/client.ts` (граница к `/api`), `telegram/`
-  (доступ к SDK), `text/` (`estimateTokens`, `initials`), `image/` (`buildAvatarImages` — из выбранного
-  кропа делает квадратную миниатюру + уменьшенное полное фото), `components/` (`AvatarPicker` — выбор/превью/
-  удаление аватара с кропом миниатюры через `ImageCropEditor` на `react-easy-crop`), `toast/` (`ToastProvider` +
-  `useToast` — переиспользуемые уведомления на tgui `Snackbar`; провайдер обёрнут вокруг приложения в `App`,
-  Snackbar рендерится порталом в `body` с `z-index` выше лайтбокса). Новую папку заводим, когда сущность реально появилась, а не заранее.
+- **`shared/`** — только переиспользуемое между фичами (`api/client.ts` — граница к `/api`, `telegram/`,
+  `text/`, `image/`, `components/`, `toast/`, …). Новую папку заводим, когда сущность реально появилась.
 - **Роутер — `HashRouter`** (react-router-dom): маршрут в hash переживает reload. Нативная кнопка «Назад» Telegram связана с роутером в `app/BackButtonBridge.tsx` (`navigate(parentPath(...))` — вверх по иерархии, а не по истории). Catch-all `*` → главная: на Telegram Web launch-параметры приходят в hash, и без редиректа роутер показал бы пустой экран.
 - **Deep-link из бота** (`app/deepLink.ts` + `main.tsx`): web_app-кнопка под фото из лайтбокса открывает Mini App с `?dl=<путь>` (напр. `/characters/123`). `resolveDeepLink()` вызывается **до** `render()` (после `initTelegram()`, который уже считал launch-данные из hash) и переписывает hash на маршрут — иначе catch-all успел бы увести на главную. Делать это в компоненте внутри роутера НЕЛЬЗЯ: эффект `<Navigate>` из catch-all в том же flush перебьёт переход.
 
-### Narrator-режим («Режиссёр истории») — invariant
-Второй режим игры: ИИ ведёт повествование между персонажами, пользователь — режиссёр (направляет
-**директивами**, не отыгрывает роль). Сделан **новыми** доменными таблицами/модулями (не поверх
-RP-чата), переиспользуя только реально переиспользуемое (шифрование, LLM-клиент, SSE-стриминг, чистые
-хелперы `promptBuilder`).
+## Инварианты и границы (trap-предупреждения)
 
-- **БД:** `knowledge_books` + `knowledge_book_entries` (lorebook: запись = ссылка на персонажа **или**
-  свободный текст; `activation` поэлементная `always_on|keyword`, keyword — задел), `narrator_templates`
-  (промпты нарратора: `systemPrompt` + `auxiliarySystemPrompt` + `postHistoryInstruction` +
-  `compactionPrompt` (инструкция сжатия, плейсхолдер `{{words}}`) + `promptOrder` — порядок/включённость
-  **7** компонентов `system|premise|lorebook|auxiliary|compact|history|postHistory`, зеркало пресета;
-  сэмплинг по-прежнему из `generation_presets`), `story_chats`
-  (`openingBeat` **обязателен** — дословный бит 1; `premise` опц.; `bookId`/`templateId`/`presetId`
-  **обяз.**, FK без onDelete = restrict → удаление используемого шаблона/пресета даёт 409 in_use)
-  + `story_messages` (дерево, `kind: beat|continue|directive`; `translations` — JSON-кэш переводов,
-  зашифрован per-user, как у `messages`) + `story_settings` (перевод истории + сжатие `compactEnabled`/
-  `compactAutoEnabled`/`compactFloorTokens`/`compactWords`, зеркало `chat_settings`) +
-  `story_compactions` (пересказы сжатых сообщений — см. инвариант compact ниже).
-- **Сервер:** `db/knowledge/`, `db/narratorTemplates/`, `db/stories/` (зеркало `db/chats/`,
-  вкл. `settings.ts` и `crypto.ts` — расшифровка кэша переводов); `server/prompt/storyPromptBuilder.ts`
-  (+тест), `server/stories/story.handlers.ts` (вкл. перевод бита/директивы через `googleTranslate`) +
-  контроллер `server/stories/stories.controller.ts`, домены-роуты `books/`/`narrator-templates/`/`stories/`
-  (у `stories` — `settings` GET/PUT + `messages/:id/translate`).
-- **Webapp:** фичи `narrator`/`knowledge-books`/`narrator-templates`, страницы `pages/narrator/*`,
-  `pages/knowledge-books/*`, `pages/narrator-templates/*`; кнопки на главной (Режим игры + Библиотека).
-  Перевод истории — раздел в `StorySettingsPage` + кнопка-Globe на битах/директивах в ленте
-  (`useStorySettings`/`useTranslatable`), зеркало RP-чата. Редактор шаблона (`TemplateForm`) — поля
-  промптов + блок «Порядок промптов». Кросс-фичевые компоненты в `shared/components`: `ExpandableSelect`
-  (настройки перевода RP и narrator) и `PromptOrderEditor` (дженерик-редактор порядка промптов с пропсами
-  `labels`/`sources`/`unimplemented` — используют пресеты ИИ и narrator-шаблоны; у каждой фичи свои карты
-  подписей/источников и `DEFAULT_*_PROMPT_ORDER`).
+> 📘 Подробности «почему и как устроено» — в docs. Здесь — короткие правила, которые нельзя нарушить.
 
-**Ключевой инвариант сборки промпта** (`storyPromptBuilder.buildStoryMessages`): отыгранные user-ходы
-(директивы/continue) **нейтрализуются** в `CONTINUE_MARKER`, кроме последнего (живого триггера) — их
-последствие уже в тексте следующего бита, повторно инструктировать нельзя. Перед корнем (openingBeat —
-`assistant`) вставляется синтетический leading-user — иначе массив начинался бы с assistant, что отвергают
-Anthropic (через OpenRouter) и reasoner DeepSeek. Книга знаний: в MVP в промпт идут только `always_on`-записи.
+- **Прокси только для Telegram.** `TELEGRAM_PROXY_URL` цепляется исключительно к grammY-клиенту
+  (`bot.ts` → `baseFetchConfig.agent`). НИКОГДА не ставить глобальный прокси (`HTTPS_PROXY` / `ALL_PROXY`) —
+  уведёт через прокси и трафик к OpenRouter. Почему `agent`, а не `dispatcher` (node-fetch@2 quirk) —
+  [docs/architecture.md](docs/architecture.md).
+- **Ключ OpenRouter — только серверно** (`bot/src/llm`), в браузер не попадает; RP-генерация идёт через
+  HTTP API бота, а не напрямую из webapp. Запросы webapp → `/api/*` несут подписанный `initData`
+  (`Authorization: tma …`), сервер проверяет HMAC. Пакет валидации — **`@tma.js/init-data-node`**
+  (НЕ `@telegram-apps/*`), детали — [docs/architecture.md](docs/architecture.md).
+- **Narrator: массив промпта не может начинаться с `assistant`.** Перед корнем (openingBeat) вставляется
+  синтетический leading-user; отыгранные user-ходы нейтрализуются в `CONTINUE_MARKER` (кроме последнего).
+  На эти грабли легко наступить при правке `storyPromptBuilder` — полный нарратив режима «Режиссёр истории»
+  и сжатия (compact): [docs/narrator.md](docs/narrator.md).
 
-Сборка идёт **итерацией по `promptOrder` шаблона** (как `promptBuilder.buildMessages` у RP): выключенные/
-пустые компоненты пропускаются; все non-history части → отдельным сообщением role `system`; `history` →
-leading-user + нейтрализованный путь. Leading-user и нейтрализация — свойства **блока history**, поэтому
-позиция в порядке их не ломает. `resolveHistory` (бюджет обрезки) суммирует **все включённые non-history**
-компоненты и зовётся, только если `history` включён. Дефолт порядка (`DEFAULT_NARRATOR_PROMPT_ORDER` в
-`storyPromptBuilder.ts`, зеркалится в webapp): `system, lorebook, auxiliary, premise, compact, history,
-postHistory`, где `postHistory` выключен. Фолбэк (история без шаблона) — этот же дефолт +
-`DEFAULT_NARRATOR_TEMPLATE`. Старые 6-элементные `promptOrder` нормализуются на чтении
-(`normalizeStoryPromptOrder` — дописывает недостающие компоненты на дефолтную позицию), без data-миграции.
-
-### Сжатие истории (compact) — invariant
-Старые сообщения активной ветки сжимаются LLM в краткий пересказ, который идёт в запрос **отдельным
-системным блоком** (компонент `compact`), а не в ленту `history`. Освобождает контекст, сохраняя суть.
-- **Таблица `story_compactions`** (`db/stories/compactions.ts`): пересказ диапазона активного пути,
-  привязан к id сообщений-якорей `fromAnchorId`(эксклюзивно/`null`=корень)/`toAnchorId`(инклюзивно, всегда
-  **бит**). Якоря **НЕ FK** (зеркало `activeMessageId`). `summary` шифруется per-user. Пересказы сцеплены в
-  **префикс по seq**; применяются к ветке, только если оба якоря на её активном пути — иначе игнорируются
-  (ветка сожмётся заново). Выбор валидной цепочки — чистая `selectValidChain` (filter-then-walk, тест).
-- **Двойной гейт (создание И применение):** работает, только когда включены **оба** — компонент `compact`
-  в `promptOrder` шаблона **и** `compactEnabled` чата. Выключение неразрушающе (пересказы остаются в БД,
-  возвращаются при включении). Применение в `storyContext.buildStoryCompletionInput`; гейт+доступность —
-  `compact.gate.ts` (`compactAvailable`: есть лимит и `>= MIN_COMPACT_CONTEXT` 4000).
-- **Операция** (`compact.handler.ts` `compactStory`): сегментирует живой хвост по ~`contextSize−floor`
-  токенов (чистая `planCompactionSegments`, тест), каждый сегмент → отдельный LLM-вызов (`debugLabel:
-  "compact"`, прошлые пересказы как «story so far»), пока вход не упадёт ≤ floor. Текущий лист не сжимаем.
-  Lock по `storyId`. Триггеры: ручной `POST /compact` и авто перед битом в `handleAdvanceStory`
-  (`shouldAutoCompact`, синхронно, fail-safe — падение не роняет advance, остаётся `trimHistoryToBudget`).
-- **Инвалидция:** `deleteStoryMessage` зовёт `invalidateCompactionsByRemovedIds` — каскад вперёд по seq,
-  если якорь попал в удалённое (см. оговорку про глобальный seq в коде). Токены везде — `countTokens` (o200k).
-- **Webapp:** секция «Сжатие истории» в `StorySettingsPage` (`CompactSettingsSection` — тумблеры, слайдеры
-  пол/слова, кнопка «Сжать сейчас», список пересказов с удалением, гейт по `stats.compactAvailable`);
-  поле `compactionPrompt` в `TemplateForm`; SSE-событие `status` (`phase:"compacting"`) в `StoryPage`.
-
-### Прокси для Telegram — invariant
-Прокси (`TELEGRAM_PROXY_URL`) задаётся `https-proxy-agent` (`HttpsProxyAgent`) и подключается **только**
-к grammY-клиенту (`bot.ts` → `client.baseFetchConfig.agent`). Так через прокси идёт исключительно
-трафик к Telegram. **Никогда** не использовать глобальный прокси (env `HTTPS_PROXY` / `ALL_PROXY`) —
-это увело бы через прокси и OpenRouter.
-
-⚠️ grammY в Node использует **node-fetch@2** (не нативный fetch!), который проксируется через option
-`agent`. undici `dispatcher` он **игнорирует** — хотя тип `baseFetchConfig` выведен из нативного fetch
-и обманчиво подсказывает `dispatcher`. Проверено рантайм-тестом: с `agent` getMe доходит до Telegram,
-с `dispatcher` — уходит напрямую в обход прокси. Отсюда каст в `bot.ts`.
-
-### Mini App API — boundary
-Ключ OpenRouter — **только серверно** (`bot/src/llm`), в браузер не попадает. RP-генерация идёт через
-HTTP API бота (`server/`), а не напрямую из webapp.
-
-Запросы webapp → `/api/*` несут подписанный Telegram `initData` в заголовке `Authorization: tma <initData>`
-(webapp: `shared/api/client.ts`). Сервер (`server/middleware/initData.ts`) **проверяет HMAC-подпись** по `BOT_TOKEN`
-через **`@tma.js/init-data-node`** (`validate` бросает при подделке/просрочке, `parse` достаёт юзера в
-`c.get("tgUser")`). Без подписи: в проде → 401, в dev → пропускаем (отладка webapp из браузера).
-
-⚠️ Серверный пакет — **`@tma.js/init-data-node`**, НЕ `@telegram-apps/init-data-node` (последний deprecated).
-Это противоположно выбору org для **webapp** (там `@telegram-apps/*` — см. README/стек): не «чинить» ради
-единообразия. По умолчанию `validate` считает initData просроченным через сутки (`expiresIn` = 86400) —
-учесть, когда у `apiFetch` появятся реальные вызовы (долгая сессия webview даст 401).
+## Git — коммиты
+Коммиты — **Conventional Commits** с русским описанием: `type(scope): краткое описание`.
+- Типы: `feat` / `fix` / `chore` / `refactor` / `docs` / `test`.
+- Scope — домен/пакет: `webapp`, `knowledge`, `agents`, `bot`, `server`, … (по затронутой области).
+- Пример: `fix(webapp): кнопка перевода первой в строке действий RP-чата`.
+Ветки: `main` (основная) и `deploy` (триггер автодеплоя, см. ниже). Коммить/пуш — только по явной
+просьбе пользователя; если правки на `main`, сперва заводи ветку.
 
 ## Деплой
-
-Прод — **один Docker-контейнер** на сервере (`https://miniapp.aoshi.ru`): тот же процесс Node раздаёт
-и HTTP API, и собранную статику Mini App (webapp вшит в образ). `Dockerfile` лежит **в корне**, контекст
-сборки — корень монорепо (`docker build -f Dockerfile .`).
-
-**CI/CD:** пуш в ветку **`deploy`** запускает GitHub Action (`.github/workflows/deploy.yml`), который
-собирает образ **на демоне сервера** через docker context (SSH), без реестра (GHCR не используется),
-и перезапускает контейнер по `docker-compose.yml` (он лежит на сервере, в репо — справочная копия).
-Подробности инфраструктуры сервера — в auto-memory `server-deploy-setup`.
+Прод — один Docker-контейнер, раздаёт HTTP API и статику Mini App одним процессом. Инфраструктура
+(Docker, CI/CD по ветке `deploy`) — [docs/deploy.md](docs/deploy.md).
 
 ### Команда «Задеплой»
 Когда пользователь пишет «Задеплой» (или просит задеплоить) — выполни строго по шагам:
@@ -286,6 +190,11 @@ Still avoid restating what the code obviously does — focus on the **why**, not
 3. For pgvector extensions: manually add `CREATE EXTENSION IF NOT EXISTS vector;` to the migration — drizzle-kit does not generate it
 4. Run `yarn drizzle-kit migrate` to apply
 
+**Откат:** drizzle-kit — forward-only, команды `migrate:down` нет. Ещё **не применённую** миграцию
+убираем через `yarn workspace bot drizzle-kit drop` (снимает последнюю из журнала) + удаляем `.sql`.
+**Уже применённую** назад не откатываем автоматически — пишем новую корректирующую миграцию
+(`generate` → правим SQL → `migrate`). Ломающие изменения на проде — только через forward-миграцию.
+
 ### Testing — vitest
 Test runner is **vitest** в **обоих** workspace (`bot/` и `webapp/`), у каждого свой `vitest.config.ts`
 (pool `forks`). Корневой `yarn test` гоняет оба пакета по очереди; `yarn test:watch` — только bot.
@@ -317,11 +226,14 @@ DeepSeek (`thinking`-режим), для OpenRouter `reasoningBody` возвра
 
 ## Keeping docs up to date
 
-Оба файла отражают **текущее состояние** проекта, не историю: что убрали из кода — убираем и из доков.
+Все доки отражают **текущее состояние** проекта, не историю: что убрали из кода — убираем и из доков.
 - **README.md** — при изменениях, важных новому разработчику: новая внешняя зависимость/сервис, новые
   шаги установки (env-переменные, миграции, требуемый тулинг), крупная фича, устаревший раздел стека.
 - **CLAUDE.md** (этот файл) — при изменениях процесса/конвенций: новый архитектурный паттерн или тип
   модуля, новый внешний API/модель, новое mandatory-правило, значимое изменение структуры проекта.
+- **docs/** — справочные нарративы: `architecture.md` (инвентарь дерева + границы прокси/Mini App),
+  `narrator.md` (режим «Режиссёр истории» + compact), `deploy.md` (инфра), `telegram-ui.md` (стили tgui).
+  Правишь фичу — обнови соответствующий файл; в CLAUDE.md держим только тонкую ссылку.
 
 ## Key patterns
 

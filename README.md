@@ -47,9 +47,11 @@ tg-rp-bot/
       ├─ main.tsx      # точка входа + init Telegram SDK
       ├─ init.ts       # инициализация SDK + restore initData
       ├─ app/          # оболочка: App (AppRoot + HashRouter), routes, BackButton-мост
-      ├─ pages/        # экраны-маршруты (home/ characters/ personas/ generation-presets/ rp-chat/)
+      ├─ pages/        # экраны-маршруты (home/ characters/ personas/ generation-presets/ rp-chat/
+      │                #   narrator/ knowledge-books/ narrator-templates/ debug/)
       ├─ shared/       # api/client (граница к /api), telegram/, text/, image/, components/
-      └─ features/     # доменные модули: characters, personas, generation-presets, rp-chat
+      └─ features/     # доменные модули: characters, personas, generation-presets, rp-chat,
+                        #   narrator, knowledge-books, narrator-templates, debug
 ```
 
 ## Прокси для Telegram
@@ -78,7 +80,7 @@ yarn dev:web      # старт Mini App (Vite dev server)
 
 ```bash
 yarn build                                  # сборка bot + webapp
-yarn test                                   # юнит-тесты бота (vitest)
+yarn test                                   # юнит-тесты bot + webapp (vitest)
 yarn workspace bot drizzle-kit generate     # сгенерировать миграцию из изменений схемы
 yarn workspace bot drizzle-kit migrate      # применить миграции
 ```
