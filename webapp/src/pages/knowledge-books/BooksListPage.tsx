@@ -27,7 +27,7 @@ export function BooksListPage() {
     <PageTransition>
       <div className="kb-hub">
         <Banner
-          type="inline"
+          type="section"
           before={<BookOpen size={28} className="kb-hub__banner-icon" />}
           header="Книги знаний"
           description="Персонажи и факты мира для режима «Режиссёр истории»"
