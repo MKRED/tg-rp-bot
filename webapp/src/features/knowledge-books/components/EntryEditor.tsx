@@ -2,6 +2,7 @@ import { Button, Cell, List, Modal, Section, Switch } from "@telegram-apps/teleg
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { useState } from "react";
+import { DeleteButton } from "../../../shared/components/DeleteButton";
 import { HintedInput } from "../../../shared/components/HintedInput";
 import { PromptField } from "../../../shared/components/PromptField";
 import { SectionActions } from "../../../shared/components/SectionActions";
@@ -194,9 +195,9 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
           Отмена
         </Button>
         {initial && (
-          <Button size="l" mode="outline" stretched onClick={handleDelete} disabled={submitting}>
+          <DeleteButton onClick={handleDelete} disabled={submitting}>
             Удалить запись
-          </Button>
+          </DeleteButton>
         )}
       </SectionActions>
 

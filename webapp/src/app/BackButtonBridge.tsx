@@ -4,6 +4,7 @@ import { backButton } from "@telegram-apps/sdk-react";
 import { ROUTES, parentPath } from "./routes";
 import { useTransitionNavigate } from "./useTransitionNavigate";
 import { consumeBackInterceptor } from "../shared/telegram/backInterceptor";
+import { checkNavigationGuards } from "../shared/telegram/navigationGuard";
 
 /**
  * Мост нативной кнопки «Назад» Telegram ↔ роутер.
@@ -34,9 +35,14 @@ export function BackButtonBridge() {
     const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
     return backButton.onClick(() => {
       // Сначала отдаём нажатие открытому оверлею (редактор кропа/лайтбокс): он закроется,
-      // навигацию не делаем. Если оверлеев нет — обычный уход к родителю.
+      // навигацию не делаем. Если оверлеев нет — спрашиваем гарды (напр. несохранённая форма
+      // покажет confirm) и только потом уходим к родителю.
       if (consumeBackInterceptor()) return;
-      navigate(returnTo ?? parentPath(location.pathname));
+      checkNavigationGuards()
+        .then((canLeave) => {
+          if (canLeave) navigate(returnTo ?? parentPath(location.pathname));
+        })
+        .catch((err) => console.error("Не удалось проверить гарды навигации", err));
     });
   }, [navigate, location.pathname, location.state]);
 

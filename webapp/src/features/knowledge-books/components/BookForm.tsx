@@ -1,5 +1,6 @@
 import { Button, Input, Section, Textarea } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
+import { DeleteButton } from "../../../shared/components/DeleteButton";
 import { SectionActions } from "../../../shared/components/SectionActions";
 import type { Book, BookInput } from "../types/book";
 
@@ -41,9 +42,9 @@ export function BookForm({ initial, submitting, onSubmit, onDelete }: BookFormPr
           {initial ? "Сохранить" : "Создать книгу"}
         </Button>
         {onDelete && (
-          <Button size="l" mode="outline" stretched onClick={onDelete} disabled={submitting}>
+          <DeleteButton onClick={onDelete} disabled={submitting}>
             Удалить книгу
-          </Button>
+          </DeleteButton>
         )}
       </SectionActions>
     </Section>

@@ -1,5 +1,6 @@
 import { Button, Input } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
+import { DeleteButton } from "../../../shared/components/DeleteButton";
 import { PromptField } from "../../../shared/components/PromptField";
 import { PromptOrderEditor } from "../../../shared/components/PromptOrderEditor";
 import { SectionActions } from "../../../shared/components/SectionActions";
@@ -120,9 +121,9 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
           {initial ? "Сохранить" : "Создать шаблон"}
         </Button>
         {onDelete && (
-          <Button size="l" mode="outline" stretched onClick={onDelete} disabled={submitting}>
+          <DeleteButton onClick={onDelete} disabled={submitting}>
             Удалить шаблон
-          </Button>
+          </DeleteButton>
         )}
       </SectionActions>
     </SectionWithFooter>

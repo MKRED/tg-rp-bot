@@ -1,6 +1,7 @@
 import { Button, Input } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { AvatarPicker, type AvatarValue } from "../../../shared/components/AvatarPicker";
+import { DeleteButton } from "../../../shared/components/DeleteButton";
 import { ExpandableTextarea } from "../../../shared/components/ExpandableTextarea";
 import { estimateTokens } from "../../../shared/text/tokens";
 import type { PersonaInput } from "../types/persona";
@@ -77,9 +78,9 @@ export function PersonaForm({ initial, submitting, onSubmit, onDelete }: Persona
           {submitting ? "Сохранение…" : "Сохранить"}
         </Button>
         {onDelete && (
-          <Button size="l" stretched mode="outline" disabled={submitting} onClick={onDelete}>
+          <DeleteButton disabled={submitting} onClick={onDelete}>
             Удалить персону
-          </Button>
+          </DeleteButton>
         )}
       </div>
     </div>

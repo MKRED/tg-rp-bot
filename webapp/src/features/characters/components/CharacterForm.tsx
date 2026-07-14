@@ -1,17 +1,22 @@
 import { Button, Input } from "@telegram-apps/telegram-ui";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AvatarPicker, type AvatarValue } from "../../../shared/components/AvatarPicker";
+import { DeleteButton } from "../../../shared/components/DeleteButton";
 import { ExpandableTextarea } from "../../../shared/components/ExpandableTextarea";
+import { useUnsavedChangesGuard } from "../../../shared/telegram/useUnsavedChangesGuard";
 import { FirstMessagesEditor } from "./FirstMessagesEditor";
 import { TagsInput } from "./TagsInput";
 import { estimateTokens } from "../../../shared/text/tokens";
+import { hasUnsavedChanges, normalizeCharacterDraft } from "../lib/formDirty";
 import type { CharacterInput } from "../types/character";
 
 interface CharacterFormProps {
   /** Начальные значения (режим редактирования); отсутствуют — режим создания. */
   initial?: CharacterInput;
   submitting: boolean;
-  onSubmit: (input: CharacterInput) => void;
+  /** Промис нужен, чтобы форма знала об успехе и сбросила «грязный» снапшот — окно после
+   * сохранения не закрывается, а показывает уведомление (см. CharacterEditPage). */
+  onSubmit: (input: CharacterInput) => Promise<void>;
   /** Удаление доступно только при редактировании. */
   onDelete?: () => void;
 }
@@ -27,6 +32,32 @@ export function CharacterForm({ initial, submitting, onSubmit, onDelete }: Chara
   const [scenario, setScenario] = useState(initial?.scenario ?? "");
   const [firstMessages, setFirstMessages] = useState<string[]>(initial?.firstMessages ?? []);
 
+  // Снапшот «последних сохранённых» значений (изначально — initial, пустой объект в режиме
+  // создания) — база для сравнения при определении несохранённых правок. Обновляется после
+  // каждого успешного сохранения (см. handleSubmit): окно не закрывается, поэтому initial-проп
+  // не меняется, а «грязный» статус должен сброситься сам.
+  const [baseline, setBaseline] = useState<CharacterInput>(() =>
+    normalizeCharacterDraft({
+      name: initial?.name ?? "",
+      image: initial?.image ?? null,
+      imageFull: initial?.imageFull ?? null,
+      tags: initial?.tags ?? [],
+      footnote: initial?.footnote ?? "",
+      prompt: initial?.prompt ?? "",
+      scenario: initial?.scenario ?? "",
+      firstMessages: initial?.firstMessages ?? [],
+    }),
+  );
+  const isDirty = useMemo(
+    () =>
+      hasUnsavedChanges(
+        { name, image, imageFull, tags, footnote, prompt, scenario, firstMessages },
+        baseline,
+      ),
+    [name, image, imageFull, tags, footnote, prompt, scenario, firstMessages, baseline],
+  );
+  useUnsavedChangesGuard(isDirty);
+
   const canSubmit = name.trim().length > 0 && !submitting;
 
   // Аватар: выбор фото даёт обе картинки, удаление — null.
@@ -35,20 +66,26 @@ export function CharacterForm({ initial, submitting, onSubmit, onDelete }: Chara
     setImageFull(value?.imageFull ?? null);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!canSubmit) return;
-    onSubmit({
-      name: name.trim(),
+    const payload = normalizeCharacterDraft({
+      name,
       image,
       imageFull,
       tags,
-      // пустое примечание сохраняем как null (как у персоны)
-      footnote: footnote.trim() || null,
+      footnote,
       prompt,
       scenario,
-      // отбрасываем пустые варианты первого сообщения
-      firstMessages: firstMessages.map((m) => m.trim()).filter(Boolean),
+      firstMessages,
     });
+    try {
+      await onSubmit(payload);
+      // Сброс «грязного» статуса на реально сохранённые значения — форма остаётся открытой.
+      setBaseline(payload);
+    } catch {
+      // Ошибку показывает CharacterEditPage (тост) — здесь просто не сбрасываем baseline,
+      // чтобы «несохранённые изменения» и confirm на уходе продолжали действовать.
+    }
   };
 
   return (
@@ -101,13 +138,14 @@ export function CharacterForm({ initial, submitting, onSubmit, onDelete }: Chara
       <FirstMessagesEditor messages={firstMessages} onChange={setFirstMessages} />
 
       <div className="char-form__actions">
+        {isDirty && !submitting && <span className="char-form__unsaved">Есть несохранённые изменения</span>}
         <Button size="l" stretched disabled={!canSubmit} onClick={handleSubmit}>
           {submitting ? "Сохранение…" : "Сохранить"}
         </Button>
         {onDelete && (
-          <Button size="l" stretched mode="outline" disabled={submitting} onClick={onDelete}>
+          <DeleteButton disabled={submitting} onClick={onDelete}>
             Удалить персонажа
-          </Button>
+          </DeleteButton>
         )}
       </div>
     </div>

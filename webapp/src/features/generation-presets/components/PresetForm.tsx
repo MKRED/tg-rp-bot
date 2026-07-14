@@ -7,6 +7,7 @@ import {
   type SamplingKey,
   type SamplingState,
 } from "../lib/param-specs";
+import { DeleteButton } from "../../../shared/components/DeleteButton";
 import { PromptOrderEditor } from "../../../shared/components/PromptOrderEditor";
 import { PromptsSection } from "./PromptsSection";
 import { ReasoningSection } from "./ReasoningSection";
@@ -192,9 +193,9 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
           {submitting ? "Сохранение…" : "Сохранить"}
         </Button>
         {onDelete && (
-          <Button size="l" stretched mode="outline" disabled={submitting} onClick={onDelete}>
+          <DeleteButton disabled={submitting} onClick={onDelete}>
             Удалить пресет
-          </Button>
+          </DeleteButton>
         )}
       </div>
     </div>

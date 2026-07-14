@@ -1,6 +1,6 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { ROUTES } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
@@ -15,6 +15,7 @@ import {
 } from "../../features/characters";
 import { ApiError } from "../../shared/api/client";
 import { confirmAction, showAlert } from "../../shared/telegram/confirm";
+import { useToast } from "../../shared/toast";
 import "./characters.css";
 
 /** Маппинг полного персонажа в значения формы. */
@@ -39,20 +40,31 @@ function toInput(c: Character): CharacterInput {
 export function CharacterEditPage() {
   const navigate = useTransitionNavigate();
   const params = useParams();
-  const location = useLocation();
+  const { showToast } = useToast();
   // /characters/new → id отсутствует (создание); /characters/:id → строка с числом.
-  const id = params.id ? Number(params.id) : undefined;
-  // Если открыто из настроек чата — returnTo хранит путь обратно в настройки.
-  const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
+  const routeId = params.id ? Number(params.id) : undefined;
 
-  const { character, loading, error } = useCharacter(id);
+  const { character, loading, error } = useCharacter(routeId);
   const [submitting, setSubmitting] = useState(false);
+  // После первого успешного сохранения нового персонажа держим его id локально: «Сохранить»
+  // больше не покидает экран (маршрут остаётся /characters/new), поэтому без этого повторное
+  // сохранение продолжило бы создавать дубликаты вместо обновления уже созданного.
+  const [createdId, setCreatedId] = useState<number>();
+  const id = routeId ?? createdId;
 
   const handleSubmit = (input: CharacterInput) => {
     setSubmitting(true);
     const op = id === undefined ? createCharacter(input) : updateCharacter(id, input);
-    op.then(() => navigate(returnTo ?? ROUTES.characters))
-      .catch(() => setSubmitting(false));
+    return op
+      .then(({ character: saved }) => {
+        if (id === undefined) setCreatedId(saved.id);
+        showToast({ type: "success", message: "Персонаж сохранён" });
+      })
+      .catch((err) => {
+        showToast({ type: "error", message: "Не удалось сохранить персонажа" });
+        throw err;
+      })
+      .finally(() => setSubmitting(false));
   };
 
   const handleDelete = async () => {
@@ -84,7 +96,7 @@ export function CharacterEditPage() {
     );
   }
 
-  if (error || (id !== undefined && !character)) {
+  if (error || (routeId !== undefined && !character)) {
     return (
       <PageTransition>
         <div className="characters-page__fullcenter">Персонаж не найден</div>
