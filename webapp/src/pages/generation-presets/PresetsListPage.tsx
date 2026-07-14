@@ -1,5 +1,6 @@
-import { Button, Caption, Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
+import { Banner, Button, Caption, Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
+import { SlidersHorizontal } from "lucide-react";
 import { ROUTES, presetEditPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
@@ -11,7 +12,11 @@ import {
 } from "../../features/generation-presets";
 import "./presets.css";
 
-/** Экран «Настройки ответа ИИ»: список пресетов генерации + кнопка создания. */
+/**
+ * Хаб «Настройки ответа ИИ»: все пресеты генерации + кнопка создания. Страница НЕ скроллится
+ * целиком — две секции в одном List: секция списка растянута на всю высоту (скролл ВНУТРИ её
+ * карточки), секция кнопки докнута к нижней кромке (тот же приём, что в хабе «Персонажи»/«Книги знаний»).
+ */
 export function PresetsListPage() {
   const navigate = useTransitionNavigate();
   const { items, loading, error } = usePresets();
@@ -20,11 +25,18 @@ export function PresetsListPage() {
 
   return (
     <PageTransition>
-      <div className="presets-page">
-        <List>
-          <Section header="Настройки ответа ИИ">
+      <div className="presets-hub">
+        <Banner
+          type="section"
+          before={<SlidersHorizontal size={28} className="presets-hub__banner-icon" />}
+          header="Настройки ответа ИИ"
+          description="Пресеты генерации: креативность, длина и стиль ответов"
+        />
+
+        <List className="presets-hub__list">
+          <Section className="presets-hub__list-section">
             {loading && (
-              <div className="presets-page__center">
+              <div className="presets-hub__center">
                 <Spinner size="m" />
               </div>
             )}
@@ -55,21 +67,25 @@ export function PresetsListPage() {
               ))}
           </Section>
 
-          <div className="presets-page__create">
-            <Button
-              size="l"
-              stretched
-              disabled={atLimit}
-              onClick={() => navigate(ROUTES.presetNew)}
-            >
-              + Создать пресет
-            </Button>
-            {atLimit && (
-              <Caption level="1" className="presets-page__limit">
-                Достигнут лимит в {MAX_PRESETS_PER_USER} пресетов
-              </Caption>
-            )}
-          </div>
+          {/* Вторая секция — кнопка создания. Один div-ребёнок: Section вставляет Divider между
+              несколькими детьми, а тут нужен цельный блок без разделителя. */}
+          <Section className="presets-hub__actions-section">
+            <div className="presets-hub__create">
+              <Button
+                size="l"
+                stretched
+                disabled={atLimit}
+                onClick={() => navigate(ROUTES.presetNew)}
+              >
+                + Создать пресет
+              </Button>
+              {atLimit && (
+                <Caption level="1" className="presets-hub__limit">
+                  Достигнут лимит в {MAX_PRESETS_PER_USER} пресетов
+                </Caption>
+              )}
+            </div>
+          </Section>
         </List>
       </div>
     </PageTransition>

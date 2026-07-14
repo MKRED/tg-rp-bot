@@ -19,3 +19,74 @@
   text-align: center;
   color: var(--tgui--hint_color, #7d8b99);
 }
+
+/* Хаб «Narrator-шаблоны»: страница НЕ скроллится целиком — фиксированная высота вьюпорта.
+   Внутри — две секции в ОДНОМ List: секция списка (растянута на всю высоту, скролл ВНУТРИ её
+   карточки) и секция кнопки (естественной высоты, докнута к нижней кромке). Между секциями —
+   штатный 12px-отступ List (`>:not(:last-child)`), дающий «логичный разрыв». Тот же приём,
+   что в хабе «Персонажи» (characters-hub). */
+.nt-hub {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  /* Верхний отступ под Full Screen — на самом хабе, чтобы Banner-шапка ушла из-под чёлки/шапки. */
+  padding-top: calc(
+    8px +
+    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
+}
+
+/* Иконка в Banner-шапке. */
+.nt-hub__banner-icon {
+  color: var(--tg-theme-link-color, #2481cc);
+}
+
+/* List с обеими секциями занимает всё место под Banner; сам — flex-колонка, чтобы секция списка
+   могла растянуться (flex:1), а секция кнопки осталась внизу естественной высоты. */
+.nt-hub__list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Секция списка шаблонов растягивается на всю высоту, а прокрутка живёт ВНУТРИ её карточки.
+   Тянем цепочку flex до внутреннего контейнера ячеек. Селекторы `> div > div` опираются на
+   структуру tgui Section: root(<section>) → card(фон+тень) → body(радиус+ячейки); без header/
+   footer у card один ребёнок-body. */
+.nt-hub__list-section,
+.nt-hub__list-section > div {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.nt-hub__list-section > div > div {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Секция кнопки не сжимается — flex:1 у секции списка уже поглощает всё свободное место. */
+.nt-hub__actions-section {
+  flex-shrink: 0;
+}
+
+/* height:100% растягивает блок на всю доступную высоту скроллящегося тела секции (у него есть
+   определённая высота через flex:1 в цепочке выше), align-items центрирует спиннер вертикально. */
+.nt-hub__center {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* Кнопка создания внутри секции-карточки: внутренние отступы (своих у карточки Section нет) +
+   нижняя safe-area, т.к. секция докнута к нижней кромке вьюпорта. */
+.nt-hub__create {
+  padding: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}

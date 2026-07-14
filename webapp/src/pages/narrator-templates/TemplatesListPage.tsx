@@ -1,14 +1,17 @@
-import { Button, Cell, List, Spinner } from "@telegram-apps/telegram-ui";
+import { Banner, Button, Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
 import { ScrollText } from "lucide-react";
 import { motion } from "framer-motion";
 import { ROUTES, narratorTemplateEditPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
-import { SectionWithFooter } from "../../shared/components/SectionWithFooter";
 import { MAX_TEMPLATES_PER_USER, useTemplates } from "../../features/narrator-templates";
 import "./narrator-templates.css";
 
-/** Экран «Narrator-шаблоны»: список + кнопка создания. */
+/**
+ * Хаб «Narrator-шаблоны»: все шаблоны + кнопка создания. Страница НЕ скроллится целиком —
+ * две секции в одном List: секция списка растянута на всю высоту (скролл ВНУТРИ её карточки),
+ * секция кнопки докнута к нижней кромке (тот же приём, что в хабе «Персонажи»/«Книги знаний»).
+ */
 export function TemplatesListPage() {
   const navigate = useTransitionNavigate();
   const { items, loading, error } = useTemplates();
@@ -16,14 +19,18 @@ export function TemplatesListPage() {
 
   return (
     <PageTransition>
-      <div className="nt-page">
-        <List>
-          <SectionWithFooter
-            header="Narrator-шаблоны"
-            footer="Инструкция нарратора для режима «Режиссёр истории»"
-          >
+      <div className="nt-hub">
+        <Banner
+          type="section"
+          before={<ScrollText size={28} className="nt-hub__banner-icon" />}
+          header="Narrator-шаблоны"
+          description="Инструкция нарратора для режима «Режиссёр истории»"
+        />
+
+        <List className="nt-hub__list">
+          <Section className="nt-hub__list-section">
             {loading && (
-              <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
+              <div className="nt-hub__center">
                 <Spinner size="m" />
               </div>
             )}
@@ -48,17 +55,22 @@ export function TemplatesListPage() {
                   </Cell>
                 </motion.div>
               ))}
-          </SectionWithFooter>
-          <div style={{ padding: 16 }}>
-            <Button
-              size="l"
-              stretched
-              disabled={atLimit}
-              onClick={() => navigate(ROUTES.narratorTemplateNew)}
-            >
-              + Создать шаблон
-            </Button>
-          </div>
+          </Section>
+
+          {/* Вторая секция — кнопка создания. Один div-ребёнок: Section вставляет Divider между
+              несколькими детьми, а тут нужен цельный блок без разделителя. */}
+          <Section className="nt-hub__actions-section">
+            <div className="nt-hub__create">
+              <Button
+                size="l"
+                stretched
+                disabled={atLimit}
+                onClick={() => navigate(ROUTES.narratorTemplateNew)}
+              >
+                + Создать шаблон
+              </Button>
+            </div>
+          </Section>
         </List>
       </div>
     </PageTransition>
