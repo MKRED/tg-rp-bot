@@ -88,24 +88,12 @@
   color: var(--tgui--hint_color, #7d8b99);
 }
 
-/* Строка записи: Cell + стрелки порядка как flex-соседи (стрелки НЕ внутри Cell — см. коммент в
-   BookEditPage: клик по disabled-кнопке внутри Cell «проваливается» на родителя и открывает редактор). */
-.kb-entry-row {
-  display: flex;
-  align-items: center;
-}
-
-.kb-entry-cell {
-  flex: 1;
-  min-width: 0;
-}
-
-/* Кнопки порядка записи (↑/↓) — как в редакторе порядка промптов. */
+/* Кнопки порядка записи (↑/↓) — в слоте after самого Cell (см. BookEditPage), поэтому hover-фон
+   Cell красит строку целиком, без отдельного враппера-ряда. */
 .kb-entry-order {
   display: flex;
   gap: 4px;
   flex-shrink: 0;
-  padding-right: 16px;
 }
 
 .kb-order-btn {
@@ -121,7 +109,10 @@
   background: var(--tgui--secondary_fill, rgba(127, 139, 153, 0.12));
 }
 
-.kb-order-btn:disabled {
+/* Граница списка — не нативный disabled (см. коммент в BookEditPage про ретаргет клика в
+   Chromium/WebKit), а aria-disabled: кнопка остаётся кликабельной целью, но визуально/семантически
+   неактивна; сам клик — no-op через ранний return в moveEntry. */
+.kb-order-btn[aria-disabled="true"] {
   opacity: 0.35;
   cursor: default;
 }

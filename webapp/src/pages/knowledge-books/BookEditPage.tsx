@@ -129,16 +129,8 @@ export function BookEditPage() {
                     {entries.map((e, index) => (
                       // layout + стабильный key={e.id} — при перестановке строки плавно переезжают
                       // на новые позиции (FLIP), как в редакторе порядка промптов, а не перескакивают.
-                      // Стрелки — СОСЕДИ Cell (flex-строка), а не в слоте after: клик по disabled-кнопке
-                      // в Chromium/WebKit «проваливается» на родителя, и внутри Cell открывал бы редактор.
-                      <motion.div
-                        key={e.id}
-                        layout
-                        transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                        className="kb-entry-row"
-                      >
+                      <motion.div key={e.id} layout transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}>
                         <Cell
-                          className="kb-entry-cell"
                           before={
                             e.characterId != null ? (
                               <CharacterAvatar
@@ -158,31 +150,43 @@ export function BookEditPage() {
                               ? (e.characterName ?? "персонаж удалён")
                               : e.content.slice(0, 60)
                           }
+                          hint={!e.enabled ? "выкл." : undefined}
+                          after={
+                            // Стрелки — в родном слоте after: hover-фон Cell красит всю строку целиком.
+                            // Границы списка — не disabled (в Chromium/WebKit клик по disabled-кнопке
+                            // ретаргетится на ближайшего некликабельного предка, т.е. на сам Cell, и
+                            // открывал бы редактор), а aria-disabled + stopPropagation на клике.
+                            <div className="kb-entry-order">
+                              <button
+                                type="button"
+                                className="kb-order-btn"
+                                aria-disabled={index === 0}
+                                aria-label="Выше"
+                                onClick={(ev) => {
+                                  ev.stopPropagation();
+                                  moveEntry(index, -1);
+                                }}
+                              >
+                                <ChevronUp size={18} />
+                              </button>
+                              <button
+                                type="button"
+                                className="kb-order-btn"
+                                aria-disabled={index === entries.length - 1}
+                                aria-label="Ниже"
+                                onClick={(ev) => {
+                                  ev.stopPropagation();
+                                  moveEntry(index, 1);
+                                }}
+                              >
+                                <ChevronDown size={18} />
+                              </button>
+                            </div>
+                          }
                           onClick={() => setEntryEdit(e)}
                         >
                           {e.name || (e.characterId != null ? e.characterName : "Без названия") || "Запись"}
-                          {!e.enabled && " (выкл.)"}
                         </Cell>
-                        <div className="kb-entry-order">
-                          <button
-                            type="button"
-                            className="kb-order-btn"
-                            disabled={index === 0}
-                            onClick={() => moveEntry(index, -1)}
-                            aria-label="Выше"
-                          >
-                            <ChevronUp size={18} />
-                          </button>
-                          <button
-                            type="button"
-                            className="kb-order-btn"
-                            disabled={index === entries.length - 1}
-                            onClick={() => moveEntry(index, 1)}
-                            aria-label="Ниже"
-                          >
-                            <ChevronDown size={18} />
-                          </button>
-                        </div>
                       </motion.div>
                     ))}
                     <div style={{ padding: 16 }}>
