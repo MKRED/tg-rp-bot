@@ -250,6 +250,44 @@ children: Children.map(children, (child, index) => <>
 края, о который кнопка могла бы «обрезаться», так что тот же паддинг там не баг, а просто другой контекст
 — компонент их не заменяет.
 
+### 1.4.4. Ripple-оверлей `Tappable`/`Cell` перекрывает клики по вложенным интерактивным элементам
+
+`Cell` внутри — это `Tappable` (`node_modules/@telegram-apps/telegram-ui/dist/components/Service/Tappable/Tappable.js`):
+контейнер с `position: relative` и (на платформе `"base"`, дефолтный `interactiveAnimation="background"`)
+ripple-волной поверх содержимого — `<span aria-hidden>` с CSS `position: absolute; inset: 0`, **без**
+`pointer-events: none`. Ripple рендерится раньше слотов `before`/детей/`after` в JSX, но так как он
+`position: absolute`, а слоты — обычный поток (`position: static`), по правилам CSS stacking он всё равно
+красится **поверх** них (позиционированные элементы без `z-index` рисуются после непозиционированных,
+независимо от порядка в DOM) — и, что важнее, **перехватывает hit-test**: клик по нативной кнопке,
+положенной в `after`/`before`, на самом деле попадает в ripple-span, а не в кнопку. Событие всплывает
+к `Tappable`, и срабатывает `onClick` самого `Cell` — вложенный `onClick` (даже со `stopPropagation()`)
+до кнопки не долетает, потому что кнопка вообще не была целью события.
+
+Симптом на практике: кнопки внутри `after`/`before` слота `Cell` либо не реагируют на клик вовсе, либо
+клик «проваливается» на сам `Cell` (открывает то, что вешает на него `onClick`) — воспроизводится на
+десктопе/вебе (`platform === "base"`), где ripple активен; на iOS-оформлении эффекта нет (там ripple
+не рендерится).
+
+**Решение — поднять вложенный интерактив в свой позиционированный слой поверх ripple:**
+
+```css
+.my-cell-inline-controls {
+  position: relative;
+  z-index: 1;
+}
+```
+
+Это официально нейтральный обход (не завязан на хэш CSS-класса ripple, который может смениться при
+обновлении пакета). Альтернатива — проп `interactiveAnimation="opacity"` у `Cell`/`Tappable` вовсе
+отключает рендер ripple (`Tappable.js`: `hasRippleEffect = platform === 'base' && interactiveAnimation
+=== 'background' && !readOnly`), но заодно гасит ripple-фидбек всей ячейки, а не только конфликт с
+кнопкой — обычно нежелательно, если сама ячейка тоже кликабельна и должна давать визуальный отклик.
+
+Применено в проекте: `.debug-stepper` (`webapp/src/features/debug/components/debug.css`) и
+`.kb-entry-order` (`webapp/src/pages/knowledge-books/knowledge-books.css`) — оба кладут нативные
+`<button>` в `after`-слот `Cell` для инлайновых мини-контролов (степпер настройки, стрелки порядка
+записи) и решают конфликт этим паттерном.
+
 ### 1.5. Порталы выходят из-под `<AppRoot>` — гочта
 
 Компонент, отрисованный через `createPortal(..., document.body)`, **покидает поддерево AppRoot**,

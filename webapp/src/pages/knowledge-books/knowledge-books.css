@@ -89,11 +89,17 @@
 }
 
 /* Кнопки порядка записи (↑/↓) — в слоте after самого Cell (см. BookEditPage), поэтому hover-фон
-   Cell красит строку целиком, без отдельного враппера-ряда. */
+   Cell красит строку целиком, без отдельного враппера-ряда.
+   Cell (tgui) — это Tappable: на платформе "base" он рисует ripple-оверлей (span position:absolute;
+   inset:0; БЕЗ pointer-events:none), который перекрывает статичный в потоке контент after-слота и
+   съедает клики по нативным кнопкам. Поднимаем стрелки в позиционированный слой над ripple —
+   тот же приём, что в debug-stepper (debug.css). */
 .kb-entry-order {
   display: flex;
   gap: 4px;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .kb-order-btn {
