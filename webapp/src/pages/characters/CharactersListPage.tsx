@@ -1,5 +1,6 @@
-import { Button, Caption, Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
+import { Banner, Button, Caption, Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
+import { Users } from "lucide-react";
 import { ROUTES, characterEditPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
@@ -27,7 +28,11 @@ function subtitleOf(tags: string[], firstMessageCount: number): string {
   return parts.join(" · ");
 }
 
-/** Экран «Персонажи»: список созданных персонажей + кнопка создания. */
+/**
+ * Экран «Персонажи»: все персонажи + кнопка создания. Страница НЕ скроллится целиком — две
+ * секции в одном List: секция списка растянута на всю высоту (скролл ВНУТРИ её карточки),
+ * секция кнопки докнута к нижней кромке (тот же приём, что в хабе «Книги знаний»).
+ */
 export function CharactersListPage() {
   const navigate = useTransitionNavigate();
   const { items, loading, error } = useCharacters();
@@ -36,11 +41,18 @@ export function CharactersListPage() {
 
   return (
     <PageTransition>
-      <div className="characters-page">
-        <List>
-          <Section header="Персонажи">
+      <div className="characters-hub">
+        <Banner
+          type="section"
+          before={<Users size={28} className="characters-hub__banner-icon" />}
+          header="Персонажи"
+          description="Действующие лица для режима «Режиссёр истории» и обычных чатов"
+        />
+
+        <List className="characters-hub__list">
+          <Section className="characters-hub__list-section">
             {loading && (
-              <div className="characters-page__center">
+              <div className="characters-hub__center">
                 <Spinner size="m" />
               </div>
             )}
@@ -74,21 +86,25 @@ export function CharactersListPage() {
               ))}
           </Section>
 
-          <div className="characters-page__create">
-            <Button
-              size="l"
-              stretched
-              disabled={atLimit}
-              onClick={() => navigate(ROUTES.characterNew)}
-            >
-              + Создать персонажа
-            </Button>
-            {atLimit && (
-              <Caption level="1" className="characters-page__limit">
-                Достигнут лимит в {MAX_CHARACTERS_PER_USER} персонажей
-              </Caption>
-            )}
-          </div>
+          {/* Вторая секция — кнопка создания. Один div-ребёнок: Section вставляет Divider между
+              несколькими детьми, а тут нужен цельный блок без разделителя. */}
+          <Section className="characters-hub__actions-section">
+            <div className="characters-hub__create">
+              <Button
+                size="l"
+                stretched
+                disabled={atLimit}
+                onClick={() => navigate(ROUTES.characterNew)}
+              >
+                + Создать персонажа
+              </Button>
+              {atLimit && (
+                <Caption level="1" className="characters-hub__limit">
+                  Достигнут лимит в {MAX_CHARACTERS_PER_USER} персонажей
+                </Caption>
+              )}
+            </div>
+          </Section>
         </List>
       </div>
     </PageTransition>
