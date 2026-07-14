@@ -7,21 +7,16 @@ import { PageTransition } from "../../shared/components/PageTransition";
 import { BookCard, MAX_BOOKS_PER_USER, useBooks } from "../../features/knowledge-books";
 import "./knowledge-books.css";
 
-/** Сколько последних книг показываем в хабе; остальные — по кнопке «Посмотреть все». */
-const RECENT_LIMIT = 5;
-
 /**
- * Хаб «Книги знаний»: последние 5 книг + кнопки действий. Страница НЕ скроллится целиком —
+ * Хаб «Книги знаний»: все книги + кнопка создания. Страница НЕ скроллится целиком —
  * две секции в одном List: секция списка растянута на всю высоту (скролл ВНУТРИ её карточки),
- * секция кнопок докнута к нижней кромке. Между ними — штатный 12px-отступ List («логичный
+ * секция кнопки докнута к нижней кромке. Между ними — штатный 12px-отступ List («логичный
  * разрыв»). Заголовок и описание — в Banner-шапке сверху.
  */
 export function BooksListPage() {
   const navigate = useTransitionNavigate();
   const { items, loading, error } = useBooks();
   const atLimit = items.length >= MAX_BOOKS_PER_USER;
-  const recent = items.slice(0, RECENT_LIMIT);
-  const hasMore = items.length > RECENT_LIMIT;
 
   return (
     <PageTransition>
@@ -46,7 +41,7 @@ export function BooksListPage() {
             )}
             {!loading &&
               !error &&
-              recent.map((b, i) => (
+              items.map((b, i) => (
                 <motion.div
                   key={b.id}
                   initial={{ opacity: 0, y: 8 }}
@@ -58,15 +53,10 @@ export function BooksListPage() {
               ))}
           </Section>
 
-          {/* Вторая секция — кнопки действий. Один div-ребёнок: Section вставляет Divider между
-              несколькими детьми, а тут нужна цельная строка кнопок без разделителя. */}
+          {/* Вторая секция — кнопка создания. Один div-ребёнок: Section вставляет Divider между
+              несколькими детьми, а тут нужен цельный блок без разделителя. */}
           <Section className="kb-hub__actions-section">
             <div className="kb-hub__actions">
-              {hasMore && (
-                <Button size="l" mode="outline" stretched onClick={() => navigate(ROUTES.bookAll)}>
-                  Посмотреть все
-                </Button>
-              )}
               <Button size="l" stretched disabled={atLimit} onClick={() => navigate(ROUTES.bookNew)}>
                 + Создать книгу
               </Button>
