@@ -1,25 +1,60 @@
-.rp-chats-page {
-  min-height: 100dvh;
+/* Хаб «Ролевой чат»: страница НЕ скроллится целиком — фиксированная высота вьюпорта.
+   Внутри — две секции в ОДНОМ List: секция списка (растянута на всю высоту, скролл ВНУТРИ её
+   карточки, с бесконечной подгрузкой через InfiniteSentinel) и секция кнопки (естественной
+   высоты, докнута к нижней кромке). Тот же приём, что в хабах «Персонажи»/«Персоны»/«Книги знаний». */
+.rp-chats-hub {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
   padding-top: calc(
     8px +
     var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
     var(--tg-viewport-content-safe-area-inset-top, 0px)
   );
-  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
-.rp-chats-page__center {
-  display: flex;
-  justify-content: center;
-  padding: 24px 0;
-}
-
-.rp-chats-page__icon {
+.rp-chats-hub__banner-icon {
   color: var(--tg-theme-link-color, #2481cc);
 }
 
-.rp-chats-page__chevron {
-  color: var(--tg-theme-hint-color, #999);
+.rp-chats-hub__list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Селекторы `> div > div` опираются на структуру tgui Section: root(<section>) → card(фон+тень)
+   → body(радиус+ячейки); без header/footer у card один ребёнок-body. */
+.rp-chats-hub__list-section,
+.rp-chats-hub__list-section > div {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.rp-chats-hub__list-section > div > div {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.rp-chats-hub__actions-section {
+  flex-shrink: 0;
+}
+
+.rp-chats-hub__center {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.rp-chats-hub__create {
+  padding: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Форма создания нового чата */
@@ -53,29 +88,6 @@
 
 .rp-chat-new-page__chevron {
   color: var(--tg-theme-hint-color, #999);
-}
-
-/* Список всех чатов */
-.rp-chats-all-page {
-  min-height: 100dvh;
-  padding-top: calc(
-    8px +
-    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
-    var(--tg-viewport-content-safe-area-inset-top, 0px)
-  );
-  padding-bottom: env(safe-area-inset-bottom, 0);
-}
-
-.rp-chats-all-page__center {
-  display: flex;
-  justify-content: center;
-  padding: 24px 0;
-}
-
-.rp-chats-all-page__pagination {
-  display: flex;
-  gap: 12px;
-  padding: 12px 16px;
 }
 
 /* ─── Страница чата ──────────────────────────────────────────────────────────── */

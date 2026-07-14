@@ -11,37 +11,63 @@
   height: 16px;
 }
 
-/* Хаб историй и список — верхний отступ под Full Screen (тот же приём, что в characters.css). */
-.story-list-page {
-  min-height: 100dvh;
+/* Хаб «Режиссёр истории»: страница НЕ скроллится целиком — фиксированная высота вьюпорта.
+   Внутри — две секции в ОДНОМ List: секция списка (растянута на всю высоту, скролл ВНУТРИ её
+   карточки, с бесконечной подгрузкой через InfiniteSentinel) и секция кнопки (естественной
+   высоты, докнута к нижней кромке). Тот же приём, что в хабах «Персонажи»/«Персоны»/«Книги знаний». */
+.stories-hub {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
   padding-top: calc(
     8px +
     var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
     var(--tg-viewport-content-safe-area-inset-top, 0px)
   );
-  padding-bottom: 24px;
 }
 
-/* Спиннер загрузки секции — по центру строки (как .rp-chats-page__center). */
-.story-list-page__center {
-  display: flex;
-  justify-content: center;
-  padding: 24px 0;
-}
-
-.story-list-page__icon {
+.stories-hub__banner-icon {
   color: var(--tg-theme-link-color, #2481cc);
 }
 
-.story-list-page__chevron {
-  color: var(--tg-theme-hint-color, #999);
+.stories-hub__list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Пагинация полного списка историй (как .rp-chats-all-page__pagination). */
-.story-list-page__pagination {
+/* Селекторы `> div > div` опираются на структуру tgui Section: root(<section>) → card(фон+тень)
+   → body(радиус+ячейки); без header/footer у card один ребёнок-body. */
+.stories-hub__list-section,
+.stories-hub__list-section > div {
+  flex: 1;
+  min-height: 0;
   display: flex;
-  gap: 12px;
-  padding: 12px 16px;
+  flex-direction: column;
+}
+.stories-hub__list-section > div > div {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.stories-hub__actions-section {
+  flex-shrink: 0;
+}
+
+.stories-hub__center {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.stories-hub__create {
+  padding: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Полноэкранные состояния (спиннер загрузки / «не найдено») — по центру экрана. */

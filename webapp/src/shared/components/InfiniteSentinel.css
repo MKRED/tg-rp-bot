@@ -1,0 +1,14 @@
+.infinite-sentinel {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0;
+}
+
+.infinite-sentinel__retry {
+  border: none;
+  background: none;
+  padding: 4px 12px;
+  font-size: 13px;
+  color: var(--tgui--link_color, #2481cc);
+  cursor: pointer;
+}

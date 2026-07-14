@@ -43,9 +43,6 @@ const RpChatsPage = lazy(() =>
 const RpChatNewPage = lazy(() =>
   import("../pages/rp-chat/RpChatNewPage").then((m) => ({ default: m.RpChatNewPage }))
 );
-const RpChatsAllPage = lazy(() =>
-  import("../pages/rp-chat/RpChatsAllPage").then((m) => ({ default: m.RpChatsAllPage }))
-);
 const RpChatPage = lazy(() =>
   import("../pages/rp-chat/RpChatPage").then((m) => ({ default: m.RpChatPage }))
 );
@@ -60,9 +57,6 @@ const StoriesPage = lazy(() =>
 );
 const StoryNewPage = lazy(() =>
   import("../pages/narrator/StoryNewPage").then((m) => ({ default: m.StoryNewPage }))
-);
-const StoriesAllPage = lazy(() =>
-  import("../pages/narrator/StoriesAllPage").then((m) => ({ default: m.StoriesAllPage }))
 );
 const StoryPage = lazy(() =>
   import("../pages/narrator/StoryPage").then((m) => ({ default: m.StoryPage }))
@@ -103,10 +97,9 @@ export function AnimatedRoutes() {
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route path={ROUTES.home} element={<HomePage />} />
-          {/* Хаб чатов. Статические /chats/new и /chats/all стоят раньше /chats/:id. */}
+          {/* Хаб чатов. Статический /chats/new стоит раньше /chats/:id. */}
           <Route path={ROUTES.chats} element={<RpChatsPage />} />
           <Route path={ROUTES.chatNew} element={<RpChatNewPage />} />
-          <Route path={ROUTES.chatAll} element={<RpChatsAllPage />} />
           {/* Статические /chats/:id/settings и /chats/:id/graph стоят раньше /chats/:id */}
           <Route path={ROUTES.chatSettings} element={<RpChatSettingsPage />} />
           <Route path={ROUTES.chatGraph} element={<RpChatGraphPage />} />
@@ -124,10 +117,9 @@ export function AnimatedRoutes() {
           <Route path={ROUTES.personaNew} element={<PersonaEditPage />} />
           <Route path={ROUTES.personaEdit} element={<PersonaEditPage />} />
 
-          {/* Narrator-режим. Статические /new стоят раньше /:id. */}
+          {/* Narrator-режим. Статический /new стоит раньше /:id. */}
           <Route path={ROUTES.stories} element={<StoriesPage />} />
           <Route path={ROUTES.storyNew} element={<StoryNewPage />} />
-          <Route path={ROUTES.storyAll} element={<StoriesAllPage />} />
           {/* Более специфичные /stories/:id/settings и /graph — раньше /stories/:id (порядок = намерение). */}
           <Route path={ROUTES.storySettings} element={<StorySettingsPage />} />
           <Route path={ROUTES.storyGraph} element={<StoryGraphPage />} />

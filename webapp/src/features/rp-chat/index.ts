@@ -1,6 +1,5 @@
 export { ChatCard } from "./components/ChatCard";
-export { useRecentChats } from "./hooks/useRecentChats";
-export { useAllChats } from "./hooks/useAllChats";
+export { useChats } from "./hooks/useChats";
 export { useChat } from "./hooks/useChat";
 export { useSendMessage } from "./hooks/useSendMessage";
 export { useChatSettings } from "./hooks/useChatSettings";

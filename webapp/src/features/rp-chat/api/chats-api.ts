@@ -3,26 +3,13 @@ import type { ChatCreated, ChatDetail, ChatInput, ChatListItem } from "../types/
 
 // ─── Список чатов ──────────────────────────────────────────────────────────────
 
-export async function listRecentChats(limit = 5): Promise<ChatListItem[]> {
-  try {
-    const res = await apiFetch<{ items: ChatListItem[] }>(`/chats?page=1&pageSize=${limit}`);
-    return res.items;
-  } catch {
-    return [];
-  }
-}
-
-export async function listAllChats(
+export function listChats(
   page: number,
-  pageSize = 20,
+  pageSize: number,
 ): Promise<{ items: ChatListItem[]; total: number }> {
-  try {
-    return await apiFetch<{ items: ChatListItem[]; total: number }>(
-      `/chats?page=${page}&pageSize=${pageSize}`,
-    );
-  } catch {
-    return { items: [], total: 0 };
-  }
+  return apiFetch<{ items: ChatListItem[]; total: number }>(
+    `/chats?page=${page}&pageSize=${pageSize}`,
+  );
 }
 
 /** Создать новый чат. */
