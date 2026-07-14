@@ -29,23 +29,20 @@ export function PersonasListPage() {
         />
 
         <List className="personas-hub__list">
+          {/* Section вставляет Divider между прямыми детьми по позиции — единственное top-level
+              выражение (тернарник) не даёт паразитных пустых слотов между loading/error/пусто;
+              для списка ветка возвращает items.map(...) НЕ обёрнутым во Fragment, чтобы Section
+              развернул его как массив и расставил разделители между карточками. */}
           <Section className="personas-hub__list-section">
-            {loading && (
+            {loading ? (
               <div className="personas-hub__center">
                 <Spinner size="m" />
               </div>
-            )}
-
-            {!loading && error && (
+            ) : error ? (
               <Cell subtitle="Не удалось загрузить список">Ошибка</Cell>
-            )}
-
-            {!loading && !error && items.length === 0 && (
+            ) : items.length === 0 ? (
               <Cell subtitle="Пока нет персон — создайте первую">Пусто</Cell>
-            )}
-
-            {!loading &&
-              !error &&
+            ) : (
               items.map((p, i) => (
                 <motion.div
                   key={p.id}
@@ -61,7 +58,8 @@ export function PersonasListPage() {
                     {p.name}
                   </Cell>
                 </motion.div>
-              ))}
+              ))
+            )}
           </Section>
 
           {/* Вторая секция — кнопка создания. Один div-ребёнок: Section вставляет Divider между

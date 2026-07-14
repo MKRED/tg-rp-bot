@@ -29,18 +29,20 @@ export function BooksListPage() {
         />
 
         <List className="kb-hub__list">
+          {/* Section вставляет Divider между прямыми детьми по позиции — единственное top-level
+              выражение (тернарник) не даёт паразитных пустых слотов между loading/error/пусто;
+              для списка книг ветка возвращает items.map(...) НЕ обёрнутым во Fragment, чтобы
+              Section развернул его как массив и расставил разделители между карточками. */}
           <Section className="kb-hub__list-section">
-            {loading && (
+            {loading ? (
               <div className="kb-hub__center">
                 <Spinner size="m" />
               </div>
-            )}
-            {!loading && error && <Cell subtitle="Не удалось загрузить список">Ошибка</Cell>}
-            {!loading && !error && items.length === 0 && (
+            ) : error ? (
+              <Cell subtitle="Не удалось загрузить список">Ошибка</Cell>
+            ) : items.length === 0 ? (
               <Cell subtitle="Пока нет книг — создайте первую">Пусто</Cell>
-            )}
-            {!loading &&
-              !error &&
+            ) : (
               items.map((b, i) => (
                 <motion.div
                   key={b.id}
@@ -50,7 +52,8 @@ export function BooksListPage() {
                 >
                   <BookCard book={b} onClick={() => navigate(bookEditPath(b.id))} />
                 </motion.div>
-              ))}
+              ))
+            )}
           </Section>
 
           {/* Вторая секция — кнопка создания. Один div-ребёнок: Section вставляет Divider между

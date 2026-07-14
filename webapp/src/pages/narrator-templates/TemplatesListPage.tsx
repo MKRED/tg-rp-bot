@@ -28,18 +28,20 @@ export function TemplatesListPage() {
         />
 
         <List className="nt-hub__list">
+          {/* Section вставляет Divider между прямыми детьми по позиции — единственное top-level
+              выражение (тернарник) не даёт паразитных пустых слотов между loading/error/пусто;
+              для списка ветка возвращает items.map(...) НЕ обёрнутым во Fragment, чтобы Section
+              развернул его как массив и расставил разделители между карточками. */}
           <Section className="nt-hub__list-section">
-            {loading && (
+            {loading ? (
               <div className="nt-hub__center">
                 <Spinner size="m" />
               </div>
-            )}
-            {!loading && error && <Cell subtitle="Не удалось загрузить список">Ошибка</Cell>}
-            {!loading && !error && items.length === 0 && (
+            ) : error ? (
+              <Cell subtitle="Не удалось загрузить список">Ошибка</Cell>
+            ) : items.length === 0 ? (
               <Cell subtitle="Пока нет шаблонов — создайте первый">Пусто</Cell>
-            )}
-            {!loading &&
-              !error &&
+            ) : (
               items.map((t, i) => (
                 <motion.div
                   key={t.id}
@@ -54,7 +56,8 @@ export function TemplatesListPage() {
                     {t.name}
                   </Cell>
                 </motion.div>
-              ))}
+              ))
+            )}
           </Section>
 
           {/* Вторая секция — кнопка создания. Один div-ребёнок: Section вставляет Divider между
