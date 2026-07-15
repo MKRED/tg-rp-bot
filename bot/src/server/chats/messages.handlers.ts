@@ -13,14 +13,15 @@ import {
 import { getCharacter } from "../../db/characters/index.js";
 import { getPersona } from "../../db/personas/index.js";
 import { getPreset } from "../../db/presets/index.js";
+import { getRpTemplate } from "../../db/rpTemplates/index.js";
 import logger from "../../logger.js";
-import { buildMessages, makeDefaultPreset, presetToCompletionOptions } from "../prompt/promptBuilder.js";
+import { buildMessages, DEFAULT_RP_PROMPT_ORDER, presetToCompletionOptions } from "../prompt/promptBuilder.js";
 import { streamCompletion } from "../shared/streamGeneration.js";
 import { aiTranslate, englishLangName, googleTranslate } from "../shared/translate.js";
 import type { ChatContext, Ctx } from "./chats.types.js";
 
 /**
- * Загружает чат + связанные сущности (персонаж/персона/пресет) с проверкой владельца.
+ * Загружает чат + связанные сущности (персонаж/персона/RP-шаблон/пресет) с проверкой владельца.
  * Возвращает null, если чат или персонаж не найдены. Переиспользуется обычной генерацией
  * и impersonate-хендлерами.
  */
@@ -35,14 +36,16 @@ export async function loadChatContext(
   if (!character) return null;
 
   const persona = chat.persona ? await getPersona(userId, chat.persona.id) : null;
+  const template = chat.template ? await getRpTemplate(userId, chat.template.id) : null;
   const preset = chat.preset ? await getPreset(userId, chat.preset.id) : null;
 
-  return { chat, character, persona, preset };
+  return { chat, character, persona, template, preset };
 }
 
 /**
  * Собирает ChatCompletionOptions для вызова LLM на основе текущего состояния чата.
- * Персонаж и пресет читаются из БД; если пресет не задан — используем пустой набор параметров.
+ * Промпты — из RP-шаблона (template), сэмплинг — из пресета (preset); оба грузятся из БД,
+ * отсутствие любого (defensive fallback — оба NOT NULL в схеме) не должно валить генерацию.
  */
 async function buildCompletionInput(
   userId: number,
@@ -51,11 +54,17 @@ async function buildCompletionInput(
 ) {
   const ctx = await loadChatContext(userId, chatId);
   if (!ctx) return null;
-  const { chat, character, persona, preset } = ctx;
+  const { chat, character, persona, template, preset } = ctx;
 
   const msgs = buildMessages(
     {
-      preset: preset ?? makeDefaultPreset(userId),
+      systemPrompt: template?.systemPrompt ?? "",
+      auxiliarySystemPrompt: template?.auxiliarySystemPrompt ?? "",
+      postHistoryInstruction: template?.postHistoryInstruction ?? "",
+      promptOrder: template?.promptOrder ?? DEFAULT_RP_PROMPT_ORDER,
+      contextUnlimited: preset?.contextUnlimited,
+      contextSize: preset?.contextSize,
+      maxTokens: preset?.maxTokens,
       character: { name: character.name, prompt: character.prompt, scenario: character.scenario },
       persona: persona ? { name: persona.name, prompt: persona.prompt } : null,
       history: chat.messages,
@@ -288,11 +297,13 @@ export async function handleTranslateMessage(c: Ctx) {
     const { translateMethod } = await getChatSettings(chatId);
     let translation: string;
     if (translateMethod === "ai") {
-      // Промпт перевода — из пресета чата (управляющая поверхность ИИ-режима), сэмплинг не переиспользуем
-      // (см. handleTranslateText/aiTranslate — параметры RP испортили бы верность перевода).
+      // Промпт перевода — из RP-шаблона чата, эффорт рассуждения — из пресета (шаблон промптов
+      // не хранит сэмплинг). Сэмплинг RP не переиспользуем (см. handleTranslateText/aiTranslate —
+      // параметры RP испортили бы верность перевода).
+      const template = chat.template ? await getRpTemplate(userId, chat.template.id) : null;
       const preset = chat.preset ? await getPreset(userId, chat.preset.id) : null;
       translation = await aiTranslate(
-        preset?.translationSystemPrompt ?? "",
+        template?.translationSystemPrompt ?? "",
         msg.content,
         englishLangName(targetLang),
         userId,

@@ -1,9 +1,16 @@
 import { Cell, List, Section, Spinner, Switch } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
-import { Bot, ChevronRight, Eraser, Trash2, User } from "lucide-react";
+import { Bot, ChevronRight, Eraser, FileText, Trash2, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { ROUTES, characterEditPath, chatSettingsPath, personaEditPath, presetEditPath } from "../../app/routes";
+import {
+  ROUTES,
+  characterEditPath,
+  chatSettingsPath,
+  personaEditPath,
+  presetEditPath,
+  rpTemplateEditPath,
+} from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { HintedInput } from "../../shared/components/HintedInput";
 import { PageTransition } from "../../shared/components/PageTransition";
@@ -181,6 +188,29 @@ export function RpChatSettingsPage() {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ ...ITEM_T, delay: 0.14 }}
+                >
+                  <Cell
+                    before={
+                      <div className="rp-chat-settings-page__icon-avatar">
+                        <FileText size={18} />
+                      </div>
+                    }
+                    after={<ChevronRight size={16} style={{ color: "var(--tg-theme-hint-color)" }} />}
+                    subtitle="RP-шаблон"
+                    onClick={() =>
+                      chat.template
+                        ? navigate(rpTemplateEditPath(chat.template.id), { state: { returnTo } })
+                        : navigate(ROUTES.rpTemplates, { state: { returnTo } })
+                    }
+                  >
+                    {chat.template?.name ?? "Без шаблона"}
+                  </Cell>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ ...ITEM_T, delay: 0.21 }}
                 >
                   <Cell
                     before={

@@ -19,8 +19,8 @@ bot/src/
   logger.ts     — pino logger (daily rolling, pino-pretty in TTY)
   proxy.ts      — HttpsProxyAgent (https-proxy-agent) ТОЛЬКО для Telegram
   db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + клиент +
-                  DAO-папки по таблицам: characters/ personas/ presets/ impersonations/
-                  narratorTemplates/ (у каждой DAO-файл + types.ts/constants.ts + barrel index.ts),
+                  DAO-папки по таблицам: characters/ personas/ presets/ (только сэмплинг) impersonations/
+                  narratorTemplates/ rpTemplates/ (у каждой DAO-файл + types.ts/constants.ts + barrel index.ts),
                   chats/ stories/ knowledge/ (деревья/лорбук), users.ts, userSettings.ts
   llm/          — LLM client (client/request/errors/types/constants/completionGuard/providers) —
                   серверно, провайдер (OpenRouter | DeepSeek) выбирается env LLM_PROVIDER;
@@ -30,7 +30,7 @@ bot/src/
   server/       — Hono HTTP API, разложен по доменным папкам (зеркало webapp): index=startServer,
                   routes.ts — карта эндпоинтов (монтаж контроллеров), middleware/ (initData — валидация
                   подписи), доменные папки me/ characters/ personas/ presets/ books/ narrator-templates/
-                  chats/ stories/ debug/ — у каждого <домен>.controller.ts (Hono-роуты) + validation/
+                  rp-templates/ chats/ stories/ debug/ — у каждого <домен>.controller.ts (Hono-роуты) + validation/
                   constants/types рядом + barrel index.ts; chats/ — messages.handlers + impersonate.handlers
                   + stats.handler; stories/ — story.handlers (SSE-генерация RP/narrator); prompt/ —
                   promptBuilder + storyPromptBuilder + общий budget (у каждого constants/types/test рядом);
@@ -49,10 +49,11 @@ webapp/src/
   init.ts       — инициализация @telegram-apps SDK (защищённая) + initData.restore()
   app/          — оболочка: App.tsx (AppRoot + HashRouter), routes.ts, BackButtonBridge, deepLink.ts
   pages/        — экраны-маршруты (один на маршрут): home/ characters/ personas/
-                  generation-presets/ rp-chat/ narrator/ knowledge-books/ narrator-templates/ debug/
-  features/     — доменные модули (по подпапкам-категориям + barrel index.ts):
-                  characters/ personas/ generation-presets/ rp-chat/ narrator/ knowledge-books/
+                  generation-presets/ rp-templates/ rp-chat/ narrator/ knowledge-books/
                   narrator-templates/ debug/
+  features/     — доменные модули (по подпапкам-категориям + barrel index.ts):
+                  characters/ personas/ generation-presets/ rp-templates/ rp-chat/ narrator/
+                  knowledge-books/ narrator-templates/ debug/
   shared/       — кросс-каттинг: api/ (client с Authorization), telegram/ (initData, confirm, profile
                   photo, platform), text/, image/, graph/, hooks/, constants/, toast/, components/
 ```

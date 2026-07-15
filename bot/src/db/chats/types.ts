@@ -3,6 +3,7 @@
 export type ChatInput = {
   characterId: number;
   personaId: number;
+  templateId: number;
   presetId: number;
 };
 
@@ -27,6 +28,7 @@ export type ChatDetail = {
   title: string | null;
   character: { id: number; name: string; hasImage: boolean };
   persona: { id: number; name: string; hasImage: boolean } | null;
+  template: { id: number; name: string } | null;
   preset: { id: number; name: string } | null;
   activeMessageId: number | null;
   messages: MessageInPath[];

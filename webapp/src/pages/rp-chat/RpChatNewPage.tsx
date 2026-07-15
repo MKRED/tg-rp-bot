@@ -1,5 +1,5 @@
 import { Button, Cell, List, Modal, Section, Spinner } from "@telegram-apps/telegram-ui";
-import { ChevronRight, MessageSquareText, SlidersHorizontal, Smile, User } from "lucide-react";
+import { ChevronRight, FileText, MessageSquareText, SlidersHorizontal, Smile, User } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { ROUTES, chatViewPath } from "../../app/routes";
@@ -8,11 +8,13 @@ import { PageTransition } from "../../shared/components/PageTransition";
 import { CharacterAvatar, useCharacters, useCharacter } from "../../features/characters";
 import { PersonaAvatar, usePersonas } from "../../features/personas";
 import { presetSummary, usePresets } from "../../features/generation-presets";
+import { useRpTemplates } from "../../features/rp-templates";
 import { createChat } from "../../features/rp-chat";
 import "./rp-chat.css";
 
-// null = ещё не выбрано (блокирует сабмит). Персона и пресет обязательны.
+// null = ещё не выбрано (блокирует сабмит). Персона, RP-шаблон и пресет обязательны.
 type PersonaChoice = number | null;
+type TemplateChoice = number | null;
 type PresetChoice = number | null;
 // Выбор приветствия: индекс в firstMessages, "random" = случайное, null = у персонажа нет приветствий.
 type GreetingChoice = number | "random" | null;
@@ -23,22 +25,25 @@ const ITEM_TRANSITION = { duration: 0.2, ease: "easeOut" as const };
 const truncate = (s: string, n = 60): string =>
   s.length > n ? `${s.slice(0, n).trimEnd()}…` : s;
 
-/** Форма создания нового чата: персонаж, приветствие, персона, пресет ИИ. */
+/** Форма создания нового чата: персонаж, приветствие, персона, RP-шаблон, пресет ИИ. */
 export function RpChatNewPage() {
   const navigate = useTransitionNavigate();
 
   const { items: characters, loading: charsLoading } = useCharacters();
   const { items: personas, loading: personasLoading } = usePersonas();
+  const { items: templates, loading: templatesLoading } = useRpTemplates();
   const { items: presets, loading: presetsLoading } = usePresets();
 
   const [charId, setCharId] = useState<number | null>(null);
   const [personaChoice, setPersonaChoice] = useState<PersonaChoice>(null);
+  const [templateChoice, setTemplateChoice] = useState<TemplateChoice>(null);
   const [presetChoice, setPresetChoice] = useState<PresetChoice>(null);
   const [greetingChoice, setGreetingChoice] = useState<GreetingChoice>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const [charOpen, setCharOpen] = useState(false);
   const [personaOpen, setPersonaOpen] = useState(false);
+  const [templateOpen, setTemplateOpen] = useState(false);
   const [presetOpen, setPresetOpen] = useState(false);
   const [greetingOpen, setGreetingOpen] = useState(false);
 
@@ -53,13 +58,25 @@ export function RpChatNewPage() {
 
   const selectedChar = characters.find((c) => c.id === charId) ?? null;
   const selectedPersona = personas.find((p) => p.id === personaChoice) ?? null;
+  const selectedTemplate = templates.find((t) => t.id === templateChoice) ?? null;
   const selectedPreset = presets.find((p) => p.id === presetChoice) ?? null;
 
   const canSubmit =
-    charId !== null && personaChoice !== null && presetChoice !== null && !submitting;
+    charId !== null &&
+    personaChoice !== null &&
+    templateChoice !== null &&
+    presetChoice !== null &&
+    !submitting;
 
   const handleSubmit = async () => {
-    if (!canSubmit || charId === null || personaChoice === null || presetChoice === null) return;
+    if (
+      !canSubmit ||
+      charId === null ||
+      personaChoice === null ||
+      templateChoice === null ||
+      presetChoice === null
+    )
+      return;
     setSubmitting(true);
     try {
       const count = firstMessages.length;
@@ -74,6 +91,7 @@ export function RpChatNewPage() {
       const chat = await createChat({
         characterId: charId,
         personaId: personaChoice,
+        templateId: templateChoice,
         presetId: presetChoice,
         firstMessageIndex,
       });
@@ -203,11 +221,32 @@ export function RpChatNewPage() {
               </Cell>
             </motion.div>
 
-            {/* Пресет ИИ */}
+            {/* RP-шаблон (промпты) */}
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ ...ITEM_TRANSITION, delay: 0.15 }}
+            >
+              <Cell
+                before={
+                  <FileText
+                    size={24}
+                    className={`rp-chat-new-page__icon${templateChoice === null ? " rp-chat-new-page__icon--hint" : ""}`}
+                  />
+                }
+                after={<ChevronRight size={20} className="rp-chat-new-page__chevron" />}
+                subtitle={templateChoice === null ? "Обязательно" : "RP-шаблон"}
+                onClick={() => setTemplateOpen(true)}
+              >
+                {selectedTemplate?.name ?? "Выберите RP-шаблон"}
+              </Cell>
+            </motion.div>
+
+            {/* Пресет ИИ */}
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...ITEM_TRANSITION, delay: 0.2 }}
             >
               <Cell
                 before={
@@ -338,6 +377,35 @@ export function RpChatNewPage() {
                 }}
               >
                 {p.name}
+              </Cell>
+            ))}
+          </List>
+        </Modal>
+
+        {/* Модал выбора RP-шаблона */}
+        <Modal
+          open={templateOpen}
+          onOpenChange={setTemplateOpen}
+          header={<Modal.Header>RP-шаблон</Modal.Header>}
+        >
+          {templatesLoading && (
+            <div className="rp-chat-new-page__center">
+              <Spinner size="m" />
+            </div>
+          )}
+          {!templatesLoading && templates.length === 0 && (
+            <Cell subtitle="Сначала создайте RP-шаблон">Нет шаблонов</Cell>
+          )}
+          <List>
+            {templates.map((t) => (
+              <Cell
+                key={t.id}
+                onClick={() => {
+                  setTemplateChoice(t.id);
+                  setTemplateOpen(false);
+                }}
+              >
+                {t.name}
               </Cell>
             ))}
           </List>

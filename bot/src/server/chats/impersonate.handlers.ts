@@ -16,7 +16,7 @@ import type { Ctx } from "./chats.types.js";
 /**
  * POST /:id/impersonate — генерирует один вариант реплики от лица пользователя и стримит его.
  * Запрос = 2 сообщения (system-шаблон + плоская история), см. renderImpersonateMessages.
- * Стриминг токенов включается флагом пресета userPersonaStreaming (выкл → клиент покажет спиннер).
+ * Стриминг токенов включается флагом RP-шаблона userPersonaStreaming (выкл → клиент покажет спиннер).
  * Готовый вариант сохраняется в БД (FIFO, ≤20 на момент = chat.activeMessageId).
  */
 export async function handleImpersonate(c: Ctx) {
@@ -25,14 +25,14 @@ export async function handleImpersonate(c: Ctx) {
 
   const ctx = await loadChatContext(userId, chatId);
   if (!ctx) return c.json({ error: "Chat not found" }, 404);
-  const { chat, character, persona, preset } = ctx;
+  const { chat, character, persona, template, preset } = ctx;
 
   const messages = renderImpersonateMessages({
-    template: preset?.userPersonaPrompt ?? "",
+    template: template?.userPersonaPrompt ?? "",
     character: { name: character.name, prompt: character.prompt, scenario: character.scenario },
     persona: persona ? { name: persona.name, prompt: persona.prompt } : null,
-    systemPrompt: preset?.systemPrompt ?? "",
-    auxPrompt: preset?.auxiliarySystemPrompt ?? "",
+    systemPrompt: template?.systemPrompt ?? "",
+    auxPrompt: template?.auxiliarySystemPrompt ?? "",
     history: chat.messages,
     // Лимит контекста урезает историю так же, как в обычной генерации (см. resolveImpersonateHistory).
     contextUnlimited: preset?.contextUnlimited,
@@ -42,7 +42,7 @@ export async function handleImpersonate(c: Ctx) {
       logger.info({ userId, chatId, dropped, kept, total }, "Impersonate history trimmed to context budget"),
   });
   const samplingOpts = preset ? presetToCompletionOptions(preset) : {};
-  const doStream = preset?.userPersonaStreaming ?? true;
+  const doStream = template?.userPersonaStreaming ?? true;
   const parentMessageId = chat.activeMessageId;
 
   return streamSSE(c, async (stream) => {
@@ -110,7 +110,7 @@ export async function handleDeleteImpersonation(c: Ctx) {
 /**
  * POST /:id/translate-text — перевод произвольного текста (эфемерно, без кэша в БД).
  * mode: "google" (по умолчанию — Google Translate) или "ai" (запрос к LLM с промптом перевода
- * из пресета). Используется и карточками impersonate (без mode → google), и шторой перевода черновика.
+ * из RP-шаблона). Используется и карточками impersonate (без mode → google), и шторой перевода черновика.
  */
 export async function handleTranslateText(c: Ctx) {
   const userId = c.get("tgUser")!.id;
@@ -127,15 +127,15 @@ export async function handleTranslateText(c: Ctx) {
   if (!text.trim() || !targetLang) return c.json({ error: "text and targetLang are required" }, 400);
 
   if (mode === "ai") {
-    // ИИ-режиму нужны пресет и контекст чата (проверка владельца — внутри loadChatContext).
+    // ИИ-режиму нужны RP-шаблон и пресет чата (проверка владельца — внутри loadChatContext).
     const ctx = await loadChatContext(userId, chatId);
     if (!ctx) return c.json({ error: "Chat not found" }, 404);
-    const { preset } = ctx;
+    const { template, preset } = ctx;
     // Сэмплинг пресета НЕ переиспользуем: его maxTokens обрезал бы длинный перевод, а высокие
     // temperature/penalties (настроенные под RP) портят верность перевода. Управляющая
-    // поверхность ИИ-режима — сам промпт перевода; параметры оставляем дефолтными для модели.
+    // поверхность ИИ-режима — промпт перевода из RP-шаблона; параметры оставляем дефолтными.
     const translation = await aiTranslate(
-      preset?.translationSystemPrompt ?? "",
+      template?.translationSystemPrompt ?? "",
       text,
       englishLangName(targetLang),
       userId,

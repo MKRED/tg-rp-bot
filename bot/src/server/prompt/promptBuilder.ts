@@ -1,10 +1,13 @@
-import type { PromptComponentId } from "../../db/schema.js";
-import type { GenerationPreset } from "../../db/schema.js";
+import type { GenerationPreset, PromptComponentId } from "../../db/schema.js";
 import type { MessageInPath } from "../../db/chats/index.js";
 import type { ChatMessage } from "../../llm/types.js";
 import { countTokens } from "../../utils/index.js";
 import { DEFAULT_OUTPUT_RESERVE, PER_MESSAGE_OVERHEAD, trimHistoryToBudget } from "./budget.js";
-import { DEFAULT_IMPERSONATE_TEMPLATE, IMPERSONATE_HISTORY_LIMIT } from "./promptBuilder.constants.js";
+import {
+  DEFAULT_IMPERSONATE_TEMPLATE,
+  DEFAULT_RP_PROMPT_ORDER,
+  IMPERSONATE_HISTORY_LIMIT,
+} from "./promptBuilder.constants.js";
 import type {
   BuildMessagesControl,
   BuildMessagesOptions,
@@ -13,7 +16,7 @@ import type {
 
 // Реэкспорт публичной поверхности билдера для потребителей (хендлеры импортируют отсюда).
 export { trimHistoryToBudget } from "./budget.js";
-export { DEFAULT_IMPERSONATE_TEMPLATE } from "./promptBuilder.constants.js";
+export { DEFAULT_IMPERSONATE_TEMPLATE, DEFAULT_RP_PROMPT_ORDER } from "./promptBuilder.constants.js";
 export type {
   BuildMessagesControl,
   BuildMessagesOptions,
@@ -38,7 +41,7 @@ export function replacePlaceholders(text: string, charName: string, userName: st
 function componentText(opts: BuildMessagesOptions, id: Exclude<PromptComponentId, "history">): string | null {
   switch (id) {
     case "system":
-      return opts.preset.systemPrompt || null;
+      return opts.systemPrompt || null;
     case "characterDescription":
       return opts.character.prompt || null;
     case "characterScenario":
@@ -49,9 +52,9 @@ function componentText(opts: BuildMessagesOptions, id: Exclude<PromptComponentId
       // Показываем персону, только если она задана (компонент может быть включён без персоны).
       return opts.persona?.prompt || null;
     case "auxiliary":
-      return opts.preset.auxiliarySystemPrompt || null;
+      return opts.auxiliarySystemPrompt || null;
     case "postHistory":
-      return opts.preset.postHistoryInstruction || null;
+      return opts.postHistoryInstruction || null;
   }
 }
 
@@ -62,19 +65,19 @@ function componentText(opts: BuildMessagesOptions, id: Exclude<PromptComponentId
  * истории отбрасываем самые старые сообщения, пока остаток не уложится в бюджет.
  */
 function resolveHistory(opts: BuildMessagesOptions, sub: (t: string) => string): MessageInPath[] {
-  const { preset, history } = opts;
-  if (preset.contextUnlimited || preset.contextSize == null) return history;
+  const { history } = opts;
+  if (opts.contextUnlimited || opts.contextSize == null) return history;
 
-  const reserve = preset.maxTokens ?? DEFAULT_OUTPUT_RESERVE;
+  const reserve = opts.maxTokens ?? DEFAULT_OUTPUT_RESERVE;
   // Стоимость фиксированных частей запроса: их урезать нельзя, поэтому вычитаем из бюджета истории.
   let fixed = countTokens(sub(opts.userMessage)) + PER_MESSAGE_OVERHEAD;
-  for (const item of preset.promptOrder) {
+  for (const item of opts.promptOrder) {
     if (!item.enabled || item.id === "history") continue;
     const text = componentText(opts, item.id);
     if (text) fixed += countTokens(sub(text)) + PER_MESSAGE_OVERHEAD;
   }
 
-  const available = preset.contextSize - reserve - fixed;
+  const available = opts.contextSize - reserve - fixed;
   return trimHistoryToBudget(
     history,
     available,
@@ -84,17 +87,17 @@ function resolveHistory(opts: BuildMessagesOptions, sub: (t: string) => string):
 
 /**
  * Собирает массив ChatMessage[] для отправки в LLM.
- * Порядок компонентов определяется preset.promptOrder; отключённые/пустые компоненты пропускаются.
- * Во всех текстах автоматически заменяются {{char}} и {{user}} на имена персонажа/персоны.
+ * Порядок компонентов определяется opts.promptOrder (из RP-шаблона); отключённые/пустые компоненты
+ * пропускаются. Во всех текстах автоматически заменяются {{char}} и {{user}} на имена персонажа/персоны.
  *
  *   system / characterDescription / characterScenario / userDescription / auxiliary → role:"system"
- *   history     → MessageInPath[] → {role, content}[] (урезается под preset.contextSize, см. resolveHistory)
- *   postHistory → role:"user", preset.postHistoryInstruction
+ *   history     → MessageInPath[] → {role, content}[] (урезается под opts.contextSize, см. resolveHistory)
+ *   postHistory → role:"user", opts.postHistoryInstruction
  *
  * После всех компонентов добавляется новое сообщение пользователя (userMessage).
  */
 export function buildMessages(opts: BuildMessagesOptions, ctl: BuildMessagesControl = {}): ChatMessage[] {
-  const { preset, character, persona, userMessage } = opts;
+  const { character, persona, userMessage } = opts;
   const charName = character.name;
   const userName = persona?.name ?? "User";
   const sub = (text: string) => replacePlaceholders(text, charName, userName);
@@ -104,7 +107,7 @@ export function buildMessages(opts: BuildMessagesOptions, ctl: BuildMessagesCont
   if (dropped > 0) ctl.onTrim?.({ dropped, kept: history.length, total: opts.history.length });
 
   const result: ChatMessage[] = [];
-  for (const item of preset.promptOrder) {
+  for (const item of opts.promptOrder) {
     if (!item.enabled) continue;
 
     if (item.id === "history") {
@@ -226,35 +229,6 @@ export function renderImpersonateMessages(opts: ImpersonateOptions): ChatMessage
     { role: "system", content: system },
     { role: "user", content: user },
   ];
-}
-
-/**
- * Дефолтный пресет генерации, когда у чата пресет не выбран. Значимы здесь только
- * promptOrder (что включаем в контекст) и пустые промпты; сэмплинг — дефолты провайдера.
- * Фабрика, а не константа: id/userId/createdAt привязаны к пользователю.
- */
-export function makeDefaultPreset(userId: number): GenerationPreset {
-  return {
-    id: 0, userId, name: "default",
-    contextUnlimited: false, contextSize: null, maxTokens: null, streaming: false,
-    temperature: null, topP: null, topK: null,
-    frequencyPenalty: null, presencePenalty: null, repetitionPenalty: null,
-    minP: null, topA: null,
-    systemPrompt: "", auxiliarySystemPrompt: "", postHistoryInstruction: "", userPersonaPrompt: "",
-    userPersonaStreaming: true,
-    translationSystemPrompt: "",
-    requestReasoning: false, reasoningEffort: null,
-    promptOrder: [
-      { id: "system", enabled: false },
-      { id: "characterDescription", enabled: true },
-      { id: "userDescription", enabled: false },
-      { id: "auxiliary", enabled: false },
-      { id: "characterScenario", enabled: false },
-      { id: "history", enabled: true },
-      { id: "postHistory", enabled: false },
-    ],
-    createdAt: new Date(), updatedAt: new Date(),
-  };
 }
 
 /**

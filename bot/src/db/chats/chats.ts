@@ -121,11 +121,14 @@ export async function getChat(
       p.id    AS persona_id,
       p.name  AS persona_name,
       p.image IS NOT NULL AS persona_has_image,
+      rt.id   AS template_id,
+      rt.name AS template_name,
       pr.id   AS preset_id,
       pr.name AS preset_name
     FROM chats c
     JOIN characters ch ON ch.id = c.character_id
     LEFT JOIN personas p  ON p.id  = c.persona_id
+    LEFT JOIN rp_templates rt ON rt.id = c.template_id
     LEFT JOIN generation_presets pr ON pr.id = c.preset_id
     WHERE c.id = ${chatId} AND c.user_id = ${userId}
     LIMIT 1
@@ -184,6 +187,9 @@ export async function getChat(
           name: chatRow.persona_name as string,
           hasImage: chatRow.persona_has_image as boolean,
         }
+      : null,
+    template: chatRow.template_id
+      ? { id: Number(chatRow.template_id), name: chatRow.template_name as string }
       : null,
     preset: chatRow.preset_id
       ? { id: Number(chatRow.preset_id), name: chatRow.preset_name as string }
@@ -259,6 +265,7 @@ export async function createChat(
       userId,
       characterId: input.characterId,
       personaId: input.personaId,
+      templateId: input.templateId,
       presetId: input.presetId,
     })
     .returning();

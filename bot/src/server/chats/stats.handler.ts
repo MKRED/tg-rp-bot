@@ -2,7 +2,7 @@ import { getChatTokenStats } from "../../db/chats/index.js";
 import { countVariantsForChat } from "../../db/impersonations/index.js";
 import logger from "../../logger.js";
 import { countTokens } from "../../utils/index.js";
-import { buildMessages, makeDefaultPreset } from "../prompt/promptBuilder.js";
+import { buildMessages, DEFAULT_RP_PROMPT_ORDER } from "../prompt/promptBuilder.js";
 import { loadChatContext } from "./messages.handlers.js";
 import type { Ctx } from "./chats.types.js";
 
@@ -22,17 +22,22 @@ export async function handleChatStats(c: Ctx) {
   try {
     const ctx = await loadChatContext(userId, chatId);
     if (!ctx) return c.json({ error: "Chat not found" }, 404);
-    const { chat, character, persona, preset } = ctx;
-
-    const effectivePreset = preset ?? makeDefaultPreset(userId);
+    const { chat, character, persona, template, preset } = ctx;
 
     // Полный контекст запроса к модели по активной ветке. userMessage пуст: считаем текущий
-    // объём, без ещё не введённой реплики игрока. Учитываем promptOrder пресета (как в генерации).
+    // объём, без ещё не введённой реплики игрока. Промпты/порядок — из RP-шаблона, лимиты
+    // контекста — из пресета (как в генерации, см. buildCompletionInput в messages.handlers.ts).
     // trim:false — намеренно НЕ урезаем: бар должен показать «желаемый» объём, чтобы пользователь
     // видел переполнение окна (used > limit → красный), хотя сама генерация историю урежет.
     const promptMessages = buildMessages(
       {
-        preset: effectivePreset,
+        systemPrompt: template?.systemPrompt ?? "",
+        auxiliarySystemPrompt: template?.auxiliarySystemPrompt ?? "",
+        postHistoryInstruction: template?.postHistoryInstruction ?? "",
+        promptOrder: template?.promptOrder ?? DEFAULT_RP_PROMPT_ORDER,
+        contextUnlimited: preset?.contextUnlimited,
+        contextSize: preset?.contextSize,
+        maxTokens: preset?.maxTokens,
         character: { name: character.name, prompt: character.prompt, scenario: character.scenario },
         persona: persona ? { name: persona.name, prompt: persona.prompt } : null,
         history: chat.messages,
@@ -48,7 +53,7 @@ export async function handleChatStats(c: Ctx) {
     // Лимит контекста для полосы загрузки на экране настроек. Безграничный контекст или незаданный
     // размер → null (полоса покажет «∞»). В генерации этот лимит теперь РЕАЛЬНО урезает историю
     // (resolveHistory в promptBuilder); здесь показываем сам размер окна как знаменатель полосы.
-    const contextLimit = effectivePreset.contextUnlimited ? null : effectivePreset.contextSize;
+    const contextLimit = preset?.contextUnlimited ? null : (preset?.contextSize ?? null);
 
     // getChatTokenStats независимо считает активный путь (через queryActivePathIds) — это второй
     // проход по тому же пути, что уже построил loadChatContext. Осознанное упрощение: экран настроек

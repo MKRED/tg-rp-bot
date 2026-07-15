@@ -58,6 +58,13 @@ export const ROUTES = {
   /** Форма редактирования narrator-шаблона по id (статический `new` приоритетнее `:id`). */
   narratorTemplateEdit: "/narrator-templates/:id",
 
+  /** Список RP-шаблонов (промпты RP-чата). */
+  rpTemplates: "/rp-templates",
+  /** Форма создания нового RP-шаблона. */
+  rpTemplateNew: "/rp-templates/new",
+  /** Форма редактирования RP-шаблона по id (статический `new` приоритетнее `:id`). */
+  rpTemplateEdit: "/rp-templates/:id",
+
   /** Экран отладки: RAW-запросы к LLM и управление перехватом. */
   debugLlm: "/debug/llm",
 } as const;
@@ -76,6 +83,9 @@ export const bookEditPath = (id: number): string => `/books/${id}`;
 
 /** Путь к редактированию narrator-шаблона. */
 export const narratorTemplateEditPath = (id: number): string => `/narrator-templates/${id}`;
+
+/** Путь к редактированию RP-шаблона. */
+export const rpTemplateEditPath = (id: number): string => `/rp-templates/${id}`;
 
 /** Путь к конкретному чату. */
 export const chatViewPath = (id: number): string => `/chats/${id}`;
@@ -119,6 +129,7 @@ export function parentPath(pathname: string): string {
   if (pathname.startsWith("/stories/")) return ROUTES.stories;
   if (pathname.startsWith("/books/")) return ROUTES.books;
   if (pathname.startsWith("/narrator-templates/")) return ROUTES.narratorTemplates;
+  if (pathname.startsWith("/rp-templates/")) return ROUTES.rpTemplates;
   if (pathname.startsWith("/debug/")) return ROUTES.home;
   return ROUTES.home;
 }

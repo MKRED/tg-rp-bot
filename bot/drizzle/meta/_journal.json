@@ -162,6 +162,13 @@
       "when": 1783408226301,
       "tag": "0022_big_raider",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1784102477180,
+      "tag": "0023_amusing_scarlet_spider",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,5 @@
 import type { MessageInPath } from "../../db/chats/index.js";
-import type { GenerationPreset } from "../../db/schema.js";
+import type { PromptOrderItem } from "../../db/schema.js";
 import type { TrimInfo } from "./budget.js";
 
 export type PromptCharacter = {
@@ -14,7 +14,15 @@ export type PromptPersona = {
 };
 
 export type BuildMessagesOptions = {
-  preset: GenerationPreset;
+  /** Промпты и порядок сборки — из RP-шаблона чата (rp_templates), режимо-специфичны. */
+  systemPrompt: string;
+  auxiliarySystemPrompt: string;
+  postHistoryInstruction: string;
+  promptOrder: PromptOrderItem[];
+  // Лимиты контекста — из пресета (сэмплинг, режимо-независим). Не заданы → без обрезки.
+  contextUnlimited?: boolean;
+  contextSize?: number | null;
+  maxTokens?: number | null;
   character: PromptCharacter;
   persona: PromptPersona | null;
   history: MessageInPath[];
@@ -23,7 +31,7 @@ export type BuildMessagesOptions = {
 };
 
 export type ImpersonateOptions = {
-  /** Шаблон из пресета (preset.userPersonaPrompt). Пустой → DEFAULT_IMPERSONATE_TEMPLATE. */
+  /** Шаблон impersonate — из RP-шаблона (rpTemplate.userPersonaPrompt). Пустой → DEFAULT_IMPERSONATE_TEMPLATE. */
   template: string;
   character: PromptCharacter;
   persona: PromptPersona | null;

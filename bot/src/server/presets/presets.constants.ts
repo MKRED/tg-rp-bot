@@ -1,4 +1,3 @@
-import type { PromptComponentId } from "../../db/schema.js";
 import type { SamplingKey } from "./presets.types.js";
 
 // Мягкий лимит (дублируется в webapp для блокировки UI — здесь последняя линия защиты).
@@ -6,17 +5,6 @@ export const MAX_PRESETS_PER_USER = 50;
 
 // Допустимые уровни рассуждения OpenRouter (по возрастанию бюджета).
 export const REASONING_EFFORTS = ["minimal", "low", "medium", "high", "xhigh"] as const;
-
-// Канонический набор компонентов запроса — promptOrder обязан содержать ровно их (по разу).
-export const PROMPT_COMPONENT_IDS: PromptComponentId[] = [
-  "system",
-  "characterDescription",
-  "characterScenario",
-  "userDescription",
-  "auxiliary",
-  "history",
-  "postHistory",
-];
 
 /**
  * Диапазоны параметров сэмплинга (официальные значения OpenRouter). topK без верхней границы

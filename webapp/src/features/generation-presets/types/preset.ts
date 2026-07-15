@@ -17,60 +17,11 @@ export const REASONING_EFFORT_LABELS: Record<ReasoningEffort, string> = {
   xhigh: "Максимальное",
 };
 
-/** Компонент запроса к нейросети, чей порядок и включённость настраиваются в пресете. */
-export type PromptComponentId =
-  | "system"
-  | "characterDescription"
-  | "characterScenario"
-  | "userDescription"
-  | "auxiliary"
-  | "history"
-  | "postHistory";
-
-export interface PromptOrderItem {
-  id: PromptComponentId;
-  enabled: boolean;
-}
-
-/** Подписи компонентов запроса для блока «Порядок промптов». */
-export const PROMPT_COMPONENT_LABELS: Record<PromptComponentId, string> = {
-  system: "Основной промпт",
-  characterDescription: "Описание персонажа",
-  characterScenario: "Сценарий",
-  userDescription: "Описание пользователя",
-  auxiliary: "Вспомогательный промпт",
-  history: "История чата",
-  postHistory: "Инструкция после истории",
-};
-
-/** Откуда берётся каждый компонент — подпись под названием, чтобы пользователь понимал источник. */
-export const PROMPT_COMPONENT_SOURCES: Record<PromptComponentId, string> = {
-  system: "из этого пресета",
-  characterDescription: "из карточки персонажа · Промпт",
-  characterScenario: "из карточки персонажа · Сценарий",
-  userDescription: "из персоны · Промпт",
-  auxiliary: "из этого пресета",
-  history: "сообщения чата",
-  postHistory: "из этого пресета",
-};
-
-/** Компоненты, ещё не реализованные как часть запроса — строку показываем неактивной. */
-export const UNIMPLEMENTED_COMPONENTS: PromptComponentId[] = [];
-
-/** Дефолтный порядок и включённость (userDescription выключен — пользователь включает вручную). */
-export const DEFAULT_PROMPT_ORDER: PromptOrderItem[] = [
-  { id: "system", enabled: true },
-  { id: "characterDescription", enabled: true },
-  { id: "userDescription", enabled: false },
-  { id: "auxiliary", enabled: true },
-  { id: "characterScenario", enabled: false },
-  { id: "history", enabled: true },
-  { id: "postHistory", enabled: true },
-];
-
 /**
  * Тело формы создания/правки (POST/PUT). Параметры сэмплинга — `number | null`,
  * где null = «не передавать значение». Имена совпадают с колонками БД и телом OpenRouter.
+ * Промпты RP-чата живут отдельно — в фиче rp-templates (пресет режимо-независим, общий
+ * для RP-чата и Narrator).
  */
 export interface PresetInput {
   name: string;
@@ -86,15 +37,8 @@ export interface PresetInput {
   repetitionPenalty: number | null;
   minP: number | null;
   topA: number | null;
-  systemPrompt: string;
-  auxiliarySystemPrompt: string;
-  postHistoryInstruction: string;
-  userPersonaPrompt: string;
-  userPersonaStreaming: boolean;
-  translationSystemPrompt: string;
   requestReasoning: boolean;
   reasoningEffort: ReasoningEffort | null;
-  promptOrder: PromptOrderItem[];
 }
 
 /** Полный пресет, как его отдаёт сервер (GET /presets/:id). */

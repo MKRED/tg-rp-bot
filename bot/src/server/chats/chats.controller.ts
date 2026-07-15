@@ -12,6 +12,7 @@ import {
 import { getCharacter } from "../../db/characters/index.js";
 import { getPersona } from "../../db/personas/index.js";
 import { getPreset } from "../../db/presets/index.js";
+import { getRpTemplate } from "../../db/rpTemplates/index.js";
 import logger from "../../logger.js";
 import type { AppVariables } from "../middleware/initData.types.js";
 import {
@@ -50,6 +51,7 @@ export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
     const body = (await c.req.json().catch(() => ({}))) as {
       characterId?: unknown;
       personaId?: unknown;
+      templateId?: unknown;
       presetId?: unknown;
       firstMessageIndex?: unknown;
     };
@@ -57,19 +59,25 @@ export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
     const characterId = typeof body.characterId === "number" ? body.characterId : null;
     if (characterId === null) return c.json({ error: "characterId is required" }, 400);
 
-    // Персона и пресет обязательны (NOT NULL в схеме) — играть без персоны нельзя
+    // Персона, RP-шаблон и пресет обязательны (NOT NULL в схеме) — играть без персоны нельзя
     const personaId = typeof body.personaId === "number" ? body.personaId : null;
     if (personaId === null) return c.json({ error: "personaId is required" }, 400);
+
+    const templateId = typeof body.templateId === "number" ? body.templateId : null;
+    if (templateId === null) return c.json({ error: "templateId is required" }, 400);
 
     const presetId = typeof body.presetId === "number" ? body.presetId : null;
     if (presetId === null) return c.json({ error: "presetId is required" }, 400);
 
-    // Все три сущности должны принадлежать пользователю (DAO user-scoped → undefined для чужих)
+    // Все сущности должны принадлежать пользователю (DAO user-scoped → undefined для чужих)
     const character = await getCharacter(userId, characterId);
     if (!character) return c.json({ error: "Character not found" }, 404);
 
     const persona = await getPersona(userId, personaId);
     if (!persona) return c.json({ error: "Persona not found" }, 404);
+
+    const template = await getRpTemplate(userId, templateId);
+    if (!template) return c.json({ error: "Template not found" }, 404);
 
     const preset = await getPreset(userId, presetId);
     if (!preset) return c.json({ error: "Preset not found" }, 404);
@@ -80,7 +88,7 @@ export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
     const firstMessage = character.firstMessages[idx] ?? null;
 
     const t0 = Date.now();
-    const chat = await createChat(userId, { characterId, personaId, presetId }, firstMessage);
+    const chat = await createChat(userId, { characterId, personaId, templateId, presetId }, firstMessage);
     logger.info({ durationMs: Date.now() - t0, userId, chatId: chat.id }, "Chat created via API");
     return c.json({ chat: { id: chat.id } }, 201);
   });

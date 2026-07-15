@@ -3,18 +3,21 @@ import type { getCharacter } from "../../db/characters/index.js";
 import type { getChat } from "../../db/chats/index.js";
 import type { getPersona } from "../../db/personas/index.js";
 import type { getPreset } from "../../db/presets/index.js";
+import type { getRpTemplate } from "../../db/rpTemplates/index.js";
 import type { AppVariables } from "../middleware/initData.types.js";
 
 /** Контекст Hono RP-роутов (после requireInitData). */
 export type Ctx = Context<{ Variables: AppVariables }>;
 
 /**
- * Чат + связанные сущности (персонаж/персона/пресет) с проверкой владельца. Переиспользуется
- * обычной генерацией, impersonate-хендлерами и статистикой (см. loadChatContext).
+ * Чат + связанные сущности (персонаж/персона/RP-шаблон/пресет) с проверкой владельца.
+ * Переиспользуется обычной генерацией, impersonate-хендлерами и статистикой (см. loadChatContext).
+ * template — источник промптов; preset — только сэмплинг (см. schema.ts).
  */
 export type ChatContext = {
   chat: NonNullable<Awaited<ReturnType<typeof getChat>>>;
   character: NonNullable<Awaited<ReturnType<typeof getCharacter>>>;
   persona: Awaited<ReturnType<typeof getPersona>> | null;
+  template: Awaited<ReturnType<typeof getRpTemplate>> | null;
   preset: Awaited<ReturnType<typeof getPreset>> | null;
 };

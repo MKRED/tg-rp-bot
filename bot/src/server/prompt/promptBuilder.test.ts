@@ -8,33 +8,14 @@ import {
 } from "./promptBuilder.js";
 import type { BuildMessagesOptions } from "./promptBuilder.js";
 import type { MessageInPath } from "../../db/chats/index.js";
-import type { GenerationPreset } from "../../db/schema.js";
 
-// Минимальный пресет с каноническим порядком для тестов
-function makePreset(overrides: Partial<GenerationPreset> = {}): GenerationPreset {
+// Плоский набор опций (промпты+порядок «из шаблона», лимиты «из пресета») с каноническим
+// порядком для тестов.
+function makeOpts(overrides: Partial<BuildMessagesOptions> = {}): BuildMessagesOptions {
   return {
-    id: 1,
-    userId: 1,
-    name: "test",
-    contextUnlimited: false,
-    contextSize: null,
-    maxTokens: null,
-    streaming: false,
-    temperature: null,
-    topP: null,
-    topK: null,
-    frequencyPenalty: null,
-    presencePenalty: null,
-    repetitionPenalty: null,
-    minP: null,
-    topA: null,
     systemPrompt: "Ты помощник.",
     auxiliarySystemPrompt: "Вспомогательный промпт.",
     postHistoryInstruction: "Продолжай историю.",
-    userPersonaPrompt: "",
-    userPersonaStreaming: true,
-    requestReasoning: false,
-    reasoningEffort: null,
     promptOrder: [
       { id: "system", enabled: true },
       { id: "characterDescription", enabled: true },
@@ -44,15 +25,9 @@ function makePreset(overrides: Partial<GenerationPreset> = {}): GenerationPreset
       { id: "history", enabled: true },
       { id: "postHistory", enabled: true },
     ],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    ...overrides,
-  };
-}
-
-function makeOpts(overrides: Partial<BuildMessagesOptions> = {}): BuildMessagesOptions {
-  return {
-    preset: makePreset(),
+    contextUnlimited: false,
+    contextSize: null,
+    maxTokens: null,
     character: { name: "Алиса", prompt: "Ты персонаж Алиса.", scenario: "" },
     persona: null,
     history: [],
@@ -96,9 +71,7 @@ describe("buildMessages", () => {
   });
 
   it("пропускает пустые промпты компонентов", () => {
-    const opts = makeOpts({
-      preset: makePreset({ systemPrompt: "", auxiliarySystemPrompt: "" }),
-    });
+    const opts = makeOpts({ systemPrompt: "", auxiliarySystemPrompt: "" });
     const msgs = buildMessages(opts);
     // только characterDescription + postHistory + userMessage
     expect(msgs).toHaveLength(3);
@@ -114,19 +87,17 @@ describe("buildMessages", () => {
 
   it("включает userDescription если enabled и persona задана", () => {
     const opts = makeOpts({
-      preset: makePreset({
-        promptOrder: [
-          { id: "system", enabled: true },
-          { id: "characterDescription", enabled: true },
-          { id: "userDescription", enabled: true },
-          { id: "auxiliary", enabled: false },
-          { id: "history", enabled: true },
-          { id: "postHistory", enabled: false },
-        ],
-        systemPrompt: "",
-        auxiliarySystemPrompt: "",
-        postHistoryInstruction: "",
-      }),
+      promptOrder: [
+        { id: "system", enabled: true },
+        { id: "characterDescription", enabled: true },
+        { id: "userDescription", enabled: true },
+        { id: "auxiliary", enabled: false },
+        { id: "history", enabled: true },
+        { id: "postHistory", enabled: false },
+      ],
+      systemPrompt: "",
+      auxiliarySystemPrompt: "",
+      postHistoryInstruction: "",
       persona: { name: "Иван", prompt: "Ты играешь за Ивана." },
     });
     const msgs = buildMessages(opts);
@@ -135,17 +106,15 @@ describe("buildMessages", () => {
 
   it("включает characterScenario (role system) если enabled и сценарий непустой", () => {
     const opts = makeOpts({
-      preset: makePreset({
-        promptOrder: [
-          { id: "system", enabled: false },
-          { id: "characterDescription", enabled: true },
-          { id: "userDescription", enabled: false },
-          { id: "auxiliary", enabled: false },
-          { id: "characterScenario", enabled: true },
-          { id: "history", enabled: true },
-          { id: "postHistory", enabled: false },
-        ],
-      }),
+      promptOrder: [
+        { id: "system", enabled: false },
+        { id: "characterDescription", enabled: true },
+        { id: "userDescription", enabled: false },
+        { id: "auxiliary", enabled: false },
+        { id: "characterScenario", enabled: true },
+        { id: "history", enabled: true },
+        { id: "postHistory", enabled: false },
+      ],
       character: { name: "Алиса", prompt: "Описание Алисы.", scenario: "Сюжет ведёт к развязке." },
     });
     const msgs = buildMessages(opts);
@@ -159,17 +128,15 @@ describe("buildMessages", () => {
 
   it("пропускает characterScenario если сценарий пустой, даже при enabled", () => {
     const opts = makeOpts({
-      preset: makePreset({
-        promptOrder: [
-          { id: "system", enabled: false },
-          { id: "characterDescription", enabled: false },
-          { id: "userDescription", enabled: false },
-          { id: "auxiliary", enabled: false },
-          { id: "characterScenario", enabled: true },
-          { id: "history", enabled: false },
-          { id: "postHistory", enabled: false },
-        ],
-      }),
+      promptOrder: [
+        { id: "system", enabled: false },
+        { id: "characterDescription", enabled: false },
+        { id: "userDescription", enabled: false },
+        { id: "auxiliary", enabled: false },
+        { id: "characterScenario", enabled: true },
+        { id: "history", enabled: false },
+        { id: "postHistory", enabled: false },
+      ],
       character: { name: "Алиса", prompt: "", scenario: "" },
     });
     const msgs = buildMessages(opts);
@@ -192,11 +159,9 @@ describe("buildMessages", () => {
       },
     ];
     const opts = makeOpts({
-      preset: makePreset({
-        systemPrompt: "",
-        auxiliarySystemPrompt: "",
-        postHistoryInstruction: "",
-      }),
+      systemPrompt: "",
+      auxiliarySystemPrompt: "",
+      postHistoryInstruction: "",
       history,
     });
     const msgs = buildMessages(opts);
@@ -209,16 +174,14 @@ describe("buildMessages", () => {
 
   it("пропускает disabled компоненты", () => {
     const opts = makeOpts({
-      preset: makePreset({
-        promptOrder: [
-          { id: "system", enabled: false },
-          { id: "characterDescription", enabled: false },
-          { id: "userDescription", enabled: false },
-          { id: "auxiliary", enabled: false },
-          { id: "history", enabled: false },
-          { id: "postHistory", enabled: false },
-        ],
-      }),
+      promptOrder: [
+        { id: "system", enabled: false },
+        { id: "characterDescription", enabled: false },
+        { id: "userDescription", enabled: false },
+        { id: "auxiliary", enabled: false },
+        { id: "history", enabled: false },
+        { id: "postHistory", enabled: false },
+      ],
     });
     const msgs = buildMessages(opts);
     // Только userMessage
@@ -269,9 +232,11 @@ describe("trimHistoryToBudget", () => {
 });
 
 describe("buildMessages — обрезка истории под contextSize", () => {
-  // Пресет: только история + userMessage (без фиксированных промптов), reserve=0 (maxTokens:0).
-  function historyOnlyPreset(overrides: Partial<GenerationPreset> = {}): GenerationPreset {
-    return makePreset({
+  // Только история + userMessage (без фиксированных промптов), reserve=0 (maxTokens:0).
+  function historyOnlyOverrides(
+    overrides: Partial<BuildMessagesOptions> = {},
+  ): Partial<BuildMessagesOptions> {
+    return {
       systemPrompt: "",
       auxiliarySystemPrompt: "",
       postHistoryInstruction: "",
@@ -285,19 +250,19 @@ describe("buildMessages — обрезка истории под contextSize", (
         { id: "postHistory", enabled: false },
       ],
       ...overrides,
-    });
+    };
   }
 
   it("contextSize=null → история не урезается", () => {
     const history = makeLongHistory(10);
-    const msgs = buildMessages(makeOpts({ preset: historyOnlyPreset({ contextSize: null }), history }));
+    const msgs = buildMessages(makeOpts({ ...historyOnlyOverrides({ contextSize: null }), history }));
     expect(msgs).toHaveLength(11); // 10 история + userMessage
   });
 
   it("contextUnlimited=true → история не урезается даже при заданном contextSize", () => {
     const history = makeLongHistory(10);
     const msgs = buildMessages(
-      makeOpts({ preset: historyOnlyPreset({ contextUnlimited: true, contextSize: 10 }), history }),
+      makeOpts({ ...historyOnlyOverrides({ contextUnlimited: true, contextSize: 10 }), history }),
     );
     expect(msgs).toHaveLength(11);
   });
@@ -306,7 +271,7 @@ describe("buildMessages — обрезка истории под contextSize", (
     const history = makeLongHistory(20);
     const onTrim = vi.fn();
     const msgs = buildMessages(
-      makeOpts({ preset: historyOnlyPreset({ contextSize: 30 }), history }),
+      makeOpts({ ...historyOnlyOverrides({ contextSize: 30 }), history }),
       { onTrim },
     );
     const historyMsgs = msgs.slice(0, -1); // последний — userMessage
@@ -326,7 +291,7 @@ describe("buildMessages — обрезка истории под contextSize", (
     const history = makeLongHistory(20);
     const onTrim = vi.fn();
     const msgs = buildMessages(
-      makeOpts({ preset: historyOnlyPreset({ contextSize: 30 }), history }),
+      makeOpts({ ...historyOnlyOverrides({ contextSize: 30 }), history }),
       { trim: false, onTrim },
     );
     expect(msgs).toHaveLength(21);

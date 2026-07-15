@@ -1,6 +1,5 @@
 import type { PresetInput } from "../../db/presets/index.js";
-import type { PromptComponentId, PromptOrderItem } from "../../db/schema.js";
-import { PROMPT_COMPONENT_IDS, REASONING_EFFORTS, SAMPLING_RANGES } from "./presets.constants.js";
+import { REASONING_EFFORTS, SAMPLING_RANGES } from "./presets.constants.js";
 import type { SamplingKey } from "./presets.types.js";
 
 /** Параметр сэмплинга: null (не передавать) или число в своём диапазоне. */
@@ -23,25 +22,6 @@ function parsePositiveInt(value: unknown): number | null | undefined {
   return value;
 }
 
-/** promptOrder: массив ровно из известных компонентов (по разу) с boolean-флагом enabled. */
-function parsePromptOrder(value: unknown): PromptOrderItem[] | undefined {
-  if (!Array.isArray(value) || value.length !== PROMPT_COMPONENT_IDS.length) return undefined;
-  const seen = new Set<string>();
-  const result: PromptOrderItem[] = [];
-  for (const item of value) {
-    if (typeof item !== "object" || item === null) return undefined;
-    const it = item as Record<string, unknown>;
-    if (typeof it.id !== "string" || !PROMPT_COMPONENT_IDS.includes(it.id as PromptComponentId)) {
-      return undefined;
-    }
-    if (typeof it.enabled !== "boolean") return undefined;
-    if (seen.has(it.id)) return undefined; // дубль
-    seen.add(it.id);
-    result.push({ id: it.id as PromptComponentId, enabled: it.enabled });
-  }
-  return result;
-}
-
 /**
  * Разбирает тело запроса в PresetInput с ручной валидацией (без отдельной зависимости).
  * Возвращает либо распарсенный вход, либо текст ошибки для ответа 400.
@@ -57,8 +37,6 @@ export function parsePresetInput(body: unknown): { input: PresetInput } | { erro
   const contextUnlimited = b.contextUnlimited === true;
   const streaming = b.streaming === true;
   const requestReasoning = b.requestReasoning === true;
-  // userPersonaStreaming по умолчанию true (выключается только явным false).
-  const userPersonaStreaming = b.userPersonaStreaming !== false;
 
   // Лимиты токенов.
   const contextSize = parsePositiveInt(b.contextSize);
@@ -74,9 +52,6 @@ export function parsePresetInput(body: unknown): { input: PresetInput } | { erro
     sampling[key] = parsed;
   }
 
-  // Промпты — строки (отсутствует → пусто).
-  const str = (v: unknown): string => (typeof v === "string" ? v : "");
-
   // reasoningEffort — один из допустимых уровней или null.
   let reasoningEffort: string | null = null;
   if (b.reasoningEffort !== undefined && b.reasoningEffort !== null) {
@@ -89,9 +64,6 @@ export function parsePresetInput(body: unknown): { input: PresetInput } | { erro
     reasoningEffort = b.reasoningEffort;
   }
 
-  const promptOrder = parsePromptOrder(b.promptOrder);
-  if (!promptOrder) return { error: "Invalid promptOrder" };
-
   return {
     input: {
       name,
@@ -100,15 +72,8 @@ export function parsePresetInput(body: unknown): { input: PresetInput } | { erro
       maxTokens,
       streaming,
       ...sampling,
-      systemPrompt: str(b.systemPrompt),
-      auxiliarySystemPrompt: str(b.auxiliarySystemPrompt),
-      postHistoryInstruction: str(b.postHistoryInstruction),
-      userPersonaPrompt: str(b.userPersonaPrompt),
-      userPersonaStreaming,
-      translationSystemPrompt: str(b.translationSystemPrompt),
       requestReasoning,
       reasoningEffort,
-      promptOrder,
     },
   };
 }

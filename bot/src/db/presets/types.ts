@@ -1,9 +1,8 @@
-import type { PromptOrderItem } from "../schema.js";
-
 /**
  * Поля пресета, приходящие из формы Mini App (без серверных id/timestamps). Параметры сэмплинга —
- * `number | null`, где null = «не передавать значение». Имена совпадают с колонками БД и с будущим
- * телом запроса к OpenRouter, чтобы маппинг при подключении генерации был тривиальным.
+ * `number | null`, где null = «не передавать значение». Имена совпадают с колонками БД и с телом
+ * запроса к OpenRouter, чтобы маппинг был тривиальным. Промпты живут отдельно — в RP-шаблоне
+ * (rp_templates) или narrator-шаблоне (narrator_templates); пресет режимо-независим.
  */
 export type PresetInput = {
   name: string;
@@ -19,15 +18,8 @@ export type PresetInput = {
   repetitionPenalty: number | null;
   minP: number | null;
   topA: number | null;
-  systemPrompt: string;
-  auxiliarySystemPrompt: string;
-  postHistoryInstruction: string;
-  userPersonaPrompt: string;
-  userPersonaStreaming: boolean;
-  translationSystemPrompt: string;
   requestReasoning: boolean;
   reasoningEffort: string | null;
-  promptOrder: PromptOrderItem[];
 };
 
 /**

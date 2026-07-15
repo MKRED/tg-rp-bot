@@ -79,6 +79,12 @@ const TemplatesListPage = lazy(() =>
 const TemplateEditPage = lazy(() =>
   import("../pages/narrator-templates/TemplateEditPage").then((m) => ({ default: m.TemplateEditPage }))
 );
+const RpTemplatesListPage = lazy(() =>
+  import("../pages/rp-templates/TemplatesListPage").then((m) => ({ default: m.TemplatesListPage }))
+);
+const RpTemplateEditPage = lazy(() =>
+  import("../pages/rp-templates/TemplateEditPage").then((m) => ({ default: m.TemplateEditPage }))
+);
 const DebugLlmPage = lazy(() =>
   import("../pages/debug/DebugLlmPage").then((m) => ({ default: m.DebugLlmPage }))
 );
@@ -131,6 +137,11 @@ export function AnimatedRoutes() {
           <Route path={ROUTES.narratorTemplates} element={<TemplatesListPage />} />
           <Route path={ROUTES.narratorTemplateNew} element={<TemplateEditPage />} />
           <Route path={ROUTES.narratorTemplateEdit} element={<TemplateEditPage />} />
+
+          {/* RP-шаблоны. Статический /new стоит раньше /:id. */}
+          <Route path={ROUTES.rpTemplates} element={<RpTemplatesListPage />} />
+          <Route path={ROUTES.rpTemplateNew} element={<RpTemplateEditPage />} />
+          <Route path={ROUTES.rpTemplateEdit} element={<RpTemplateEditPage />} />
 
           {/* Отладка: RAW-запросы к LLM. */}
           <Route path={ROUTES.debugLlm} element={<DebugLlmPage />} />

@@ -96,7 +96,7 @@ export const characters = pgTable("characters", {
   footnote: text("footnote"),
   prompt: text("prompt").notNull().default(""),
   // Сценарий — промпт, направляющий ИИ по ходу RP. Уходит в запрос отдельным компонентом
-  // (characterScenario в promptOrder пресета). Шифруется как prompt.
+  // (characterScenario в promptOrder RP-шаблона). Шифруется как prompt.
   scenario: text("scenario").notNull().default(""),
   firstMessages: jsonb("first_messages")
     .$type<string[]>()
@@ -138,13 +138,18 @@ export type NewPersona = typeof personas.$inferInsert;
 
 /**
  * Пресеты настроек генерации («Настройки ответа ИИ»). Один пользователь — много пресетов,
- * описывающих, КАК нейросеть отвечает (сэмплинг, лимиты токенов, системные промпты, порядок их
- * подстановки в запрос). Реальная генерация пока не подключена — это хранилище под будущий
- * вызов OpenRouter; имена полей подобраны под прямой маппинг в его API.
+ * описывающих, КАК нейросеть сэмплирует ответ (сэмплинг, лимиты токенов, reasoning). Режимо-
+ * независим — общий для RP-чата и narrator (промпты живут отдельно: у RP-чата — в rp_templates,
+ * у narrator — в narrator_templates). Имена полей подобраны под прямой маппинг в API OpenRouter.
  *
  * Параметры сэмплинга — nullable: null означает «не передавать значение» (провайдер применит
  * своё). Важно, что null ≠ 0, иначе temperature:0 / presencePenalty:0 нельзя было бы отличить
- * от «выключено». promptOrder — jsonb: набор компонентов расширяемый, переживёт без миграции типа.
+ * от «выключено».
+ *
+ * ВРЕМЕННО (до отдельной миграции-дропа): промпт-поля ниже физически ещё в таблице, но код их
+ * больше не читает/не пишет — промпты RP-чата переехали в rp_templates. Поля намеренно оставлены
+ * в декларации, чтобы drizzle-kit сгенерировал их удаление отдельной, более поздней миграцией
+ * (см. CLAUDE.md/план рефакторинга) — не удалять раньше срока.
  */
 export const generationPresets = pgTable("generation_presets", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
@@ -169,7 +174,46 @@ export const generationPresets = pgTable("generation_presets", {
   minP: real("min_p"),
   topA: real("top_a"),
 
-  // Промпты.
+  // ВРЕМЕННО — оставлены до миграции-дропа, код их не использует (см. rp_templates).
+  systemPrompt: text("system_prompt").notNull().default(""),
+  auxiliarySystemPrompt: text("auxiliary_system_prompt").notNull().default(""),
+  postHistoryInstruction: text("post_history_instruction").notNull().default(""),
+  userPersonaPrompt: text("user_persona_prompt").notNull().default(""),
+  userPersonaStreaming: boolean("user_persona_streaming").notNull().default(true),
+  translationSystemPrompt: text("translation_system_prompt").notNull().default(""),
+  promptOrder: jsonb("prompt_order")
+    .$type<PromptOrderItem[]>()
+    .notNull()
+    .default(
+      sql`'[{"id":"system","enabled":true},{"id":"characterDescription","enabled":true},{"id":"userDescription","enabled":false},{"id":"auxiliary","enabled":true},{"id":"characterScenario","enabled":false},{"id":"history","enabled":true},{"id":"postHistory","enabled":true}]'::jsonb`,
+    ),
+
+  // Рассуждение (reasoning). effort: minimal | low | medium | high | xhigh (или null).
+  requestReasoning: boolean("request_reasoning").notNull().default(false),
+  reasoningEffort: text("reasoning_effort"),
+
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export type GenerationPreset = typeof generationPresets.$inferSelect;
+export type NewGenerationPreset = typeof generationPresets.$inferInsert;
+
+/**
+ * RP-шаблон — источник промптов и порядка сборки запроса RP-чата (системный промпт, сценарий,
+ * инструкция после истории, служебный шаблон impersonate, промпт ИИ-перевода). Отдельно от
+ * generation_presets, который остаётся источником ТОЛЬКО сэмплинга (режимо-независим, шарится
+ * между RP и narrator) — зеркало narrator_templates для RP-режима.
+ */
+export const rpTemplates = pgTable("rp_templates", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  userId: bigint("user_id", { mode: "number" })
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
   systemPrompt: text("system_prompt").notNull().default(""),
   auxiliarySystemPrompt: text("auxiliary_system_prompt").notNull().default(""),
   postHistoryInstruction: text("post_history_instruction").notNull().default(""),
@@ -183,11 +227,6 @@ export const generationPresets = pgTable("generation_presets", {
   // Плейсхолдер {{target_lang}} — полное англ. название целевого языка; текст уходит ролью user.
   // Пусто → дефолтный шаблон (DEFAULT_TRANSLATION_TEMPLATE в server/shared/translate.constants.ts).
   translationSystemPrompt: text("translation_system_prompt").notNull().default(""),
-
-  // Рассуждение (reasoning). effort: minimal | low | medium | high | xhigh (или null).
-  requestReasoning: boolean("request_reasoning").notNull().default(false),
-  reasoningEffort: text("reasoning_effort"),
-
   // Порядок и включённость компонентов запроса. Дефолт — канонический порядок;
   // userDescription выключен (пользователь включает вручную, когда нужна персона).
   promptOrder: jsonb("prompt_order")
@@ -196,7 +235,6 @@ export const generationPresets = pgTable("generation_presets", {
     .default(
       sql`'[{"id":"system","enabled":true},{"id":"characterDescription","enabled":true},{"id":"userDescription","enabled":false},{"id":"auxiliary","enabled":true},{"id":"characterScenario","enabled":false},{"id":"history","enabled":true},{"id":"postHistory","enabled":true}]'::jsonb`,
     ),
-
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
@@ -204,11 +242,11 @@ export const generationPresets = pgTable("generation_presets", {
     .$onUpdate(() => new Date()),
 });
 
-export type GenerationPreset = typeof generationPresets.$inferSelect;
-export type NewGenerationPreset = typeof generationPresets.$inferInsert;
+export type RpTemplate = typeof rpTemplates.$inferSelect;
+export type NewRpTemplate = typeof rpTemplates.$inferInsert;
 
 /**
- * RP-чаты: один чат = один персонаж + обязательная персона + пресет ИИ.
+ * RP-чаты: один чат = персонаж + обязательная персона + RP-шаблон (промпты) + пресет (сэмплинг).
  * activeMessageId — «курсор» активной ветки (лист дерева сообщений).
  * Намеренно НЕ FK: chats ↔ messages образуют цикл, Drizzle/Postgres требовал бы deferrable.
  * Целостность гарантируется кодом (DAO).
@@ -224,6 +262,11 @@ export const chats = pgTable("chats", {
   personaId: bigint("persona_id", { mode: "number" })
     .notNull()
     .references(() => personas.id),
+  // Шаблон и пресет обязательны. FK без onDelete = NO ACTION (restrict): удаление используемого
+  // шаблона/пресета блокируется на уровне БД (23503 → 409 in_use), как у story_chats.
+  templateId: bigint("template_id", { mode: "number" })
+    .notNull()
+    .references(() => rpTemplates.id),
   presetId: bigint("preset_id", { mode: "number" })
     .notNull()
     .references(() => generationPresets.id),
@@ -285,7 +328,7 @@ export const chatSettings = pgTable("chat_settings", {
     .notNull()
     .default("none"),
   // Метод перевода закэшированных сообщений (кнопка Globe): "google" — Google Translate,
-  // "ai" — LLM с промптом перевода из пресета (translationSystemPrompt).
+  // "ai" — LLM с промптом перевода из RP-шаблона (translationSystemPrompt).
   translateMethod: text("translate_method").$type<"google" | "ai">().notNull().default("google"),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()

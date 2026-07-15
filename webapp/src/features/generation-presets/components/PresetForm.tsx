@@ -8,19 +8,9 @@ import {
   type SamplingState,
 } from "../lib/param-specs";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
-import { PromptOrderEditor } from "../../../shared/components/PromptOrderEditor";
-import { PromptsSection } from "./PromptsSection";
 import { ReasoningSection } from "./ReasoningSection";
 import { SamplingSection } from "./SamplingSection";
-import {
-  DEFAULT_PROMPT_ORDER,
-  PROMPT_COMPONENT_LABELS,
-  PROMPT_COMPONENT_SOURCES,
-  UNIMPLEMENTED_COMPONENTS,
-  type PresetInput,
-  type PromptOrderItem,
-  type ReasoningEffort,
-} from "../types/preset";
+import type { PresetInput, ReasoningEffort } from "../types/preset";
 
 interface PresetFormProps {
   /** Начальные значения (режим редактирования); отсутствуют — режим создания. */
@@ -52,7 +42,7 @@ function parseIntField(value: string): number | null {
   return Number.isInteger(n) && n >= 1 ? n : null;
 }
 
-/** Форма создания/редактирования пресета. Состояние держим локально (паттерн CharacterForm). */
+/** Форма создания/редактирования пресета сэмплинга. Состояние держим локально (паттерн CharacterForm). */
 export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
   const [contextUnlimited, setContextUnlimited] = useState(initial?.contextUnlimited ?? false);
@@ -64,51 +54,15 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
   );
   const [streaming, setStreaming] = useState(initial?.streaming ?? false);
   const [sampling, setSampling] = useState<SamplingState>(() => initSampling(initial));
-  const [systemPrompt, setSystemPrompt] = useState(initial?.systemPrompt ?? "");
-  const [auxiliarySystemPrompt, setAuxiliarySystemPrompt] = useState(
-    initial?.auxiliarySystemPrompt ?? "",
-  );
-  const [postHistoryInstruction, setPostHistoryInstruction] = useState(
-    initial?.postHistoryInstruction ?? "",
-  );
-  const [userPersonaPrompt, setUserPersonaPrompt] = useState(initial?.userPersonaPrompt ?? "");
-  const [userPersonaStreaming, setUserPersonaStreaming] = useState(
-    initial?.userPersonaStreaming ?? true,
-  );
-  const [translationSystemPrompt, setTranslationSystemPrompt] = useState(
-    initial?.translationSystemPrompt ?? "",
-  );
   const [requestReasoning, setRequestReasoning] = useState(initial?.requestReasoning ?? false);
   const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>(
     initial?.reasoningEffort ?? DEFAULT_EFFORT,
-  );
-  const [promptOrder, setPromptOrder] = useState<PromptOrderItem[]>(
-    initial?.promptOrder ?? DEFAULT_PROMPT_ORDER,
   );
 
   const canSubmit = name.trim().length > 0 && !submitting;
 
   const updateSampling = (key: SamplingKey, value: number, enabled: boolean) => {
     setSampling((prev) => ({ ...prev, [key]: { value, enabled } }));
-  };
-
-  const updatePrompt = (
-    field:
-      | "systemPrompt"
-      | "auxiliarySystemPrompt"
-      | "postHistoryInstruction"
-      | "userPersonaPrompt"
-      | "translationSystemPrompt",
-    value: string,
-  ) => {
-    const setters = {
-      systemPrompt: setSystemPrompt,
-      auxiliarySystemPrompt: setAuxiliarySystemPrompt,
-      postHistoryInstruction: setPostHistoryInstruction,
-      userPersonaPrompt: setUserPersonaPrompt,
-      translationSystemPrompt: setTranslationSystemPrompt,
-    };
-    setters[field](value);
   };
 
   const handleSubmit = () => {
@@ -129,15 +83,8 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
       maxTokens: parseIntField(maxTokens),
       streaming,
       ...samplingPayload,
-      systemPrompt,
-      auxiliarySystemPrompt,
-      postHistoryInstruction,
-      userPersonaPrompt,
-      userPersonaStreaming,
-      translationSystemPrompt,
       requestReasoning,
       reasoningEffort: requestReasoning ? reasoningEffort : null,
-      promptOrder,
     });
   };
 
@@ -160,32 +107,12 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
         <SamplingSection state={sampling} onChange={updateSampling} />
       </CollapsibleSection>
 
-      <PromptsSection
-        systemPrompt={systemPrompt}
-        auxiliarySystemPrompt={auxiliarySystemPrompt}
-        postHistoryInstruction={postHistoryInstruction}
-        userPersonaPrompt={userPersonaPrompt}
-        userPersonaStreaming={userPersonaStreaming}
-        translationSystemPrompt={translationSystemPrompt}
-        onChange={updatePrompt}
-        onToggleStreaming={setUserPersonaStreaming}
-      />
-
       <div className="preset-form__section-title">Рассуждение</div>
       <ReasoningSection
         requestReasoning={requestReasoning}
         reasoningEffort={reasoningEffort}
         onRequestReasoning={setRequestReasoning}
         onReasoningEffort={setReasoningEffort}
-      />
-
-      <div className="preset-form__section-title">Порядок промптов</div>
-      <PromptOrderEditor
-        order={promptOrder}
-        onChange={setPromptOrder}
-        labels={PROMPT_COMPONENT_LABELS}
-        sources={PROMPT_COMPONENT_SOURCES}
-        unimplemented={UNIMPLEMENTED_COMPONENTS}
       />
 
       <div className="preset-form__actions">
