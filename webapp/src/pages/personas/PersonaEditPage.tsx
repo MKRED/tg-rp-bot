@@ -1,6 +1,6 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { ROUTES } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
@@ -15,6 +15,7 @@ import {
 } from "../../features/personas";
 import { ApiError } from "../../shared/api/client";
 import { confirmAction, showAlert } from "../../shared/telegram/confirm";
+import { useToast } from "../../shared/toast";
 import "./personas.css";
 
 /** Маппинг полной персоны в значения формы. */
@@ -36,18 +37,31 @@ function toInput(p: Persona): PersonaInput {
 export function PersonaEditPage() {
   const navigate = useTransitionNavigate();
   const params = useParams();
-  const location = useLocation();
-  const id = params.id ? Number(params.id) : undefined;
-  const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
+  const { showToast } = useToast();
+  // /personas/new → id отсутствует (создание); /personas/:id → строка с числом.
+  const routeId = params.id ? Number(params.id) : undefined;
 
-  const { persona, loading, error } = usePersona(id);
+  const { persona, loading, error } = usePersona(routeId);
   const [submitting, setSubmitting] = useState(false);
+  // После первого успешного сохранения новой персоны держим её id локально: «Сохранить»
+  // больше не покидает экран (маршрут остаётся /personas/new), поэтому без этого повторное
+  // сохранение продолжило бы создавать дубликаты вместо обновления уже созданной.
+  const [createdId, setCreatedId] = useState<number>();
+  const id = routeId ?? createdId;
 
   const handleSubmit = (input: PersonaInput) => {
     setSubmitting(true);
     const op = id === undefined ? createPersona(input) : updatePersona(id, input);
-    op.then(() => navigate(returnTo ?? ROUTES.personas))
-      .catch(() => setSubmitting(false));
+    return op
+      .then(({ persona: saved }) => {
+        if (id === undefined) setCreatedId(saved.id);
+        showToast({ type: "success", message: "Персона сохранена" });
+      })
+      .catch((err) => {
+        showToast({ type: "error", message: "Не удалось сохранить персону" });
+        throw err;
+      })
+      .finally(() => setSubmitting(false));
   };
 
   const handleDelete = async () => {
@@ -77,7 +91,7 @@ export function PersonaEditPage() {
     );
   }
 
-  if (error || (id !== undefined && !persona)) {
+  if (error || (routeId !== undefined && !persona)) {
     return (
       <PageTransition>
         <div className="personas-page__fullcenter">Персона не найдена</div>

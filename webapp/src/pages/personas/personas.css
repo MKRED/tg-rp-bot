@@ -111,6 +111,14 @@
   padding: 0 22px;
 }
 
+/* Пассивная метка несохранённых правок над кнопкой «Сохранить» (активная защита — confirm
+   на уходе через useUnsavedChangesGuard, эта метка лишь сигнализирует). */
+.persona-form__unsaved {
+  text-align: center;
+  font-size: 13px;
+  color: var(--tgui--hint_color, #7d8b99);
+}
+
 /* Поле с подписью токенов */
 .persona-field {
   display: flex;
