@@ -43,9 +43,6 @@ export function StoryPage() {
   // Фаза фонового статуса перед битом (напр. "compacting" — авто-сжатие истории).
   const [statusPhase, setStatusPhase] = useState<string | null>(null);
   const [translateOpen, setTranslateOpen] = useState(false);
-  // Черновик текста в шторе перевода — хранится здесь, а не в самой шторе, чтобы не пропадать
-  // при закрытии (штора размонтируется через AnimatePresence).
-  const [translateDraft, setTranslateDraft] = useState("");
   const storyInputRef = useRef<StoryInputHandle>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   // Первый скролл к низу при открытии истории — мгновенный (без видимой долгой прокрутки
@@ -290,8 +287,6 @@ export function StoryPage() {
             key="story-translate-sheet"
             translate={(p) => composeStoryTranslate(id, p)}
             langOptions={LANG_OPTIONS}
-            text={translateDraft}
-            onTextChange={setTranslateDraft}
             onPick={(t) => {
               storyInputRef.current?.setDraft(t);
               setTranslateOpen(false);

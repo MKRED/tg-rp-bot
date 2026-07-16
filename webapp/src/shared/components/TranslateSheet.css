@@ -58,6 +58,23 @@
   flex-shrink: 0;
 }
 
+.translate-sheet__clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--tg-theme-hint-color, #999);
+  transition: opacity 0.15s;
+}
+
+.translate-sheet__clear:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 /* Пикер языка перевода — свой список вместо нативного <select> */
 .lang-picker {
   position: relative;

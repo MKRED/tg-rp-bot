@@ -1,6 +1,6 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
-import { Languages, SendHorizontal, X } from "lucide-react";
+import { Eraser, Languages, SendHorizontal, X } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { LangPicker, type LangOption } from "./LangPicker";
 import { RpText } from "./RpText";
@@ -16,9 +16,6 @@ interface TranslateSheetProps {
   translate: (params: ComposeTranslateParams) => Promise<string>;
   /** Список языков для пикера (LANG_OPTIONS вызывающей фичи). */
   langOptions: LangOption[];
-  /** Текст исходного поля — хранится у вызывающей страницы, чтобы не пропадать при закрытии шторы. */
-  text: string;
-  onTextChange: (text: string) => void;
   onPick: (text: string) => void;
   onClose: () => void;
 }
@@ -27,6 +24,8 @@ const SHEET_T = { duration: 0.25, ease: "easeOut" as const };
 
 const MODE_KEY = "translate-mode";
 const LANG_KEY = "translate-lang";
+// Единый черновик поля ввода на все чаты/истории (не привязан к конкретному чату).
+const DRAFT_KEY = "translate-draft-text";
 
 const MODE_OPTIONS = [
   { value: "google", label: "Google" },
@@ -35,19 +34,20 @@ const MODE_OPTIONS = [
 
 /**
  * Нижняя «штора» перевода черновика сообщения. Внизу — поле исходного текста, сверху — результат
- * (клик вставляет его в инпут). Тумблер переключает Google ↔ ИИ; язык и режим хранятся в
- * localStorage. Управляется AnimatePresence у вызывающей страницы (exit-анимации играют там).
+ * (клик вставляет его в инпут). Тумблер переключает Google ↔ ИИ; режим, язык и сам текст поля
+ * хранятся в localStorage — единый черновик на все чаты/истории, а не свой на каждый.
+ * Управляется AnimatePresence у вызывающей страницы (exit-анимации играют там).
  */
 export function TranslateSheet({
   translate: translateFn,
   langOptions,
-  text,
-  onTextChange,
   onPick,
   onClose,
 }: TranslateSheetProps) {
   const { loading, result, error, translate, reset } = useComposeTranslate(translateFn);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Черновик поля ввода — один общий на все чаты/истории, переживает закрытие шторы и перезагрузку.
+  const [text, setText] = useState(() => localStorage.getItem(DRAFT_KEY) ?? "");
 
   // Авторазмер инпута как в основном поле чата, но потолок — 5 строк (дальше внутренний скролл).
   const resize = () => {
@@ -73,6 +73,15 @@ export function TranslateSheet({
     () => localStorage.getItem(LANG_KEY) ?? "en",
   );
 
+  const changeText = (t: string) => {
+    setText(t);
+    localStorage.setItem(DRAFT_KEY, t);
+  };
+  const clearText = () => {
+    changeText("");
+    if (result || error) reset();
+    resize();
+  };
   const setModePersist = (m: TranslateMode) => {
     setMode(m);
     localStorage.setItem(MODE_KEY, m);
@@ -118,6 +127,15 @@ export function TranslateSheet({
 
         <div className="translate-sheet__controls">
           <SegmentedToggle options={MODE_OPTIONS} value={mode} onChange={setModePersist} />
+          <button
+            className="translate-sheet__clear"
+            onClick={clearText}
+            disabled={!text}
+            type="button"
+            aria-label="Очистить поле ввода"
+          >
+            <Eraser size={18} />
+          </button>
           <LangPicker value={targetLang} onChange={setLangPersist} options={langOptions} />
         </div>
 
@@ -152,7 +170,7 @@ export function TranslateSheet({
             className="translate-sheet__textarea"
             value={text}
             onChange={(e) => {
-              onTextChange(e.target.value);
+              changeText(e.target.value);
               if (result || error) reset();
               resize();
             }}
