@@ -45,6 +45,9 @@ export function StoryCard({ story, onClick }: StoryCardProps) {
             size={40}
             src={resolved.get(`${a.type}:${a.id}`)}
             acronym={nameInitials(a.name)}
+            // Фон буквенного fallback у tgui — полупрозрачный --tgui--secondary_fill; при наложении
+            // в AvatarStack сквозь него просвечивает соседний аватар. Красим непрозрачным.
+            style={{ backgroundColor: "var(--tgui--secondary_bg_color)" }}
           />
         ))}
       </AvatarStack>

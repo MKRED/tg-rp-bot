@@ -22,7 +22,10 @@ export function bookAvatarsLateral(limit: number) {
         'type', CASE WHEN sub.character_id IS NOT NULL THEN 'character' ELSE 'persona' END,
         'id', COALESCE(sub.character_id, sub.persona_id),
         'name', COALESCE(sub.char_name, sub.persona_name),
-        'hasImage', COALESCE(sub.char_has_image, sub.persona_has_image)
+        -- CASE, а не COALESCE: char_has_image/persona_has_image — булевы "x IS NOT NULL", для
+        -- «пустой» стороны (нет ch/pe-джойна) они дают FALSE, а не NULL, — COALESCE тогда всегда
+        -- берёт левый (char) операнд и хоронит persona_has_image.
+        'hasImage', CASE WHEN sub.character_id IS NOT NULL THEN sub.char_has_image ELSE sub.persona_has_image END
       ) ORDER BY sub.sort_order, sub.created_at) AS avatars
       FROM (
         SELECT e.character_id, e.persona_id, e.sort_order, e.created_at,

@@ -31,6 +31,7 @@ export function StoryHeader({ title, avatars, onGraphClick, onSettingsClick }: S
               size={28}
               src={resolved.get(`${a.type}:${a.id}`)}
               acronym={nameInitials(a.name)}
+              style={{ backgroundColor: "var(--tgui--secondary_bg_color)" }}
             />
           ))}
         </AvatarStack>
