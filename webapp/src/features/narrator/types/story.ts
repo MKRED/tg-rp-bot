@@ -1,5 +1,13 @@
 /** Типы фичи narrator («Режиссёр истории»). */
 
+/** Дескриптор аватара в стеке (AvatarStack) — источник записи книги знаний. */
+export type StoryAvatarRef = {
+  type: "character" | "persona";
+  id: number;
+  name: string;
+  hasImage: boolean;
+};
+
 export type StoryListItem = {
   id: number;
   title: string | null;
@@ -8,6 +16,8 @@ export type StoryListItem = {
   lastMessageAt: string | null;
   messageCount: number;
   createdAt: string;
+  /** Топ-3 (сортировка книги) дескрипторов аватаров — для AvatarStack в списке. */
+  avatars: StoryAvatarRef[];
 };
 
 export type StoryMessageKind = "beat" | "continue" | "directive";
@@ -68,7 +78,8 @@ export type StoryCompaction = {
 export type StoryDetail = {
   id: number;
   title: string | null;
-  book: { id: number; name: string };
+  /** Топ-5 (сортировка книги) дескрипторов аватаров — для AvatarStack в шапке чата. */
+  book: { id: number; name: string; avatars: StoryAvatarRef[] };
   template: { id: number; name: string } | null;
   preset: { id: number; name: string } | null;
   premise: string;

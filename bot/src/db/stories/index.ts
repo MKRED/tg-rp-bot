@@ -1,6 +1,6 @@
 // Баррел домена narrator-историй: публичная поверхность для server/*.
 
-export type { StoryInput, StoryMessageInPath, StoryDetail, StoryListItem, StorySettingsRow, StoryCompactionRow, StoryTokenStats, StoryTreeNode } from "./types.js";
+export type { StoryInput, StoryMessageInPath, StoryDetail, StoryListItem, StorySettingsRow, StoryCompactionRow, StoryTokenStats, StoryTreeNode, StoryAvatarRef } from "./types.js";
 
 export { listStories, getStory, getStoryTree, createStory, renameStory, updateStoryPremise, deleteStory } from "./stories.js";
 

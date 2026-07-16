@@ -43,4 +43,5 @@ export type {
   StorySettings,
   StoryStats,
   StoryCompaction,
+  StoryAvatarRef,
 } from "./types/story";

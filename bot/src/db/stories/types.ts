@@ -1,5 +1,9 @@
 // Публичные типы домена narrator-историй.
 
+import type { StoryAvatarRef } from "./storyAvatars.js";
+
+export type { StoryAvatarRef } from "./storyAvatars.js";
+
 export type StoryInput = {
   bookId: number;
   templateId: number;
@@ -68,7 +72,7 @@ export type StoryCompactionRow = {
 export type StoryDetail = {
   id: number;
   title: string | null;
-  book: { id: number; name: string };
+  book: { id: number; name: string; avatars: StoryAvatarRef[] };
   template: { id: number; name: string } | null;
   preset: { id: number; name: string } | null;
   /** Системная вводная (опц.) — расшифрована. */
@@ -85,4 +89,6 @@ export type StoryListItem = {
   lastMessageAt: string | null;
   messageCount: number;
   createdAt: string;
+  /** Топ-N (сортировка книги) дескрипторов аватаров — для AvatarStack в списке. */
+  avatars: StoryAvatarRef[];
 };

@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { createAvatarRoutes } from "./avatars/index.js";
 import { createBookRoutes } from "./books/index.js";
 import { createCharacterRoutes } from "./characters/index.js";
 import { createChatRoutes } from "./chats/index.js";
@@ -34,6 +35,9 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
   api.route("/personas", createPersonaRoutes());
   api.route("/presets", createPresetRoutes());
   api.route("/rp-templates", createRpTemplateRoutes());
+
+  // Батч-резолв аватаров (AvatarStack в списке историй / шапке чата narrator).
+  api.route("/avatars", createAvatarRoutes());
 
   // RP-чаты: CRUD + стриминговая генерация + ветвление + перевод.
   api.route("/chats", createChatRoutes());

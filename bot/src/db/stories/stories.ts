@@ -6,6 +6,7 @@ import type { StoryChat } from "../schema.js";
 import { listCompactionAnchors } from "./compactions.js";
 import { decryptStoryTranslations } from "./crypto.js";
 import { findLastStoryLeaf, queryStoryActivePath, queryStoryActivePathIds } from "./queries.js";
+import { bookAvatarsLateral, mapStoryAvatars } from "./storyAvatars.js";
 import type {
   StoryDetail,
   StoryInput,
@@ -13,6 +14,10 @@ import type {
   StoryMessageInPath,
   StoryTreeNode,
 } from "./types.js";
+
+/** Сколько аватаров показываем в стеке списка историй / шапке чата (см. AvatarStack). */
+const LIST_AVATAR_LIMIT = 3;
+const HEADER_AVATAR_LIMIT = 5;
 
 /** Маппит сырую строку пути в StoryMessageInPath, расшифровывая content и translations. */
 function mapPathRow(r: Record<string, unknown>, key: Buffer): StoryMessageInPath {
@@ -48,7 +53,8 @@ export async function listStories(
       b.name AS book_name,
       lm.content AS last_message,
       lm.created_at AS last_message_at,
-      COALESCE(mc.cnt, 0) AS message_count
+      COALESCE(mc.cnt, 0) AS message_count,
+      av.avatars
     FROM story_chats s
     JOIN knowledge_books b ON b.id = s.book_id
     LEFT JOIN LATERAL (
@@ -58,6 +64,7 @@ export async function listStories(
     LEFT JOIN LATERAL (
       SELECT COUNT(*)::int AS cnt FROM story_messages WHERE story_chat_id = s.id
     ) mc ON TRUE
+    ${bookAvatarsLateral(LIST_AVATAR_LIMIT)}
     WHERE s.user_id = ${userId}
     ORDER BY COALESCE(lm.created_at, s.created_at) DESC
     LIMIT ${pageSize} OFFSET ${offset}
@@ -79,6 +86,7 @@ export async function listStories(
     lastMessageAt: r.last_message_at ? String(r.last_message_at) : null,
     messageCount: r.message_count as number,
     createdAt: String(r.created_at),
+    avatars: mapStoryAvatars(r.avatars),
   }));
 
   logger.debug({ durationMs: Date.now() - t0, userId, page, total }, "Stories listed");
@@ -94,11 +102,13 @@ export async function getStory(userId: number, storyId: number): Promise<StoryDe
       s.id, s.title, s.premise, s.active_message_id,
       b.id AS book_id, b.name AS book_name,
       t.id AS template_id, t.name AS template_name,
-      pr.id AS preset_id, pr.name AS preset_name
+      pr.id AS preset_id, pr.name AS preset_name,
+      av.avatars
     FROM story_chats s
     JOIN knowledge_books b ON b.id = s.book_id
     LEFT JOIN narrator_templates t ON t.id = s.template_id
     LEFT JOIN generation_presets pr ON pr.id = s.preset_id
+    ${bookAvatarsLateral(HEADER_AVATAR_LIMIT)}
     WHERE s.id = ${storyId} AND s.user_id = ${userId}
     LIMIT 1
   `);
@@ -136,7 +146,11 @@ export async function getStory(userId: number, storyId: number): Promise<StoryDe
     // bigint из сырого SQL приходит строкой — все id приводим к number явно.
     id: Number(storyRow.id),
     title: storyRow.title ? decryptField(storyRow.title as string, key) : null,
-    book: { id: Number(storyRow.book_id), name: storyRow.book_name as string },
+    book: {
+      id: Number(storyRow.book_id),
+      name: storyRow.book_name as string,
+      avatars: mapStoryAvatars(storyRow.avatars),
+    },
     template: storyRow.template_id
       ? { id: Number(storyRow.template_id), name: storyRow.template_name as string }
       : null,

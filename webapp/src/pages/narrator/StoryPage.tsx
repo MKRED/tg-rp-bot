@@ -213,6 +213,7 @@ export function StoryPage() {
       <div style={{ display: "flex", flexDirection: "column", height: "100dvh" }}>
         <StoryHeader
           title={story.title ?? story.book.name}
+          avatars={story.book.avatars}
           onGraphClick={() => navigate(storyGraphPath(id))}
           onSettingsClick={() => navigate(storySettingsPath(id))}
         />

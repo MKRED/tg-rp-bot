@@ -20,8 +20,10 @@ bot/src/
   proxy.ts      — HttpsProxyAgent (https-proxy-agent) ТОЛЬКО для Telegram
   db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + клиент +
                   DAO-папки по таблицам: characters/ personas/ presets/ (только сэмплинг) impersonations/
-                  narratorTemplates/ rpTemplates/ (у каждой DAO-файл + types.ts/constants.ts + barrel index.ts),
-                  chats/ stories/ knowledge/ (деревья/лорбук), users.ts, userSettings.ts
+                  narratorTemplates/ rpTemplates/ avatars/ (батч-резолв аватаров для AvatarStack —
+                  getAvatarsBatch) (у каждой DAO-файл + types.ts/constants.ts + barrel index.ts),
+                  chats/ stories/ (+ storyAvatars.ts — LATERAL-фрагмент топ-N аватаров книги знаний
+                  для карточки истории) knowledge/ (деревья/лорбук), users.ts, userSettings.ts
   llm/          — LLM client (client/request/errors/types/constants/completionGuard/providers) —
                   серверно, провайдер (OpenRouter | DeepSeek) выбирается env LLM_PROVIDER;
                   debugCapture (+debug.types) — in-memory перехват RAW-запросов к LLM для экрана отладки
@@ -30,7 +32,8 @@ bot/src/
   server/       — Hono HTTP API, разложен по доменным папкам (зеркало webapp): index=startServer,
                   routes.ts — карта эндпоинтов (монтаж контроллеров), middleware/ (initData — валидация
                   подписи), доменные папки me/ characters/ personas/ presets/ books/ narrator-templates/
-                  rp-templates/ chats/ stories/ debug/ — у каждого <домен>.controller.ts (Hono-роуты) + validation/
+                  rp-templates/ chats/ stories/ debug/ avatars/ (POST /batch — батч-резолв аватаров для
+                  AvatarStack, см. ниже) — у каждого <домен>.controller.ts (Hono-роуты) + validation/
                   constants/types рядом + barrel index.ts; chats/ — messages.handlers + impersonate.handlers
                   + stats.handler; stories/ — story.handlers (SSE-генерация RP/narrator); prompt/ —
                   promptBuilder + storyPromptBuilder + общий budget (у каждого constants/types/test рядом);
@@ -55,7 +58,9 @@ webapp/src/
                   characters/ personas/ generation-presets/ rp-templates/ rp-chat/ narrator/
                   knowledge-books/ narrator-templates/ debug/
   shared/       — кросс-каттинг: api/ (client с Authorization), telegram/ (initData, confirm, profile
-                  photo, platform), text/, image/, graph/, hooks/, constants/, toast/, components/
+                  photo, platform), text/, image/, graph/, hooks/, constants/, toast/, components/,
+                  avatar/ (avatarCache — dataURL-кэш на сессию SPA, avatars-api — обёртка над
+                  /api/avatars/batch, useAvatarBatch — хук резолва для AvatarStack)
 ```
 
 ### Раскладка фичи (`features/<feature>/`)
@@ -102,3 +107,10 @@ option `agent`. undici `dispatcher` он **игнорирует** — хотя �
 deprecated). Это противоположно выбору org для **webapp** (там `@telegram-apps/*` — см. README/стек):
 не «чинить» ради единообразия. По умолчанию `validate` считает initData просроченным через сутки
 (`expiresIn` = 86400) — учесть для долгих сессий webview (дадут 401).
+
+Картинки отдаются по двум разным паттернам: поштучно (`GET /characters/:id/image`,
+`characters.controller.ts`) — для форм редактирования, где нужна ровно одна карточка; батчем
+(`POST /avatars/batch`, `server/avatars/`) — для AvatarStack (стек аватаров в списке историй / шапке
+чата), где на экране сразу N дескрипторов {type, id} и поштучные запросы дали бы N round-trip'ов.
+Батч отдаёт только найденные картинки (чужие/несуществующие/пустые id молча выпадают), результат
+кэшируется в webapp на сессию SPA (`shared/avatar/avatarCache.ts`).

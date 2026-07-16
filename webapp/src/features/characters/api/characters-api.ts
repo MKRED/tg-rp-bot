@@ -1,4 +1,5 @@
 import { apiFetch } from "../../../shared/api/client";
+import { invalidateAvatar } from "../../../shared/avatar/avatarCache";
 import { invalidateImage } from "../lib/imageCache";
 import type { Character, CharacterInput, CharacterListItem } from "../types/character";
 
@@ -27,13 +28,15 @@ export async function updateCharacter(
     method: "PUT",
     body: JSON.stringify(input),
   });
-  // Аватар мог смениться или быть удалён — кэш устарел
+  // Аватар мог смениться или быть удалён — кэш устарел (и его копия в стеках AvatarStack)
   invalidateImage(id);
+  invalidateAvatar({ type: "character", id });
   return res;
 }
 
 export async function removeCharacter(id: number): Promise<{ ok: true }> {
   const res = await apiFetch<{ ok: true }>(`/characters/${id}`, { method: "DELETE" });
   invalidateImage(id);
+  invalidateAvatar({ type: "character", id });
   return res;
 }

@@ -18,27 +18,29 @@ interface InfiniteListState<T> {
   loadMore: () => void;
 }
 
-const PAGE_SIZE = 50;
-
 /**
  * Пагинация с АППЕНДОМ страниц (не заменой) — для бесконечного скролла хабов, у которых, в отличие
  * от персонажей/персон/книг (MAX_..._PER_USER = 50, помещаются в один запрос), нет лимита на
- * количество записей. pageSize берём максимальным, разрешённым бэкендом (см. Math.min(50, ...)
- * в chats.controller.ts/stories.controller.ts), чтобы минимизировать раунд-трипы.
+ * количество записей.
  *
  * Дедуп по id страхует от «переезда» записей между страницами: список сортируется по времени
  * последнего сообщения, и офсетная пагинация по изменяемой сортировке может задвоить элемент,
  * если он поднялся наверх между двумя запросами (пропуски — редкий приемлемый компромисс).
- * Важно: hasMore считаем от «сырой» серверной пагинации (page*PAGE_SIZE < total), а НЕ от
+ * Важно: hasMore считаем от «сырой» серверной пагинации (page*pageSize < total), а НЕ от
  * items.length — если дедуп срежет дубли, items.length отстанет от total навсегда, и hasMore
  * никогда не станет false (маячок будет вечно пытаться догрузить уже исчерпанный список).
  *
  * fetchPage должна быть стабильной ссылкой (module-level функция API, не инлайн-замыкание) —
  * иначе loadMore пересоздаётся чаще, чем нужно, и лишний раз переинициализирует IntersectionObserver
  * в InfiniteSentinel.
+ *
+ * pageSize по умолчанию — максимум, разрешённый бэкендом (Math.min(50, ...) в chats.controller.ts/
+ * stories.controller.ts). Хабы с батч-догрузкой по элементам страницы (напр. AvatarStack в narrator)
+ * передают меньшее значение — иначе загрузка страницы веерит N параллельных батч-запросов.
  */
 export function useInfiniteList<T extends { id: number }>(
   fetchPage: (page: number, pageSize: number) => Promise<InfinitePage<T>>,
+  pageSize = 50,
 ): InfiniteListState<T> {
   const [items, setItems] = useState<T[]>([]);
   const [page, setPage] = useState(0);
@@ -59,11 +61,11 @@ export function useInfiniteList<T extends { id: number }>(
   useEffect(() => {
     let cancelled = false;
     inFlight.current = true;
-    fetchPage(1, PAGE_SIZE)
+    fetchPage(1, pageSize)
       .then(({ items: newItems, total: newTotal }) => {
         if (cancelled) return;
         setItems(newItems);
-        setHasMore(PAGE_SIZE < newTotal);
+        setHasMore(pageSize < newTotal);
         setPage(1);
       })
       .catch(() => {
@@ -84,14 +86,14 @@ export function useInfiniteList<T extends { id: number }>(
     setLoadingMore(true);
     setLoadMoreError(false);
     const nextPage = page + 1;
-    fetchPage(nextPage, PAGE_SIZE)
+    fetchPage(nextPage, pageSize)
       .then(({ items: newItems, total: newTotal }) => {
         if (!mountedRef.current) return;
         setItems((prev) => {
           const seen = new Set(prev.map((i) => i.id));
           return [...prev, ...newItems.filter((i) => !seen.has(i.id))];
         });
-        setHasMore(nextPage * PAGE_SIZE < newTotal);
+        setHasMore(nextPage * pageSize < newTotal);
         setPage(nextPage);
       })
       .catch(() => {
@@ -101,7 +103,7 @@ export function useInfiniteList<T extends { id: number }>(
         inFlight.current = false;
         if (mountedRef.current) setLoadingMore(false);
       });
-  }, [fetchPage, page, loading, hasMore]);
+  }, [fetchPage, page, loading, hasMore, pageSize]);
 
   return { items, loading, loadingMore, error, loadMoreError, hasMore, loadMore };
 }
