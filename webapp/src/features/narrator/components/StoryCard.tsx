@@ -25,9 +25,9 @@ function formatStoryTime(iso: string): string {
 }
 
 /**
- * Ячейка истории в списке: до 3 аватаров персонажей/персон из привязанной книги знаний
- * (сортировка книги, топ-3 — story.avatars), название, превью последнего бита, время.
- * Если в книге нет ни одной записи-персонажа/персоны — иконка нарратора (как раньше).
+ * Ячейка истории в списке: название, превью последнего бита, дата — в hint; справа (after)
+ * до 3 аватаров персонажей/персон из привязанной книги знаний (сортировка книги, топ-3 —
+ * story.avatars). Если в книге нет ни одной записи-персонажа/персоны — иконка нарратора (как раньше).
  */
 export function StoryCard({ story, onClick }: StoryCardProps) {
   const displayName = story.title ?? story.bookName;
@@ -36,13 +36,13 @@ export function StoryCard({ story, onClick }: StoryCardProps) {
   const time = story.lastMessageAt ?? story.createdAt;
   const resolved = useAvatarBatch(story.avatars);
 
-  const before =
+  const after =
     story.avatars.length > 0 ? (
       <AvatarStack>
         {story.avatars.map((a) => (
           <Avatar
             key={`${a.type}:${a.id}`}
-            size={24}
+            size={40}
             src={resolved.get(`${a.type}:${a.id}`)}
             acronym={nameInitials(a.name)}
           />
@@ -56,9 +56,9 @@ export function StoryCard({ story, onClick }: StoryCardProps) {
 
   return (
     <Cell
-      before={before}
+      after={after}
+      hint={time ? <span className="story-card__time">{formatStoryTime(time)}</span> : null}
       subtitle={<span className="story-card__subtitle">{subtitle}</span>}
-      after={time ? <span className="story-card__time">{formatStoryTime(time)}</span> : null}
       onClick={onClick}
     >
       {displayName}
