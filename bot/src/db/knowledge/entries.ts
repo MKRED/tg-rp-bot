@@ -11,29 +11,34 @@ function ownedBooks(userId: number) {
 }
 
 /**
- * Резолв плейсхолдеров карточки персонажа для narrator-промпта: {{char}} → имя персонажа записи,
- * {{user}} → userAlias, заданный при выборе персонажа в записи книги (в narrator-режиме нет
- * отыгрываемой персоны — пользователь режиссёр, поэтому значение вводится вручную). Пустой userAlias
- * (записи без плейсхолдера в промпте) просто вырезает токен. Регистронезависимо, как replacePlaceholders в RP.
+ * Резолв плейсхолдеров для narrator-промпта: {{char}} → имя персонажа, {{user}} → имя персоны;
+ * недостающая сторона (в narrator-режиме нет ни закреплённого персонажа, ни отыгрываемой персоны)
+ * закрывается alias, заданным вручную при выборе персонажа/персоны в записи книги. Пустой alias
+ * (записи без соответствующего плейсхолдера в промпте) просто вырезает токен. Регистронезависимо,
+ * как replacePlaceholders в RP.
  */
-function subPlaceholders(text: string, charName: string, userAlias: string): string {
-  return text.replace(/\{\{char\}\}/gi, charName).replace(/\{\{user\}\}/gi, userAlias);
+function subPlaceholders(text: string, charName: string, userName: string): string {
+  return text.replace(/\{\{char\}\}/gi, charName).replace(/\{\{user\}\}/gi, userName);
 }
 
 /**
- * Записи книги для UI (с резолвом персонажа). Проверяет владение книгой. name/content/keywords
- * зашифрованы per-user — расшифровываем; имя персонажа берём из characters (name там в открытом виде).
+ * Записи книги для UI (с резолвом персонажа/персоны). Проверяет владение книгой. name/content/keywords
+ * зашифрованы per-user — расшифровываем; имя персонажа/персоны берём из characters/personas (name там
+ * в открытом виде).
  */
 export async function listEntries(userId: number, bookId: number): Promise<EntryListItem[]> {
   const t0 = Date.now();
   const rows = await db.execute(sql`
     SELECT
-      e.id, e.name, e.enabled, e.activation, e.character_id,
-      e.user_alias, e.content, e.keywords, e.sort_order,
+      e.id, e.name, e.enabled, e.activation, e.character_id, e.persona_id,
+      e.alias, e.content, e.keywords, e.sort_order,
       ch.name AS char_name,
-      ch.image IS NOT NULL AS char_has_image
+      ch.image IS NOT NULL AS char_has_image,
+      pe.name AS persona_name,
+      pe.image IS NOT NULL AS persona_has_image
     FROM knowledge_book_entries e
     LEFT JOIN characters ch ON ch.id = e.character_id
+    LEFT JOIN personas pe ON pe.id = e.persona_id
     WHERE e.book_id = ${bookId}
       AND e.book_id IN ${ownedBooks(userId)}
     ORDER BY e.sort_order ASC, e.created_at ASC
@@ -41,7 +46,7 @@ export async function listEntries(userId: number, bookId: number): Promise<Entry
   const key = getUserEncryptionKey(userId);
   logger.debug({ durationMs: Date.now() - t0, userId, bookId, count: (rows as unknown[]).length }, "Entries listed");
   return (rows as Record<string, unknown>[]).map((r) => ({
-    // bigint из сырого SQL приходит строкой — приводим явно (как characterId ниже).
+    // bigint из сырого SQL приходит строкой — приводим явно (как characterId/personaId ниже).
     id: Number(r.id),
     name: decryptField(r.name as string, key),
     enabled: r.enabled as boolean,
@@ -49,7 +54,10 @@ export async function listEntries(userId: number, bookId: number): Promise<Entry
     characterId: r.character_id != null ? Number(r.character_id) : null,
     characterName: (r.char_name as string | null) ?? null,
     characterHasImage: (r.char_has_image as boolean | null) ?? false,
-    userAlias: decryptField(r.user_alias as string, key),
+    personaId: r.persona_id != null ? Number(r.persona_id) : null,
+    personaName: (r.persona_name as string | null) ?? null,
+    personaHasImage: (r.persona_has_image as boolean | null) ?? false,
+    alias: decryptField(r.alias as string, key),
     content: decryptField(r.content as string, key),
     keywords: ((r.keywords as string[] | null) ?? []).map((k) => decryptField(k, key)),
     sortOrder: r.sort_order as number,
@@ -97,7 +105,8 @@ export async function createEntry(
       enabled: input.enabled,
       activation: input.activation,
       characterId: input.characterId,
-      userAlias: encryptField(input.userAlias, key),
+      personaId: input.personaId,
+      alias: encryptField(input.alias, key),
       content: encryptField(input.content, key),
       keywords: input.keywords.map((k) => encryptField(k, key)),
       sortOrder,
@@ -122,7 +131,8 @@ export async function updateEntry(
       enabled: input.enabled,
       activation: input.activation,
       characterId: input.characterId,
-      userAlias: encryptField(input.userAlias, key),
+      personaId: input.personaId,
+      alias: encryptField(input.alias, key),
       content: encryptField(input.content, key),
       keywords: input.keywords.map((k) => encryptField(k, key)),
       // sort_order НЕ трогаем — порядком владеет только reorderEntries, правка записи его не сбивает.
@@ -202,10 +212,12 @@ export async function reorderEntries(
 }
 
 /**
- * Включённые записи книги, готовые к подстановке в промпт. Для записи-персонажа текст собирается из
- * карточки (имя + описание + сценарий, расшифрованные), для свободной — из content. Итог оборачивается
- * в блок <имя записи>…</имя записи> — так LLM видит, к какому факту/персонажу относится текст, и записи
- * не сливаются в промпте друг с другом. Фильтрацию по activation (always_on vs keyword) делает сборщик промпта.
+ * Включённые записи книги, готовые к подстановке в промпт. Для записи-персонажа/персоны текст
+ * собирается из карточки/персоны (описание, расшифрованное), для свободной — из content. Приоритет
+ * веток: персонаж → персона → свободный текст (ровно одна должна быть заполнена, гарантирует
+ * валидация контроллера). Итог оборачивается в блок <имя записи>…</имя записи> — так LLM видит, к
+ * какому факту/персонажу/персоне относится текст, и записи не сливаются в промпте друг с другом.
+ * Фильтрацию по activation (always_on vs keyword) делает сборщик промпта.
  */
 export async function getActiveEntriesForPrompt(
   userId: number,
@@ -214,10 +226,12 @@ export async function getActiveEntriesForPrompt(
   const t0 = Date.now();
   const rows = await db.execute(sql`
     SELECT
-      e.name, e.activation, e.content, e.keywords, e.character_id, e.user_alias,
-      ch.name AS char_name, ch.prompt AS char_prompt
+      e.name, e.activation, e.content, e.keywords, e.character_id, e.persona_id, e.alias,
+      ch.name AS char_name, ch.prompt AS char_prompt,
+      pe.name AS persona_name, pe.prompt AS persona_prompt
     FROM knowledge_book_entries e
     LEFT JOIN characters ch ON ch.id = e.character_id
+    LEFT JOIN personas pe ON pe.id = e.persona_id
     WHERE e.book_id = ${bookId}
       AND e.book_id IN ${ownedBooks(userId)}
       AND e.enabled = true
@@ -233,17 +247,19 @@ export async function getActiveEntriesForPrompt(
     const activation = r.activation as "always_on" | "keyword";
     const keywords = ((r.keywords as string[] | null) ?? []).map((k) => decryptField(k, key));
     const entryName = decryptField(r.name as string, key);
+    const alias = decryptField(r.alias as string, key);
 
     let body: string;
     if (r.character_id != null && r.char_name != null) {
       // Запись-персонаж: в промпт идёт только описание из карточки (prompt зашифрован как у character).
       // Имя не дублируем — его несёт оборачивающий тег <name>; сценарий карточки в книгу знаний не тянем.
-      const charName = r.char_name as string;
-      const userAlias = decryptField(r.user_alias as string, key);
+      body = subPlaceholders(decryptField((r.char_prompt as string | null) ?? "", key), r.char_name as string, alias);
+    } else if (r.persona_id != null && r.persona_name != null) {
+      // Запись-персона: симметрично записи-персонажу, {{char}} закрывается alias.
       body = subPlaceholders(
-        decryptField((r.char_prompt as string | null) ?? "", key),
-        charName,
-        userAlias,
+        decryptField((r.persona_prompt as string | null) ?? "", key),
+        alias,
+        r.persona_name as string,
       );
     } else {
       body = decryptField((r.content as string | null) ?? "", key);

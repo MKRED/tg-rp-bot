@@ -169,6 +169,20 @@
       "when": 1784102477180,
       "tag": "0023_amusing_scarlet_spider",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1784178746870,
+      "tag": "0024_knowledge_entries_persona",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1784178771661,
+      "tag": "0025_knowledge_entries_alias_rename",
+      "breakpoints": true
     }
   ]
 }

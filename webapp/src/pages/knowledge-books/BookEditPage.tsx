@@ -8,6 +8,7 @@ import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageStateBoundary } from "../../shared/components/PageStateBoundary";
 import { SectionWithFooter } from "../../shared/components/SectionWithFooter";
 import { CharacterAvatar } from "../../features/characters";
+import { PersonaAvatar } from "../../features/personas";
 import {
   BookForm,
   EntryEditor,
@@ -139,16 +140,25 @@ export function BookEditPage() {
                                 name={e.characterName ?? ""}
                                 size={40}
                               />
+                            ) : e.personaId != null ? (
+                              <PersonaAvatar
+                                id={e.personaId}
+                                hasImage={e.personaHasImage}
+                                name={e.personaName ?? ""}
+                                size={40}
+                              />
                             ) : (
-                              // Иконка 40px — тот же футпринт, что аватар персонажа, чтобы строки
-                              // свободного текста и персонажа были одной высоты и текст не «прыгал».
+                              // Иконка 40px — тот же футпринт, что аватар персонажа/персоны, чтобы строки
+                              // разных видов записей были одной высоты и текст не «прыгал».
                               <FileText size={40} strokeWidth={1.5} className="kb-entry-icon" />
                             )
                           }
                           subtitle={
                             e.characterId != null
                               ? (e.characterName ?? "персонаж удалён")
-                              : e.content.slice(0, 60)
+                              : e.personaId != null
+                                ? (e.personaName ?? "персона удалена")
+                                : e.content.slice(0, 60)
                           }
                           hint={!e.enabled ? "выкл." : undefined}
                           after={
@@ -185,7 +195,13 @@ export function BookEditPage() {
                           }
                           onClick={() => setEntryEdit(e)}
                         >
-                          {e.name || (e.characterId != null ? e.characterName : "Без названия") || "Запись"}
+                          {e.name ||
+                            (e.characterId != null
+                              ? e.characterName
+                              : e.personaId != null
+                                ? e.personaName
+                                : "Без названия") ||
+                            "Запись"}
                         </Cell>
                       </motion.div>
                     ))}

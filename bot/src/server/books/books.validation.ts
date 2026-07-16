@@ -1,9 +1,14 @@
-import type { Character } from "../../db/schema.js";
+import type { Character, Persona } from "../../db/schema.js";
 import type { BookInput, EntryInput } from "../../db/knowledge/index.js";
 
 /** Промпт/сценарий персонажа ссылается на {{user}} — карточка не знает, кто отыгрывает за пользователя. */
 export function characterNeedsUserAlias(character: Pick<Character, "prompt" | "scenario">): boolean {
   return /\{\{user\}\}/i.test(character.prompt) || /\{\{user\}\}/i.test(character.scenario);
+}
+
+/** Промпт персоны ссылается на {{char}} — персона не знает, кто закреплённый персонаж (симметрично). */
+export function personaNeedsCharAlias(persona: Pick<Persona, "prompt">): boolean {
+  return /\{\{char\}\}/i.test(persona.prompt);
 }
 
 export function parseBookInput(body: unknown): { input: BookInput } | { error: string } {
@@ -24,7 +29,8 @@ export function parseEntryInput(body: unknown): { input: EntryInput } | { error:
   const enabled = b.enabled !== false;
   const activation = b.activation === "keyword" ? "keyword" : "always_on";
   const characterId = typeof b.characterId === "number" ? b.characterId : null;
-  const userAlias = typeof b.userAlias === "string" ? b.userAlias.trim().slice(0, 100) : "";
+  const personaId = typeof b.personaId === "number" ? b.personaId : null;
+  const alias = typeof b.alias === "string" ? b.alias.trim().slice(0, 100) : "";
   const content = typeof b.content === "string" ? b.content : "";
   const keywords = Array.isArray(b.keywords)
     ? b.keywords.filter((k): k is string => typeof k === "string").map((k) => k.trim()).filter(Boolean)
@@ -32,11 +38,15 @@ export function parseEntryInput(body: unknown): { input: EntryInput } | { error:
 
   // Имя обязательно — оно оборачивает текст записи в промпте как <имя>…</имя> (getActiveEntriesForPrompt).
   if (!name) return { error: "Name is required" };
-  // Запись должна нести смысл: либо ссылка на персонажа, либо непустой текст.
-  if (characterId === null && !content.trim()) {
-    return { error: "Entry needs a character or content" };
+  // Персонаж и персона одновременно — бессмысленное состояние (какая из двух карточек рендерится?).
+  if (characterId !== null && personaId !== null) {
+    return { error: "Entry cannot reference both a character and a persona" };
   }
-  return { input: { name, enabled, activation, characterId, userAlias, content, keywords } };
+  // Запись должна нести смысл: либо ссылка на персонажа/персону, либо непустой текст.
+  if (characterId === null && personaId === null && !content.trim()) {
+    return { error: "Entry needs a character, a persona or content" };
+  }
+  return { input: { name, enabled, activation, characterId, personaId, alias, content, keywords } };
 }
 
 /** Тело reorder-запроса: { order: number[] } — id записей книги в новом порядке (полная перестановка). */

@@ -21,7 +21,7 @@ export type BookInput = {
 
 export type EntryActivation = "always_on" | "keyword";
 
-/** Запись книги (с резолвом персонажа, если это запись-персонаж). */
+/** Запись книги (с резолвом персонажа/персоны, если это ссылочная запись). */
 export type Entry = {
   id: number;
   name: string;
@@ -30,7 +30,10 @@ export type Entry = {
   characterId: number | null;
   characterName: string | null;
   characterHasImage: boolean;
-  userAlias: string;
+  personaId: number | null;
+  personaName: string | null;
+  personaHasImage: boolean;
+  alias: string;
   content: string;
   keywords: string[];
   sortOrder: number;
@@ -41,7 +44,8 @@ export type EntryInput = {
   enabled: boolean;
   activation: EntryActivation;
   characterId: number | null;
-  userAlias: string;
+  personaId: number | null;
+  alias: string;
   content: string;
   keywords: string[];
 };

@@ -387,10 +387,11 @@ export type KnowledgeBook = typeof knowledgeBooks.$inferSelect;
 export type NewKnowledgeBook = typeof knowledgeBooks.$inferInsert;
 
 /**
- * Запись книги знаний. Два вида: ссылка на персонажа (characterId — карточка рендерится из characters,
- * без копий) ИЛИ свободный текст (content). activation — поэлементная: always_on (всегда в промпте) или
- * keyword (по триггеру; в MVP не задействован при сборке, поле-задел). name — метка ТОЛЬКО для UI,
- * в LLM не уходит (как footnote у персонажей). sortOrder — порядок показа/вставки.
+ * Запись книги знаний. Три вида: ссылка на персонажа (characterId — карточка рендерится из characters,
+ * без копий), ссылка на персону (personaId — аналогично, из personas) ИЛИ свободный текст (content).
+ * Ветки взаимоисключающие (ровно одна ненулевая/непустая). activation — поэлементная: always_on
+ * (всегда в промпте) или keyword (по триггеру; в MVP не задействован при сборке, поле-задел).
+ * name — метка ТОЛЬКО для UI, в LLM не уходит (как footnote у персонажей). sortOrder — порядок показа/вставки.
  */
 export const knowledgeBookEntries = pgTable("knowledge_book_entries", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
@@ -409,9 +410,14 @@ export const knowledgeBookEntries = pgTable("knowledge_book_entries", {
   characterId: bigint("character_id", { mode: "number" }).references(() => characters.id, {
     onDelete: "set null",
   }),
-  // Значение для {{user}} в промпте персонажа (у narrator нет персоны, играющей за пользователя).
-  // Обязательно на уровне контроллера, если промпт/сценарий персонажа содержит {{user}}.
-  userAlias: text("user_alias").notNull().default(""),
+  // Запись-персона: ссылка на персону. Симметрично characterId (set null при удалении персоны).
+  personaId: bigint("persona_id", { mode: "number" }).references(() => personas.id, {
+    onDelete: "set null",
+  }),
+  // Значение для недостающей стороны в narrator-промпте: у записи-персонажа закрывает {{user}}
+  // (нет отыгрываемой персоны), у записи-персоны — {{char}} (нет закреплённого персонажа).
+  // Обязательно на уровне контроллера, если промпт содержит соответствующий плейсхолдер.
+  alias: text("alias").notNull().default(""),
   content: text("content").notNull().default(""),
   keywords: text("keywords")
     .array()

@@ -14,6 +14,7 @@ import {
   updateBook,
   updateEntry,
 } from "../../db/knowledge/index.js";
+import { getPersona } from "../../db/personas/index.js";
 import { ensureUser } from "../../db/users.js";
 import logger from "../../logger.js";
 import type { AppVariables } from "../middleware/initData.types.js";
@@ -24,7 +25,33 @@ import {
   parseBookInput,
   parseEntryInput,
   parseReorderInput,
+  personaNeedsCharAlias,
 } from "./books.validation.js";
+
+/**
+ * Проверяет владение и обязательность alias для записи-персонажа/персоны. Возвращает Response с
+ * ошибкой, если проверка не прошла, иначе null (можно продолжать).
+ */
+async function validateEntryReference(
+  userId: number,
+  input: { characterId: number | null; personaId: number | null; alias: string },
+): Promise<{ error: string; status: 404 | 400 } | null> {
+  if (input.characterId !== null) {
+    const ch = await getCharacter(userId, input.characterId);
+    if (!ch) return { error: "Character not found", status: 404 };
+    if (characterNeedsUserAlias(ch) && !input.alias) {
+      return { error: "Alias required", status: 400 };
+    }
+  }
+  if (input.personaId !== null) {
+    const pe = await getPersona(userId, input.personaId);
+    if (!pe) return { error: "Persona not found", status: 404 };
+    if (personaNeedsCharAlias(pe) && !input.alias) {
+      return { error: "Alias required", status: 400 };
+    }
+  }
+  return null;
+}
 
 /** CRUD книг знаний (+ их записей) под /api/books. Монтируется после requireInitData. */
 export function createBookRoutes(): Hono<{ Variables: AppVariables }> {
@@ -116,15 +143,10 @@ export function createBookRoutes(): Hono<{ Variables: AppVariables }> {
     const parsed = parseEntryInput(await c.req.json().catch(() => null));
     if ("error" in parsed) return c.json({ error: parsed.error }, 400);
 
-    // Запись-персонаж: персонаж должен принадлежать пользователю; если его промпт/сценарий
-    // ссылается на {{user}}, значение для подстановки обязательно (карточка не знает, кто играет за юзера).
-    if (parsed.input.characterId !== null) {
-      const ch = await getCharacter(user.id, parsed.input.characterId);
-      if (!ch) return c.json({ error: "Character not found" }, 404);
-      if (characterNeedsUserAlias(ch) && !parsed.input.userAlias) {
-        return c.json({ error: "User alias required" }, 400);
-      }
-    }
+    // Запись-персонаж/персона: сущность должна принадлежать пользователю; если её промпт/сценарий
+    // ссылается на недостающую сторону ({{user}} у персонажа, {{char}} у персоны), alias обязателен.
+    const refError = await validateEntryReference(user.id, parsed.input);
+    if (refError) return c.json({ error: refError.error }, refError.status);
     if ((await countEntries(user.id, id)) >= MAX_ENTRIES_PER_BOOK) {
       return c.json({ error: `Entry limit reached (max ${MAX_ENTRIES_PER_BOOK})` }, 400);
     }
@@ -159,13 +181,8 @@ export function createBookRoutes(): Hono<{ Variables: AppVariables }> {
     if (!Number.isInteger(entryId)) return c.json({ error: "Invalid id" }, 400);
     const parsed = parseEntryInput(await c.req.json().catch(() => null));
     if ("error" in parsed) return c.json({ error: parsed.error }, 400);
-    if (parsed.input.characterId !== null) {
-      const ch = await getCharacter(user.id, parsed.input.characterId);
-      if (!ch) return c.json({ error: "Character not found" }, 404);
-      if (characterNeedsUserAlias(ch) && !parsed.input.userAlias) {
-        return c.json({ error: "User alias required" }, 400);
-      }
-    }
+    const refError = await validateEntryReference(user.id, parsed.input);
+    if (refError) return c.json({ error: refError.error }, refError.status);
     const ok = await updateEntry(user.id, entryId, parsed.input);
     if (!ok) return c.json({ error: "Not found" }, 404);
     return c.json({ ok: true });

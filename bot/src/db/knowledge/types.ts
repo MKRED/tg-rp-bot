@@ -15,19 +15,24 @@ export type BookListItem = {
   createdAt: string;
 };
 
-/** Поля записи книги из формы. Запись — либо ссылка на персонажа (characterId), либо свободный текст. */
+/**
+ * Поля записи книги из формы. Запись — ровно один из трёх видов: ссылка на персонажа (characterId),
+ * ссылка на персону (personaId) или свободный текст (content).
+ */
 export type EntryInput = {
   name: string;
   enabled: boolean;
   activation: "always_on" | "keyword";
   characterId: number | null;
-  // Значение для {{user}} в промпте персонажа записи (обязательно, если промпт/сценарий его содержит).
-  userAlias: string;
+  personaId: number | null;
+  // Значение для недостающей стороны: {{user}} у записи-персонажа, {{char}} у записи-персоны
+  // (обязательно, если промпт соответствующей сущности содержит плейсхолдер).
+  alias: string;
   content: string;
   keywords: string[];
 };
 
-/** Запись книги для UI: + резолв персонажа (имя/наличие картинки), если это запись-персонаж. */
+/** Запись книги для UI: + резолв персонажа/персоны (имя/наличие картинки), если это ссылочная запись. */
 export type EntryListItem = {
   id: number;
   name: string;
@@ -36,7 +41,10 @@ export type EntryListItem = {
   characterId: number | null;
   characterName: string | null;
   characterHasImage: boolean;
-  userAlias: string;
+  personaId: number | null;
+  personaName: string | null;
+  personaHasImage: boolean;
+  alias: string;
   content: string;
   keywords: string[];
   sortOrder: number;

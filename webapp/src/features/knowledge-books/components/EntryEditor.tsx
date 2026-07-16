@@ -1,14 +1,15 @@
-import { Button, Cell, List, Modal, Section, Switch } from "@telegram-apps/telegram-ui";
+import { Button, Section, Switch } from "@telegram-apps/telegram-ui";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
 import { HintedInput } from "../../../shared/components/HintedInput";
 import { PromptField } from "../../../shared/components/PromptField";
 import { SectionActions } from "../../../shared/components/SectionActions";
 import { CharacterAvatar, useCharacter, useCharacters } from "../../characters";
+import { PersonaAvatar, usePersona, usePersonas } from "../../personas";
 import { createEntry, removeEntry, updateEntry } from "../api/books-api";
 import type { Entry } from "../types/book";
+import { EntryReferencePicker } from "./EntryReferencePicker";
 
 interface EntryEditorProps {
   bookId: number;
@@ -18,27 +19,33 @@ interface EntryEditorProps {
   onCancel: () => void;
 }
 
-type Mode = "character" | "free";
+type Mode = "character" | "persona" | "free";
 
 const USER_PLACEHOLDER_RE = /\{\{user\}\}/i;
+const CHAR_PLACEHOLDER_RE = /\{\{char\}\}/i;
 
 /**
- * Редактор одной записи книги знаний. Два вида: «персонаж» (ссылка на карточку) или «свободный текст».
- * Активация always_on активна; «по ключу» (keyword) — задел, пока выключена. keywords в UI не вводим
- * (нужны только keyword-режиму). name обязателен — в промпте им оборачивается текст записи:
- * <name>…</name> (getActiveEntriesForPrompt).
+ * Редактор одной записи книги знаний. Три вида: «персонаж»/«персона» (ссылка на карточку) или
+ * «свободный текст». Активация always_on активна; «по ключу» (keyword) — задел, пока выключена.
+ * keywords в UI не вводим (нужны только keyword-режиму). name обязателен — в промпте им оборачивается
+ * текст записи: <name>…</name> (getActiveEntriesForPrompt).
  */
 export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorProps) {
   const { items: characters } = useCharacters();
+  const { items: personas } = usePersonas();
 
   const [name, setName] = useState(initial?.name ?? "");
-  const [mode, setMode] = useState<Mode>(initial?.characterId != null ? "character" : "free");
+  const [mode, setMode] = useState<Mode>(
+    initial?.characterId != null ? "character" : initial?.personaId != null ? "persona" : "free",
+  );
   const [characterId, setCharacterId] = useState<number | null>(initial?.characterId ?? null);
+  const [personaId, setPersonaId] = useState<number | null>(initial?.personaId ?? null);
   const [content, setContent] = useState(initial?.content ?? "");
-  const [userAlias, setUserAlias] = useState(initial?.userAlias ?? "");
+  const [alias, setAlias] = useState(initial?.alias ?? "");
   const [enabled, setEnabled] = useState(initial?.enabled ?? true);
   const [submitting, setSubmitting] = useState(false);
   const [charOpen, setCharOpen] = useState(false);
+  const [personaOpen, setPersonaOpen] = useState(false);
 
   const selectedCharacter = characters.find((c) => c.id === characterId) ?? null;
   // Пока список персонажей (useCharacters) грузится, для уже сохранённой записи берём имя/аватар из
@@ -51,6 +58,14 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
       ? { id: characterId, name: initial.characterName, hasImage: initial.characterHasImage }
       : null);
 
+  // Симметрично персонажу: пока список персон грузится, для сохранённой записи берём имя/аватар из initial.
+  const selectedPersona = personas.find((p) => p.id === personaId) ?? null;
+  const selectedPersonaDisplay =
+    selectedPersona ??
+    (personaId != null && personaId === initial?.personaId && initial?.personaName != null
+      ? { id: personaId, name: initial.personaName, hasImage: initial.personaHasImage }
+      : null);
+
   // Полная карточка (с промптом) нужна только чтобы проверить {{user}} — список её не отдаёт.
   // Сценарий карточки в промпт книги знаний не идёт, поэтому его на {{user}} не проверяем.
   const { character: selectedCharacterFull, loading: characterLoading } = useCharacter(
@@ -59,21 +74,37 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
   const needsUserAlias =
     selectedCharacterFull != null && USER_PLACEHOLDER_RE.test(selectedCharacterFull.prompt);
 
-  // Пока полная карточка грузится, для уже сохранённой записи предсказываем нужность инпута по
-  // непустому initial.userAlias (при сохранении он непуст ⇔ промпт содержал {{user}}). Иначе инпут
-  // «доскакивал» бы после загрузки карточки и дёргал layout при открытии редактирования. Как только
-  // карточка подгрузилась — источник истины только needsUserAlias (валидатор ниже на нём же).
+  // Симметрично: полная персона нужна только чтобы проверить {{char}} в её промпте.
+  const { persona: selectedPersonaFull, loading: personaLoading } = usePersona(
+    mode === "persona" && personaId != null ? personaId : undefined,
+  );
+  const needsCharAlias =
+    selectedPersonaFull != null && CHAR_PLACEHOLDER_RE.test(selectedPersonaFull.prompt);
+
+  // Пока полная карточка/персона грузится, для уже сохранённой записи предсказываем нужность инпута
+  // по непустому initial.alias (при сохранении он непуст ⇔ промпт содержал плейсхолдер). Иначе инпут
+  // «доскакивал» бы после загрузки и дёргал layout при открытии редактирования. Как только карточка/
+  // персона подгрузилась — источник истины только needsUserAlias/needsCharAlias (валидатор ниже на них же).
   const predictUserAlias =
     characterLoading &&
     characterId === initial?.characterId &&
-    (initial?.userAlias?.trim().length ?? 0) > 0;
-  const showUserAlias = needsUserAlias || predictUserAlias;
+    (initial?.alias?.trim().length ?? 0) > 0;
+  const predictCharAlias =
+    personaLoading && personaId === initial?.personaId && (initial?.alias?.trim().length ?? 0) > 0;
+  const showAlias =
+    mode === "character"
+      ? needsUserAlias || predictUserAlias
+      : mode === "persona"
+        ? needsCharAlias || predictCharAlias
+        : false;
 
   const valid =
     name.trim().length > 0 &&
     (mode === "character"
-      ? characterId != null && !characterLoading && (!needsUserAlias || userAlias.trim().length > 0)
-      : content.trim().length > 0);
+      ? characterId != null && !characterLoading && (!needsUserAlias || alias.trim().length > 0)
+      : mode === "persona"
+        ? personaId != null && !personaLoading && (!needsCharAlias || alias.trim().length > 0)
+        : content.trim().length > 0);
 
   const handleSave = () => {
     if (!valid || submitting) return;
@@ -83,8 +114,9 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
       enabled,
       activation: "always_on" as const,
       characterId: mode === "character" ? characterId : null,
-      userAlias: mode === "character" ? userAlias.trim() : "",
-      content: mode === "free" ? content : "",
+      personaId: mode === "persona" ? personaId : null,
+      alias: mode === "character" || mode === "persona" ? alias.trim() : "",
+      content: mode === "free" ? content.trim() : "",
       keywords: [],
     };
     const op = initial
@@ -120,6 +152,14 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
         </Button>
         <Button
           size="s"
+          mode={mode === "persona" ? "filled" : "outline"}
+          stretched
+          onClick={() => setMode("persona")}
+        >
+          Персона
+        </Button>
+        <Button
+          size="s"
           mode={mode === "free" ? "filled" : "outline"}
           stretched
           onClick={() => setMode("free")}
@@ -129,31 +169,39 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
       </div>
 
       {mode === "character" ? (
-        <Cell
-          before={
-            selectedDisplay ? (
-              <CharacterAvatar
-                id={selectedDisplay.id}
-                hasImage={selectedDisplay.hasImage}
-                name={selectedDisplay.name}
-                size={40}
-              />
-            ) : undefined
-          }
-          after={<ChevronRight size={20} style={{ opacity: 0.4 }} />}
-          subtitle={selectedDisplay ? "Персонаж" : "Обязательно"}
-          onClick={() => setCharOpen(true)}
-        >
-          {selectedDisplay?.name ?? "Выберите персонажа"}
-        </Cell>
+        <EntryReferencePicker
+          items={characters}
+          selected={selectedDisplay}
+          Avatar={CharacterAvatar}
+          modalTitle="Персонаж"
+          typeLabel="Персонаж"
+          emptyLabel="Выберите персонажа"
+          open={charOpen}
+          onOpenChange={setCharOpen}
+          onSelect={setCharacterId}
+        />
       ) : null}
 
-      {/* Инпут появляется/схлопывается плавно: needsUserAlias зависит от асинхронно подгружаемой
-          карточки, без анимации он бы резко «доскакивал» при смене персонажа/новой записи. */}
+      {mode === "persona" ? (
+        <EntryReferencePicker
+          items={personas}
+          selected={selectedPersonaDisplay}
+          Avatar={PersonaAvatar}
+          modalTitle="Персона"
+          typeLabel="Персона"
+          emptyLabel="Выберите персону"
+          open={personaOpen}
+          onOpenChange={setPersonaOpen}
+          onSelect={setPersonaId}
+        />
+      ) : null}
+
+      {/* Инпут появляется/схлопывается плавно: needsUserAlias/needsCharAlias зависят от асинхронно
+          подгружаемой карточки/персоны, без анимации он бы резко «доскакивал» при смене выбора. */}
       <AnimatePresence>
-        {mode === "character" && showUserAlias ? (
+        {showAlias ? (
           <motion.div
-            key="user-alias"
+            key="alias"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
@@ -161,11 +209,15 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
             style={{ overflow: "hidden" }}
           >
             <HintedInput
-              header="Обращение к пользователю"
-              placeholder="Напр. «Михаил» или «Странник»"
-              hint="Промпт этого персонажа содержит {{user}} — narrator не отыгрывает персону, укажите текст для подстановки."
-              value={userAlias}
-              onChange={(e) => setUserAlias(e.target.value)}
+              header={mode === "character" ? "Обращение к пользователю" : "Имя персонажа"}
+              placeholder={mode === "character" ? "Напр. «Михаил» или «Странник»" : "Напр. «Артур»"}
+              hint={
+                mode === "character"
+                  ? "Промпт этого персонажа содержит {{user}} — narrator не отыгрывает персону, укажите текст для подстановки."
+                  : "Промпт этой персоны содержит {{char}} — narrator не привязан к конкретному персонажу, укажите текст для подстановки."
+              }
+              value={alias}
+              onChange={(e) => setAlias(e.target.value)}
             />
           </motion.div>
         ) : null}
@@ -200,28 +252,6 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
           </DeleteButton>
         )}
       </SectionActions>
-
-      {/* Модал выбора персонажа — вместо нативного select */}
-      <Modal
-        open={charOpen}
-        onOpenChange={setCharOpen}
-        header={<Modal.Header>Персонаж</Modal.Header>}
-      >
-        <List>
-          {characters.map((c) => (
-            <Cell
-              key={c.id}
-              before={<CharacterAvatar id={c.id} hasImage={c.hasImage} name={c.name} size={40} />}
-              onClick={() => {
-                setCharacterId(c.id);
-                setCharOpen(false);
-              }}
-            >
-              {c.name}
-            </Cell>
-          ))}
-        </List>
-      </Modal>
     </Section>
   );
 }

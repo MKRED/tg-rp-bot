@@ -1,0 +1,2 @@
+ALTER TABLE "knowledge_book_entries" ADD COLUMN "persona_id" bigint;--> statement-breakpoint
+ALTER TABLE "knowledge_book_entries" ADD CONSTRAINT "knowledge_book_entries_persona_id_personas_id_fk" FOREIGN KEY ("persona_id") REFERENCES "public"."personas"("id") ON DELETE set null ON UPDATE no action;
