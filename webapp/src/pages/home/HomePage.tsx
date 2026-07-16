@@ -103,6 +103,18 @@ export function HomePage() {
             </motion.div>
             <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.2 }}>
               <Cell
+                before={<BookOpen size={24} className="home__icon" />}
+                subtitle="Персонажи и факты мира для историй"
+                onClick={() => navigate(ROUTES.books)}
+              >
+                Книги знаний
+              </Cell>
+            </motion.div>
+          </Section>
+
+          <Section header="Конфигурация">
+            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.25 }}>
+              <Cell
                 before={<SlidersHorizontal size={24} className="home__icon" />}
                 subtitle="Пресеты параметров генерации"
                 onClick={() => navigate(ROUTES.presets)}
@@ -110,22 +122,13 @@ export function HomePage() {
                 Настройки ответа ИИ
               </Cell>
             </motion.div>
-            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.25 }}>
+            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.3 }}>
               <Cell
                 before={<FileText size={24} className="home__icon" />}
                 subtitle="Промпты RP-чата"
                 onClick={() => navigate(ROUTES.rpTemplates)}
               >
                 RP-шаблоны
-              </Cell>
-            </motion.div>
-            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.3 }}>
-              <Cell
-                before={<BookOpen size={24} className="home__icon" />}
-                subtitle="Персонажи и факты мира для историй"
-                onClick={() => navigate(ROUTES.books)}
-              >
-                Книги знаний
               </Cell>
             </motion.div>
             <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.35 }}>
