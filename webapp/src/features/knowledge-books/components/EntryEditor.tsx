@@ -8,8 +8,10 @@ import { SectionActions } from "../../../shared/components/SectionActions";
 import { CharacterAvatar, useCharacter, useCharacters } from "../../characters";
 import { PersonaAvatar, usePersona, usePersonas } from "../../personas";
 import { createEntry, removeEntry, updateEntry } from "../api/books-api";
-import type { Entry } from "../types/book";
+import type { Entry, EntryActivation } from "../types/book";
+import { DEFAULT_KEYWORD_DEPTH, MAX_KEYWORD_DEPTH, MIN_KEYWORD_DEPTH } from "../types/book";
 import { EntryReferencePicker } from "./EntryReferencePicker";
+import { KeywordsInput } from "./KeywordsInput";
 
 interface EntryEditorProps {
   bookId: number;
@@ -26,9 +28,9 @@ const CHAR_PLACEHOLDER_RE = /\{\{char\}\}/i;
 
 /**
  * Редактор одной записи книги знаний. Три вида: «персонаж»/«персона» (ссылка на карточку) или
- * «свободный текст». Активация always_on активна; «по ключу» (keyword) — задел, пока выключена.
- * keywords в UI не вводим (нужны только keyword-режиму). name обязателен — в промпте им оборачивается
- * текст записи: <name>…</name> (getActiveEntriesForPrompt).
+ * «свободный текст». Активация: always_on (всегда в промпте) или keyword (дополнительно к enabled —
+ * только если одно из триггер-слов встретилось среди последних keywordDepth сообщений истории).
+ * name обязателен — в промпте им оборачивается текст записи: <name>…</name> (getActiveEntriesForPrompt).
  */
 export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorProps) {
   const { items: characters } = useCharacters();
@@ -42,6 +44,9 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
   const [personaId, setPersonaId] = useState<number | null>(initial?.personaId ?? null);
   const [content, setContent] = useState(initial?.content ?? "");
   const [alias, setAlias] = useState(initial?.alias ?? "");
+  const [activation, setActivation] = useState<EntryActivation>(initial?.activation ?? "always_on");
+  const [keywords, setKeywords] = useState<string[]>(initial?.keywords ?? []);
+  const [keywordDepth, setKeywordDepth] = useState(String(initial?.keywordDepth ?? DEFAULT_KEYWORD_DEPTH));
   const [enabled, setEnabled] = useState(initial?.enabled ?? true);
   const [submitting, setSubmitting] = useState(false);
   const [charOpen, setCharOpen] = useState(false);
@@ -104,20 +109,28 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
       ? characterId != null && !characterLoading && (!needsUserAlias || alias.trim().length > 0)
       : mode === "persona"
         ? personaId != null && !personaLoading && (!needsCharAlias || alias.trim().length > 0)
-        : content.trim().length > 0);
+        : content.trim().length > 0) &&
+    // Запись «по ключу» без триггер-слов никогда не сработает — требуем хотя бы одно.
+    (activation !== "keyword" || keywords.length > 0);
 
   const handleSave = () => {
     if (!valid || submitting) return;
     setSubmitting(true);
+    const parsedDepth = parseInt(keywordDepth, 10);
+    const clampedDepth = Math.min(
+      Math.max(Number.isFinite(parsedDepth) ? parsedDepth : DEFAULT_KEYWORD_DEPTH, MIN_KEYWORD_DEPTH),
+      MAX_KEYWORD_DEPTH,
+    );
     const input = {
       name: name.trim(),
       enabled,
-      activation: "always_on" as const,
+      activation,
       characterId: mode === "character" ? characterId : null,
       personaId: mode === "persona" ? personaId : null,
       alias: mode === "character" || mode === "persona" ? alias.trim() : "",
       content: mode === "free" ? content.trim() : "",
-      keywords: [],
+      keywords: activation === "keyword" ? keywords.map((k) => k.trim()).filter(Boolean) : [],
+      keywordDepth: clampedDepth,
     };
     const op = initial
       ? updateEntry(bookId, initial.id, input)
@@ -233,6 +246,49 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
           onChange={setContent}
         />
       ) : null}
+
+      <div style={{ display: "flex", gap: 8, padding: "8px 22px" }}>
+        <Button
+          size="s"
+          mode={activation === "always_on" ? "filled" : "outline"}
+          stretched
+          onClick={() => setActivation("always_on")}
+        >
+          Всегда
+        </Button>
+        <Button
+          size="s"
+          mode={activation === "keyword" ? "filled" : "outline"}
+          stretched
+          onClick={() => setActivation("keyword")}
+        >
+          По ключевым словам
+        </Button>
+      </div>
+
+      <AnimatePresence>
+        {activation === "keyword" ? (
+          <motion.div
+            key="keyword"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            style={{ overflow: "hidden" }}
+          >
+            <KeywordsInput keywords={keywords} onChange={setKeywords} />
+            <HintedInput
+              header="Искать в последних N сообщениях"
+              type="number"
+              inputMode="numeric"
+              placeholder={String(DEFAULT_KEYWORD_DEPTH)}
+              hint="Сколько последних сообщений (пользователь + модель) сканировать на триггер-слова."
+              value={keywordDepth}
+              onChange={(e) => setKeywordDepth(e.target.value)}
+            />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <div style={{ padding: "8px 22px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>Включена</span>

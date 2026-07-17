@@ -1,0 +1,1 @@
+ALTER TABLE "knowledge_book_entries" ADD COLUMN "keyword_depth" integer DEFAULT 10 NOT NULL;

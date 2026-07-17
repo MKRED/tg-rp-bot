@@ -31,7 +31,7 @@ export async function listEntries(userId: number, bookId: number): Promise<Entry
   const rows = await db.execute(sql`
     SELECT
       e.id, e.name, e.enabled, e.activation, e.character_id, e.persona_id,
-      e.alias, e.content, e.keywords, e.sort_order,
+      e.alias, e.content, e.keywords, e.keyword_depth, e.sort_order,
       ch.name AS char_name,
       ch.image IS NOT NULL AS char_has_image,
       pe.name AS persona_name,
@@ -60,6 +60,7 @@ export async function listEntries(userId: number, bookId: number): Promise<Entry
     alias: decryptField(r.alias as string, key),
     content: decryptField(r.content as string, key),
     keywords: ((r.keywords as string[] | null) ?? []).map((k) => decryptField(k, key)),
+    keywordDepth: r.keyword_depth as number,
     sortOrder: r.sort_order as number,
   }));
 }
@@ -109,6 +110,7 @@ export async function createEntry(
       alias: encryptField(input.alias, key),
       content: encryptField(input.content, key),
       keywords: input.keywords.map((k) => encryptField(k, key)),
+      keywordDepth: input.keywordDepth,
       sortOrder,
     })
     .returning({ id: schema.knowledgeBookEntries.id });
@@ -135,6 +137,7 @@ export async function updateEntry(
       alias: encryptField(input.alias, key),
       content: encryptField(input.content, key),
       keywords: input.keywords.map((k) => encryptField(k, key)),
+      keywordDepth: input.keywordDepth,
       // sort_order НЕ трогаем — порядком владеет только reorderEntries, правка записи его не сбивает.
     })
     .where(
@@ -226,7 +229,7 @@ export async function getActiveEntriesForPrompt(
   const t0 = Date.now();
   const rows = await db.execute(sql`
     SELECT
-      e.name, e.activation, e.content, e.keywords, e.character_id, e.persona_id, e.alias,
+      e.name, e.activation, e.content, e.keywords, e.keyword_depth, e.character_id, e.persona_id, e.alias,
       ch.name AS char_name, ch.prompt AS char_prompt,
       pe.name AS persona_name, pe.prompt AS persona_prompt
     FROM knowledge_book_entries e
@@ -265,6 +268,6 @@ export async function getActiveEntriesForPrompt(
       body = decryptField((r.content as string | null) ?? "", key);
     }
     const text = `<${entryName}>\n${body}\n</${entryName}>`;
-    return { activation, keywords, text };
+    return { activation, keywords, keywordDepth: r.keyword_depth as number, text };
   });
 }

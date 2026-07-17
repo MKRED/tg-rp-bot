@@ -183,6 +183,13 @@
       "when": 1784178771661,
       "tag": "0025_knowledge_entries_alias_rename",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1784271313413,
+      "tag": "0026_rich_christian_walker",
+      "breakpoints": true
     }
   ]
 }

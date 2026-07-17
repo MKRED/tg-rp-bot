@@ -4,6 +4,7 @@ import { getPreset } from "../../db/presets/index.js";
 import { getStory, getStorySettings, listCompactions } from "../../db/stories/index.js";
 import logger from "../../logger.js";
 import { selectValidChain } from "../prompt/compactionPlan.js";
+import { matchesTriggerKeywords } from "../prompt/keywordMatch.js";
 import { presetToCompletionOptions } from "../prompt/promptBuilder.js";
 import {
   buildStoryMessages,
@@ -41,10 +42,18 @@ export async function buildStoryCompletionInput(
 
   const preset = story.preset ? await getPreset(userId, story.preset.id) : null;
 
-  // Книга знаний: в MVP в промпт идут только always_on-записи (keyword — задел).
+  // Книга знаний: always_on идёт в промпт всегда; keyword — только если одно из её триггер-слов
+  // встретилось среди последних keywordDepth сообщений АКТИВНОГО ПУТИ (story.messages, а не урезанной
+  // под токен-бюджет history ниже) — это намеренно: лорбук должен донести факт, даже если само
+  // сообщение-триггер потом не поместилось в бюджет и не попадёт в отправленный модели промпт.
   const entries = await getActiveEntriesForPrompt(userId, story.book.id);
+  const historyContents = story.messages.map((m) => m.content);
   const lorebook = entries
-    .filter((e) => e.activation === "always_on")
+    .filter(
+      (e) =>
+        e.activation === "always_on" ||
+        matchesTriggerKeywords(historyContents.slice(-e.keywordDepth).join("\n"), e.keywords),
+    )
     .map((e) => e.text)
     .filter((t) => t.trim());
 

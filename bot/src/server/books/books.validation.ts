@@ -1,5 +1,6 @@
 import type { Character, Persona } from "../../db/schema.js";
 import type { BookInput, EntryInput } from "../../db/knowledge/index.js";
+import { DEFAULT_KEYWORD_DEPTH, MAX_KEYWORD_DEPTH, MIN_KEYWORD_DEPTH } from "./books.constants.js";
 
 /** Промпт/сценарий персонажа ссылается на {{user}} — карточка не знает, кто отыгрывает за пользователя. */
 export function characterNeedsUserAlias(character: Pick<Character, "prompt" | "scenario">): boolean {
@@ -33,8 +34,14 @@ export function parseEntryInput(body: unknown): { input: EntryInput } | { error:
   const alias = typeof b.alias === "string" ? b.alias.trim().slice(0, 100) : "";
   const content = typeof b.content === "string" ? b.content : "";
   const keywords = Array.isArray(b.keywords)
-    ? b.keywords.filter((k): k is string => typeof k === "string").map((k) => k.trim()).filter(Boolean)
+    ? b.keywords
+        .filter((k): k is string => typeof k === "string")
+        .map((k) => k.trim().slice(0, 100))
+        .filter(Boolean)
     : [];
+  // Глубина поиска триггеров — число, кламп в допустимый диапазон; невалидное/отсутствующее → дефолт.
+  const rawDepth = typeof b.keywordDepth === "number" ? Math.trunc(b.keywordDepth) : DEFAULT_KEYWORD_DEPTH;
+  const keywordDepth = Math.min(Math.max(rawDepth, MIN_KEYWORD_DEPTH), MAX_KEYWORD_DEPTH);
 
   // Имя обязательно — оно оборачивает текст записи в промпте как <имя>…</имя> (getActiveEntriesForPrompt).
   if (!name) return { error: "Name is required" };
@@ -46,7 +53,14 @@ export function parseEntryInput(body: unknown): { input: EntryInput } | { error:
   if (characterId === null && personaId === null && !content.trim()) {
     return { error: "Entry needs a character, a persona or content" };
   }
-  return { input: { name, enabled, activation, characterId, personaId, alias, content, keywords } };
+  // keyword-активация без единого триггер-слова никогда не сработает (matchesTriggerKeywords вернёт
+  // false на пустом списке) — гоним ту же гарантию, что и на клиенте, но на сервере (прямые вызовы API).
+  if (activation === "keyword" && keywords.length === 0) {
+    return { error: "Keyword activation requires at least one keyword" };
+  }
+  return {
+    input: { name, enabled, activation, characterId, personaId, alias, content, keywords, keywordDepth },
+  };
 }
 
 /** Тело reorder-запроса: { order: number[] } — id записей книги в новом порядке (полная перестановка). */

@@ -59,6 +59,7 @@ describe("parseEntryInput", () => {
         alias: "Странник",
         content: "",
         keywords: [],
+        keywordDepth: 10,
       },
     });
   });
@@ -75,6 +76,7 @@ describe("parseEntryInput", () => {
         alias: "Артур",
         content: "",
         keywords: [],
+        keywordDepth: 10,
       },
     });
   });
@@ -91,7 +93,80 @@ describe("parseEntryInput", () => {
         alias: "",
         content: "Факт о мире",
         keywords: [],
+        keywordDepth: 10,
       },
+    });
+  });
+
+  it("отклоняет keyword-активацию без единого триггер-слова", () => {
+    const result = parseEntryInput({ ...base, content: "Факт", activation: "keyword", keywords: [] });
+    expect(result).toEqual({ error: "Keyword activation requires at least one keyword" });
+  });
+
+  it("отклоняет keyword-активацию, если все триггер-слова пустые/пробельные", () => {
+    const result = parseEntryInput({
+      ...base,
+      content: "Факт",
+      activation: "keyword",
+      keywords: ["  ", ""],
+    });
+    expect(result).toEqual({ error: "Keyword activation requires at least one keyword" });
+  });
+
+  it("принимает keyword-активацию с триггер-словами и глубиной поиска", () => {
+    const result = parseEntryInput({
+      ...base,
+      content: "Факт",
+      activation: "keyword",
+      keywords: [" меч ", "клинок"],
+      keywordDepth: 25,
+    });
+    expect(result).toEqual({
+      input: {
+        name: "Запись",
+        enabled: true,
+        activation: "keyword",
+        characterId: null,
+        personaId: null,
+        alias: "",
+        content: "Факт",
+        keywords: ["меч", "клинок"],
+        keywordDepth: 25,
+      },
+    });
+  });
+
+  it("клампит keywordDepth ниже минимума до MIN_KEYWORD_DEPTH", () => {
+    const result = parseEntryInput({ ...base, content: "Факт", keywordDepth: -5 });
+    expect(result).toEqual({ input: expect.objectContaining({ keywordDepth: 1 }) });
+  });
+
+  it("клампит keywordDepth выше максимума до MAX_KEYWORD_DEPTH", () => {
+    const result = parseEntryInput({ ...base, content: "Факт", keywordDepth: 10_000 });
+    expect(result).toEqual({ input: expect.objectContaining({ keywordDepth: 200 }) });
+  });
+
+  it("нецелая/нечисловая keywordDepth усекается или падает на дефолт", () => {
+    const fractional = parseEntryInput({ ...base, content: "Факт", keywordDepth: 12.9 });
+    expect(fractional).toEqual({ input: expect.objectContaining({ keywordDepth: 12 }) });
+
+    const nonNumeric = parseEntryInput({ ...base, content: "Факт", keywordDepth: "42" });
+    expect(nonNumeric).toEqual({ input: expect.objectContaining({ keywordDepth: 10 }) });
+
+    const missing = parseEntryInput({ ...base, content: "Факт" });
+    expect(missing).toEqual({ input: expect.objectContaining({ keywordDepth: 10 }) });
+  });
+
+  it("обрезает триггер-слова длиннее 100 символов", () => {
+    const long = "а".repeat(150);
+    const result = parseEntryInput({
+      ...base,
+      content: "Факт",
+      activation: "keyword",
+      keywords: [long],
+    });
+    expect(result).toEqual({
+      input: expect.objectContaining({ keywords: [long.slice(0, 100)] }),
     });
   });
 });

@@ -160,7 +160,7 @@ export function BookEditPage() {
                                 ? (e.personaName ?? "персона удалена")
                                 : e.content.slice(0, 60)
                           }
-                          hint={!e.enabled ? "выкл." : undefined}
+                          hint={!e.enabled ? "выкл." : e.activation === "keyword" ? "по ключу" : undefined}
                           after={
                             // Стрелки — в родном слоте after: hover-фон Cell красит всю строку целиком.
                             // Границы списка — не disabled (в Chromium/WebKit клик по disabled-кнопке

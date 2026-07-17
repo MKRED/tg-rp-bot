@@ -390,7 +390,8 @@ export type NewKnowledgeBook = typeof knowledgeBooks.$inferInsert;
  * Запись книги знаний. Три вида: ссылка на персонажа (characterId — карточка рендерится из characters,
  * без копий), ссылка на персону (personaId — аналогично, из personas) ИЛИ свободный текст (content).
  * Ветки взаимоисключающие (ровно одна ненулевая/непустая). activation — поэлементная: always_on
- * (всегда в промпте) или keyword (по триггеру; в MVP не задействован при сборке, поле-задел).
+ * (всегда в промпте, если enabled) или keyword (дополнительно к enabled — только если одно из
+ * keywords встретилось в последних keywordDepth сообщениях истории, см. matchesTriggerKeywords).
  * name — метка ТОЛЬКО для UI, в LLM не уходит (как footnote у персонажей). sortOrder — порядок показа/вставки.
  */
 export const knowledgeBookEntries = pgTable("knowledge_book_entries", {
@@ -423,6 +424,9 @@ export const knowledgeBookEntries = pgTable("knowledge_book_entries", {
     .array()
     .notNull()
     .default(sql`'{}'`),
+  // Глубина поиска триггеров для activation="keyword": сколько последних сообщений истории (user +
+  // assistant) сканировать на совпадение с keywords. Для always_on поле не используется.
+  keywordDepth: integer("keyword_depth").notNull().default(10),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })

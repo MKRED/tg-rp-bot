@@ -13,7 +13,8 @@ RP-чата), переиспользуя только реально переи�
 ## Модули
 
 - **БД:** `knowledge_books` + `knowledge_book_entries` (lorebook: запись = ссылка на персонажа **или**
-  свободный текст; `activation` поэлементная `always_on|keyword`, keyword — задел), `narrator_templates`
+  свободный текст; `activation` поэлементная `always_on|keyword`, у keyword — свои `keywords` (список
+  триггер-слов) и `keywordDepth` (default 10, сколько последних сообщений сканировать)), `narrator_templates`
   (промпты нарратора: `systemPrompt` + `auxiliarySystemPrompt` + `postHistoryInstruction` +
   `compactionPrompt` (инструкция сжатия, плейсхолдер `{{words}}`) + `promptOrder` — порядок/включённость
   **7** компонентов `system|premise|lorebook|auxiliary|compact|history|postHistory`, зеркало пресета;
@@ -46,7 +47,12 @@ RP-чата), переиспользуя только реально переи�
 в `CONTINUE_MARKER`, кроме последнего (живого триггера) — их последствие уже в тексте следующего бита,
 повторно инструктировать нельзя. Перед корнем (openingBeat — `assistant`) вставляется синтетический
 leading-user — иначе массив начинался бы с assistant, что отвергают Anthropic (через OpenRouter) и
-reasoner DeepSeek. Книга знаний: в MVP в промпт идут только `always_on`-записи.
+reasoner DeepSeek. Книга знаний: `always_on`-записи идут в промпт всегда; `keyword`-записи — только если
+хотя бы одно из её триггер-слов встретилось (word-boundary матч по Unicode-классам `\p{L}`/`\p{N}`,
+регистронезависимо, ё↔е нормализация — `server/prompt/keywordMatch.ts`) среди последних `keywordDepth`
+сообщений **активного пути** истории (`story.messages`, весь путь, не урезанный под токен-бюджет `history`
+ниже) — намеренно: лорбук должен донести факт, даже если само сообщение-триггер потом не поместилось в
+бюджет и не попало в реальный промпт модели.
 
 Сборка идёт **итерацией по `promptOrder` шаблона** (как `promptBuilder.buildMessages` у RP): выключенные/
 пустые компоненты пропускаются; все non-history части → отдельным сообщением role `system`; `history` →

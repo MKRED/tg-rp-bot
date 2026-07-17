@@ -30,6 +30,8 @@ export type EntryInput = {
   alias: string;
   content: string;
   keywords: string[];
+  // Глубина поиска триггеров (последние N сообщений истории) — значим только при activation="keyword".
+  keywordDepth: number;
 };
 
 /** Запись книги для UI: + резолв персонажа/персоны (имя/наличие картинки), если это ссылочная запись. */
@@ -47,6 +49,7 @@ export type EntryListItem = {
   alias: string;
   content: string;
   keywords: string[];
+  keywordDepth: number;
   sortOrder: number;
 };
 
@@ -57,6 +60,7 @@ export type EntryListItem = {
 export type PromptEntry = {
   activation: "always_on" | "keyword";
   keywords: string[];
+  keywordDepth: number;
   /** Готовый текст для системного блока (имя записи в LLM НЕ уходит). */
   text: string;
 };
