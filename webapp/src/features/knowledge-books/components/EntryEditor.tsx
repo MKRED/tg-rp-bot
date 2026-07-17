@@ -1,12 +1,14 @@
-import { Button, Section, Switch } from "@telegram-apps/telegram-ui";
+import { Button, Section, Slider, Switch } from "@telegram-apps/telegram-ui";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
+import { FieldHint } from "../../../shared/components/FieldHint";
 import { HintedInput } from "../../../shared/components/HintedInput";
 import { PromptField } from "../../../shared/components/PromptField";
 import { SectionActions } from "../../../shared/components/SectionActions";
 import { CharacterAvatar, useCharacter, useCharacters } from "../../characters";
 import { PersonaAvatar, usePersona, usePersonas } from "../../personas";
+import { confirmAction } from "../../../shared/telegram/confirm";
 import { createEntry, removeEntry, updateEntry } from "../api/books-api";
 import type { Entry, EntryActivation } from "../types/book";
 import { DEFAULT_KEYWORD_DEPTH, MAX_KEYWORD_DEPTH, MIN_KEYWORD_DEPTH } from "../types/book";
@@ -46,7 +48,7 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
   const [alias, setAlias] = useState(initial?.alias ?? "");
   const [activation, setActivation] = useState<EntryActivation>(initial?.activation ?? "always_on");
   const [keywords, setKeywords] = useState<string[]>(initial?.keywords ?? []);
-  const [keywordDepth, setKeywordDepth] = useState(String(initial?.keywordDepth ?? DEFAULT_KEYWORD_DEPTH));
+  const [keywordDepth, setKeywordDepth] = useState(initial?.keywordDepth ?? DEFAULT_KEYWORD_DEPTH);
   const [enabled, setEnabled] = useState(initial?.enabled ?? true);
   const [submitting, setSubmitting] = useState(false);
   const [charOpen, setCharOpen] = useState(false);
@@ -116,11 +118,6 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
   const handleSave = () => {
     if (!valid || submitting) return;
     setSubmitting(true);
-    const parsedDepth = parseInt(keywordDepth, 10);
-    const clampedDepth = Math.min(
-      Math.max(Number.isFinite(parsedDepth) ? parsedDepth : DEFAULT_KEYWORD_DEPTH, MIN_KEYWORD_DEPTH),
-      MAX_KEYWORD_DEPTH,
-    );
     const input = {
       name: name.trim(),
       enabled,
@@ -130,7 +127,7 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
       alias: mode === "character" || mode === "persona" ? alias.trim() : "",
       content: mode === "free" ? content.trim() : "",
       keywords: activation === "keyword" ? keywords.map((k) => k.trim()).filter(Boolean) : [],
-      keywordDepth: clampedDepth,
+      keywordDepth,
     };
     const op = initial
       ? updateEntry(bookId, initial.id, input)
@@ -138,8 +135,12 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
     op.then(onSaved).catch(() => setSubmitting(false));
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!initial || submitting) return;
+    const confirmed = await confirmAction("Удалить запись? Это действие необратимо.", {
+      title: "Удаление записи",
+    });
+    if (!confirmed) return;
     setSubmitting(true);
     removeEntry(bookId, initial.id).then(onSaved).catch(() => setSubmitting(false));
   };
@@ -247,6 +248,11 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
         />
       ) : null}
 
+      <div style={{ padding: "8px 22px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span>Включена</span>
+        <Switch checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+      </div>
+
       <div style={{ display: "flex", gap: 8, padding: "8px 22px" }}>
         <Button
           size="s"
@@ -277,23 +283,23 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
             style={{ overflow: "hidden" }}
           >
             <KeywordsInput keywords={keywords} onChange={setKeywords} />
-            <HintedInput
-              header="Искать в последних N сообщениях"
-              type="number"
-              inputMode="numeric"
-              placeholder={String(DEFAULT_KEYWORD_DEPTH)}
-              hint="Сколько последних сообщений (пользователь + модель) сканировать на триггер-слова."
-              value={keywordDepth}
-              onChange={(e) => setKeywordDepth(e.target.value)}
-            />
+            <div style={{ padding: "8px 22px 0" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 500 }}>
+                <span>Искать в последних сообщениях</span>
+                <span style={{ color: "var(--tg-theme-hint-color)" }}>{keywordDepth}</span>
+              </div>
+              <Slider
+                min={MIN_KEYWORD_DEPTH}
+                max={MAX_KEYWORD_DEPTH}
+                step={1}
+                value={keywordDepth}
+                onChange={setKeywordDepth}
+              />
+              <FieldHint>Сколько последних сообщений (пользователь + модель) сканировать на триггер-слова.</FieldHint>
+            </div>
           </motion.div>
         ) : null}
       </AnimatePresence>
-
-      <div style={{ padding: "8px 22px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span>Включена</span>
-        <Switch checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-      </div>
 
       <SectionActions>
         <Button size="l" stretched disabled={!valid || submitting} onClick={handleSave}>
