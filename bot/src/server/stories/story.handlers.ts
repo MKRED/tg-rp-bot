@@ -14,7 +14,7 @@ import {
 import { getNarratorTemplate } from "../../db/narratorTemplates/index.js";
 import { getPreset } from "../../db/presets/index.js";
 import logger from "../../logger.js";
-import { CONTINUE_MARKER } from "../prompt/storyPromptBuilder.js";
+import { resolveNarratorMarkers } from "../prompt/storyPromptBuilder.js";
 import { streamCompletion } from "../shared/streamGeneration.js";
 import { aiTranslate, englishLangName, googleTranslate } from "../shared/translate.js";
 import { compactStory, shouldAutoCompact } from "./compact.handler.js";
@@ -41,7 +41,13 @@ export async function handleAdvanceStory(c: Ctx) {
   if (parentBeatId == null) return c.json({ error: "Story has no active beat" }, 400);
 
   const kind = directive ? "directive" : "continue";
-  const content = directive || CONTINUE_MARKER;
+  // Живой continue-триггер пишем маркером шаблона истории (не глобальным дефолтом) — иначе кастомный
+  // continueMarker разъедется с тем, что реально сохраняется в сообщении при клике «Дальше».
+  let content = directive;
+  if (!content) {
+    const template = story.template ? await getNarratorTemplate(userId, story.template.id) : null;
+    content = resolveNarratorMarkers(template).continueMarker;
+  }
 
   return streamSSE(c, async (stream) => {
     let steerId: number | null = null;

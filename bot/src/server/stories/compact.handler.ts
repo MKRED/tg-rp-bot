@@ -17,9 +17,9 @@ import { PER_MESSAGE_OVERHEAD } from "../prompt/budget.js";
 import { planCompactionSegments, selectValidChain } from "../prompt/compactionPlan.js";
 import {
   COMPACTION_CONTEXT_HEADER,
-  CONTINUE_MARKER,
   DEFAULT_COMPACTION_PROMPT,
   DEFAULT_NARRATOR_PROMPT_ORDER,
+  resolveNarratorMarkers,
 } from "../prompt/storyPromptBuilder.js";
 import { normalizeStoryPromptOrder } from "../prompt/storyPromptOrder.js";
 import { compactAvailable, resolveCompactFloor } from "./compact.gate.js";
@@ -83,14 +83,16 @@ export async function compactStory(userId: number, storyId: number): Promise<Com
     const currentTotal = ctx.msgs.reduce((s, m) => s + countTokens(m.content) + PER_MESSAGE_OVERHEAD, 0);
 
     // Стоимость каждого сообщения хвоста КАК В ПРОМПТЕ: отыгранные user-ходы нейтрализуются в
-    // CONTINUE_MARKER (кроме последнего/живого). overhead = всё, что вне хвоста (system-блоки +
-    // пересказы + leading-user) = currentTotal − сумма хвоста.
+    // continueMarker шаблона (кроме последнего/живого). overhead = всё, что вне хвоста (system-блоки +
+    // пересказы + leading-user) = currentTotal − сумма хвоста. Маркер резолвится тем же резолвером,
+    // что и в storyContext — иначе бюджет сжатия разъедется с фактическим промптом.
+    const { continueMarker } = resolveNarratorMarkers(template);
     const lastTailIdx = liveTail.length - 1;
     const tailItems = liveTail.map((m, i) => ({
       isBeat: m.kind === "beat",
       tokens:
         (m.role === "user" && i !== lastTailIdx
-          ? countTokens(CONTINUE_MARKER)
+          ? countTokens(continueMarker)
           : countTokens(m.content)) + PER_MESSAGE_OVERHEAD,
     }));
     const tailSum = tailItems.reduce((s, t) => s + t.tokens, 0);

@@ -10,6 +10,7 @@ import {
   buildStoryMessages,
   DEFAULT_NARRATOR_PROMPT_ORDER,
   DEFAULT_NARRATOR_TEMPLATE,
+  resolveNarratorMarkers,
 } from "../prompt/storyPromptBuilder.js";
 import { normalizeStoryPromptOrder } from "../prompt/storyPromptOrder.js";
 
@@ -35,6 +36,7 @@ export async function buildStoryCompletionInput(
     template && template.systemPrompt.trim() ? template.systemPrompt : DEFAULT_NARRATOR_TEMPLATE;
   const auxiliarySystemPrompt = template?.auxiliarySystemPrompt ?? "";
   const postHistoryInstruction = template?.postHistoryInstruction ?? "";
+  const { continueMarker, leadingUserMarker } = resolveNarratorMarkers(template);
   // Нормализуем порядок (старые шаблоны без `compact` дополняются на дефолтную позицию).
   const promptOrder = template
     ? normalizeStoryPromptOrder(template.promptOrder)
@@ -84,6 +86,8 @@ export async function buildStoryCompletionInput(
     compactSummaries,
     promptOrder,
     history,
+    continueMarker,
+    leadingUserMarker,
     contextUnlimited: preset?.contextUnlimited,
     contextSize: preset?.contextSize,
     maxTokens: preset?.maxTokens,

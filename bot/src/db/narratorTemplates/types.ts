@@ -11,6 +11,8 @@ export type NarratorTemplateInput = {
   postHistoryInstruction: string;
   translationSystemPrompt: string;
   compactionPrompt: string;
+  continueMarker: string;
+  leadingUserMarker: string;
   promptOrder: StoryPromptOrderItem[];
 };
 

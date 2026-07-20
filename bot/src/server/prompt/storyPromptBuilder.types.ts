@@ -19,6 +19,10 @@ export type StoryPromptOptions = {
   history: StoryMessageInPath[];
   /** Порядок и включённость компонентов запроса (из шаблона или DEFAULT_NARRATOR_PROMPT_ORDER). */
   promptOrder: StoryPromptOrderItem[];
+  /** Текст нейтрализации отыгранных user-ходов (см. CONTINUE_MARKER). Резолвится вызывающим кодом. */
+  continueMarker: string;
+  /** Текст синтетического leading-user перед корнем (см. LEADING_USER_MARKER). */
+  leadingUserMarker: string;
   contextUnlimited?: boolean;
   contextSize?: number | null;
   maxTokens?: number | null;

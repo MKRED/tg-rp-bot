@@ -1,0 +1,2 @@
+ALTER TABLE "narrator_templates" ADD COLUMN "continue_marker" text DEFAULT 'Continue the story.' NOT NULL;--> statement-breakpoint
+ALTER TABLE "narrator_templates" ADD COLUMN "leading_user_marker" text DEFAULT 'Begin the story.' NOT NULL;

@@ -6,6 +6,8 @@ import { PromptOrderEditor } from "../../../shared/components/PromptOrderEditor"
 import { SectionActions } from "../../../shared/components/SectionActions";
 import { SectionWithFooter } from "../../../shared/components/SectionWithFooter";
 import {
+  DEFAULT_CONTINUE_MARKER,
+  DEFAULT_LEADING_USER_MARKER,
   DEFAULT_NARRATOR_PROMPT_ORDER,
   NARRATOR_PROMPT_COMPONENT_LABELS,
   NARRATOR_PROMPT_COMPONENT_SOURCES,
@@ -37,11 +39,18 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
     initial?.translationSystemPrompt ?? "",
   );
   const [compactionPrompt, setCompactionPrompt] = useState(initial?.compactionPrompt ?? "");
+  const [continueMarker, setContinueMarker] = useState(
+    initial?.continueMarker ?? DEFAULT_CONTINUE_MARKER,
+  );
+  const [leadingUserMarker, setLeadingUserMarker] = useState(
+    initial?.leadingUserMarker ?? DEFAULT_LEADING_USER_MARKER,
+  );
   const [promptOrder, setPromptOrder] = useState<StoryPromptOrderItem[]>(
     initial?.promptOrder ?? DEFAULT_NARRATOR_PROMPT_ORDER,
   );
 
-  const valid = name.trim().length > 0;
+  const valid =
+    name.trim().length > 0 && continueMarker.trim().length > 0 && leadingUserMarker.trim().length > 0;
 
   return (
     <SectionWithFooter
@@ -93,6 +102,20 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
         value={compactionPrompt}
         onChange={setCompactionPrompt}
       />
+      <PromptField
+        label="Маркер «Продолжай» (обязательно)"
+        hint="Текст, которым нейтрализуются отыгранные user-ходы (директивы/«Дальше») в истории — их последствие уже живёт в тексте следующего бита, повторно инструктировать не нужно. Этим же текстом сохраняется живой ход при клике «Дальше» без директивы."
+        rows={2}
+        value={continueMarker}
+        onChange={setContinueMarker}
+      />
+      <PromptField
+        label="Маркер «Начать» (обязательно)"
+        hint="Синтетическая открывающая реплика перед первым битом истории — без неё запрос к модели начинался бы с ответа рассказчика, что отвергают некоторые провайдеры."
+        rows={2}
+        value={leadingUserMarker}
+        onChange={setLeadingUserMarker}
+      />
       {/* Гуттер 22px — как у полей tgui внутри карточки (выравнивание заголовка с рядами ниже). */}
       <div style={{ padding: "12px 22px 0", fontWeight: 600 }}>Порядок промптов</div>
       <PromptOrderEditor
@@ -114,6 +137,8 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
               postHistoryInstruction: postHistory,
               translationSystemPrompt: translationSystemPrompt,
               compactionPrompt: compactionPrompt,
+              continueMarker: continueMarker.trim(),
+              leadingUserMarker: leadingUserMarker.trim(),
               promptOrder: promptOrder,
             })
           }

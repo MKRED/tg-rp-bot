@@ -460,6 +460,11 @@ export const narratorTemplates = pgTable("narrator_templates", {
   // Инструкция сжатия истории (compact): summarization-промпт с плейсхолдером {{words}}.
   // Пусто → фолбэк DEFAULT_COMPACTION_PROMPT.
   compactionPrompt: text("compaction_prompt").notNull().default(""),
+  // Маркер-триггер «продолжай» (см. CONTINUE_MARKER) — обязателен к заполнению в форме; дефолт
+  // колонки = текущий встроенный маркер, чтобы существующие шаблоны не поменяли поведение.
+  continueMarker: text("continue_marker").notNull().default("Continue the story."),
+  // Синтетический leading-user перед корнем (см. LEADING_USER_MARKER) — обязателен к заполнению.
+  leadingUserMarker: text("leading_user_marker").notNull().default("Begin the story."),
   // Порядок и включённость компонентов narrator-запроса. Дефолт — канонический порядок;
   // premise идёт после auxiliary, compact — перед history, postHistory выключен (включается вручную).
   promptOrder: jsonb("prompt_order")

@@ -64,6 +64,8 @@ export type NarratorTemplate = {
   postHistoryInstruction: string;
   translationSystemPrompt: string;
   compactionPrompt: string;
+  continueMarker: string;
+  leadingUserMarker: string;
   promptOrder: StoryPromptOrderItem[];
 };
 
@@ -74,7 +76,13 @@ export type NarratorTemplateInput = {
   postHistoryInstruction: string;
   translationSystemPrompt: string;
   compactionPrompt: string;
+  continueMarker: string;
+  leadingUserMarker: string;
   promptOrder: StoryPromptOrderItem[];
 };
+
+/** Дефолты маркеров — зеркало bot/src/server/prompt/storyPromptBuilder.constants.ts, для новой формы. */
+export const DEFAULT_CONTINUE_MARKER = "Continue the story.";
+export const DEFAULT_LEADING_USER_MARKER = "Begin the story.";
 
 export const MAX_TEMPLATES_PER_USER = 50;

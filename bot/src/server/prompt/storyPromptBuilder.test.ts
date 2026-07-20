@@ -6,6 +6,7 @@ import {
   CONTINUE_MARKER,
   DEFAULT_NARRATOR_PROMPT_ORDER,
   LEADING_USER_MARKER,
+  resolveNarratorMarkers,
   type StoryPromptOptions,
 } from "./storyPromptBuilder.js";
 
@@ -38,6 +39,8 @@ function baseOpts(overrides: Partial<StoryPromptOptions> = {}): StoryPromptOptio
     lorebook: [],
     promptOrder: DEFAULT_NARRATOR_PROMPT_ORDER,
     history: [],
+    continueMarker: CONTINUE_MARKER,
+    leadingUserMarker: LEADING_USER_MARKER,
     ...overrides,
   };
 }
@@ -54,6 +57,29 @@ function sampleHistory(): StoryMessageInPath[] {
     msg("user", "directive", "make the mood tense"),
   ];
 }
+
+describe("resolveNarratorMarkers", () => {
+  it("берёт маркеры из шаблона, когда они непустые", () => {
+    const result = resolveNarratorMarkers({ continueMarker: "Продолжай.", leadingUserMarker: "Начни." });
+    expect(result).toEqual({ continueMarker: "Продолжай.", leadingUserMarker: "Начни." });
+  });
+
+  it("фолбэк на встроенный дефолт, когда маркеры шаблона пустые/пробельные", () => {
+    const result = resolveNarratorMarkers({ continueMarker: "  ", leadingUserMarker: "" });
+    expect(result).toEqual({ continueMarker: CONTINUE_MARKER, leadingUserMarker: LEADING_USER_MARKER });
+  });
+
+  it("фолбэк на встроенный дефолт, когда шаблон отсутствует (null/undefined)", () => {
+    expect(resolveNarratorMarkers(null)).toEqual({
+      continueMarker: CONTINUE_MARKER,
+      leadingUserMarker: LEADING_USER_MARKER,
+    });
+    expect(resolveNarratorMarkers(undefined)).toEqual({
+      continueMarker: CONTINUE_MARKER,
+      leadingUserMarker: LEADING_USER_MARKER,
+    });
+  });
+});
 
 describe("buildStoryMessages — нейтрализация", () => {
   it("нейтрализует все user-ходы кроме последнего (живого триггера)", () => {

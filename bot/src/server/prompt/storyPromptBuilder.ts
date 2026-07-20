@@ -52,7 +52,7 @@ function resolveHistory(opts: StoryPromptOptions, fixedSystemTokens: number): St
   if (opts.contextUnlimited || opts.contextSize == null) return opts.history;
 
   const reserve = opts.maxTokens ?? DEFAULT_OUTPUT_RESERVE;
-  const fixed = fixedSystemTokens + countTokens(LEADING_USER_MARKER) + PER_MESSAGE_OVERHEAD;
+  const fixed = fixedSystemTokens + countTokens(opts.leadingUserMarker) + PER_MESSAGE_OVERHEAD;
   const available = opts.contextSize - reserve - fixed;
   const trimmed = trimHistoryToBudget(
     opts.history,
@@ -62,6 +62,21 @@ function resolveHistory(opts: StoryPromptOptions, fixedSystemTokens: number): St
   const dropped = opts.history.length - trimmed.length;
   if (dropped > 0) opts.onTrim?.({ dropped, kept: trimmed.length, total: opts.history.length });
   return trimmed;
+}
+
+/**
+ * Резолвит маркеры (continue/leading-user) из шаблона с фолбэком на встроенный дефолт. Общий
+ * резолвер для storyContext (эмиссия) и compact.handler (учёт бюджета сжатия) — оба места должны
+ * видеть ОДИН и тот же маркер, иначе бюджет сжатия разъедется с фактическим промптом. Фолбэк —
+ * защитный кейс (шаблон истории не резолвился); форма шаблона уже не допускает пустых значений.
+ */
+export function resolveNarratorMarkers(
+  template: { continueMarker: string; leadingUserMarker: string } | null | undefined,
+): { continueMarker: string; leadingUserMarker: string } {
+  return {
+    continueMarker: template?.continueMarker.trim() || CONTINUE_MARKER,
+    leadingUserMarker: template?.leadingUserMarker.trim() || LEADING_USER_MARKER,
+  };
 }
 
 /**
@@ -103,11 +118,11 @@ export function buildStoryMessages(opts: StoryPromptOptions): ChatMessage[] {
       // Примечание: при агрессивной обрезке первым уцелевшим узлом может оказаться нейтрализованный
       // user-ход — тогда после leading-user идут два user-сообщения подряд. Anthropic/OpenRouter их
       // склеивают, так что это не нарушает чередование; специально схлопывать не нужно.
-      result.push({ role: "user", content: LEADING_USER_MARKER });
+      result.push({ role: "user", content: opts.leadingUserMarker });
       history.forEach((m, i) => {
         if (m.role === "user" && i !== lastIndex) {
           // Отыгранный user-ход → нейтрализуем (последствие уже в следующем бите).
-          result.push({ role: "user", content: CONTINUE_MARKER });
+          result.push({ role: "user", content: opts.continueMarker });
         } else {
           result.push({ role: m.role, content: m.content });
         }
