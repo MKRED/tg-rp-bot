@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { getPlatform } from "../telegram/platform";
 import { pushBackInterceptor } from "../telegram/backInterceptor";
 import { confirmAction } from "../telegram/confirm";
+import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import "./PromptEditorOverlay.css";
 
 // Платформа сессии не меняется — маппим в стиль telegram-ui один раз, как в App.tsx.
@@ -37,6 +38,8 @@ export function PromptEditorOverlay({ title, placeholder, value, onSave, onCance
   const dirty = draft !== value;
   // Не даём открыть второй confirm поверх уже открытого при повторном нажатии «Назад».
   const confirmingRef = useRef(false);
+
+  useBodyScrollLock();
 
   const handleDiscard = useCallback(() => {
     if (!dirty) {

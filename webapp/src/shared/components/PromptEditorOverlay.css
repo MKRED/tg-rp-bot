@@ -5,6 +5,9 @@
   inset: 0;
   z-index: 10000;
   -webkit-tap-highlight-color: transparent;
+  /* Подстраховка к useBodyScrollLock: не даёт оттягиванию с упором в границу (textarea/шапка)
+     перетекать (scroll chaining) на страницу позади портала. */
+  overscroll-behavior: none;
 }
 
 .prompt-editor-overlay__root {
