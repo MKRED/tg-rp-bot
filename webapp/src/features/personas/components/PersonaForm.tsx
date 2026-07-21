@@ -2,7 +2,7 @@ import { Button, Input } from "@telegram-apps/telegram-ui";
 import { useMemo, useState } from "react";
 import { AvatarPicker, type AvatarValue } from "../../../shared/components/AvatarPicker";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
-import { ExpandableTextarea } from "../../../shared/components/ExpandableTextarea";
+import { PromptEditorField } from "../../../shared/components/PromptEditorField";
 import { useUnsavedChangesGuard } from "../../../shared/telegram/useUnsavedChangesGuard";
 import { estimateTokens } from "../../../shared/text/tokens";
 import { hasUnsavedChanges, normalizePersonaDraft } from "../lib/formDirty";
@@ -86,12 +86,11 @@ export function PersonaForm({ initial, submitting, onSubmit, onDelete }: Persona
       />
 
       <div className="persona-field">
-        <ExpandableTextarea
+        <PromptEditorField
           header="Промпт"
           placeholder="Описание персоны для нейросети…"
           value={prompt}
-          rows={6}
-          onChange={(e) => setPrompt(e.target.value)}
+          onChange={setPrompt}
         />
         <div className="persona-field__meta">
           <span className="persona-field__tokens">~{estimateTokens(prompt)} токенов</span>

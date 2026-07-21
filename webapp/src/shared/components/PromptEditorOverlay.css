@@ -1,0 +1,74 @@
+/* Портал в body — ВНЕ <AppRoot>, поэтому --tgui--* сюда не доезжают (см. коммент в .tsx).
+   Используем --tg-theme-* (глобальный слой темы Telegram, ставится SDK на :root). */
+.prompt-editor-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  background: var(--tg-theme-bg-color, #17212b);
+  color: var(--tg-theme-text-color, #f5f5f5);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.prompt-editor-overlay__header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  /* Отступ сверху = safe-area статус-бара + content-safe-area нативной шапки Telegram. */
+  padding-top: calc(
+    12px
+    + var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px))
+    + var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
+  border-bottom: 1px solid var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.08));
+}
+
+.prompt-editor-overlay__title {
+  flex: 1;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.prompt-editor-overlay__cancel,
+.prompt-editor-overlay__save {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  font-size: 16px;
+  padding: 4px 2px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  color: var(--tg-theme-link-color, #2481cc);
+}
+
+.prompt-editor-overlay__save {
+  font-weight: 600;
+}
+
+.prompt-editor-overlay__save:disabled {
+  color: var(--tg-theme-hint-color, #7d8b99);
+  cursor: default;
+}
+
+.prompt-editor-overlay__textarea {
+  flex: 1;
+  min-height: 0;
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+  padding: 16px;
+  padding-bottom: calc(16px + var(--tg-viewport-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+}
+
+.prompt-editor-overlay__textarea::placeholder {
+  color: var(--tg-theme-hint-color, #7d8b99);
+}
