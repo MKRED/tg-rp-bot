@@ -1,36 +1,14 @@
-.prompt-editor-field {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
-  width: 100%;
-  padding: 10px 12px;
-  border: none;
-  border-radius: 12px;
-  background: var(--tgui--secondary_bg_color, rgba(0, 0, 0, 0.04));
-  text-align: left;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  font: inherit;
-  color: inherit;
+.prompt-editor-field__chevron {
+  color: var(--tg-theme-hint-color, #999);
 }
 
-.prompt-editor-field:active {
-  opacity: 0.7;
-}
-
-.prompt-editor-field__header {
-  font-size: 13px;
-  color: var(--tgui--hint_color, #7d8b99);
-}
-
+/* multiline на Cell снимает жёсткий однострочный ellipsis у subtitle — клип по строкам
+   делаем сами, чтобы длинный промпт не растягивал ячейку на весь текст. */
 .prompt-editor-field__preview {
   display: -webkit-box;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-size: 16px;
-  line-height: 1.4;
   white-space: pre-wrap;
   word-break: break-word;
 }
