@@ -11,6 +11,9 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  /* Без явного фона просвечивает страница за порталом — AppRoot сам фон не рисует,
+     только скоупит --tgui--* переменные на свой класс. */
+  background: var(--tgui--bg_color, #17212b);
 }
 
 .prompt-editor-overlay__header {

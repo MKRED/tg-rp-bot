@@ -16,3 +16,20 @@
 .prompt-editor-field__preview--placeholder {
   color: var(--tgui--hint_color, #7d8b99);
 }
+
+/* Meta-строка под Cell — hint слева, счётчик токенов справа (пусто слева — счётчик прижимается
+   вправо через space-between). Отступ 24px — как у базовой платформы tgui Cell (см. коммент
+   про personas.css при первом внедрении компонента). */
+.prompt-editor-field__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 24px 0;
+}
+
+.prompt-editor-field__tokens {
+  font-size: 13px;
+  white-space: nowrap;
+  color: var(--tgui--hint_color, #7d8b99);
+}

@@ -4,7 +4,6 @@ import { AvatarPicker, type AvatarValue } from "../../../shared/components/Avata
 import { DeleteButton } from "../../../shared/components/DeleteButton";
 import { PromptEditorField } from "../../../shared/components/PromptEditorField";
 import { useUnsavedChangesGuard } from "../../../shared/telegram/useUnsavedChangesGuard";
-import { estimateTokens } from "../../../shared/text/tokens";
 import { hasUnsavedChanges, normalizePersonaDraft } from "../lib/formDirty";
 import type { PersonaInput } from "../types/persona";
 
@@ -85,17 +84,12 @@ export function PersonaForm({ initial, submitting, onSubmit, onDelete }: Persona
         onChange={(e) => setFootnote(e.target.value)}
       />
 
-      <div className="persona-field">
-        <PromptEditorField
-          header="Промпт"
-          placeholder="Описание персоны для нейросети…"
-          value={prompt}
-          onChange={setPrompt}
-        />
-        <div className="persona-field__meta">
-          <span className="persona-field__tokens">~{estimateTokens(prompt)} токенов</span>
-        </div>
-      </div>
+      <PromptEditorField
+        header="Промпт"
+        placeholder="Описание персоны для нейросети…"
+        value={prompt}
+        onChange={setPrompt}
+      />
 
       <div className="persona-form__actions">
         {isDirty && !submitting && <span className="persona-form__unsaved">Есть несохранённые изменения</span>}

@@ -1,6 +1,7 @@
 import { Button, Cell, Input, Switch } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
+import { PromptEditorField } from "../../../shared/components/PromptEditorField";
 import { PromptField } from "../../../shared/components/PromptField";
 import { PromptOrderEditor } from "../../../shared/components/PromptOrderEditor";
 import { SectionActions } from "../../../shared/components/SectionActions";
@@ -58,11 +59,10 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
-      <PromptField
-        label="Основной системный промпт"
+      <PromptEditorField
+        header="Основной системный промпт"
         hint="Базовые инструкции модели: задаёт роль, стиль и правила ответа."
         value={systemPrompt}
-        rows={6}
         onChange={setSystemPrompt}
       />
       <PromptField

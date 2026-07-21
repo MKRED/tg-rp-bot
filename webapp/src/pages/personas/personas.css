@@ -119,21 +119,3 @@
   color: var(--tgui--hint_color, #7d8b99);
 }
 
-/* Поле с подписью токенов */
-.persona-field {
-  display: flex;
-  flex-direction: column;
-}
-
-.persona-field__meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 4px 24px 0;
-}
-
-.persona-field__tokens {
-  font-size: 13px;
-  color: var(--tgui--hint_color, #7d8b99);
-}
-
