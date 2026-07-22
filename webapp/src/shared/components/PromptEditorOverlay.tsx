@@ -1,4 +1,4 @@
-import { AppRoot, Button, Textarea } from "@telegram-apps/telegram-ui";
+import { AppRoot, Button } from "@telegram-apps/telegram-ui";
 import { miniApp, useSignal } from "@telegram-apps/sdk-react";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -29,8 +29,9 @@ interface PromptEditorOverlayProps {
  * Портал в body, как ImageCropEditor — вне <AppRoot> приложения, поэтому --tgui--* переменные темы
  * сюда не доезжают (скоупятся на класс AppRoot, а не :root). Заворачиваем содержимое во ВЛОЖЕННЫЙ
  * AppRoot с теми же appearance/platform, что у корневого (App.tsx) — это просто themed-div без
- * побочных эффектов (SDK не переинициализируется), зато tgui Button/Textarea внутри темизируются
- * нормально, а не выглядят инородной голой разметкой.
+ * побочных эффектов (SDK не переинициализируется), зато tgui Button в шапке темизируется нормально,
+ * а не выглядит инородной голой разметкой. Сам textarea — обычный HTML-элемент (не tgui Textarea):
+ * тот визуально не подходит для полноэкранного редактора, стилизуем вручную под --tgui--* цвета.
  */
 export function PromptEditorOverlay({ title, placeholder, value, onSave, onCancel }: PromptEditorOverlayProps) {
   const isDark = useSignal(miniApp.isDark);
@@ -84,7 +85,8 @@ export function PromptEditorOverlay({ title, placeholder, value, onSave, onCance
         </div>
 
         <div className="prompt-editor-overlay__textarea-wrap">
-          <Textarea
+          <textarea
+            className="prompt-editor-overlay__textarea"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder={placeholder}

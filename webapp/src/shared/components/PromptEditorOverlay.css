@@ -45,29 +45,30 @@
   white-space: nowrap;
 }
 
-/* tgui Textarea рендерит FormInput (div > label > textarea) с хэшированными классами без
-   публичного пропа для их стилизации — растягиваем цепочку дженерик-селекторами по тегам,
-   а не по хэшам, чтобы не зависеть от внутренней вёрстки конкретной версии tgui. */
 .prompt-editor-overlay__textarea-wrap {
   flex: 1;
   min-height: 0;
   display: flex;
 }
 
-.prompt-editor-overlay__textarea-wrap > div {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.prompt-editor-overlay__textarea-wrap label {
+/* Обычный textarea вместо tgui Textarea — тот визуально не подходил для полноэкранного
+   редактора (лишняя рамка/паддинги формы). Цвета всё равно берём из --tgui--*, т.к. вложенный
+   AppRoot их скоупит и здесь. */
+.prompt-editor-overlay__textarea {
   flex: 1;
   min-height: 0;
-}
-
-.prompt-editor-overlay__textarea-wrap textarea {
-  height: 100%;
   resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--tgui--text_color);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+  padding: 16px;
   padding-bottom: calc(16px + var(--tg-viewport-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+}
+
+.prompt-editor-overlay__textarea::placeholder {
+  color: var(--tgui--hint_color, #7d8b99);
 }

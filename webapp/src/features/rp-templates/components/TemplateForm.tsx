@@ -2,7 +2,6 @@ import { Button, Cell, Input, Switch } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
 import { PromptEditorField } from "../../../shared/components/PromptEditorField";
-import { PromptField } from "../../../shared/components/PromptField";
 import { PromptOrderEditor } from "../../../shared/components/PromptOrderEditor";
 import { SectionActions } from "../../../shared/components/SectionActions";
 import { SectionWithFooter } from "../../../shared/components/SectionWithFooter";
@@ -62,26 +61,27 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
       <PromptEditorField
         header="Основной системный промпт"
         hint="Базовые инструкции модели: задаёт роль, стиль и правила ответа."
+        placeholder="Обязательный промпт — нажмите, чтобы заполнить"
         value={systemPrompt}
+        previewLines={6}
         onChange={setSystemPrompt}
       />
-      <PromptField
-        label="Вспомогательный системный промпт"
+      <PromptEditorField
+        header="Вспомогательный системный промпт"
         hint="Дополнительные указания поверх основного — например, формат или ограничения."
         value={auxiliarySystemPrompt}
         onChange={setAuxiliarySystemPrompt}
       />
-      <PromptField
-        label="Инструкция после истории"
+      <PromptEditorField
+        header="Инструкция после истории"
         hint="Текст, вставляемый после истории чата — последнее напоминание модели перед ответом."
         value={postHistoryInstruction}
         onChange={setPostHistoryInstruction}
       />
-      <PromptField
-        label="Промпт для генерации ответа от лица пользователя"
+      <PromptEditorField
+        header="Промпт для генерации ответа от лица пользователя"
         hint="Шаблон системной инструкции. Плейсхолдеры: {{char}}, {{user}}, {{char_prompt}}, {{user_prompt}}, {{system_prompt}}, {{aux_prompt}}. История чата добавляется отдельным сообщением. Пусто → используется шаблон по умолчанию."
         value={userPersonaPrompt}
-        rows={6}
         placeholder={DEFAULT_IMPERSONATE_TEMPLATE}
         onChange={setUserPersonaPrompt}
       />
@@ -96,11 +96,10 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
       >
         Стримить ответ от лица пользователя
       </Cell>
-      <PromptField
-        label="Промпт для перевода (ИИ-режим)"
+      <PromptEditorField
+        header="Промпт для перевода (ИИ-режим)"
         hint="Системная инструкция для перевода черновика сообщения через нейросеть. Плейсхолдер {{target_lang}} — полное английское название выбранного языка. Пусто → используется шаблон по умолчанию."
         value={translationSystemPrompt}
-        rows={6}
         onChange={setTranslationSystemPrompt}
       />
       {/* Гуттер 22px — как у полей tgui внутри карточки (выравнивание заголовка с рядами ниже). */}

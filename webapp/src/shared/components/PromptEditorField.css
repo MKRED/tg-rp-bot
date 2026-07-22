@@ -3,10 +3,10 @@
 }
 
 /* multiline на Cell снимает жёсткий однострочный ellipsis у subtitle — клип по строкам
-   делаем сами, чтобы длинный промпт не растягивал ячейку на весь текст. */
+   делаем сами, чтобы длинный промпт не растягивал ячейку на весь текст. Число строк —
+   через инлайновый WebkitLineClamp (проп previewLines), тут только сама техника клипа. */
 .prompt-editor-field__preview {
   display: -webkit-box;
-  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
   white-space: pre-wrap;
@@ -17,19 +17,29 @@
   color: var(--tgui--hint_color, #7d8b99);
 }
 
-/* Meta-строка под Cell — hint слева, счётчик токенов справа (пусто слева — счётчик прижимается
-   вправо через space-between). Отступ 24px — как у базовой платформы tgui Cell (см. коммент
-   про personas.css при первом внедрении компонента). */
+/* Meta-строка под Cell — иконка-подсказка слева (может отсутствовать), счётчик токенов справа.
+   Отступ 24px — как у базовой платформы tgui Cell (см. коммент про personas.css при первом
+   внедрении компонента). */
 .prompt-editor-field__meta {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: baseline;
   gap: 8px;
-  padding: 4px 24px 0;
+  padding: 0 16px 0 12px;
 }
 
 .prompt-editor-field__tokens {
   font-size: 13px;
   white-space: nowrap;
   color: var(--tgui--hint_color, #7d8b99);
+}
+
+.prompt-editor-field__hint-button {
+  color: var(--tgui--hint_color, #7d8b99);
+  /* margin-left компенсирует паддинг IconButton, чтобы иконка визуально встала на отступ Cell (24px). */
+  margin-left: 4px;
+}
+
+.prompt-editor-field__hint-tooltip {
+  max-width: 260px;
 }
