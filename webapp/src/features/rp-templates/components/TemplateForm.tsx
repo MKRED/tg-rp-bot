@@ -1,10 +1,9 @@
-import { Button, Cell, Input, Switch } from "@telegram-apps/telegram-ui";
+import { Button, Cell, Input, Section, Switch } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
 import { PromptEditorField } from "../../../shared/components/PromptEditorField";
 import { PromptOrderEditor } from "../../../shared/components/PromptOrderEditor";
 import { SectionActions } from "../../../shared/components/SectionActions";
-import { SectionWithFooter } from "../../../shared/components/SectionWithFooter";
 import { DEFAULT_IMPERSONATE_TEMPLATE } from "../lib/impersonateTemplate";
 import {
   DEFAULT_PROMPT_ORDER,
@@ -47,11 +46,7 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
   const valid = name.trim().length > 0;
 
   return (
-    <SectionWithFooter
-      className="section-blend-inputs"
-      header="RP-шаблон"
-      footer="Сэмплинг (температура и пр.) задаётся не здесь, а в пресете генерации («Настройки ответа ИИ»)."
-    >
+    <Section className="section-blend-inputs" header="RP-шаблон">
       <Input
         header="Название"
         placeholder="Напр. «Стандартный ролевой промпт»"
@@ -137,6 +132,6 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
           </DeleteButton>
         )}
       </SectionActions>
-    </SectionWithFooter>
+    </Section>
   );
 }

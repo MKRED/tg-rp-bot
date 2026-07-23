@@ -1,10 +1,10 @@
-import { Button, Input } from "@telegram-apps/telegram-ui";
+import { Button, Input, Section } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
-import { PromptField } from "../../../shared/components/PromptField";
+import { HintedInput } from "../../../shared/components/HintedInput";
+import { PromptEditorField } from "../../../shared/components/PromptEditorField";
 import { PromptOrderEditor } from "../../../shared/components/PromptOrderEditor";
 import { SectionActions } from "../../../shared/components/SectionActions";
-import { SectionWithFooter } from "../../../shared/components/SectionWithFooter";
 import {
   DEFAULT_CONTINUE_MARKER,
   DEFAULT_LEADING_USER_MARKER,
@@ -53,68 +53,59 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
     name.trim().length > 0 && continueMarker.trim().length > 0 && leadingUserMarker.trim().length > 0;
 
   return (
-    <SectionWithFooter
-      className="section-blend-inputs"
-      header="Narrator-шаблон"
-      footer="Сэмплинг (температура и пр.) задаётся не здесь, а в пресете генерации."
-    >
+    <Section className="section-blend-inputs" header="Narrator-шаблон">
       <Input
         header="Название"
         placeholder="Напр. «Кинематографичный рассказчик»"
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
-      <PromptField
-        label="Инструкция нарратора"
+      <PromptEditorField
+        header="Инструкция нарратора"
         hint="Системный промпт для режима «Режиссёр истории»: задаёт роль рассказчика, стиль и правила ведения сцены. Пусто → применится встроенный дефолт."
         placeholder={SYSTEM_PLACEHOLDER}
-        rows={6}
+        previewLines={6}
         value={systemPrompt}
         onChange={setSystemPrompt}
       />
-      <PromptField
-        label="Вспомогательный системный промпт"
+      <PromptEditorField
+        header="Вспомогательный системный промпт"
         hint="Дополнительные указания поверх основного — например, формат или ограничения."
         value={auxiliarySystemPrompt}
         onChange={setAuxiliarySystemPrompt}
       />
-      <PromptField
-        label="После истории (необязательно)"
+      <PromptEditorField
+        header="После истории (необязательно)"
         hint="Доп. инструкция, вставляемая после истории — последнее напоминание модели перед каждым новым битом. Работает по назначению, только если в порядке промптов стоит после «Ленты истории»."
         placeholder="Доп. инструкция перед каждым битом"
-        rows={6}
         value={postHistory}
         onChange={setPostHistory}
       />
-      <PromptField
-        label="Промпт для перевода (ИИ-режим)"
+      <PromptEditorField
+        header="Промпт для перевода (ИИ-режим)"
         hint="Системная инструкция для ИИ-режима перевода черновика директивы (штора перевода в истории). Плейсхолдер {{target_lang}} — полное английское название выбранного языка. Пусто → перевод без спец-инструкций."
         placeholder="Напр.: Переводи бережно, сохраняя стиль и формат; не добавляй пояснений."
-        rows={4}
         value={translationSystemPrompt}
         onChange={setTranslationSystemPrompt}
       />
-      <PromptField
-        label="Промпт сжатия истории"
+      <PromptEditorField
+        header="Промпт сжатия истории"
         hint="Инструкция для сжатия старых сообщений в краткий пересказ (compact). Плейсхолдер {{words}} — рекомендованное число слов из настроек истории. Работает, только если в порядке промптов включён «Краткое содержание». Пусто → встроенный дефолт."
         placeholder="Напр.: Сожми события в связный пересказ примерно на {{words}} слов; сохрани факты, имена и нерешённые линии."
-        rows={4}
         value={compactionPrompt}
         onChange={setCompactionPrompt}
       />
-      <PromptField
-        label="Маркер «Продолжай» (обязательно)"
+      <HintedInput
+        header="Маркер «Продолжай» (обязательно)"
         hint="Текст, которым нейтрализуются отыгранные user-ходы (директивы/«Дальше») в истории — их последствие уже живёт в тексте следующего бита, повторно инструктировать не нужно. Этим же текстом сохраняется живой ход при клике «Дальше» без директивы."
-        rows={2}
         value={continueMarker}
-        onChange={setContinueMarker}
+        onChange={(e) => setContinueMarker(e.target.value)}
       />
-      <PromptField
-        label="Маркер «Начать» (обязательно)"
+      <HintedInput
+        header="Маркер «Начать» (обязательно)"
         hint="Синтетическая открывающая реплика перед первым битом истории — без неё запрос к модели начинался бы с ответа рассказчика, что отвергают некоторые провайдеры."
-        rows={2}
         value={leadingUserMarker}
-        onChange={setLeadingUserMarker}
+        onChange={(e) => setLeadingUserMarker(e.target.value)}
       />
       {/* Гуттер 22px — как у полей tgui внутри карточки (выравнивание заголовка с рядами ниже). */}
       <div style={{ padding: "12px 22px 0", fontWeight: 600 }}>Порядок промптов</div>
@@ -151,6 +142,6 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
           </DeleteButton>
         )}
       </SectionActions>
-    </SectionWithFooter>
+    </Section>
   );
 }

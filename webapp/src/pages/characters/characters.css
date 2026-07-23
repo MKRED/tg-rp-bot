@@ -132,12 +132,7 @@
   color: var(--tgui--hint_color, #7d8b99);
 }
 
-/* Поле с подписью токенов (промпт, варианты сообщений) */
-.char-field {
-  display: flex;
-  flex-direction: column;
-}
-
+/* Поле с подписью токенов (варианты первого сообщения) */
 .char-field__meta {
   display: flex;
   justify-content: space-between;

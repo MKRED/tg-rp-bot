@@ -2,11 +2,10 @@ import { Button, Input } from "@telegram-apps/telegram-ui";
 import { useMemo, useState } from "react";
 import { AvatarPicker, type AvatarValue } from "../../../shared/components/AvatarPicker";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
-import { ExpandableTextarea } from "../../../shared/components/ExpandableTextarea";
+import { PromptEditorField } from "../../../shared/components/PromptEditorField";
 import { useUnsavedChangesGuard } from "../../../shared/telegram/useUnsavedChangesGuard";
 import { FirstMessagesEditor } from "./FirstMessagesEditor";
 import { TagsInput } from "./TagsInput";
-import { estimateTokens } from "../../../shared/text/tokens";
 import { hasUnsavedChanges, normalizeCharacterDraft } from "../lib/formDirty";
 import type { CharacterInput } from "../types/character";
 
@@ -108,31 +107,21 @@ export function CharacterForm({ initial, submitting, onSubmit, onDelete }: Chara
 
       <TagsInput tags={tags} onChange={setTags} />
 
-      <div className="char-field">
-        <ExpandableTextarea
-          header="Промпт"
-          placeholder="Системный промпт персонажа…"
-          value={prompt}
-          rows={6}
-          onChange={(e) => setPrompt(e.target.value)}
-        />
-        <div className="char-field__meta">
-          <span className="char-field__tokens">~{estimateTokens(prompt)} токенов</span>
-        </div>
-      </div>
+      <PromptEditorField
+        header="Промпт"
+        placeholder="Системный промпт персонажа…"
+        value={prompt}
+        previewLines={6}
+        onChange={setPrompt}
+      />
 
-      <div className="char-field">
-        <ExpandableTextarea
-          header="Сценарий"
-          placeholder="Куда движется сюжет, цель сцены…"
-          value={scenario}
-          rows={6}
-          onChange={(e) => setScenario(e.target.value)}
-        />
-        <div className="char-field__meta">
-          <span className="char-field__tokens">~{estimateTokens(scenario)} токенов</span>
-        </div>
-      </div>
+      <PromptEditorField
+        header="Сценарий"
+        placeholder="Куда движется сюжет, цель сцены…"
+        value={scenario}
+        previewLines={6}
+        onChange={setScenario}
+      />
 
       <div className="char-form__section-title">Первое сообщение</div>
       <FirstMessagesEditor messages={firstMessages} onChange={setFirstMessages} />
