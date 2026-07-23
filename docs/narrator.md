@@ -26,7 +26,7 @@ RP-чата), переиспользуя только реально переи�
   `compactAutoEnabled`/`compactFloorTokens`/`compactWords`, зеркало `chat_settings`) +
   `story_compactions` (пересказы сжатых сообщений — см. раздел compact ниже).
 - **Сервер:** `db/knowledge/`, `db/narratorTemplates/`, `db/stories/` (зеркало `db/chats/`,
-  вкл. `settings.ts` и `crypto.ts` — расшифровка кэша переводов); `server/prompt/storyPromptBuilder.ts`
+  вкл. `settings.ts` и `crypto.ts` — расшифровка кэша переводов); `server/prompt/storyPromptBuilder/`
   (+тест), `server/stories/story.handlers.ts` (вкл. перевод бита/директивы через `googleTranslate`) +
   контроллер `server/stories/stories.controller.ts`, домены-роуты `books/`/`narrator-templates/`/`stories/`
   (у `stories` — `settings` GET/PUT + `messages/:id/translate`).

@@ -112,7 +112,7 @@ export function App() {
 
 Практические следствия:
 - **Свой CSS** для tgui-компонентов пишите через `--tgui--*` с фоллбэком: `var(--tgui--hint_color, #7d8b99)`
-  (см. [webapp/src/shared/components/PromptField.css](../webapp/src/shared/components/PromptField.css)).
+  (см. [webapp/src/shared/components/PromptField/PromptField.css](../webapp/src/shared/components/PromptField/PromptField.css)).
 - **Фон самого webview** красьте через `--tg-*` (они на `:root`), а не через `--tgui--*` (их на `:root` нет).
   В проекте: `background: var(--tg-bg-color, var(--tg-theme-bg-color, #17212b))`
   ([webapp/src/index.css](../webapp/src/index.css)). Иначе непокрашенные области показывают чёрную
@@ -211,7 +211,7 @@ children: Children.map(children, (child, index) => <>
 рычаг — форма `children`: оборачивать то, что должно считаться одним «слотом», в общий элемент (`<div>`,
 `<Fragment>` — она непрозрачна) или в один тернарник, как в паттерне B.
 
-Ровно поэтому `HintedInput` (`webapp/src/shared/components/HintedInput.tsx`) оборачивает `Input` и его
+Ровно поэтому `HintedInput` (`webapp/src/shared/components/HintedInput/HintedInput.tsx`) оборачивает `Input` и его
 подсказку (`FieldHint`) в свой `<div>` — иначе между полем и его же подсказкой пролезла бы линия. По той
 же причине `SectionWithFooter` (`webapp/src/shared/components/SectionWithFooter.tsx`) кладёт заметку
 последним top-level ребёнком секции (получает разделитель сверху — это ожидаемо, отделяет её от
@@ -231,7 +231,7 @@ children: Children.map(children, (child, index) => <>
 она ещё и последний ребёнок — прижимается и к нижнему краю (см. скриншот-баг в `BookForm`: кнопка
 «Удалить книгу» упиралась в самый низ карточки без единого пикселя отступа).
 
-**Решение — `SectionActions`** (`webapp/src/shared/components/SectionActions.tsx`): обёртка для блока
+**Решение — `SectionActions`** (`webapp/src/shared/components/SectionActions/SectionActions.tsx`): обёртка для блока
 кнопок в подвале секции, задаёт тот же 22px-гуттер по бокам + отступ сверху/снизу:
 
 ```tsx
@@ -296,7 +296,7 @@ ripple-волной поверх содержимого — `<span aria-hidden>`
   так сделан `ToastProvider`;
 - если портал в `body` неизбежен (лайтбокс, кроп-редактор) — не использовать там tgui-компоненты
   и задавать фиксированные цвета, а не `var(--tgui--…)` (см.
-  [webapp/src/shared/components/ImageCropEditor.css](../webapp/src/shared/components/ImageCropEditor.css)).
+  [webapp/src/shared/components/ImageCropEditor/ImageCropEditor.css](../webapp/src/shared/components/ImageCropEditor/ImageCropEditor.css)).
 
 ### 1.6. Совместимость
 
@@ -435,7 +435,7 @@ SDK биндит обе группы на `:root` с префиксом `--tg-vi
 
 **Рекомендуемый паттерн в CSS** (цепочка фоллбэков: SDK-переменная → нативный `env()` для вне-Telegram →
 `0px` для десктопа). Из проекта ([webapp/src/pages/rp-chat/rp-chat.css](../webapp/src/pages/rp-chat/rp-chat.css),
-[webapp/src/shared/components/ImageLightbox.css](../webapp/src/shared/components/ImageLightbox.css)):
+[webapp/src/shared/components/ImageLightbox/ImageLightbox.css](../webapp/src/shared/components/ImageLightbox/ImageLightbox.css)):
 
 ```css
 padding-top: calc(
