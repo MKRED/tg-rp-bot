@@ -1,5 +1,5 @@
 import type { NarratorTemplateInput } from "../../db/narratorTemplates/index.js";
-import { DEFAULT_NARRATOR_PROMPT_ORDER } from "../prompt/storyPromptBuilder.js";
+import { DEFAULT_NARRATOR_PROMPT_ORDER } from "../prompt/storyPromptBuilder/index.js";
 import { normalizeStoryPromptOrder } from "../prompt/storyPromptOrder.js";
 
 export function parseNarratorTemplateInput(

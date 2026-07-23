@@ -1,4 +1,4 @@
-import type { StoryPromptOrderItem } from "../../db/schema.js";
+import type { StoryPromptOrderItem } from "../../../db/schema.js";
 
 /**
  * Маркер-триггер «продолжай»: им же нейтрализуются ОТЫГРАННЫЕ user-ходы (директивы/continue) при

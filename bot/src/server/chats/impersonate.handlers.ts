@@ -7,7 +7,7 @@ import {
   listVariants,
 } from "../../db/impersonations/index.js";
 import logger from "../../logger.js";
-import { presetToCompletionOptions, renderImpersonateMessages } from "../prompt/promptBuilder.js";
+import { presetToCompletionOptions, renderImpersonateMessages } from "../prompt/promptBuilder/index.js";
 import { streamCompletion } from "../shared/streamGeneration.js";
 import { aiTranslate, englishLangName, googleTranslate } from "../shared/translate.js";
 import { loadChatContext } from "./messages.handlers.js";

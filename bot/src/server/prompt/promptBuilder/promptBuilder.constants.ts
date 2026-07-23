@@ -1,4 +1,4 @@
-import type { PromptOrderItem } from "../../db/schema.js";
+import type { PromptOrderItem } from "../../../db/schema.js";
 
 /**
  * Жёсткий потолок истории для impersonate — последние 30 сообщений (15 пар user/ИИ).

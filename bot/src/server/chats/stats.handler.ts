@@ -2,7 +2,7 @@ import { getChatTokenStats } from "../../db/chats/index.js";
 import { countVariantsForChat } from "../../db/impersonations/index.js";
 import logger from "../../logger.js";
 import { countTokens } from "../../utils/index.js";
-import { buildMessages, DEFAULT_RP_PROMPT_ORDER } from "../prompt/promptBuilder.js";
+import { buildMessages, DEFAULT_RP_PROMPT_ORDER } from "../prompt/promptBuilder/index.js";
 import { loadChatContext } from "./messages.handlers.js";
 import type { Ctx } from "./chats.types.js";
 

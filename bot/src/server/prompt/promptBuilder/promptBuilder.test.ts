@@ -7,7 +7,7 @@ import {
   trimHistoryToBudget,
 } from "./promptBuilder.js";
 import type { BuildMessagesOptions } from "./promptBuilder.js";
-import type { MessageInPath } from "../../db/chats/index.js";
+import type { MessageInPath } from "../../../db/chats/index.js";
 
 // Плоский набор опций (промпты+порядок «из шаблона», лимиты «из пресета») с каноническим
 // порядком для тестов.

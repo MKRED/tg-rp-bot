@@ -20,7 +20,7 @@ import {
   DEFAULT_COMPACTION_PROMPT,
   DEFAULT_NARRATOR_PROMPT_ORDER,
   resolveNarratorMarkers,
-} from "../prompt/storyPromptBuilder.js";
+} from "../prompt/storyPromptBuilder/index.js";
 import { normalizeStoryPromptOrder } from "../prompt/storyPromptOrder.js";
 import { compactAvailable, resolveCompactFloor } from "./compact.gate.js";
 import type { Ctx } from "./stories.types.js";

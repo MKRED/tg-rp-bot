@@ -1,6 +1,6 @@
-import type { StoryPromptOrderItem } from "../../db/schema.js";
-import type { StoryMessageInPath } from "../../db/stories/index.js";
-import type { TrimInfo } from "./budget.js";
+import type { StoryPromptOrderItem } from "../../../db/schema.js";
+import type { StoryMessageInPath } from "../../../db/stories/index.js";
+import type { TrimInfo } from "../budget.js";
 
 export type StoryPromptOptions = {
   /** Нарратор-инструкция (systemPrompt шаблона или дефолт). */

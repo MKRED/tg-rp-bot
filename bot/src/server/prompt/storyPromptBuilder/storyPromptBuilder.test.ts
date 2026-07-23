@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { StoryMessageInPath } from "../../db/stories/index.js";
+import type { StoryMessageInPath } from "../../../db/stories/index.js";
 import {
   buildStoryMessages,
   COMPACT_SUMMARY_HEADER,

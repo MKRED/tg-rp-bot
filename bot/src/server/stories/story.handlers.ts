@@ -14,7 +14,7 @@ import {
 import { getNarratorTemplate } from "../../db/narratorTemplates/index.js";
 import { getPreset } from "../../db/presets/index.js";
 import logger from "../../logger.js";
-import { resolveNarratorMarkers } from "../prompt/storyPromptBuilder.js";
+import { resolveNarratorMarkers } from "../prompt/storyPromptBuilder/index.js";
 import { streamCompletion } from "../shared/streamGeneration.js";
 import { aiTranslate, englishLangName, googleTranslate } from "../shared/translate.js";
 import { compactStory, shouldAutoCompact } from "./compact.handler.js";

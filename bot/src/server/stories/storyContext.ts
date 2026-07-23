@@ -5,13 +5,13 @@ import { getStory, getStorySettings, listCompactions } from "../../db/stories/in
 import logger from "../../logger.js";
 import { selectValidChain } from "../prompt/compactionPlan.js";
 import { matchesTriggerKeywords } from "../prompt/keywordMatch.js";
-import { presetToCompletionOptions } from "../prompt/promptBuilder.js";
+import { presetToCompletionOptions } from "../prompt/promptBuilder/index.js";
 import {
   buildStoryMessages,
   DEFAULT_NARRATOR_PROMPT_ORDER,
   DEFAULT_NARRATOR_TEMPLATE,
   resolveNarratorMarkers,
-} from "../prompt/storyPromptBuilder.js";
+} from "../prompt/storyPromptBuilder/index.js";
 import { normalizeStoryPromptOrder } from "../prompt/storyPromptOrder.js";
 
 /**

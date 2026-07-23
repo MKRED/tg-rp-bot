@@ -1,8 +1,8 @@
-import type { GenerationPreset, PromptComponentId } from "../../db/schema.js";
-import type { MessageInPath } from "../../db/chats/index.js";
-import type { ChatMessage } from "../../llm/types.js";
-import { countTokens } from "../../utils/index.js";
-import { DEFAULT_OUTPUT_RESERVE, PER_MESSAGE_OVERHEAD, trimHistoryToBudget } from "./budget.js";
+import type { GenerationPreset, PromptComponentId } from "../../../db/schema.js";
+import type { MessageInPath } from "../../../db/chats/index.js";
+import type { ChatMessage } from "../../../llm/types.js";
+import { countTokens } from "../../../utils/index.js";
+import { DEFAULT_OUTPUT_RESERVE, PER_MESSAGE_OVERHEAD, trimHistoryToBudget } from "../budget.js";
 import {
   DEFAULT_IMPERSONATE_TEMPLATE,
   DEFAULT_RP_PROMPT_ORDER,
@@ -15,7 +15,7 @@ import type {
 } from "./promptBuilder.types.js";
 
 // Реэкспорт публичной поверхности билдера для потребителей (хендлеры импортируют отсюда).
-export { trimHistoryToBudget } from "./budget.js";
+export { trimHistoryToBudget } from "../budget.js";
 export { DEFAULT_IMPERSONATE_TEMPLATE, DEFAULT_RP_PROMPT_ORDER } from "./promptBuilder.constants.js";
 export type {
   BuildMessagesControl,
@@ -24,7 +24,7 @@ export type {
   PromptCharacter,
   PromptPersona,
 } from "./promptBuilder.types.js";
-export type { TrimInfo } from "./budget.js";
+export type { TrimInfo } from "../budget.js";
 
 /**
  * Заменяет плейсхолдеры {{char}} и {{user}} на имена персонажа и персоны.

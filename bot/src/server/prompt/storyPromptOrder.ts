@@ -1,5 +1,5 @@
 import type { StoryPromptComponentId, StoryPromptOrderItem } from "../../db/schema.js";
-import { DEFAULT_NARRATOR_PROMPT_ORDER } from "./storyPromptBuilder.constants.js";
+import { DEFAULT_NARRATOR_PROMPT_ORDER } from "./storyPromptBuilder/index.js";
 
 const KNOWN_IDS = new Set<StoryPromptComponentId>(
   DEFAULT_NARRATOR_PROMPT_ORDER.map((i) => i.id),
