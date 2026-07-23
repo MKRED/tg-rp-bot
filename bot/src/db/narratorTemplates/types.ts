@@ -16,8 +16,24 @@ export type NarratorTemplateInput = {
   promptOrder: StoryPromptOrderItem[];
 };
 
-/** Лёгкая строка списка шаблонов. */
+/** Лёгкая строка списка шаблонов, как отдаётся клиенту (без текста промптов). */
 export type NarratorTemplateListItem = {
   id: number;
   name: string;
+  updatedAt: Date;
+  templateTokens: number;
+};
+
+/**
+ * Сырая строка DAO для списка — текстовые поля и promptOrder нужны только чтобы посчитать
+ * templateTokens на сервере (narratorTemplates.controller.ts), клиенту не уходят.
+ */
+export type NarratorTemplateListRow = {
+  id: number;
+  name: string;
+  updatedAt: Date;
+  systemPrompt: string;
+  auxiliarySystemPrompt: string;
+  postHistoryInstruction: string;
+  promptOrder: StoryPromptOrderItem[];
 };

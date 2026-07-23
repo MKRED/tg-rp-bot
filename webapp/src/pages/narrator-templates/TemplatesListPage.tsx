@@ -1,9 +1,10 @@
-import { Banner, Button, Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
+import { Banner, Button, Cell, Info, List, Section, Spinner } from "@telegram-apps/telegram-ui";
 import { ScrollText } from "lucide-react";
 import { motion } from "framer-motion";
 import { ROUTES, narratorTemplateEditPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
+import { formatRelativeDate } from "../../shared/text/formatRelativeDate";
 import { MAX_TEMPLATES_PER_USER, useTemplates } from "../../features/narrator-templates";
 import "./narrator-templates.css";
 
@@ -50,7 +51,8 @@ export function TemplatesListPage() {
                   transition={{ delay: i * 0.05, duration: 0.2, ease: "easeOut" }}
                 >
                   <Cell
-                    before={<ScrollText size={24} />}
+                    subtitle={`~${t.templateTokens} токенов промпта`}
+                    after={<Info type="text" subtitle={formatRelativeDate(t.updatedAt)} />}
                     onClick={() => navigate(narratorTemplateEditPath(t.id))}
                   >
                     {t.name}

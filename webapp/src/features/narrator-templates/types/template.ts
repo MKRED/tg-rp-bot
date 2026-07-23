@@ -3,6 +3,9 @@
 export type NarratorTemplateListItem = {
   id: number;
   name: string;
+  updatedAt: string;
+  /** Вес трёх template-полей (system/auxiliary/postHistory) в токенах, точный подсчёт с сервера. */
+  templateTokens: number;
 };
 
 /**

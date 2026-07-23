@@ -2,12 +2,20 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import logger from "../../logger.js";
 import { db, schema } from "../index.js";
 import type { NarratorTemplate } from "../schema.js";
-import type { NarratorTemplateInput, NarratorTemplateListItem } from "./types.js";
+import type { NarratorTemplateInput, NarratorTemplateListRow } from "./types.js";
 
-/** Список narrator-шаблонов пользователя (свежие сверху). */
-export async function listNarratorTemplates(userId: number): Promise<NarratorTemplateListItem[]> {
+/** Список narrator-шаблонов пользователя (свежие сверху). Текстовые поля — только для подсчёта токенов. */
+export async function listNarratorTemplates(userId: number): Promise<NarratorTemplateListRow[]> {
   const rows = await db
-    .select({ id: schema.narratorTemplates.id, name: schema.narratorTemplates.name })
+    .select({
+      id: schema.narratorTemplates.id,
+      name: schema.narratorTemplates.name,
+      updatedAt: schema.narratorTemplates.updatedAt,
+      systemPrompt: schema.narratorTemplates.systemPrompt,
+      auxiliarySystemPrompt: schema.narratorTemplates.auxiliarySystemPrompt,
+      postHistoryInstruction: schema.narratorTemplates.postHistoryInstruction,
+      promptOrder: schema.narratorTemplates.promptOrder,
+    })
     .from(schema.narratorTemplates)
     .where(eq(schema.narratorTemplates.userId, userId))
     .orderBy(desc(schema.narratorTemplates.updatedAt));

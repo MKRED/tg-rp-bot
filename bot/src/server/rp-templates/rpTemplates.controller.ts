@@ -10,6 +10,7 @@ import {
 import { ensureUser } from "../../db/users.js";
 import logger from "../../logger.js";
 import type { AppVariables } from "../middleware/initData.types.js";
+import { templateTokenWeight } from "../prompt/templateTokenWeight.js";
 import { isFkViolation } from "../shared/fkViolation.js";
 import { MAX_RP_TEMPLATES_PER_USER } from "./rpTemplates.constants.js";
 import { parseRpTemplateInput } from "./rpTemplates.validation.js";
@@ -25,7 +26,15 @@ export function createRpTemplateRoutes(): Hono<{ Variables: AppVariables }> {
     const user = c.get("tgUser");
     if (!user) return c.json({ error: "Auth required" }, 401);
     try {
-      return c.json({ templates: await listRpTemplates(user.id) });
+      const rows = await listRpTemplates(user.id);
+      // Тексты промптов на клиент не уходят — только их суммарный вес в токенах.
+      const templates = rows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        updatedAt: r.updatedAt,
+        templateTokens: templateTokenWeight(r, r.promptOrder),
+      }));
+      return c.json({ templates });
     } catch (err) {
       logger.error({ err, userId: user.id }, "Failed to list RP templates");
       return c.json({ error: "Internal error" }, 500);

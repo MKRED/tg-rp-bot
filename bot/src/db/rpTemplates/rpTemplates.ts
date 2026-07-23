@@ -2,12 +2,20 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import logger from "../../logger.js";
 import { db, schema } from "../index.js";
 import type { RpTemplate } from "../schema.js";
-import type { RpTemplateInput, RpTemplateListItem } from "./types.js";
+import type { RpTemplateInput, RpTemplateListRow } from "./types.js";
 
-/** Список RP-шаблонов пользователя (свежие сверху). */
-export async function listRpTemplates(userId: number): Promise<RpTemplateListItem[]> {
+/** Список RP-шаблонов пользователя (свежие сверху). Текстовые поля — только для подсчёта токенов. */
+export async function listRpTemplates(userId: number): Promise<RpTemplateListRow[]> {
   const rows = await db
-    .select({ id: schema.rpTemplates.id, name: schema.rpTemplates.name })
+    .select({
+      id: schema.rpTemplates.id,
+      name: schema.rpTemplates.name,
+      updatedAt: schema.rpTemplates.updatedAt,
+      systemPrompt: schema.rpTemplates.systemPrompt,
+      auxiliarySystemPrompt: schema.rpTemplates.auxiliarySystemPrompt,
+      postHistoryInstruction: schema.rpTemplates.postHistoryInstruction,
+      promptOrder: schema.rpTemplates.promptOrder,
+    })
     .from(schema.rpTemplates)
     .where(eq(schema.rpTemplates.userId, userId))
     .orderBy(desc(schema.rpTemplates.updatedAt));
