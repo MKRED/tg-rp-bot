@@ -178,6 +178,13 @@ export function ImageLightbox({ src, onSend, onClose }: ImageLightboxProps) {
           onPanningStop={(ref) => {
             if (ref.state.scale <= 1.01) ref.centerView(1, 200);
           }}
+          // Тот же возврат в центр нужен и для двухпальцевого жеста (одновременно пинч + пан):
+          // библиотека ведёт его как отдельное состояние isPinching, а не isPanning, поэтому
+          // onPanningStop на такой жест не срабатывает — без этого хука фото у самого мин.
+          // масштаба могло остаться там, где его бросили (вплоть до половины за экраном).
+          onPinchStop={(ref) => {
+            if (ref.state.scale <= 1.01) ref.centerView(1, 200);
+          }}
         >
           <TransformComponent
             wrapperClass="image-lightbox__viewport"
