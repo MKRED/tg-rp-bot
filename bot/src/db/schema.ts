@@ -145,11 +145,6 @@ export type NewPersona = typeof personas.$inferInsert;
  * Параметры сэмплинга — nullable: null означает «не передавать значение» (провайдер применит
  * своё). Важно, что null ≠ 0, иначе temperature:0 / presencePenalty:0 нельзя было бы отличить
  * от «выключено».
- *
- * ВРЕМЕННО (до отдельной миграции-дропа): промпт-поля ниже физически ещё в таблице, но код их
- * больше не читает/не пишет — промпты RP-чата переехали в rp_templates. Поля намеренно оставлены
- * в декларации, чтобы drizzle-kit сгенерировал их удаление отдельной, более поздней миграцией
- * (см. CLAUDE.md/план рефакторинга) — не удалять раньше срока.
  */
 export const generationPresets = pgTable("generation_presets", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
@@ -173,20 +168,6 @@ export const generationPresets = pgTable("generation_presets", {
   repetitionPenalty: real("repetition_penalty"),
   minP: real("min_p"),
   topA: real("top_a"),
-
-  // ВРЕМЕННО — оставлены до миграции-дропа, код их не использует (см. rp_templates).
-  systemPrompt: text("system_prompt").notNull().default(""),
-  auxiliarySystemPrompt: text("auxiliary_system_prompt").notNull().default(""),
-  postHistoryInstruction: text("post_history_instruction").notNull().default(""),
-  userPersonaPrompt: text("user_persona_prompt").notNull().default(""),
-  userPersonaStreaming: boolean("user_persona_streaming").notNull().default(true),
-  translationSystemPrompt: text("translation_system_prompt").notNull().default(""),
-  promptOrder: jsonb("prompt_order")
-    .$type<PromptOrderItem[]>()
-    .notNull()
-    .default(
-      sql`'[{"id":"system","enabled":true},{"id":"characterDescription","enabled":true},{"id":"userDescription","enabled":false},{"id":"auxiliary","enabled":true},{"id":"characterScenario","enabled":false},{"id":"history","enabled":true},{"id":"postHistory","enabled":true}]'::jsonb`,
-    ),
 
   // Рассуждение (reasoning). effort: minimal | low | medium | high | xhigh (или null).
   requestReasoning: boolean("request_reasoning").notNull().default(false),
