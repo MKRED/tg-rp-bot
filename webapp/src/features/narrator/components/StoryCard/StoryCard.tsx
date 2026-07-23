@@ -1,8 +1,8 @@
 import { Avatar, AvatarStack, Cell } from "@telegram-apps/telegram-ui";
 import { Clapperboard } from "lucide-react";
-import { useAvatarBatch } from "../../../shared/avatar/useAvatarBatch";
-import { nameInitials } from "../../../shared/text/initials";
-import type { StoryListItem } from "../types/story";
+import { useAvatarBatch } from "../../../../shared/avatar/useAvatarBatch";
+import { nameInitials } from "../../../../shared/text/initials";
+import type { StoryListItem } from "../../types/story";
 import "./StoryCard.css";
 
 interface StoryCardProps {

@@ -1,6 +1,6 @@
 import { Cell } from "@telegram-apps/telegram-ui";
-import { CharacterAvatar } from "../../characters/components/CharacterAvatar";
-import type { ChatListItem } from "../types/chat";
+import { CharacterAvatar } from "../../../characters/components/CharacterAvatar";
+import type { ChatListItem } from "../../types/chat";
 import "./ChatCard.css";
 
 interface ChatCardProps {
