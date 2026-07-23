@@ -1,8 +1,8 @@
 import { InlineKeyboard, InputFile } from "grammy";
-import { bot } from "../../bot.js";
-import { config } from "../../config.js";
-import { PHOTO_CLOSE_CALLBACK } from "../../handlers/photoActions.constants.js";
-import logger from "../../logger.js";
+import { bot } from "../../../bot.js";
+import { config } from "../../../config.js";
+import { PHOTO_CLOSE_CALLBACK } from "../../../handlers/photoActions.constants.js";
+import logger from "../../../logger.js";
 import { DEEP_LINK_PARAM } from "./photoToChat.constants.js";
 import type { SendPhotoOptions } from "./photoToChat.types.js";
 

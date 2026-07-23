@@ -1,7 +1,7 @@
 import https from "node:https";
-import { bot, telegramProxyAgent } from "../../bot.js";
-import { config } from "../../config.js";
-import logger from "../../logger.js";
+import { bot, telegramProxyAgent } from "../../../bot.js";
+import { config } from "../../../config.js";
+import logger from "../../../logger.js";
 import { CACHE_TTL_MS } from "./profilePhoto.constants.js";
 import type { CacheEntry } from "./profilePhoto.types.js";
 

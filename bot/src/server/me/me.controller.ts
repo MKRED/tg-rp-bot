@@ -1,8 +1,7 @@
 import { Hono } from "hono";
 import logger from "../../logger.js";
 import type { AppVariables } from "../middleware/initData.types.js";
-import { sendLightboxPhoto } from "../media/photoToChat.js";
-import { getProfilePhotoDataUrl } from "../media/profilePhoto.js";
+import { sendLightboxPhoto, getProfilePhotoDataUrl } from "../media/index.js";
 import { MAX_IMAGE_FULL_CHARS } from "../shared/imageValidation.constants.js";
 import { parseImageField } from "../shared/imageValidation.js";
 import { DEEP_LINK_RE, MAX_BUTTON_LABEL } from "./me.constants.js";
