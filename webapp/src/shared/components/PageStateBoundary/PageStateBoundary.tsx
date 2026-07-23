@@ -1,6 +1,6 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
 import type { ReactNode } from "react";
-import { PageTransition } from "./PageTransition";
+import { PageTransition } from "../PageTransition";
 import "./PageStateBoundary.css";
 
 interface PageStateBoundaryProps {

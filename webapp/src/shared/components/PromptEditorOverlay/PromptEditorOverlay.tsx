@@ -3,10 +3,10 @@ import { miniApp, useSignal } from "@telegram-apps/sdk-react";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { getPlatform } from "../telegram/platform";
-import { pushBackInterceptor } from "../telegram/backInterceptor";
-import { confirmAction } from "../telegram/confirm";
-import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
+import { getPlatform } from "../../telegram/platform";
+import { pushBackInterceptor } from "../../telegram/backInterceptor";
+import { confirmAction } from "../../telegram/confirm";
+import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
 import "./PromptEditorOverlay.css";
 
 // Платформа сессии не меняется — маппим в стиль telegram-ui один раз, как в App.tsx.

@@ -1,8 +1,8 @@
 import { Cell, IconButton, Tooltip } from "@telegram-apps/telegram-ui";
 import { ChevronRight, Info } from "lucide-react";
 import { type RefObject, useEffect, useRef, useState } from "react";
-import { estimateTokens } from "../text/tokens";
-import { PromptEditorOverlay } from "./PromptEditorOverlay";
+import { estimateTokens } from "../../text/tokens";
+import { PromptEditorOverlay } from "../PromptEditorOverlay";
 import "./PromptEditorField.css";
 
 interface PromptEditorFieldProps {

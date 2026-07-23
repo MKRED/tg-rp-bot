@@ -1,5 +1,5 @@
 import { Input, type InputProps } from "@telegram-apps/telegram-ui";
-import { FieldHint } from "./FieldHint";
+import { FieldHint } from "../FieldHint";
 import "./HintedInput.css";
 
 interface HintedInputProps extends InputProps {

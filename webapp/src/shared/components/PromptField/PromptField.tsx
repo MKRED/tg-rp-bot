@@ -1,6 +1,6 @@
-import { ExpandableTextarea } from "./ExpandableTextarea";
-import { FieldHint } from "./FieldHint";
-import { estimateTokens } from "../text/tokens";
+import { ExpandableTextarea } from "../ExpandableTextarea";
+import { FieldHint } from "../FieldHint";
+import { estimateTokens } from "../../text/tokens";
 import "./PromptField.css";
 
 interface PromptFieldProps {

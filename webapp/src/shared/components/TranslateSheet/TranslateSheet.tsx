@@ -2,10 +2,10 @@ import { Spinner } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import { Eraser, Languages, SendHorizontal, X } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
-import { LangPicker, type LangOption } from "./LangPicker";
-import { RpText } from "./RpText";
-import { SegmentedToggle } from "./SegmentedToggle";
-import { useComposeTranslate, type ComposeTranslateParams } from "../hooks/useComposeTranslate";
+import { LangPicker, type LangOption } from "../LangPicker";
+import { RpText } from "../RpText";
+import { SegmentedToggle } from "../SegmentedToggle";
+import { useComposeTranslate, type ComposeTranslateParams } from "../../hooks/useComposeTranslate";
 import "./TranslateSheet.css";
 
 /** Режим перевода черновика: обычный Google Translate либо запрос к нейросети. */

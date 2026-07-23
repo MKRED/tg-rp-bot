@@ -7,8 +7,8 @@ import {
   TransformComponent,
   TransformWrapper,
 } from "react-zoom-pan-pinch";
-import { pushBackInterceptor } from "../telegram/backInterceptor";
-import { useToast } from "../toast";
+import { pushBackInterceptor } from "../../telegram/backInterceptor";
+import { useToast } from "../../toast";
 import "./ImageLightbox.css";
 
 interface ImageLightboxProps {

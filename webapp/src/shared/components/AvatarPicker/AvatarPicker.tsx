@@ -1,10 +1,10 @@
 import { Avatar, Button, FileInput } from "@telegram-apps/telegram-ui";
 import { AnimatePresence } from "framer-motion";
 import { type ChangeEvent, useEffect, useState } from "react";
-import { buildAvatarImages, type CropArea } from "../image";
-import { nameInitials } from "../text/initials";
-import { ImageCropEditor } from "./ImageCropEditor";
-import { ImageLightbox } from "./ImageLightbox";
+import { buildAvatarImages, type CropArea } from "../../image";
+import { nameInitials } from "../../text/initials";
+import { ImageCropEditor } from "../ImageCropEditor";
+import { ImageLightbox } from "../ImageLightbox";
 import "./AvatarPicker.css";
 
 /** Пара картинок аватара: миниатюра (кроп) + полное фото (без кадрирования). */

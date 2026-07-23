@@ -1,4 +1,4 @@
-import { tokenBudget } from "../text/token-budget";
+import { tokenBudget } from "../../text/token-budget";
 import "./TokenBudgetBar.css";
 
 interface TokenBudgetBarProps {

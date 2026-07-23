@@ -2,8 +2,8 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import { createPortal } from "react-dom";
-import type { CropArea } from "../image";
-import { pushBackInterceptor } from "../telegram/backInterceptor";
+import type { CropArea } from "../../image";
+import { pushBackInterceptor } from "../../telegram/backInterceptor";
 // CSS react-easy-crop НЕ инжектится сам (sideEffects:false) — импортируем явно, иначе кроппер
 // рендерится сломанным (контейнер/маска/contain не спозиционированы).
 import "react-easy-crop/react-easy-crop.css";
