@@ -1,4 +1,4 @@
-import { Button, Input, Section, Textarea } from "@telegram-apps/telegram-ui";
+import { Button, Input, Section } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
 import { SectionActions } from "../../../shared/components/SectionActions";
@@ -26,7 +26,7 @@ export function BookForm({ initial, submitting, onSubmit, onDelete }: BookFormPr
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
-      <Textarea
+      <Input
         header="Описание (необязательно)"
         placeholder="Краткое описание для себя"
         value={description}

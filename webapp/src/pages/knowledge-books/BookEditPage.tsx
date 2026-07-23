@@ -1,4 +1,4 @@
-import { Button, Cell, List } from "@telegram-apps/telegram-ui";
+import { Button, Cell, List, Section } from "@telegram-apps/telegram-ui";
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus, FileText, ChevronUp, ChevronDown } from "lucide-react";
 import { useState } from "react";
@@ -6,7 +6,6 @@ import { useParams } from "react-router-dom";
 import { ROUTES, bookEditPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageStateBoundary } from "../../shared/components/PageStateBoundary";
-import { SectionWithFooter } from "../../shared/components/SectionWithFooter";
 import { CharacterAvatar } from "../../features/characters";
 import { PersonaAvatar } from "../../features/personas";
 import {
@@ -122,10 +121,7 @@ export function BookEditPage() {
                 </motion.div>
               ) : (
                 <motion.div key="list" {...swapAnim}>
-                  <SectionWithFooter
-                    header="Записи"
-                    footer="Записи always_on всегда попадают в промпт истории"
-                  >
+                  <Section header="Записи">
                     {entries.length === 0 && <Cell subtitle="Пока пусто">Нет записей</Cell>}
                     {entries.map((e, index) => (
                       // layout + стабильный key={e.id} — при перестановке строки плавно переезжают
@@ -217,7 +213,7 @@ export function BookEditPage() {
                         Добавить запись
                       </Button>
                     </div>
-                  </SectionWithFooter>
+                  </Section>
                 </motion.div>
               )}
             </AnimatePresence>
