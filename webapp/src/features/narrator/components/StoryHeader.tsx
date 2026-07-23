@@ -28,7 +28,7 @@ export function StoryHeader({ title, avatars, onGraphClick, onSettingsClick }: S
           {avatars.map((a) => (
             <Avatar
               key={`${a.type}:${a.id}`}
-              size={28}
+              size={40}
               src={resolved.get(`${a.type}:${a.id}`)}
               acronym={nameInitials(a.name)}
               style={{ backgroundColor: "var(--tgui--secondary_bg_color)" }}
@@ -44,7 +44,7 @@ export function StoryHeader({ title, avatars, onGraphClick, onSettingsClick }: S
           aria-label="Граф веток"
           type="button"
         >
-          <GitBranch size={22} />
+          <GitBranch size={24} />
         </button>
         <button
           className="story-page__header-btn"
@@ -52,7 +52,7 @@ export function StoryHeader({ title, avatars, onGraphClick, onSettingsClick }: S
           aria-label="Настройки истории"
           type="button"
         >
-          <Settings size={22} />
+          <Settings size={24} />
         </button>
       </div>
     </div>
