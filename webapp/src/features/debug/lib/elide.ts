@@ -39,3 +39,12 @@ export function elideRequest(
   ];
   return { ...request, messages: elided };
 }
+
+/**
+ * Разворачивает экранированные `\n` внутри строковых значений JSON в настоящие переводы строк —
+ * чисто для читаемости в <pre>. JSON.stringify всегда экранирует реальные переносы строк как `\n`,
+ * из-за чего многострочный content сообщений схлопывается в одну «простыню» текста.
+ */
+export function unescapeNewlines(json: string): string {
+  return json.replace(/\\n/g, "\n");
+}

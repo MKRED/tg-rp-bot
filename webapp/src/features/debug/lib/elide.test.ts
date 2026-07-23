@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { elideRequest, isElidedMarker } from "./elide";
+import { elideRequest, isElidedMarker, unescapeNewlines } from "./elide";
 
 const msgs = (n: number) =>
   Array.from({ length: n }, (_, i) => ({ role: "user", content: `m${i}` }));
@@ -33,5 +33,15 @@ describe("elideRequest", () => {
     // head=0, tail=0 → весь массив «пропущен», только маркер
     expect(out.messages).toHaveLength(1);
     expect(isElidedMarker((out.messages as unknown[])[0])).toBe(true);
+  });
+});
+
+describe("unescapeNewlines", () => {
+  it("превращает экранированные \\n в настоящие переводы строк", () => {
+    expect(unescapeNewlines('"строка1\\nстрока2"')).toBe('"строка1\nстрока2"');
+  });
+
+  it("не трогает строки без экранированных переносов", () => {
+    expect(unescapeNewlines('{"a":1}')).toBe('{"a":1}');
   });
 });
