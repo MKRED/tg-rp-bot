@@ -90,7 +90,24 @@
   color: var(--tg-theme-hint-color);
 }
 
+/*
+  Хак: у Accordion.Content (tgui) уже есть встроенная max-height-анимация, но её длительность
+  (.1s) зашита в приватный CSS-класс внутреннего div и не настраивается пропом — className,
+  который принимает Accordion.Content, попадает на ВНЕШНИЙ div. Переопределяем через дочерний
+  селектor: специфичность бьёт библиотечный класс. Завязано на недокументированную внутреннюю
+  DOM-структуру @telegram-apps/telegram-ui@2.1.13 (Accordion.Content рендерит один div-обёртку
+  для анимации) — если при апдейте tgui разметка сменится, селектор просто перестанет матчиться
+  и анимация тихо откатится к дефолтным 0.1s, ничего не сломается. Проверить при апдейте tgui.
+*/
+.debug-record__content > div {
+  transition: max-height 0.25s ease-in-out;
+}
+
 .debug-record__body {
+  /* Accordion.Content (tgui) красит фон в --tgui--bg_color, а Accordion.Summary — это Cell,
+     фон не задаёт и просвечивает --tgui--section_bg_color родительской Section. В теме Telegram
+     это разные цвета — перекрываем фоном Cell, чтобы шапка и тело не отличались. */
+  background: var(--tgui--section_bg_color);
   padding: 0 16px 12px;
 }
 

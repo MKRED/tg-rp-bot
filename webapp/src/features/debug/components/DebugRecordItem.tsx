@@ -56,7 +56,7 @@ export function DebugRecordItem({
       >
         {LABEL_TEXT[record.label]}
       </Accordion.Summary>
-      <Accordion.Content>
+      <Accordion.Content className="debug-record__content">
         <div className="debug-record__body">
           <Caption className="debug-record__meta">
             {record.provider} · {record.streaming ? "stream" : "single"} · {record.durationMs} мс
