@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ROUTES, storyViewPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
-import { PromptField } from "../../shared/components/PromptField";
+import { PromptEditorField } from "../../shared/components/PromptEditorField";
 import { createStory } from "../../features/narrator";
 import { useBooks } from "../../features/knowledge-books";
 import { useTemplates } from "../../features/narrator-templates";
@@ -147,19 +147,18 @@ export function StoryNewPage() {
           </Section>
 
           <Section className="section-blend-inputs" header="Старт истории">
-            <PromptField
-              label="Стартовое сообщение (обязательно)"
+            <PromptEditorField
+              header="Стартовое сообщение (обязательно)"
               hint="Показывается дословно как первый бит истории и уходит в контекст модели."
               placeholder="С чего начинается история…"
-              rows={6}
+              previewLines={6}
               value={openingBeat}
               onChange={setOpeningBeat}
             />
-            <PromptField
-              label="Сценарий / премиза (необязательно)"
+            <PromptEditorField
+              header="Сценарий / премиза (необязательно)"
               hint="Куда вести сцену, тон, завязка. В текст истории не попадает, но влияет на следующие биты."
               placeholder="Куда ведём историю, тон, завязка…"
-              rows={6}
               value={premise}
               onChange={setPremise}
             />

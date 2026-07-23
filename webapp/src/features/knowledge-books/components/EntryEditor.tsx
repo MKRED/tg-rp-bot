@@ -4,7 +4,7 @@ import { useState } from "react";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
 import { FieldHint } from "../../../shared/components/FieldHint";
 import { HintedInput } from "../../../shared/components/HintedInput";
-import { PromptField } from "../../../shared/components/PromptField";
+import { PromptEditorField } from "../../../shared/components/PromptEditorField";
 import { SectionActions } from "../../../shared/components/SectionActions";
 import { CharacterAvatar, useCharacter, useCharacters } from "../../characters";
 import { PersonaAvatar, usePersona, usePersonas } from "../../personas";
@@ -238,11 +238,11 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
       </AnimatePresence>
 
       {mode === "free" ? (
-        <PromptField
-          label="Текст записи"
+        <PromptEditorField
+          header="Текст записи"
           hint="Факт о мире / предмете / месте. Записи always_on уходят в промпт модели при каждом бите истории."
           placeholder="Факт о мире / предмете / месте…"
-          rows={6}
+          previewLines={6}
           value={content}
           onChange={setContent}
         />

@@ -53,7 +53,7 @@ export function PromptEditorField({
             className={`prompt-editor-field__preview${value ? "" : " prompt-editor-field__preview--placeholder"}`}
             style={{ WebkitLineClamp: previewLines }}
           >
-            {value || placeholder || "Нажмите, чтобы заполнить"}
+            {value || "Нажмите, чтобы заполнить"}
           </span>
         }
         onClick={() => setOpen(true)}

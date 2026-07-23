@@ -13,7 +13,7 @@ import {
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { HintedInput } from "../../shared/components/HintedInput";
 import { PageTransition } from "../../shared/components/PageTransition";
-import { PromptField } from "../../shared/components/PromptField";
+import { PromptEditorField } from "../../shared/components/PromptEditorField";
 import { ExpandableSelect } from "../../shared/components/ExpandableSelect";
 import { SegmentedToggle } from "../../shared/components/SegmentedToggle";
 import {
@@ -59,7 +59,8 @@ export function StorySettingsPage() {
   const [openSelect, setOpenSelect] = useState<OpenSelect>(null);
   const toggleSelect = (key: Exclude<OpenSelect, null>) =>
     setOpenSelect((cur) => (cur === key ? null : key));
-  // Локальные поля названия и премизы: правятся свободно, сохраняются по blur.
+  // Локальное поле названия правится свободно, сохраняется по blur. Премиза — через оверлей
+  // PromptEditorField, значение коммитится онным onChange только по нажатию «Сохранить».
   const [title, setTitle] = useState("");
   const [premise, setPremise] = useState("");
   // Последние сохранённые значения — база для сравнения на blur (useStory не отдаёт setStory,
@@ -90,13 +91,12 @@ export function StorySettingsPage() {
     }
   };
 
-  // NB: клик по кнопке «развернуть» внутри ExpandableTextarea уводит фокус с поля → тоже
-  // триггерит этот blur. Это приемлемо: при наличии правок премиза просто сохранится раньше.
-  const handlePremiseBlur = async () => {
-    const next = premise.trim();
-    if (next === savedPremise.current.trim()) return;
+  const handlePremiseChange = async (next: string) => {
+    const trimmed = next.trim();
+    setPremise(trimmed);
+    if (trimmed === savedPremise.current.trim()) return;
     try {
-      const res = await updateStoryPremise(id, next);
+      const res = await updateStoryPremise(id, trimmed);
       savedPremise.current = res.premise;
       setPremise(res.premise);
     } catch (err) {
@@ -216,14 +216,13 @@ export function StorySettingsPage() {
           </Section>
 
           <Section className="section-blend-inputs" header="Сценарий">
-            <PromptField
-              label="Сценарий / премиза"
+            <PromptEditorField
+              header="Сценарий / премиза"
               hint="Куда вести сцену, тон, завязка. В текст истории не попадает, но влияет на следующие биты."
               placeholder="Куда ведём историю, тон, завязка…"
-              rows={6}
+              previewLines={6}
               value={premise}
-              onChange={setPremise}
-              onBlur={handlePremiseBlur}
+              onChange={handlePremiseChange}
             />
           </Section>
 
