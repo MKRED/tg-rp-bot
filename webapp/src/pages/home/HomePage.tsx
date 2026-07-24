@@ -1,5 +1,5 @@
 import { Avatar, Caption, Cell, List, Section, Title } from "@telegram-apps/telegram-ui";
-import { MessageCircle, Users, User, Smile, SlidersHorizontal, Clapperboard, BookOpen, ScrollText, FileText, Bug } from "lucide-react";
+import { MessageCircle, Users, User, Smile, SlidersHorizontal, Clapperboard, BookOpen, ScrollText, FileText, Settings, Bug } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { ROUTES } from "../../app/routes";
@@ -142,8 +142,20 @@ export function HomePage() {
             </motion.div>
           </Section>
 
-          <Section header="Отладка">
+          <Section header="Настройки">
             <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.4 }}>
+              <Cell
+                before={<Settings size={24} className="home__icon" />}
+                subtitle="Тема оформления"
+                onClick={() => navigate(ROUTES.settings)}
+              >
+                Настройки
+              </Cell>
+            </motion.div>
+          </Section>
+
+          <Section header="Отладка">
+            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.45 }}>
               <Cell
                 before={<Bug size={24} className="home__icon" />}
                 subtitle="RAW-запросы к ИИ (последние запросы и настройки перехвата)"

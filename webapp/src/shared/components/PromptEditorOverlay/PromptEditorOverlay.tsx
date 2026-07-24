@@ -1,5 +1,4 @@
 import { AppRoot, Button } from "@telegram-apps/telegram-ui";
-import { miniApp, useSignal } from "@telegram-apps/sdk-react";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -7,6 +6,7 @@ import { getPlatform } from "../../telegram/platform";
 import { pushBackInterceptor } from "../../telegram/backInterceptor";
 import { confirmAction } from "../../telegram/confirm";
 import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
+import { useTheme } from "../../theme";
 import "./PromptEditorOverlay.css";
 
 // Платформа сессии не меняется — маппим в стиль telegram-ui один раз, как в App.tsx.
@@ -30,11 +30,14 @@ interface PromptEditorOverlayProps {
  * сюда не доезжают (скоупятся на класс AppRoot, а не :root). Заворачиваем содержимое во ВЛОЖЕННЫЙ
  * AppRoot с теми же appearance/platform, что у корневого (App.tsx) — это просто themed-div без
  * побочных эффектов (SDK не переинициализируется), зато tgui Button в шапке темизируется нормально,
- * а не выглядит инородной голой разметкой. Сам textarea — обычный HTML-элемент (не tgui Textarea):
- * тот визуально не подходит для полноэкранного редактора, стилизуем вручную под --tgui--* цвета.
+ * а не выглядит инородной голой разметкой. appearance — из useTheme() (общий с корневым AppRoot),
+ * а не напрямую из miniApp.isDark: иначе ручной оверрайд темы пользователя не долетел бы сюда,
+ * и оверлей «телепортировался» бы в другую тему, чем основное приложение. Сам textarea — обычный
+ * HTML-элемент (не tgui Textarea): тот визуально не подходит для полноэкранного редактора,
+ * стилизуем вручную под --tgui--* цвета.
  */
 export function PromptEditorOverlay({ title, placeholder, value, onSave, onCancel }: PromptEditorOverlayProps) {
-  const isDark = useSignal(miniApp.isDark);
+  const { appearance } = useTheme();
   const [draft, setDraft] = useState(value);
   const dirty = draft !== value;
   // Не даём открыть второй confirm поверх уже открытого при повторном нажатии «Назад».
@@ -73,7 +76,7 @@ export function PromptEditorOverlay({ title, placeholder, value, onSave, onCance
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
     >
-      <AppRoot appearance={isDark ? "dark" : "light"} platform={platform} className="prompt-editor-overlay__root">
+      <AppRoot appearance={appearance} platform={platform} className="prompt-editor-overlay__root">
         <div className="prompt-editor-overlay__header">
           <Button mode="plain" size="s" onClick={handleDiscard}>
             Отмена

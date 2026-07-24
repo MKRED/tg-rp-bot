@@ -88,6 +88,9 @@ const RpTemplateEditPage = lazy(() =>
 const DebugLlmPage = lazy(() =>
   import("../pages/debug/DebugLlmPage").then((m) => ({ default: m.DebugLlmPage }))
 );
+const SettingsPage = lazy(() =>
+  import("../pages/settings/SettingsPage").then((m) => ({ default: m.SettingsPage }))
+);
 
 /**
  * Маршруты приложения с анимированными переходами.
@@ -145,6 +148,9 @@ export function AnimatedRoutes() {
 
           {/* Отладка: RAW-запросы к LLM. */}
           <Route path={ROUTES.debugLlm} element={<DebugLlmPage />} />
+
+          {/* Настройки приложения. */}
+          <Route path={ROUTES.settings} element={<SettingsPage />} />
           {/*
             Любой неизвестный путь → главная. Важно для Telegram Web: launch-параметры
             прилетают в hash (#tgWebAppData=…); init() их уже считал, а роутеру этот hash

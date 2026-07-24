@@ -6,7 +6,13 @@
   display: flex;
   padding: 3px;
   border-radius: 999px;
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  /*
+    --tgui--*, а не --tg-theme-*: последние приходят ТОЛЬКО из реального Telegram (bindCssVars);
+    вне Telegram они пустые, и без разницы light/dark всегда красили бы один и тот же светлый
+    литерал-фоллбэк. --tgui--* сами уже вида var(--tg-theme-*, <дефолт-под-тему>) — работают
+    и внутри Telegram (тот же реальный цвет), и вне (правильный фоллбэк по appearance AppRoot).
+  */
+  background: var(--tgui--secondary_bg_color, #f4f4f5);
 }
 
 .segmented-toggle__btn {
@@ -18,13 +24,13 @@
   font-size: 14px;
   font-weight: 600;
   font-family: inherit;
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tgui--hint_color, #999);
   cursor: pointer;
   transition: color 0.18s;
 }
 
 .segmented-toggle__btn.is-active {
-  color: var(--tg-theme-button-text-color, #fff);
+  color: var(--tgui--button_text_color, #fff);
 }
 
 /* Скользящая подсветка под активным сегментом. left/width задаёт motion по геометрии кнопки;
@@ -35,10 +41,15 @@
   bottom: 3px;
   z-index: 0;
   border-radius: 999px;
-  background: var(--tg-theme-button-color, #2481cc);
+  background: var(--tgui--button_color, #2481cc);
 }
 
 .segmented-toggle__btn-label {
   position: relative;
   z-index: 1;
+  /* display:flex тут нейтрален для текста (однострочный inline-контент не меняется),
+     но центрирует иконку — иначе SVG внутри inline-span съезжает по baseline. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

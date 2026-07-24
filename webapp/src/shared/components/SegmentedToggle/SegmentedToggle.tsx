@@ -1,10 +1,13 @@
 import { motion } from "framer-motion";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import "./SegmentedToggle.css";
 
 export interface SegmentedToggleOption<T extends string> {
   value: T;
+  /** Текст сегмента; всегда используется как aria-label кнопки, даже если задан icon. */
   label: string;
+  /** Необязательная иконка вместо текста (label остаётся доступен для скринридеров). */
+  icon?: ReactNode;
 }
 
 interface SegmentedToggleProps<T extends string> {
@@ -54,10 +57,12 @@ export function SegmentedToggle<T extends string>({
           type="button"
           role="tab"
           aria-selected={value === o.value}
+          aria-label={o.icon ? o.label : undefined}
+          title={o.icon ? o.label : undefined}
           className={`segmented-toggle__btn${value === o.value ? " is-active" : ""}`}
           onClick={() => onChange(o.value)}
         >
-          <span className="segmented-toggle__btn-label">{o.label}</span>
+          <span className="segmented-toggle__btn-label">{o.icon ?? o.label}</span>
         </button>
       ))}
     </div>

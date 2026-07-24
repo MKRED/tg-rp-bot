@@ -1,0 +1,10 @@
+.settings-page {
+  min-height: 100dvh;
+  /* Верхний отступ под Full Screen — тот же приём, что в других списковых страницах. */
+  padding-top: calc(
+    8px +
+    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
+  padding-bottom: 24px;
+}
