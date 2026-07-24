@@ -1,5 +1,5 @@
 .prompt-editor-field__chevron {
-  color: var(--tg-theme-link-color, #2481cc);
+  color: var(--tgui--link_color, #2481cc);
 }
 
 /* multiline на Cell снимает жёсткий однострочный ellipsis у subtitle — клип по строкам
@@ -34,11 +34,11 @@
   margin-left: auto;
   font-size: 13px;
   white-space: nowrap;
-  color: var(--tg-theme-link-color, #2481cc);
+  color: var(--tgui--link_color, #2481cc);
 }
 
 .prompt-editor-field__hint-button {
-  color: var(--tg-theme-link-color, #2481cc);
+  color: var(--tgui--link_color, #2481cc);
   /* margin-left компенсирует паддинг IconButton, чтобы иконка визуально встала на отступ Cell (24px). */
   margin-left: 4px;
 }

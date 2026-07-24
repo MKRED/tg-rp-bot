@@ -144,7 +144,7 @@ export function RpChatSettingsPage() {
                         size={40}
                       />
                     }
-                    after={<ChevronRight size={16} style={{ color: "var(--tg-theme-hint-color)" }} />}
+                    after={<ChevronRight size={16} style={{ color: "var(--tgui--hint_color)" }} />}
                     subtitle="Персонаж"
                     onClick={() => navigate(characterEditPath(chat.character.id), { state: { returnTo } })}
                   >
@@ -172,7 +172,7 @@ export function RpChatSettingsPage() {
                         </div>
                       )
                     }
-                    after={<ChevronRight size={16} style={{ color: "var(--tg-theme-hint-color)" }} />}
+                    after={<ChevronRight size={16} style={{ color: "var(--tgui--hint_color)" }} />}
                     subtitle="Персона игрока"
                     onClick={() =>
                       chat.persona
@@ -195,7 +195,7 @@ export function RpChatSettingsPage() {
                         <FileText size={18} />
                       </div>
                     }
-                    after={<ChevronRight size={16} style={{ color: "var(--tg-theme-hint-color)" }} />}
+                    after={<ChevronRight size={16} style={{ color: "var(--tgui--hint_color)" }} />}
                     subtitle="RP-шаблон"
                     onClick={() =>
                       chat.template
@@ -218,7 +218,7 @@ export function RpChatSettingsPage() {
                         <Bot size={18} />
                       </div>
                     }
-                    after={<ChevronRight size={16} style={{ color: "var(--tg-theme-hint-color)" }} />}
+                    after={<ChevronRight size={16} style={{ color: "var(--tgui--hint_color)" }} />}
                     subtitle="Настройки ИИ"
                     onClick={() =>
                       chat.preset
@@ -330,7 +330,7 @@ export function RpChatSettingsPage() {
                   transition={{ ...ITEM_T, delay: 0 }}
                 >
                   <Cell
-                    after={<span style={{ color: "var(--tg-theme-hint-color)" }}>{fmtTokens(stats.tokensTotal)}</span>}
+                    after={<span style={{ color: "var(--tgui--hint_color)" }}>{fmtTokens(stats.tokensTotal)}</span>}
                     subtitle="Токенов в сообщениях всех веток"
                   >
                     Весь чат
@@ -343,7 +343,7 @@ export function RpChatSettingsPage() {
                   transition={{ ...ITEM_T, delay: 0.07 }}
                 >
                   <Cell
-                    after={<span style={{ color: "var(--tg-theme-hint-color)" }}>{fmtTokens(stats.tokensActiveBranch)}</span>}
+                    after={<span style={{ color: "var(--tgui--hint_color)" }}>{fmtTokens(stats.tokensActiveBranch)}</span>}
                     subtitle="Токенов в сообщениях текущей ветки"
                   >
                     Активная ветка
@@ -368,8 +368,8 @@ export function RpChatSettingsPage() {
                   transition={{ ...ITEM_T, delay: 0.21 }}
                 >
                   <Cell
-                    before={<Eraser size={20} style={{ color: "var(--tg-theme-hint-color)" }} />}
-                    after={<span style={{ color: "var(--tg-theme-hint-color)" }}>{stats.impersonationCount}</span>}
+                    before={<Eraser size={20} style={{ color: "var(--tgui--hint_color)" }} />}
+                    after={<span style={{ color: "var(--tgui--hint_color)" }}>{stats.impersonationCount}</span>}
                     subtitle="Сгенерированные варианты реплик игрока"
                     onClick={handleClearVariants}
                     style={{

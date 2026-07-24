@@ -159,7 +159,7 @@ export function CompactSettingsSection({
             <div style={{ padding: "8px 22px 0" }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 500 }}>
                 <span>Сжимать до</span>
-                <span style={{ color: "var(--tg-theme-hint-color)" }}>{fmt(floor)} ток.</span>
+                <span style={{ color: "var(--tgui--hint_color)" }}>{fmt(floor)} ток.</span>
               </div>
               <Slider
                 min={FLOOR_MIN}
@@ -179,7 +179,7 @@ export function CompactSettingsSection({
             <div style={{ padding: "8px 22px 0" }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 500 }}>
                 <span>Слов в пересказе</span>
-                <span style={{ color: "var(--tg-theme-hint-color)" }}>~{words}</span>
+                <span style={{ color: "var(--tgui--hint_color)" }}>~{words}</span>
               </div>
               <Slider
                 min={WORDS_MIN}
@@ -271,7 +271,7 @@ export function CompactSettingsSection({
                         <p
                           style={{
                             margin: "4px 0 0",
-                            color: "var(--tg-theme-hint-color)",
+                            color: "var(--tgui--hint_color)",
                             fontSize: 14,
                             lineHeight: 1.4,
                             whiteSpace: "pre-wrap",
@@ -282,7 +282,7 @@ export function CompactSettingsSection({
                         <p
                           style={{
                             margin: "4px 0 0",
-                            color: "var(--tg-theme-text-color)",
+                            color: "var(--tgui--text_color)",
                             fontSize: 12,
                             fontWeight: 500,
                           }}

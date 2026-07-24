@@ -24,7 +24,7 @@
   display: inline-flex;
   align-items: center;
   border-radius: 10px;
-  background: var(--tgui--secondary_fill, var(--tg-theme-secondary-bg-color, rgba(118, 118, 128, 0.12)));
+  background: var(--tgui--secondary_fill, var(--tgui--secondary_bg_color, rgba(118, 118, 128, 0.12)));
   /*
     Cell (tgui) — это Tappable: на платформе "base" он рисует ripple-оверлей
     (span position:absolute; inset:0; БЕЗ pointer-events:none), который перекрывает
@@ -87,7 +87,7 @@
   display: flex;
   justify-content: center;
   padding: 16px;
-  color: var(--tg-theme-hint-color);
+  color: var(--tgui--hint_color);
 }
 
 /*
@@ -113,13 +113,13 @@
 
 .debug-record__meta {
   display: block;
-  color: var(--tg-theme-hint-color);
+  color: var(--tgui--hint_color);
   margin-bottom: 8px;
 }
 
 .debug-record__section-title {
   display: block;
-  color: var(--tg-theme-hint-color);
+  color: var(--tgui--hint_color);
   letter-spacing: 0.04em;
   margin: 8px 0 4px;
 }
@@ -129,7 +129,7 @@
   margin: 0;
   padding: 8px;
   border-radius: 8px;
-  background: var(--tg-theme-secondary-bg-color, rgba(0, 0, 0, 0.05));
+  background: var(--tgui--secondary_bg_color, rgba(0, 0, 0, 0.05));
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
   line-height: 1.4;

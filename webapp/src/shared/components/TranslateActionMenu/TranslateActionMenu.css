@@ -11,7 +11,7 @@
   min-width: 180px;
   padding: 6px;
   border-radius: 14px;
-  background: var(--tg-theme-bg-color, #fff);
+  background: var(--tgui--bg_color, #fff);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
   animation: translate-action-menu-in 0.14s ease-out;
 }
@@ -35,7 +35,7 @@
   border: none;
   border-radius: 10px;
   background: none;
-  color: var(--tg-theme-text-color, #000);
+  color: var(--tgui--text_color, #000);
   font-size: 14px;
   font-family: inherit;
   text-align: left;
@@ -44,9 +44,9 @@
 }
 
 .translate-action-menu__item:active {
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  background: var(--tgui--secondary_bg_color, #f4f4f5);
 }
 
 .translate-action-menu__item--danger {
-  color: var(--tg-theme-destructive-text-color, #e53935);
+  color: var(--tgui--destructive_text_color, #e53935);
 }

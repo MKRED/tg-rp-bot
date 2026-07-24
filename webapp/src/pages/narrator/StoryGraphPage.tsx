@@ -94,7 +94,7 @@ export function StoryGraphPage() {
           id: `${n.parentId}-${n.id}`,
           source: String(n.parentId),
           target: String(n.id),
-          style: { stroke: "var(--tg-theme-hint-color, #999)", strokeWidth: 1.5 },
+          style: { stroke: "var(--tgui--hint_color, #999)", strokeWidth: 1.5 },
         })),
     [treeNodes],
   );
@@ -162,7 +162,7 @@ export function StoryGraphPage() {
               minZoom={0.1}
               proOptions={{ hideAttribution: true }}
             >
-              <Background color="var(--tg-theme-hint-color, #ccc)" gap={20} size={1} />
+              <Background color="var(--tgui--hint_color, #ccc)" gap={20} size={1} />
               <Controls showInteractive={false} />
             </ReactFlow>
           </div>

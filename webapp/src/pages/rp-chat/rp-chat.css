@@ -15,7 +15,7 @@
 }
 
 .rp-chats-hub__banner-icon {
-  color: var(--tg-theme-link-color, #2481cc);
+  color: var(--tgui--link_color, #2481cc);
 }
 
 .rp-chats-hub__list {
@@ -79,15 +79,15 @@
 }
 
 .rp-chat-new-page__icon {
-  color: var(--tg-theme-link-color, #2481cc);
+  color: var(--tgui--link_color, #2481cc);
 }
 
 .rp-chat-new-page__icon--hint {
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tgui--hint_color, #999);
 }
 
 .rp-chat-new-page__chevron {
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tgui--hint_color, #999);
 }
 
 /* ─── Страница чата ──────────────────────────────────────────────────────────── */
@@ -96,7 +96,7 @@
   display: flex;
   flex-direction: column;
   height: 100dvh;
-  background: var(--tg-theme-bg-color, #fff);
+  background: var(--tgui--bg_color, #fff);
 }
 
 .rp-chat-page__messages {
@@ -119,8 +119,8 @@
 
 .rp-chat-page__input {
   padding: 8px 12px calc(env(safe-area-inset-bottom, 0px) + 8px);
-  border-top: 1px solid var(--tg-theme-secondary-bg-color, #f4f4f5);
-  background: var(--tg-theme-bg-color, #fff);
+  border-top: 1px solid var(--tgui--secondary_bg_color, #f4f4f5);
+  background: var(--tgui--bg_color, #fff);
 }
 
 /* ─── Хедер чата ─────────────────────────────────────────────────────────────── */
@@ -133,8 +133,8 @@
     var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
     var(--tg-viewport-content-safe-area-inset-top, 0px) + 8px
   ) 12px 8px;
-  border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #f4f4f5);
-  background: var(--tg-theme-bg-color, #fff);
+  border-bottom: 1px solid var(--tgui--secondary_bg_color, #f4f4f5);
+  background: var(--tgui--bg_color, #fff);
   gap: 8px;
   min-height: 52px;
 }
@@ -149,7 +149,7 @@
 .chat-header__name {
   font-weight: 600;
   font-size: 16px;
-  color: var(--tg-theme-text-color, #000);
+  color: var(--tgui--text_color, #000);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -170,14 +170,14 @@
   height: 36px;
   border: none;
   background: transparent;
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tgui--hint_color, #999);
   border-radius: 50%;
   cursor: pointer;
   padding: 0;
 }
 
 .chat-header__icon-btn:active {
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  background: var(--tgui--secondary_bg_color, #f4f4f5);
 }
 
 .chat-header__icon-btn--danger {
@@ -189,8 +189,8 @@
 /* RP-нотация: переменные адаптируются к фону пузыря — light/accent.
    Каскадируют вниз к .rp-token--* в RpText.css */
 .message-bubble--assistant {
-  --rp-action-color: var(--tg-theme-hint-color, #999);
-  --rp-thought-color: var(--tg-theme-link-color, #2481cc);
+  --rp-action-color: var(--tgui--hint_color, #999);
+  --rp-thought-color: var(--tgui--link_color, #2481cc);
 }
 .message-bubble--user {
   --rp-action-color: rgba(255, 255, 255, 0.62);
@@ -240,14 +240,14 @@
 }
 
 .message-bubble--user .message-bubble__text {
-  background: var(--tg-theme-button-color, #2481cc);
-  color: var(--tg-theme-button-text-color, #fff);
+  background: var(--tgui--button_color, #2481cc);
+  color: var(--tgui--button_text_color, #fff);
   border-bottom-right-radius: 4px;
 }
 
 .message-bubble--assistant .message-bubble__text {
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
-  color: var(--tg-theme-text-color, #000);
+  background: var(--tgui--secondary_bg_color, #f4f4f5);
+  color: var(--tgui--text_color, #000);
   border-bottom-left-radius: 4px;
 }
 
@@ -255,7 +255,7 @@
 .message-bubble__text--streaming::after {
   content: "|";
   animation: blink 1s step-end infinite;
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tgui--hint_color, #999);
 }
 
 @keyframes blink {
@@ -279,7 +279,7 @@
   align-items: center;
   gap: 4px;
   font-size: 13px;
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tgui--hint_color, #999);
 }
 
 .message-bubble__sibling-count {
@@ -293,7 +293,7 @@
   justify-content: center;
   background: transparent;
   border: none;
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tgui--hint_color, #999);
   cursor: pointer;
   padding: 2px;
   flex-shrink: 0;
@@ -314,7 +314,7 @@
 
 .message-bubble__action-btn:active,
 .message-bubble__action-btn--active {
-  color: var(--tg-theme-link-color, #2481cc);
+  color: var(--tgui--link_color, #2481cc);
 }
 
 .message-bubble__action-btn--danger:active {
@@ -331,15 +331,15 @@
 
 .chat-input__textarea {
   flex: 1;
-  border: 1.5px solid var(--tg-theme-secondary-bg-color, #e5e5e5);
+  border: 1.5px solid var(--tgui--secondary_bg_color, #e5e5e5);
   border-radius: 20px;
   padding: 10px 14px;
   font-size: 15px;
   line-height: 1.4;
   resize: none;
   outline: none;
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
-  color: var(--tg-theme-text-color, #000);
+  background: var(--tgui--secondary_bg_color, #f4f4f5);
+  color: var(--tgui--text_color, #000);
   min-height: 40px;
   max-height: 160px;
   font-family: inherit;
@@ -347,7 +347,7 @@
 }
 
 .chat-input__textarea:focus {
-  border-color: var(--tg-theme-link-color, #2481cc);
+  border-color: var(--tgui--link_color, #2481cc);
 }
 
 .chat-input__send {
@@ -357,8 +357,8 @@
   width: 40px;
   height: 40px;
   border: none;
-  background: var(--tg-theme-button-color, #2481cc);
-  color: var(--tg-theme-button-text-color, #fff);
+  background: var(--tgui--button_color, #2481cc);
+  color: var(--tgui--button_text_color, #fff);
   border-radius: 50%;
   cursor: pointer;
   flex-shrink: 0;
@@ -379,8 +379,8 @@
   width: 40px;
   height: 40px;
   border: none;
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
-  color: var(--tg-theme-link-color, #2481cc);
+  background: var(--tgui--secondary_bg_color, #f4f4f5);
+  color: var(--tgui--link_color, #2481cc);
   border-radius: 50%;
   cursor: pointer;
   flex-shrink: 0;
@@ -414,7 +414,7 @@
   max-height: 75vh;
   padding: 16px;
   padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  background: var(--tg-theme-bg-color, #fff);
+  background: var(--tgui--bg_color, #fff);
   border-radius: 16px 16px 0 0;
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
 }
@@ -428,7 +428,7 @@
 .impersonate-sheet__title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--tg-theme-text-color, #000);
+  color: var(--tgui--text_color, #000);
 }
 
 .impersonate-sheet__close {
@@ -439,7 +439,7 @@
   background: none;
   padding: 4px;
   cursor: pointer;
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tgui--hint_color, #999);
 }
 
 .impersonate-sheet__list {
@@ -453,14 +453,14 @@
 .impersonate-sheet__streaming {
   padding: 12px 14px;
   border-radius: 12px;
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  background: var(--tgui--secondary_bg_color, #f4f4f5);
   opacity: 0.8;
 }
 
 .impersonate-sheet__empty {
   text-align: center;
   padding: 24px;
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tgui--hint_color, #999);
 }
 
 .impersonate-sheet__loading {
@@ -478,8 +478,8 @@
   padding: 12px;
   border: none;
   border-radius: 12px;
-  background: var(--tg-theme-button-color, #2481cc);
-  color: var(--tg-theme-button-text-color, #fff);
+  background: var(--tgui--button_color, #2481cc);
+  color: var(--tgui--button_text_color, #fff);
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
@@ -497,7 +497,7 @@
   gap: 8px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  background: var(--tgui--secondary_bg_color, #f4f4f5);
   cursor: pointer;
 }
 
@@ -510,7 +510,7 @@
   margin: 0;
   font-size: 15px;
   line-height: 1.4;
-  color: var(--tg-theme-text-color, #000);
+  color: var(--tgui--text_color, #000);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -530,7 +530,7 @@
   background: none;
   padding: 4px;
   cursor: pointer;
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tgui--hint_color, #999);
 }
 
 /* Спиннер TGUI рендерится 24×24 — иконки кнопок 20px, ужимаем svg спиннера
@@ -541,11 +541,11 @@
 }
 
 .impersonate-card__btn--active {
-  color: var(--tg-theme-link-color, #2481cc);
+  color: var(--tgui--link_color, #2481cc);
 }
 
 .impersonate-card__btn--danger {
-  color: var(--tg-theme-destructive-text-color, #e53935);
+  color: var(--tgui--destructive_text_color, #e53935);
 }
 
 /* ─── Меню действий над инпутом (impersonate / перевод) ──────────────────────── */
@@ -577,18 +577,18 @@
   padding: 12px 16px 12px 0;
   border: none;
   border-radius: 14px;
-  background: var(--tg-theme-bg-color, #fff);
+  background: var(--tgui--bg_color, #fff);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
   cursor: pointer;
   font-size: 15px;
   font-weight: 500;
-  color: var(--tg-theme-text-color, #000);
+  color: var(--tgui--text_color, #000);
   text-align: left;
   transition: background 0.12s;
 }
 
 .input-actions-menu__item:active {
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  background: var(--tgui--secondary_bg_color, #f4f4f5);
 }
 
 /* Колонка иконки шириной 40px = ширине кнопки «+», чтобы иконки встали ровно под значком раскрытия */
@@ -598,7 +598,7 @@
   justify-content: center;
   width: 40px;
   flex-shrink: 0;
-  color: var(--tg-theme-link-color, #2481cc);
+  color: var(--tgui--link_color, #2481cc);
 }
 
 /* ─── Страница настроек чата ─────────────────────────────────────────────────── */
@@ -608,11 +608,11 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  background: var(--tgui--secondary_bg_color, #f4f4f5);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tgui--hint_color, #999);
   flex-shrink: 0;
 }
 
@@ -644,7 +644,7 @@
 
 /* Ширина узла фиксируется общим правилом в shared/graph/graph.css (инвариант раскладки). */
 .rp-chat-graph-node {
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  background: var(--tgui--secondary_bg_color, #f4f4f5);
   border: 1.5px solid transparent;
   border-radius: 12px;
   padding: 8px 12px;
@@ -652,12 +652,12 @@
 }
 
 .rp-chat-graph-node--active {
-  border-color: var(--tg-theme-link-color, #2481cc);
+  border-color: var(--tgui--link_color, #2481cc);
 }
 
 .rp-chat-graph-node__role {
   font-size: 10px;
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tgui--hint_color, #999);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
@@ -665,7 +665,7 @@
 
 .rp-chat-graph-node__text {
   font-size: 13px;
-  color: var(--tg-theme-text-color, #000);
+  color: var(--tgui--text_color, #000);
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;

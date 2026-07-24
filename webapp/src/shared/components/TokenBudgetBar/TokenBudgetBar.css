@@ -10,13 +10,13 @@
   display: flex;
   justify-content: space-between;
   font-size: 13px;
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tgui--hint_color, #999);
 }
 
 .token-budget__track {
   height: 6px;
   border-radius: 3px;
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  background: var(--tgui--secondary_bg_color, #f4f4f5);
   overflow: hidden;
 }
 
@@ -27,7 +27,7 @@
 }
 
 .token-budget__fill--ok {
-  background: var(--tg-theme-link-color, #2481cc);
+  background: var(--tgui--link_color, #2481cc);
 }
 
 .token-budget__fill--warn {

@@ -16,6 +16,8 @@
 - Определение платформы — [webapp/src/shared/telegram/platform.ts](../webapp/src/shared/telegram/platform.ts)
 - Импорт стилей и порядок запуска — [webapp/src/main.tsx](../webapp/src/main.tsx)
 - Фон webview и глобальные стили — [webapp/src/index.css](../webapp/src/index.css)
+- Ручной оверрайд темы — [webapp/src/shared/theme/](../webapp/src/shared/theme/) (`ThemeProvider.tsx`,
+  `manualTheme.css`, раздел 1.4.5)
 
 > ⚠️ Версии в этом файле — справочные на момент написания. Источник правды — `webapp/package.json`.
 > Перед обновлением tgui/SDK сверяйтесь с официальными доками (ссылки в конце).
@@ -68,12 +70,12 @@ import "./index.css";
   на тёмной теме Telegram при светлой ОС);
 - мигание фона при сворачивании/разворачивании окна (AppRoot терял dark-класс).
 
-**Решение — передавать оба пропса из сигналов SDK** (как в [webapp/src/app/App.tsx](../webapp/src/app/App.tsx)):
+**Решение — передавать оба пропса явно** (как в [webapp/src/app/App.tsx](../webapp/src/app/App.tsx)):
 
 ```tsx
 import { AppRoot } from "@telegram-apps/telegram-ui";
-import { miniApp, useSignal } from "@telegram-apps/sdk-react";
 import { getPlatform } from "../shared/telegram/platform";
+import { ThemeProvider, useTheme } from "../shared/theme";
 
 // Платформа сессии не меняется — маппим один раз на уровне модуля.
 // macos/ios → "ios"-оформление, всё прочее (включая dev-браузер) → "base".
@@ -82,18 +84,30 @@ const platform: "ios" | "base" =
   rawPlatform === "ios" || rawPlatform === "macos" ? "ios" : "base";
 
 export function App() {
-  // Реактивный сигнал: перерисуется при смене темы Telegram, без перезагрузки.
-  const isDark = useSignal(miniApp.isDark);
   return (
-    <AppRoot appearance={isDark ? "dark" : "light"} platform={platform}>
+    <ThemeProvider>
+      <AppInner />
+    </ThemeProvider>
+  );
+}
+
+function AppInner() {
+  // appearance: дефолт из сигнала miniApp.isDark (реагирует на смену темы Telegram без
+  // перезагрузки), с учётом ручного оверрайда пользователя (раздел 1.4.5).
+  const { appearance } = useTheme();
+  return (
+    <AppRoot appearance={appearance} platform={platform}>
       {/* ... */}
     </AppRoot>
   );
 }
 ```
 
-> Это та же логика маппинга, что у tgui внутри (`ios`/`macos` → `ios`, остальное → `base`),
+> Платформенная логика — та же, что у tgui внутри (`ios`/`macos` → `ios`, остальное → `base`),
 > но на достоверном источнике — launch-параметрах SDK, а не на отсутствующем глобале.
+> `ThemeProvider` ([webapp/src/shared/theme/ThemeProvider.tsx](../webapp/src/shared/theme/ThemeProvider.tsx))
+> стоит НАД `AppRoot` — и корневой, и вложенный в `PromptEditorOverlay` (через портал) читают один
+> `appearance`, иначе ручной оверрайд не долетел бы до одного из них.
 
 ### 1.4. CSS-переменные: два слоя
 
@@ -111,12 +125,17 @@ export function App() {
 `--tgui--secondary_fill`.
 
 Практические следствия:
-- **Свой CSS** для tgui-компонентов пишите через `--tgui--*` с фоллбэком: `var(--tgui--hint_color, #7d8b99)`
+- **Свой CSS — ВСЕГДА через `--tgui--*` с фоллбэком, никогда напрямую `--tg-theme-*`:**
+  `var(--tgui--hint_color, #7d8b99)`, не `var(--tg-theme-hint-color, #7d8b99)`
   (см. [webapp/src/shared/components/PromptField/PromptField.css](../webapp/src/shared/components/PromptField/PromptField.css)).
+  Это не только эстетика: `--tg-theme-*` в реальном Telegram всегда забинжен на настоящую тему
+  клиента, и только `--tgui--*` умеет корректно уходить в фоллбэк при ручном оверрайде темы
+  (раздел 1.4.5) — весь код в `webapp/src` переведён на это правило именно поэтому.
 - **Фон самого webview** красьте через `--tg-*` (они на `:root`), а не через `--tgui--*` (их на `:root` нет).
   В проекте: `background: var(--tg-bg-color, var(--tg-theme-bg-color, #17212b))`
   ([webapp/src/index.css](../webapp/src/index.css)). Иначе непокрашенные области показывают чёрную
-  подложку webview — особенно заметно в Full Screen после сворачивания.
+  подложку webview — особенно заметно в Full Screen после сворачивания. Это единственное
+  оправданное прямое использование `--tg-theme-*`/`--tg-*` в собственном CSS.
 
 ### 1.4.1. Засада: фон поля (`bg_color`) ≠ фон карточки (`section_bg_color`)
 
@@ -287,6 +306,49 @@ ripple-волной поверх содержимого — `<span aria-hidden>`
 `.kb-entry-order` (`webapp/src/pages/knowledge-books/knowledge-books.css`) — оба кладут нативные
 `<button>` в `after`-слот `Cell` для инлайновых мини-контролов (степпер настройки, стрелки порядка
 записи) и решают конфликт этим паттерном.
+
+### 1.4.5. Ручной оверрайд темы (в обход реальной темы Telegram-клиента)
+
+`ThemeProvider` ([webapp/src/shared/theme/ThemeProvider.tsx](../webapp/src/shared/theme/ThemeProvider.tsx))
+даёт пользователю выбрать тему вручную (Система/Светлая/Тёмная), а не только наследовать её от
+Telegram. Наивная реализация — просто прокинуть нужный `appearance` в `<AppRoot>` — **не работает**
+внутри настоящего Telegram, хотя отлично работает в dev-браузере. Причина: `--tgui--*` определены как
+`var(--tg-theme-X, <литерал-фоллбэк-по-классу-light/dark>)` — класс `AppRoot` задаёт только фоллбэк,
+который используется, ЛИШЬ если `--tg-theme-X` не определена. Внутри настоящего Telegram
+`themeParams.bindCssVars()`/`miniApp.bindCssVars()` держат `--tg-theme-*` забинженными на реальную
+тему клиента ВСЕГДА — так что фоллбэк никогда не используется, и `appearance` фактически ничего не
+красит (кроме горстки токенов tgui без пары `--tg-theme-*`, например декоративный hover-фон — по нему
+это и было замечено на практике).
+
+**Решение** ([webapp/src/shared/theme/manualTheme.css](../webapp/src/shared/theme/manualTheme.css)):
+при ручном оверрайде (`mode !== "system"`) навешивать на `<html>` класс `theme-override`, который
+глушит `--tg-theme-*` (все 13 токенов) и `--tg-bg-color` через `initial !important`:
+
+```css
+html.theme-override {
+  --tg-theme-bg-color: initial !important;
+  /* … остальные --tg-theme-* … */
+  --tg-bg-color: initial !important;
+}
+```
+
+`initial` откатывает custom property к guaranteed-invalid значению — тогда `var(--tg-theme-X, …)`
+везде переключается на фоллбэк-литерал, который уже верно выбран классом `light`/`dark` на `AppRoot`
+(его ставит `appearance` из `useTheme()`). `!important` бьёт инлайн-стиль без `!important` (SDK его
+не ставит), независимо от порядка применения.
+
+**Почему это работает без дублирования палитры цветов** — только потому, что **весь** собственный CSS
+проекта читает цвета через `--tgui--*`, а не `--tg-theme-*` напрямую (правило раздела 1.4). Если бы
+свой CSS обращался к `--tg-theme-*` напрямую с ОДНИМ литералом-фоллбэком (не парным light/dark, как у
+самой tgui) — `initial`-глушение откатывало бы такие места всегда на один и тот же (светлый) цвет,
+независимо от выбранной темы, и получился бы вперемешку светлый/тёмный UI. Именно поэтому правило
+«свой CSS — только через `--tgui--*`» в разделе 1.4 не косметическое: нарушение его в новом файле
+незаметно сломает эту фичу. **При добавлении нового CSS с цветом Telegram-темы — только `--tgui--*`.**
+
+Единственное намеренное исключение — фон `body` (см. правило раздела 1.4 про `index.css`): он вне
+`<AppRoot>`, поэтому использует `--tg-bg-color`/`--tg-theme-bg-color` напрямую со своим фоллбэком
+(`TGUI_BG_LIGHT`/`TGUI_BG_DARK` в `webapp/src/shared/theme/constants.ts`) — учтено отдельной строкой
+в `manualTheme.css`.
 
 ### 1.5. Порталы выходят из-под `<AppRoot>` — гочта
 
@@ -474,7 +536,8 @@ padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 - **Каждый шаг SDK — под `isAvailable()`-гардом.** Вне Telegram (dev-браузер) часть компонентов
   недоступна; защита не даёт приложению упасть.
 - **Платформу читаем один раз** на уровне модуля (она не меняется), а не в `useEffect`.
-- **Тему берём из сигнала** `useSignal(miniApp.isDark)` — реагирует на смену темы Telegram без перезагрузки.
+- **Тему берём из `useTheme()`** (`shared/theme`) — дефолт из сигнала `miniApp.isDark` (реагирует на
+  смену темы Telegram без перезагрузки), с учётом ручного оверрайда пользователя (раздел 1.4.5).
 - **`100dvh`, не `100vh`** для полноэкранных раскладок (высота вьюпорта динамическая).
 - **`stableHeight` для нижних панелей**, `height` для скролла (раздел 3.3).
 - **Доступность (a11y)** tgui отдельно не документирует — интерактивные компоненты рендерятся семантичными

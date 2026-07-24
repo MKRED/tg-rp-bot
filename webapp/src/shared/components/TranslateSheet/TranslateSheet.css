@@ -22,7 +22,7 @@
   max-height: 75vh;
   padding: 16px;
   padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  background: var(--tg-theme-bg-color, #fff);
+  background: var(--tgui--bg_color, #fff);
   border-radius: 16px 16px 0 0;
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
 }
@@ -36,7 +36,7 @@
 .translate-sheet__title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--tg-theme-text-color, #000);
+  color: var(--tgui--text_color, #000);
 }
 
 .translate-sheet__close {
@@ -47,7 +47,7 @@
   background: none;
   padding: 4px;
   cursor: pointer;
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tgui--hint_color, #999);
 }
 
 .translate-sheet__controls {
@@ -66,7 +66,7 @@
   background: none;
   padding: 6px;
   cursor: pointer;
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tgui--hint_color, #999);
   transition: opacity 0.15s;
 }
 
@@ -87,8 +87,8 @@
   padding: 8px 14px;
   border: none;
   border-radius: 999px;
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
-  color: var(--tg-theme-text-color, #000);
+  background: var(--tgui--secondary_bg_color, #f4f4f5);
+  color: var(--tgui--text_color, #000);
   font-size: 14px;
   font-weight: 500;
   font-family: inherit;
@@ -108,7 +108,7 @@
   padding: 6px;
   list-style: none;
   border-radius: 14px;
-  background: var(--tg-theme-bg-color, #fff);
+  background: var(--tgui--bg_color, #fff);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
   animation: lang-picker-in 0.14s ease-out;
 }
@@ -144,7 +144,7 @@
   border: none;
   border-radius: 10px;
   background: none;
-  color: var(--tg-theme-text-color, #000);
+  color: var(--tgui--text_color, #000);
   font-size: 14px;
   font-family: inherit;
   text-align: left;
@@ -152,12 +152,12 @@
 }
 
 .lang-picker__option.is-active {
-  color: var(--tg-theme-link-color, #2481cc);
+  color: var(--tgui--link_color, #2481cc);
   font-weight: 600;
 }
 
 .lang-picker__option:active {
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  background: var(--tgui--secondary_bg_color, #f4f4f5);
 }
 
 .translate-sheet__result {
@@ -179,7 +179,7 @@
   padding: 20px;
   text-align: center;
   font-size: 14px;
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tgui--hint_color, #999);
 }
 
 .translate-sheet__placeholder svg {
@@ -187,7 +187,7 @@
 }
 
 .translate-sheet__placeholder--error {
-  color: var(--tg-theme-destructive-text-color, #e53935);
+  color: var(--tgui--destructive_text_color, #e53935);
 }
 
 /* Карточка результата: клик вставляет перевод в инпут чата */
@@ -197,7 +197,7 @@
   gap: 8px;
   padding: 14px;
   border-radius: 14px;
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  background: var(--tgui--secondary_bg_color, #f4f4f5);
   cursor: pointer;
   transition: opacity 0.15s;
 }
@@ -210,7 +210,7 @@
   margin: 0;
   font-size: 15px;
   line-height: 1.45;
-  color: var(--tg-theme-text-color, #000);
+  color: var(--tgui--text_color, #000);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -218,7 +218,7 @@
 .translate-sheet__card-hint {
   font-size: 12px;
   font-weight: 500;
-  color: var(--tg-theme-link-color, #2481cc);
+  color: var(--tgui--link_color, #2481cc);
 }
 
 .translate-sheet__input {
@@ -232,15 +232,15 @@
    namespace, чтобы штора не зависела от rp-chat.css (см. шапку файла). */
 .translate-sheet__textarea {
   flex: 1;
-  border: 1.5px solid var(--tg-theme-secondary-bg-color, #e5e5e5);
+  border: 1.5px solid var(--tgui--secondary_bg_color, #e5e5e5);
   border-radius: 20px;
   padding: 10px 14px;
   font-size: 15px;
   line-height: 1.4;
   resize: none;
   outline: none;
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
-  color: var(--tg-theme-text-color, #000);
+  background: var(--tgui--secondary_bg_color, #f4f4f5);
+  color: var(--tgui--text_color, #000);
   min-height: 40px;
   max-height: 160px;
   font-family: inherit;
@@ -248,7 +248,7 @@
 }
 
 .translate-sheet__textarea:focus {
-  border-color: var(--tg-theme-link-color, #2481cc);
+  border-color: var(--tgui--link_color, #2481cc);
 }
 
 .translate-sheet__send {
@@ -258,8 +258,8 @@
   width: 40px;
   height: 40px;
   border: none;
-  background: var(--tg-theme-button-color, #2481cc);
-  color: var(--tg-theme-button-text-color, #fff);
+  background: var(--tgui--button_color, #2481cc);
+  color: var(--tgui--button_text_color, #fff);
   border-radius: 50%;
   cursor: pointer;
   flex-shrink: 0;

@@ -168,7 +168,7 @@ export function StorySettingsPage() {
             >
               <Cell
                 before={<BookOpen size={24} className="story-settings-page__icon" />}
-                after={<ChevronRight size={16} style={{ color: "var(--tg-theme-hint-color)" }} />}
+                after={<ChevronRight size={16} style={{ color: "var(--tgui--hint_color)" }} />}
                 subtitle="Книга знаний"
                 onClick={() => navigate(bookEditPath(story.book.id), { state: { returnTo } })}
               >
@@ -184,7 +184,7 @@ export function StorySettingsPage() {
               >
                 <Cell
                   before={<Clapperboard size={24} className="story-settings-page__icon" />}
-                  after={<ChevronRight size={16} style={{ color: "var(--tg-theme-hint-color)" }} />}
+                  after={<ChevronRight size={16} style={{ color: "var(--tgui--hint_color)" }} />}
                   subtitle="Narrator-шаблон"
                   onClick={() =>
                     navigate(narratorTemplateEditPath(story.template!.id), { state: { returnTo } })
@@ -203,7 +203,7 @@ export function StorySettingsPage() {
               >
                 <Cell
                   before={<SlidersHorizontal size={24} className="story-settings-page__icon" />}
-                  after={<ChevronRight size={16} style={{ color: "var(--tg-theme-hint-color)" }} />}
+                  after={<ChevronRight size={16} style={{ color: "var(--tgui--hint_color)" }} />}
                   subtitle="Пресет генерации"
                   onClick={() =>
                     navigate(presetEditPath(story.preset!.id), { state: { returnTo } })
@@ -333,7 +333,7 @@ export function StorySettingsPage() {
                   transition={{ ...ITEM_T, delay: 0 }}
                 >
                   <Cell
-                    after={<span style={{ color: "var(--tg-theme-hint-color)" }}>{fmtTokens(stats.tokensTotal)}</span>}
+                    after={<span style={{ color: "var(--tgui--hint_color)" }}>{fmtTokens(stats.tokensTotal)}</span>}
                     subtitle="Токенов в сообщениях всех веток"
                   >
                     Вся история
@@ -346,7 +346,7 @@ export function StorySettingsPage() {
                   transition={{ ...ITEM_T, delay: 0.07 }}
                 >
                   <Cell
-                    after={<span style={{ color: "var(--tg-theme-hint-color)" }}>{fmtTokens(stats.tokensActiveBranch)}</span>}
+                    after={<span style={{ color: "var(--tgui--hint_color)" }}>{fmtTokens(stats.tokensActiveBranch)}</span>}
                     subtitle="Токенов в сообщениях текущей ветки"
                   >
                     Активная ветка

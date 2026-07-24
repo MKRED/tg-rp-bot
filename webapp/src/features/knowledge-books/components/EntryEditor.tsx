@@ -286,7 +286,7 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
             <div style={{ padding: "8px 22px 0" }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 500 }}>
                 <span>Искать в последних сообщениях</span>
-                <span style={{ color: "var(--tg-theme-hint-color)" }}>{keywordDepth}</span>
+                <span style={{ color: "var(--tgui--hint_color)" }}>{keywordDepth}</span>
               </div>
               <Slider
                 min={MIN_KEYWORD_DEPTH}

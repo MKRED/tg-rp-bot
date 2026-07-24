@@ -38,7 +38,7 @@
 
 /* Иконка в Banner-шапке. */
 .rpt-hub__banner-icon {
-  color: var(--tg-theme-link-color, #2481cc);
+  color: var(--tgui--link_color, #2481cc);
 }
 
 /* List с обеими секциями занимает всё место под Banner; сам — flex-колонка, чтобы секция списка

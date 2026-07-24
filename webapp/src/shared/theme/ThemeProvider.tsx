@@ -1,6 +1,7 @@
 import { miniApp, useSignal } from "@telegram-apps/sdk-react";
 import { createContext, useContext, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 import { THEME_MODE_KEY, TGUI_BG_DARK, TGUI_BG_LIGHT } from "./constants";
+import "./manualTheme.css";
 
 /** "system" — брать тему из Telegram (дефолт); "light"/"dark" — ручной оверрайд пользователя. */
 export type ThemeMode = "system" | "light" | "dark";
@@ -50,6 +51,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const appearance: Appearance = mode === "system" ? (isDarkFromTelegram ? "dark" : "light") : mode;
 
+  // Ручной оверрайд (mode !== "system") глушит --tg-theme-*/--tg-bg-color на <html> через
+  // initial !important (manualTheme.css) — иначе внутри настоящего Telegram эти переменные
+  // всегда забинжены на реальную тему клиента и appearance ниже красит только фоллбэк, который
+  // никогда не используется. См. подробное обоснование в manualTheme.css.
+  //
   // Красим body синхронно из appearance (не читаем DOM/computed style AppRoot): чтение
   // --tgui--bg_color с реального DOM-узла AppRoot через getComputedStyle давало гонку —
   // значение отставало от appearance на один рендер (переключение темы туда-сюда быстро
@@ -58,9 +64,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // догадка. --tg-bg-color (miniApp, отдельно от themeParams) — первым приоритетом, он точнее
   // в Full Screen после сворачивания/разворачивания (см. комментарий в index.css).
   useLayoutEffect(() => {
+    document.documentElement.classList.toggle("theme-override", mode !== "system");
     const fallback = appearance === "dark" ? TGUI_BG_DARK : TGUI_BG_LIGHT;
     document.body.style.setProperty("background", `var(--tg-bg-color, var(--tg-theme-bg-color, ${fallback}))`);
-  }, [appearance]);
+  }, [appearance, mode]);
 
   const value = useMemo(() => ({ mode, setMode, appearance }), [mode, appearance]);
 

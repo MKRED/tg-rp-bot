@@ -28,7 +28,7 @@
 }
 
 .stories-hub__banner-icon {
-  color: var(--tg-theme-link-color, #2481cc);
+  color: var(--tgui--link_color, #2481cc);
 }
 
 .stories-hub__list {
@@ -147,7 +147,7 @@
 
 /* Иконка привязанной сущности (книга/шаблон/пресет) в ячейках раздела «История». */
 .story-settings-page__icon {
-  color: var(--tg-theme-link-color, #2481cc);
+  color: var(--tgui--link_color, #2481cc);
   flex-shrink: 0;
 }
 
@@ -173,16 +173,16 @@
 }
 
 .story-new-page__icon {
-  color: var(--tg-theme-link-color, #2481cc);
+  color: var(--tgui--link_color, #2481cc);
 }
 
 /* Приглушённая иконка-подсказка для незаполненных/дефолтных полей */
 .story-new-page__icon--hint {
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tgui--hint_color, #999);
 }
 
 .story-new-page__chevron {
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tgui--hint_color, #999);
 }
 
 /* Поле режиссёра — повторяет инпут RP-чата (.chat-input).
@@ -278,7 +278,7 @@
 
 /* Ширина узла фиксируется общим правилом в shared/graph/graph.css (инвариант раскладки). */
 .story-graph-node {
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  background: var(--tgui--secondary_bg_color, #f4f4f5);
   border: 1.5px solid transparent;
   border-radius: 12px;
   padding: 8px 12px;
@@ -286,7 +286,7 @@
 }
 
 .story-graph-node--active {
-  border-color: var(--tg-theme-link-color, #2481cc);
+  border-color: var(--tgui--link_color, #2481cc);
 }
 
 /* Сообщение свёрнуто в пересказ (compact) — приглушённый жёлто-оранжевый, чтобы не путать
@@ -301,7 +301,7 @@
 
 .story-graph-node__role {
   font-size: 10px;
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tgui--hint_color, #999);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
@@ -309,7 +309,7 @@
 
 .story-graph-node__text {
   font-size: 13px;
-  color: var(--tg-theme-text-color, #000);
+  color: var(--tgui--text_color, #000);
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;

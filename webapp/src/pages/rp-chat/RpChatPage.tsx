@@ -265,12 +265,12 @@ export function RpChatPage() {
             </div>
           )}
           {!loading && error && (
-            <div style={{ textAlign: "center", padding: "40px 24px", color: "var(--tg-theme-hint-color)" }}>
+            <div style={{ textAlign: "center", padding: "40px 24px", color: "var(--tgui--hint_color)" }}>
               Не удалось загрузить чат
             </div>
           )}
           {!loading && !error && chat?.messages.length === 0 && !streamingText && (
-            <div style={{ textAlign: "center", padding: "40px 24px", color: "var(--tg-theme-hint-color)" }}>
+            <div style={{ textAlign: "center", padding: "40px 24px", color: "var(--tgui--hint_color)" }}>
               Напишите первое сообщение
             </div>
           )}
@@ -332,12 +332,12 @@ export function RpChatPage() {
         <div className="rp-chat-page__input">
           {editingMsg && (
             <div style={{
-              fontSize: 12, color: "var(--tg-theme-hint-color)", padding: "0 4px 6px",
+              fontSize: 12, color: "var(--tgui--hint_color)", padding: "0 4px 6px",
               display: "flex", gap: 8,
             }}>
               <span>Редактирование</span>
               <button
-                style={{ border: "none", background: "none", cursor: "pointer", color: "var(--tg-theme-link-color)", fontSize: 12, padding: 0 }}
+                style={{ border: "none", background: "none", cursor: "pointer", color: "var(--tgui--link_color)", fontSize: 12, padding: 0 }}
                 onClick={() => setEditingId(null)}
                 type="button"
               >

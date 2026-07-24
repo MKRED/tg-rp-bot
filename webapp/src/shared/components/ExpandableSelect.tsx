@@ -50,7 +50,7 @@ export function ExpandableSelect<T extends string>({
         <Cell
           onClick={onToggle}
           after={
-            <div style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--tg-theme-hint-color)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--tgui--hint_color)" }}>
               <span style={{ fontSize: 14 }}>{currentLabel}</span>
               <ChevronDown
                 size={16}

@@ -5,12 +5,12 @@
 
 .rp-token--action {
   font-style: italic;
-  color: var(--rp-action-color, var(--tg-theme-hint-color, #999));
+  color: var(--rp-action-color, var(--tgui--hint_color, #999));
 }
 
 /* speech: явно не задаём — наследует всё от родителя */
 
 .rp-token--thought {
   font-style: italic;
-  color: var(--rp-thought-color, var(--tg-theme-link-color, #2481cc));
+  color: var(--rp-thought-color, var(--tgui--link_color, #2481cc));
 }

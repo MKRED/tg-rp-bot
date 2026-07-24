@@ -1,0 +1,36 @@
+/*
+  Ручной оверрайд темы (mode !== "system"). Внутри настоящего Telegram themeParams.bindCssVars() и
+  miniApp.bindCssVars() (webapp/src/init.ts) держат --tg-theme-* и --tg-bg-color забинженными на
+  РЕАЛЬНУЮ тему клиента (инлайн-стилем на document.documentElement) — appearance, который
+  ThemeProvider прокидывает в <AppRoot>, тогда управляет только фоллбэком внутри
+  var(--tg-theme-X, <фоллбэк>) библиотеки telegram-ui, а фоллбэк не используется, пока переменная
+  определена. `initial` откатывает custom property к guaranteed-invalid значению — тогда var()
+  везде переключается на фоллбэк, который уже верно выбран классом light/dark, навешенным AppRoot
+  по нашему appearance (App.tsx).
+
+  Работает и для --tgui--* (внутренние токены telegram-ui — сами обёрнуты в var(--tg-theme-X,...)),
+  и для собственного CSS проекта: весь код в webapp/src переведён на --tgui--* (см.
+  docs/telegram-ui.md) именно чтобы этот приём чинил тему одним слоем, без дублирования палитры.
+  Осознанное исключение — фон body (index.css, ThemeProvider.tsx): он вне <AppRoot>, --tgui--*
+  там не существует, поэтому используется --tg-bg-color/--tg-theme-bg-color напрямую со своим
+  фоллбэком (TGUI_BG_LIGHT/DARK в constants.ts) — отсюда --tg-bg-color тоже в списке ниже.
+
+  !important бьёт инлайн-стиль без !important (SDK его не ставит) — независимо от того, кто
+  применился раньше/позже.
+*/
+html.theme-override {
+  --tg-theme-bg-color: initial !important;
+  --tg-theme-text-color: initial !important;
+  --tg-theme-hint-color: initial !important;
+  --tg-theme-link-color: initial !important;
+  --tg-theme-button-color: initial !important;
+  --tg-theme-button-text-color: initial !important;
+  --tg-theme-secondary-bg-color: initial !important;
+  --tg-theme-header-bg-color: initial !important;
+  --tg-theme-accent-text-color: initial !important;
+  --tg-theme-section-bg-color: initial !important;
+  --tg-theme-section-header-text-color: initial !important;
+  --tg-theme-subtitle-text-color: initial !important;
+  --tg-theme-destructive-text-color: initial !important;
+  --tg-bg-color: initial !important;
+}

@@ -262,7 +262,7 @@ export function StoryPage() {
                 {streamingText ? (
                   <RpText text={streamingText} />
                 ) : (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--tg-theme-hint-color)" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--tgui--hint_color)" }}>
                     <Spinner size="s" />
                     {statusPhase === "compacting" && "Сжимаю историю…"}
                   </span>
