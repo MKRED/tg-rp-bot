@@ -457,6 +457,9 @@ export const narratorTemplates = pgTable("narrator_templates", {
   // Схлопнуть все non-history компоненты (всё, что стоит ДО history в promptOrder) в одно
   // system-сообщение, обернув каждый блок в <componentId>…</componentId> — см. storyPromptBuilder.
   mergeSystemPrompts: boolean("merge_system_prompts").notNull().default(false),
+  // Рассуждение для ИИ-перевода, независимо от пресета: "off" = отключено; иначе — уровень effort
+  // (minimal|low|medium|high|xhigh). Обязательное поле, дефолт "medium" — см. resolveTranslationReasoning.
+  translationReasoningEffort: text("translation_reasoning_effort").notNull().default("medium"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()

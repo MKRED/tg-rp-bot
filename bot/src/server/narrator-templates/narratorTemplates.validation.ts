@@ -1,6 +1,8 @@
 import type { NarratorTemplateInput } from "../../db/narratorTemplates/index.js";
 import { DEFAULT_NARRATOR_PROMPT_ORDER } from "../prompt/storyPromptBuilder/index.js";
 import { normalizeStoryPromptOrder } from "../prompt/storyPromptOrder.js";
+import { DEFAULT_TRANSLATION_REASONING_EFFORT } from "../shared/translate.constants.js";
+import { TRANSLATION_REASONING_LEVELS } from "./narratorTemplates.constants.js";
 
 export function parseNarratorTemplateInput(
   body: unknown,
@@ -22,6 +24,22 @@ export function parseNarratorTemplateInput(
     b.promptOrder === undefined
       ? DEFAULT_NARRATOR_PROMPT_ORDER
       : normalizeStoryPromptOrder(b.promptOrder);
+
+  // translationReasoningEffort — обязательное поле: если не пришло в запросе, берём дефолт;
+  // иначе должно быть одним из допустимых уровней/"off".
+  let translationReasoningEffort: string = DEFAULT_TRANSLATION_REASONING_EFFORT;
+  if (b.translationReasoningEffort !== undefined) {
+    if (
+      typeof b.translationReasoningEffort !== "string" ||
+      !TRANSLATION_REASONING_LEVELS.includes(
+        b.translationReasoningEffort as (typeof TRANSLATION_REASONING_LEVELS)[number],
+      )
+    ) {
+      return { error: "Invalid translationReasoningEffort" };
+    }
+    translationReasoningEffort = b.translationReasoningEffort;
+  }
+
   return {
     input: {
       name: name.slice(0, 100),
@@ -34,6 +52,7 @@ export function parseNarratorTemplateInput(
       leadingUserMarker,
       promptOrder,
       mergeSystemPrompts: b.mergeSystemPrompts === true,
+      translationReasoningEffort,
     },
   };
 }

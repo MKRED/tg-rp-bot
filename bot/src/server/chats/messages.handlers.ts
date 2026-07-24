@@ -307,6 +307,7 @@ export async function handleTranslateMessage(c: Ctx) {
         msg.content,
         englishLangName(targetLang),
         userId,
+        true,
         preset?.reasoningEffort,
       );
     } else {

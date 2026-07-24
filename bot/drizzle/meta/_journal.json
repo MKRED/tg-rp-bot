@@ -211,6 +211,13 @@
       "when": 1784851656537,
       "tag": "0029_chunky_roland_deschain",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1784856798738,
+      "tag": "0030_slim_grey_gargoyle",
+      "breakpoints": true
     }
   ]
 }

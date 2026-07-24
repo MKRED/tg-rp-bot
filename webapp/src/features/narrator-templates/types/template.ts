@@ -59,6 +59,36 @@ export const DEFAULT_NARRATOR_PROMPT_ORDER: StoryPromptOrderItem[] = [
   { id: "postHistory", enabled: false },
 ];
 
+/**
+ * Уровень рассуждения ИИ-перевода, независимо от пресета. `"off"` — рассуждение для перевода
+ * отключено; иначе — конкретный уровень, форсированный вне зависимости от настроек ответа ИИ.
+ * Обязательное поле шаблона, дефолт `"medium"`. Дублирует серверный `TRANSLATION_REASONING_LEVELS`
+ * (narratorTemplates.constants.ts) — держать в синхроне.
+ */
+export type TranslationReasoningLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
+
+export const TRANSLATION_REASONING_LEVELS: TranslationReasoningLevel[] = [
+  "off",
+  "minimal",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+];
+
+/** Подписи уровней рассуждения перевода. */
+export const TRANSLATION_REASONING_LABELS: Record<TranslationReasoningLevel, string> = {
+  off: "Отключено",
+  minimal: "Минимальное",
+  low: "Низкое",
+  medium: "Среднее",
+  high: "Высокое",
+  xhigh: "Максимальное",
+};
+
+/** Дефолт для новых шаблонов — зеркало bot/src/server/shared/translate.constants.ts. */
+export const DEFAULT_TRANSLATION_REASONING_EFFORT: TranslationReasoningLevel = "medium";
+
 export type NarratorTemplate = {
   id: number;
   name: string;
@@ -71,6 +101,7 @@ export type NarratorTemplate = {
   leadingUserMarker: string;
   promptOrder: StoryPromptOrderItem[];
   mergeSystemPrompts: boolean;
+  translationReasoningEffort: TranslationReasoningLevel;
 };
 
 export type NarratorTemplateInput = {
@@ -84,6 +115,7 @@ export type NarratorTemplateInput = {
   leadingUserMarker: string;
   promptOrder: StoryPromptOrderItem[];
   mergeSystemPrompts: boolean;
+  translationReasoningEffort: TranslationReasoningLevel;
 };
 
 /** Дефолты маркеров — зеркало bot/src/server/prompt/storyPromptBuilder.constants.ts, для новой формы. */

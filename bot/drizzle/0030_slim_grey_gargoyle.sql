@@ -1,0 +1,1 @@
+ALTER TABLE "narrator_templates" ADD COLUMN "translation_reasoning_effort" text DEFAULT 'medium' NOT NULL;

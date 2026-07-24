@@ -17,3 +17,6 @@ export const LANG_ENGLISH_NAMES: Record<string, string> = {
 export const DEFAULT_TRANSLATION_TEMPLATE =
   "You are a translation engine. Translate the user's message into {{target_lang}}. " +
   "Output only the translation, preserving formatting and meaning; no notes or explanations.";
+
+/** Дефолт narrator_templates.translation_reasoning_effort (колонка обязательна) — зеркало schema.ts. */
+export const DEFAULT_TRANSLATION_REASONING_EFFORT = "medium";

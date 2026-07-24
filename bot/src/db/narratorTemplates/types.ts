@@ -15,6 +15,8 @@ export type NarratorTemplateInput = {
   leadingUserMarker: string;
   promptOrder: StoryPromptOrderItem[];
   mergeSystemPrompts: boolean;
+  /** "off" = рассуждение для перевода выключено; иначе — уровень effort. Обязательное поле. */
+  translationReasoningEffort: string;
 };
 
 /** Лёгкая строка списка шаблонов, как отдаётся клиенту (без текста промптов). */

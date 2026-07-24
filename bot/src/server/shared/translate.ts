@@ -1,7 +1,11 @@
 import { chatCompletion } from "../../llm/client.js";
 import logger from "../../logger.js";
 import { retry } from "../../utils/index.js";
-import { DEFAULT_TRANSLATION_TEMPLATE, LANG_ENGLISH_NAMES } from "./translate.constants.js";
+import {
+  DEFAULT_TRANSLATION_REASONING_EFFORT,
+  DEFAULT_TRANSLATION_TEMPLATE,
+  LANG_ENGLISH_NAMES,
+} from "./translate.constants.js";
 
 /**
  * Переводит текст через неофициальный Google Translate endpoint (без API-ключа).
@@ -46,19 +50,34 @@ export function englishLangName(code: string): string {
 }
 
 /**
+ * Резолвит рассуждение для ИИ-перевода из обязательного поля narrator-шаблона
+ * (translationReasoningEffort): "off" — рассуждение отключено; иначе — конкретный уровень effort,
+ * форсированный вне зависимости от пресета. Фолбэк на дефолт — защитный кейс (шаблон истории не
+ * резолвился, см. resolveNarratorMarkers — тот же паттерн).
+ */
+export function resolveTranslationReasoning(
+  effort: string | null | undefined,
+): { requestReasoning: boolean; reasoningEffort?: string } {
+  const level = effort || DEFAULT_TRANSLATION_REASONING_EFFORT;
+  if (level === "off") return { requestReasoning: false };
+  return { requestReasoning: true, reasoningEffort: level };
+}
+
+/**
  * Переводит текст запросом к LLM (режим «ИИ» в шторе перевода). Системный промпт берётся из
  * пресета (плейсхолдер {{target_lang}} → полное англ. название языка), исходный текст уходит
  * ролью user, ответ ждём от assistant. Нестриминговый вызов chatCompletion (без onChunk).
  * Сэмплинг не передаём — параметры пресета настроены под RP и навредили бы переводу (см. вызов).
- * Рассуждение («мышление») запрашиваем всегда, вне зависимости от тумблера пресета — перевод
- * выигрывает от разбора смысла/идиом (для DeepSeek — thinking-режим, на OpenRouter reasoningBody
- * пустой, тело не меняется), эффорт берём из пресета (см. compactStory — тот же паттерн).
+ * requestReasoning/reasoningEffort — резолвятся вызывающим кодом (см. resolveTranslationReasoning
+ * для narrator, где шаблон форсирует уровень или отключает рассуждение; RP шлёт requestReasoning:true
+ * всегда, эффорт — из пресета, там своего поля перевода для рассуждения нет).
  */
 export async function aiTranslate(
   systemPromptTemplate: string,
   text: string,
   targetLangName: string,
   userId: number,
+  requestReasoning: boolean,
   reasoningEffort?: string | null,
 ): Promise<string> {
   const t0 = Date.now();
@@ -73,7 +92,7 @@ export async function aiTranslate(
     // Тегируем для отладочного перехвата (фильтр «только мои запросы» + ярлык типа вызова).
     userId,
     debugLabel: "translate",
-    requestReasoning: true,
+    requestReasoning,
     reasoningEffort: reasoningEffort ?? undefined,
   });
 

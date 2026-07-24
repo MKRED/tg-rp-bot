@@ -1,6 +1,7 @@
 import { Button, Cell, Input, Section, Switch } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
+import { ExpandableSelect } from "../../../shared/components/ExpandableSelect";
 import { HintedInput } from "../../../shared/components/HintedInput";
 import { PromptEditorField } from "../../../shared/components/PromptEditorField";
 import { PromptOrderEditor } from "../../../shared/components/PromptOrderEditor";
@@ -9,12 +10,19 @@ import {
   DEFAULT_CONTINUE_MARKER,
   DEFAULT_LEADING_USER_MARKER,
   DEFAULT_NARRATOR_PROMPT_ORDER,
+  DEFAULT_TRANSLATION_REASONING_EFFORT,
   NARRATOR_PROMPT_COMPONENT_LABELS,
   NARRATOR_PROMPT_COMPONENT_SOURCES,
+  TRANSLATION_REASONING_LABELS,
+  TRANSLATION_REASONING_LEVELS,
   type NarratorTemplate,
   type NarratorTemplateInput,
   type StoryPromptOrderItem,
+  type TranslationReasoningLevel,
 } from "../types/template";
+
+const REASONING_SELECT_OPTIONS: { value: TranslationReasoningLevel; label: string }[] =
+  TRANSLATION_REASONING_LEVELS.map((level) => ({ value: level, label: TRANSLATION_REASONING_LABELS[level] }));
 
 /** Подсказка-плейсхолдер: что писать в нарратор-инструкции (дефолт применяется, если оставить пусто). */
 const SYSTEM_PLACEHOLDER =
@@ -49,6 +57,10 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
     initial?.promptOrder ?? DEFAULT_NARRATOR_PROMPT_ORDER,
   );
   const [mergeSystemPrompts, setMergeSystemPrompts] = useState(initial?.mergeSystemPrompts ?? false);
+  const [translationReasoningEffort, setTranslationReasoningEffort] = useState<TranslationReasoningLevel>(
+    initial?.translationReasoningEffort ?? DEFAULT_TRANSLATION_REASONING_EFFORT,
+  );
+  const [reasoningSelectOpen, setReasoningSelectOpen] = useState(false);
 
   const valid =
     name.trim().length > 0 && continueMarker.trim().length > 0 && leadingUserMarker.trim().length > 0;
@@ -88,6 +100,18 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
         placeholder="Напр.: Переводи бережно, сохраняя стиль и формат; не добавляй пояснений."
         value={translationSystemPrompt}
         onChange={setTranslationSystemPrompt}
+      />
+      <ExpandableSelect<TranslationReasoningLevel>
+        title="Рассуждение для перевода"
+        subtitle="Уровень «мышления» модели при ИИ-переводе (директивы/биты), не зависит от настроек ответа ИИ."
+        options={REASONING_SELECT_OPTIONS}
+        value={translationReasoningEffort}
+        onChange={(value) => {
+          setTranslationReasoningEffort(value);
+          setReasoningSelectOpen(false);
+        }}
+        open={reasoningSelectOpen}
+        onToggle={() => setReasoningSelectOpen((v) => !v)}
       />
       <PromptEditorField
         header="Промпт сжатия истории"
@@ -144,6 +168,7 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
               leadingUserMarker: leadingUserMarker.trim(),
               promptOrder: promptOrder,
               mergeSystemPrompts: mergeSystemPrompts,
+              translationReasoningEffort: translationReasoningEffort,
             })
           }
         >

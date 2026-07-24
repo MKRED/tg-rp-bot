@@ -12,11 +12,15 @@ import {
   updateActiveStoryMessage,
 } from "../../db/stories/index.js";
 import { getNarratorTemplate } from "../../db/narratorTemplates/index.js";
-import { getPreset } from "../../db/presets/index.js";
 import logger from "../../logger.js";
 import { resolveNarratorMarkers } from "../prompt/storyPromptBuilder/index.js";
 import { streamCompletion } from "../shared/streamGeneration.js";
-import { aiTranslate, englishLangName, googleTranslate } from "../shared/translate.js";
+import {
+  aiTranslate,
+  englishLangName,
+  googleTranslate,
+  resolveTranslationReasoning,
+} from "../shared/translate.js";
 import { compactStory, shouldAutoCompact } from "./compact.handler.js";
 import { buildStoryCompletionInput } from "./storyContext.js";
 import type { Ctx } from "./stories.types.js";
@@ -219,16 +223,18 @@ export async function handleStoryTranslateMessage(c: Ctx) {
     const { translateMethod } = await getStorySettings(storyId);
     let translation: string;
     if (translateMethod === "ai") {
-      // Промпт перевода — из narrator-шаблона истории (как в handleStoryTranslateText), эффорт
-      // рассуждения — из пресета истории (шаблон промптов не хранит сэмплинг).
+      // Промпт перевода и рассуждение (включённость+эффорт) — из narrator-шаблона истории
+      // (translationReasoningEffort — обязательное поле шаблона, не из пресета), см.
+      // resolveTranslationReasoning.
       const template = story.template ? await getNarratorTemplate(userId, story.template.id) : null;
-      const preset = story.preset ? await getPreset(userId, story.preset.id) : null;
+      const reasoning = resolveTranslationReasoning(template?.translationReasoningEffort);
       translation = await aiTranslate(
         template?.translationSystemPrompt ?? "",
         msg.content,
         englishLangName(targetLang),
         userId,
-        preset?.reasoningEffort,
+        reasoning.requestReasoning,
+        reasoning.reasoningEffort,
       );
     } else {
       translation = await googleTranslate(msg.content, targetLang);
@@ -302,15 +308,17 @@ export async function handleStoryTranslateText(c: Ctx) {
     if (mode === "ai") {
       // ИИ-режиму нужен промпт перевода из narrator-шаблона истории. Сэмплинг пресета НЕ
       // переиспользуем (как в RP): высокие temperature/penalties портят верность перевода.
-      // Эффорт рассуждения — исключение, его берём из пресета истории (см. aiTranslate).
+      // Рассуждение (включённость+эффорт) — из обязательного поля шаблона translationReasoningEffort,
+      // не из пресета, см. resolveTranslationReasoning.
       const template = story.template ? await getNarratorTemplate(userId, story.template.id) : null;
-      const preset = story.preset ? await getPreset(userId, story.preset.id) : null;
+      const reasoning = resolveTranslationReasoning(template?.translationReasoningEffort);
       translation = await aiTranslate(
         template?.translationSystemPrompt ?? "",
         text,
         englishLangName(targetLang),
         userId,
-        preset?.reasoningEffort,
+        reasoning.requestReasoning,
+        reasoning.reasoningEffort,
       );
     } else {
       translation = await googleTranslate(text, targetLang);
