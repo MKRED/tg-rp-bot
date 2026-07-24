@@ -33,6 +33,7 @@ export function parseNarratorTemplateInput(
       continueMarker,
       leadingUserMarker,
       promptOrder,
+      mergeSystemPrompts: b.mergeSystemPrompts === true,
     },
   };
 }

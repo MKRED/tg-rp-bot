@@ -454,6 +454,9 @@ export const narratorTemplates = pgTable("narrator_templates", {
     .default(
       sql`'[{"id":"system","enabled":true},{"id":"lorebook","enabled":true},{"id":"auxiliary","enabled":true},{"id":"premise","enabled":true},{"id":"compact","enabled":true},{"id":"history","enabled":true},{"id":"postHistory","enabled":false}]'::jsonb`,
     ),
+  // Схлопнуть все non-history компоненты (всё, что стоит ДО history в promptOrder) в одно
+  // system-сообщение, обернув каждый блок в <componentId>…</componentId> — см. storyPromptBuilder.
+  mergeSystemPrompts: boolean("merge_system_prompts").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()

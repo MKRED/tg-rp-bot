@@ -19,6 +19,12 @@ export type StoryPromptOptions = {
   history: StoryMessageInPath[];
   /** Порядок и включённость компонентов запроса (из шаблона или DEFAULT_NARRATOR_PROMPT_ORDER). */
   promptOrder: StoryPromptOrderItem[];
+  /**
+   * Схлопнуть все non-history компоненты ДО history в promptOrder в одно system-сообщение (каждый
+   * блок обёрнут в <componentId>…</componentId>). Компоненты после history (напр. postHistory)
+   * не трогает — они по смыслу идут уже после начала ленты. Дефолт false.
+   */
+  mergeSystemPrompts?: boolean;
   /** Текст нейтрализации отыгранных user-ходов (см. CONTINUE_MARKER). Резолвится вызывающим кодом. */
   continueMarker: string;
   /** Текст синтетического leading-user перед корнем (см. LEADING_USER_MARKER). */

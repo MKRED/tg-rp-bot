@@ -1,4 +1,4 @@
-import { Button, Input, Section } from "@telegram-apps/telegram-ui";
+import { Button, Cell, Input, Section, Switch } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
 import { HintedInput } from "../../../shared/components/HintedInput";
@@ -48,6 +48,7 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
   const [promptOrder, setPromptOrder] = useState<StoryPromptOrderItem[]>(
     initial?.promptOrder ?? DEFAULT_NARRATOR_PROMPT_ORDER,
   );
+  const [mergeSystemPrompts, setMergeSystemPrompts] = useState(initial?.mergeSystemPrompts ?? false);
 
   const valid =
     name.trim().length > 0 && continueMarker.trim().length > 0 && leadingUserMarker.trim().length > 0;
@@ -115,6 +116,17 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
         labels={NARRATOR_PROMPT_COMPONENT_LABELS}
         sources={NARRATOR_PROMPT_COMPONENT_SOURCES}
       />
+      <Cell
+        after={
+          <Switch
+            checked={mergeSystemPrompts}
+            onChange={(e) => setMergeSystemPrompts(e.target.checked)}
+          />
+        }
+        subtitle="Все компоненты, стоящие в порядке выше «Ленты истории», уйдут одним system-сообщением — каждый блок обёрнут в тег со своим названием (<system>, <lorebook>, …)"
+      >
+        Объединять в один системный промпт
+      </Cell>
       <SectionActions>
         <Button
           size="l"
@@ -131,6 +143,7 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
               continueMarker: continueMarker.trim(),
               leadingUserMarker: leadingUserMarker.trim(),
               promptOrder: promptOrder,
+              mergeSystemPrompts: mergeSystemPrompts,
             })
           }
         >

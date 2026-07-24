@@ -70,6 +70,7 @@ export type NarratorTemplate = {
   continueMarker: string;
   leadingUserMarker: string;
   promptOrder: StoryPromptOrderItem[];
+  mergeSystemPrompts: boolean;
 };
 
 export type NarratorTemplateInput = {
@@ -82,6 +83,7 @@ export type NarratorTemplateInput = {
   continueMarker: string;
   leadingUserMarker: string;
   promptOrder: StoryPromptOrderItem[];
+  mergeSystemPrompts: boolean;
 };
 
 /** Дефолты маркеров — зеркало bot/src/server/prompt/storyPromptBuilder.constants.ts, для новой формы. */

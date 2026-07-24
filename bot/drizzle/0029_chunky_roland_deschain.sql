@@ -1,0 +1,1 @@
+ALTER TABLE "narrator_templates" ADD COLUMN "merge_system_prompts" boolean DEFAULT false NOT NULL;

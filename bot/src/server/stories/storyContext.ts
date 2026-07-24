@@ -85,6 +85,7 @@ export async function buildStoryCompletionInput(
     lorebook,
     compactSummaries,
     promptOrder,
+    mergeSystemPrompts: template?.mergeSystemPrompts ?? false,
     history,
     continueMarker,
     leadingUserMarker,

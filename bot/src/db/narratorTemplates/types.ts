@@ -14,6 +14,7 @@ export type NarratorTemplateInput = {
   continueMarker: string;
   leadingUserMarker: string;
   promptOrder: StoryPromptOrderItem[];
+  mergeSystemPrompts: boolean;
 };
 
 /** Лёгкая строка списка шаблонов, как отдаётся клиенту (без текста промптов). */

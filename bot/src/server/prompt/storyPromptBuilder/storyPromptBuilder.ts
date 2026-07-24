@@ -1,4 +1,4 @@
-import type { StoryPromptComponentId } from "../../../db/schema.js";
+import type { StoryPromptComponentId, StoryPromptOrderItem } from "../../../db/schema.js";
 import type { StoryMessageInPath } from "../../../db/stories/index.js";
 import type { ChatMessage } from "../../../llm/types.js";
 import { countTokens } from "../../../utils/index.js";
@@ -87,20 +87,42 @@ export function resolveNarratorMarkers(
  *   - history → синтетический leading-user (массив не должен начинаться с assistant) + активный путь:
  *     assistant-биты как есть; user-ходы (continue/directive) НЕЙТРАЛИЗУЮТСЯ в CONTINUE_MARKER, КРОМЕ
  *     последнего (живого триггера) — он сохраняет свой текст.
+ *   - opts.mergeSystemPrompts=true → все non-history компоненты, стоящие в promptOrder ДО history,
+ *     схлопываются в одно system-сообщение; каждый блок обёрнут в `<componentId>…</componentId>`.
+ *     Компоненты ПОСЛЕ history (напр. postHistory) не трогает — уходят как обычно, отдельным сообщением.
  * Чистая функция (только countTokens) — тестируется юнит-тестом.
  */
 export function buildStoryMessages(opts: StoryPromptOptions): ChatMessage[] {
-  // Стоимость фиксированных (non-history) частей — их урезать нельзя, вычитаем из бюджета истории.
-  let fixedSystemTokens = 0;
-  for (const item of opts.promptOrder) {
-    if (!item.enabled || item.id === "history") continue;
-    const text = componentText(opts, item.id);
-    if (text) fixedSystemTokens += countTokens(text) + PER_MESSAGE_OVERHEAD;
-  }
+  const historyIdx = opts.promptOrder.findIndex((i) => i.id === "history");
+  // history может отсутствовать в promptOrder (защитный кейс) — тогда всё считаем "до истории".
+  const beforeItems = historyIdx === -1 ? opts.promptOrder : opts.promptOrder.slice(0, historyIdx);
+  const afterItems = historyIdx === -1 ? [] : opts.promptOrder.slice(historyIdx + 1);
+  const historyEnabled = historyIdx !== -1 && opts.promptOrder[historyIdx]!.enabled;
 
-  // История эмитируется (и расходует бюджет) только если компонент включён в порядке. Если выключен —
-  // обрезку не считаем, leading-user не резервируем (его стоимость учитывается внутри resolveHistory).
-  const historyEnabled = opts.promptOrder.some((i) => i.id === "history" && i.enabled);
+  const beforeTexts = beforeItems
+    // slice() выше гарантирует, что "history" сюда не попадёт, но TS видит только StoryPromptComponentId —
+    // явный фильтр по id сужает тип для componentText().
+    .filter((i): i is StoryPromptOrderItem & { id: Exclude<StoryPromptComponentId, "history"> } =>
+      i.enabled && i.id !== "history",
+    )
+    .map((i) => ({ id: i.id, text: componentText(opts, i.id) }))
+    .filter((x): x is { id: Exclude<StoryPromptComponentId, "history">; text: string } => x.text != null);
+
+  // Итоговые system-сообщения ДО history: при склейке — одно (теги + текст), иначе — по одному на компонент.
+  // Считаем их именно в этом виде, а не по компонентам отдельно, чтобы бюджет истории ниже видел РЕАЛЬНОЕ
+  // число сообщений и токенов тегов — иначе при включённой склейке бюджет разъехался бы с фактическим промптом.
+  const preHistoryMessages: string[] = opts.mergeSystemPrompts
+    ? beforeTexts.length > 0
+      ? [beforeTexts.map(({ id, text }) => `<${id}>\n${text}\n</${id}>`).join("\n\n")]
+      : []
+    : beforeTexts.map(({ text }) => text);
+
+  // Стоимость фиксированных (non-history) частей — их урезать нельзя, вычитаем из бюджета истории.
+  const fixedSystemTokens = preHistoryMessages.reduce(
+    (sum, text) => sum + countTokens(text) + PER_MESSAGE_OVERHEAD,
+    0,
+  );
+
   // trim:false (экран статистики) — берём историю целиком, без урезания под бюджет контекста.
   const trim = opts.trim ?? true;
   const history = historyEnabled
@@ -110,26 +132,26 @@ export function buildStoryMessages(opts: StoryPromptOptions): ChatMessage[] {
     : [];
   const lastIndex = history.length - 1;
 
-  const result: ChatMessage[] = [];
-  for (const item of opts.promptOrder) {
-    if (!item.enabled) continue;
+  const result: ChatMessage[] = preHistoryMessages.map((text) => ({ role: "system", content: text }));
 
-    if (item.id === "history") {
-      // Примечание: при агрессивной обрезке первым уцелевшим узлом может оказаться нейтрализованный
-      // user-ход — тогда после leading-user идут два user-сообщения подряд. Anthropic/OpenRouter их
-      // склеивают, так что это не нарушает чередование; специально схлопывать не нужно.
-      result.push({ role: "user", content: opts.leadingUserMarker });
-      history.forEach((m, i) => {
-        if (m.role === "user" && i !== lastIndex) {
-          // Отыгранный user-ход → нейтрализуем (последствие уже в следующем бите).
-          result.push({ role: "user", content: opts.continueMarker });
-        } else {
-          result.push({ role: m.role, content: m.content });
-        }
-      });
-      continue;
-    }
+  if (historyEnabled) {
+    // Примечание: при агрессивной обрезке первым уцелевшим узлом может оказаться нейтрализованный
+    // user-ход — тогда после leading-user идут два user-сообщения подряд. Anthropic/OpenRouter их
+    // склеивают, так что это не нарушает чередование; специально схлопывать не нужно.
+    result.push({ role: "user", content: opts.leadingUserMarker });
+    history.forEach((m, i) => {
+      if (m.role === "user" && i !== lastIndex) {
+        // Отыгранный user-ход → нейтрализуем (последствие уже в следующем бите).
+        result.push({ role: "user", content: opts.continueMarker });
+      } else {
+        result.push({ role: m.role, content: m.content });
+      }
+    });
+  }
 
+  // Компоненты ПОСЛЕ history (напр. postHistory) склейка не затрагивает — идут как обычно.
+  for (const item of afterItems) {
+    if (!item.enabled || item.id === "history") continue;
     const text = componentText(opts, item.id);
     if (text) result.push({ role: "system", content: text });
   }

@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { StoryMessageInPath } from "../../../db/stories/index.js";
+import { countTokens } from "../../../utils/index.js";
+import { PER_MESSAGE_OVERHEAD } from "../budget.js";
 import {
   buildStoryMessages,
   COMPACT_SUMMARY_HEADER,
@@ -287,6 +289,115 @@ describe("buildStoryMessages — компонент compact (пересказы)
     const droppedNoCompact = onTrimNoCompact.mock.calls[0]?.[0]?.dropped ?? 0;
     const droppedWithCompact = onTrimWithCompact.mock.calls[0]?.[0]?.dropped ?? 0;
     expect(droppedWithCompact).toBeGreaterThanOrEqual(droppedNoCompact);
+  });
+});
+
+describe("buildStoryMessages — mergeSystemPrompts", () => {
+  it("схлопывает non-history компоненты в одно system-сообщение, обёрнутое по тегам", () => {
+    const result = buildStoryMessages(
+      baseOpts({
+        mergeSystemPrompts: true,
+        premise: "PREMISE_TEXT",
+        auxiliarySystemPrompt: "AUX_TEXT",
+        history: sampleHistory(),
+      }),
+    );
+    const systemMsgs = result.filter((m) => m.role === "system");
+    // Один system-блок вместо трёх отдельных (system/premise/auxiliary).
+    expect(systemMsgs).toHaveLength(1);
+    const merged = systemMsgs[0]!.content;
+    expect(merged).toContain("<system>\nYou are the narrator.\n</system>");
+    expect(merged).toContain("<premise>\nStory premise:\nPREMISE_TEXT\n</premise>");
+    expect(merged).toContain("<auxiliary>\nAUX_TEXT\n</auxiliary>");
+  });
+
+  it("не трогает компоненты после history (postHistory остаётся отдельным сообщением)", () => {
+    const result = buildStoryMessages(
+      baseOpts({
+        mergeSystemPrompts: true,
+        postHistoryInstruction: "POST_HISTORY_TEXT",
+        promptOrder: [
+          { id: "system", enabled: true },
+          { id: "premise", enabled: true },
+          { id: "history", enabled: true },
+          { id: "postHistory", enabled: true },
+          { id: "lorebook", enabled: true },
+          { id: "auxiliary", enabled: true },
+        ],
+        premise: "PREMISE_TEXT",
+        history: sampleHistory(),
+      }),
+    );
+    const systemMsgs = result.filter((m) => m.role === "system");
+    // Один схлопнутый блок (system+premise) перед history + отдельный postHistory после.
+    expect(systemMsgs).toHaveLength(2);
+    expect(systemMsgs[0]!.content).toContain("<premise>");
+    expect(systemMsgs[1]!.content).toBe("POST_HISTORY_TEXT");
+  });
+
+  it("выключенные/пустые компоненты не попадают в схлопнутый блок", () => {
+    const result = buildStoryMessages(
+      baseOpts({
+        mergeSystemPrompts: true,
+        promptOrder: [
+          { id: "system", enabled: true },
+          { id: "premise", enabled: false },
+          { id: "auxiliary", enabled: true },
+          { id: "lorebook", enabled: true },
+          { id: "history", enabled: true },
+          { id: "postHistory", enabled: false },
+        ],
+        auxiliarySystemPrompt: "",
+        history: sampleHistory(),
+      }),
+    );
+    const systemMsgs = result.filter((m) => m.role === "system");
+    expect(systemMsgs).toHaveLength(1);
+    expect(systemMsgs[0]!.content).toBe("<system>\nYou are the narrator.\n</system>");
+  });
+
+  it("mergeSystemPrompts не включён по умолчанию — сохраняет прежнее поведение", () => {
+    const result = buildStoryMessages(
+      baseOpts({ premise: "PREMISE_TEXT", history: sampleHistory() }),
+    );
+    const systemMsgs = result.filter((m) => m.role === "system");
+    expect(systemMsgs).toHaveLength(2);
+  });
+
+  it("бюджет обрезки истории считает РЕАЛЬНЫЙ merged-текст (с тегами), а не сумму компонентов по отдельности", () => {
+    const opts = baseOpts({
+      mergeSystemPrompts: true,
+      auxiliarySystemPrompt: "Keep beats short.",
+      history: sampleHistory(),
+      maxTokens: 0, // reserve = 0 — упрощает арифметику бюджета
+    });
+
+    // Без обрезки — вытаскиваем фактический (единственный) merged system-текст, ровно то, что уйдёт в промпт.
+    const unbounded = buildStoryMessages({ ...opts, contextUnlimited: true });
+    const mergedSystemMsg = unbounded.find((m) => m.role === "system")!;
+    const fixedSystemTokens = countTokens(mergedSystemMsg.content) + PER_MESSAGE_OVERHEAD;
+    const leadingUserCost = countTokens(LEADING_USER_MARKER) + PER_MESSAGE_OVERHEAD;
+    const lastTriggerCost = countTokens("make the mood tense") + PER_MESSAGE_OVERHEAD;
+
+    // contextSize впритык под fixed+leading — на историю не остаётся ни токена (budget<=0).
+    const onTrimNone = vi.fn();
+    buildStoryMessages({
+      ...opts,
+      contextSize: fixedSystemTokens + leadingUserCost,
+      onTrim: onTrimNone,
+    });
+    expect(onTrimNone).toHaveBeenCalledOnce();
+    expect(onTrimNone.mock.calls[0]![0].kept).toBe(0);
+
+    // +lastTriggerCost — впритык хватает ровно на живой триггер (последний узел истории).
+    const onTrimOne = vi.fn();
+    const resultOne = buildStoryMessages({
+      ...opts,
+      contextSize: fixedSystemTokens + leadingUserCost + lastTriggerCost,
+      onTrim: onTrimOne,
+    });
+    expect(onTrimOne.mock.calls[0]![0].kept).toBe(1);
+    expect(resultOne[resultOne.length - 1]!.content).toBe("make the mood tense");
   });
 });
 

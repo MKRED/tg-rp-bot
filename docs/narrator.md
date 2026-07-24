@@ -64,6 +64,14 @@ postHistory`, где `postHistory` выключен. Фолбэк (истори�
 `DEFAULT_NARRATOR_TEMPLATE`. Старые 6-элементные `promptOrder` нормализуются на чтении
 (`normalizeStoryPromptOrder` — дописывает недостающие компоненты на дефолтную позицию), без data-миграции.
 
+**`mergeSystemPrompts`** (флаг шаблона, чекбокс в `TemplateForm`): все non-history компоненты, стоящие в
+`promptOrder` **до** `history`, схлопываются в одно `system`-сообщение, каждый блок обёрнут в
+`<componentId>…</componentId>` (напр. `<system>`, `<lorebook>`, `<premise>`). Компоненты **после** `history`
+(напр. включённый `postHistory`) склейка не трогает — идут отдельным сообщением, как обычно. Бюджет
+обрезки (`fixedSystemTokens` в `buildStoryMessages`) считается по **фактически** эмитируемым pre-history
+сообщениям (с учётом склейки и токенов тегов), а не по компонентам по отдельности — иначе при включённой
+склейке бюджет разъехался бы с реальным промптом.
+
 ---
 
 ## Сжатие истории (compact)
