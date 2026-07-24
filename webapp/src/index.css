@@ -19,9 +19,12 @@ body {
     особенно заметно при перерисовке в Full Screen после сворачивания/разворачивания.
     --tg-bg-color ставит miniApp.bindCssVars(), --tg-theme-bg-color — themeParams.bindCssVars()
     (обе на :root, в отличие от --tgui--bg_color, который живёт только на <AppRoot>).
-    Статический #17212b — фоллбэк вне Telegram, чтобы фон не был чисто чёрным.
+    Статический #fff — фоллбэк вне Telegram (обычный браузер, dev): там init() не проходит,
+    bindCssVars не вызывается, и miniApp.isDark по умолчанию false → AppRoot рендерится
+    светлым (см. App.tsx). Тёмный фоллбэк здесь давал разъезд — тёмная body-подложка под
+    светлым AppRoot выглядела как «половина экрана светлая, половина тёмная».
   */
-  background: var(--tg-bg-color, var(--tg-theme-bg-color, #17212b));
+  background: var(--tg-bg-color, var(--tg-theme-bg-color, #fff));
 }
 
 /*
