@@ -61,11 +61,14 @@ export function TranslateSheet({
     const max = lineHeight * 5 + padY + borderY;
     el.style.height = `${Math.min(el.scrollHeight + borderY, max)}px`;
   };
-  // Восстанавливаем высоту поля при повторном открытии шторы с сохранённым черновиком.
+  // Пересчитываем высоту при любом изменении текста (ввод, очистка, восстановление черновика при
+  // открытии шторы) — именно после рендера, когда DOM textarea уже отражает актуальное value.
+  // Дёргать resize() прямо в обработчике клика (напр. в clearText) нельзя: setState применяется
+  // асинхронно, и el.value/scrollHeight там ещё старые.
   useLayoutEffect(() => {
     resize();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [text]);
   const [mode, setMode] = useState<TranslateMode>(
     () => (localStorage.getItem(MODE_KEY) === "ai" ? "ai" : "google"),
   );
@@ -80,7 +83,6 @@ export function TranslateSheet({
   const clearText = () => {
     changeText("");
     if (result || error) reset();
-    resize();
   };
   const setModePersist = (m: TranslateMode) => {
     setMode(m);
@@ -172,7 +174,6 @@ export function TranslateSheet({
             onChange={(e) => {
               changeText(e.target.value);
               if (result || error) reset();
-              resize();
             }}
             placeholder="Текст для перевода…"
             rows={1}
