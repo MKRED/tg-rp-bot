@@ -8,12 +8,14 @@ import { DEEP_LINK_RE, MAX_BUTTON_LABEL } from "./me.constants.js";
 
 /**
  * Роуты текущего пользователя под /api/me. Монтируются ПОСЛЕ requireInitData, поэтому
- * c.get("tgUser") уже доступен (в dev без подписи будет undefined — учтено в хендлерах).
+ * авторизация уже пройдена (реальный или dev-пользователь) — но тип TgUser сам по себе
+ * допускает undefined (initData технически может быть без поля user), поэтому хендлеры
+ * ниже всё равно подстраховываются проверкой.
  */
 export function createMeRoutes(): Hono<{ Variables: AppVariables }> {
   const api = new Hono<{ Variables: AppVariables }>();
 
-  // Профиль текущего пользователя — из проверенного initData (в dev без подписи будет undefined).
+  // Профиль текущего пользователя — из проверенного initData.
   api.get("/", (c) => c.json({ ok: true, user: c.get("tgUser") ?? null }));
 
   // Фото профиля как data URL (или null). initData его не содержит при запуске кнопкой/меню,
@@ -21,7 +23,7 @@ export function createMeRoutes(): Hono<{ Variables: AppVariables }> {
   // webapp покажет заглушку с инициалами, а не ошибку.
   api.get("/photo", async (c) => {
     const user = c.get("tgUser");
-    if (!user) return c.json({ dataUrl: null }); // dev без initData
+    if (!user) return c.json({ dataUrl: null });
     try {
       const dataUrl = await getProfilePhotoDataUrl(user.id);
       return c.json({ dataUrl });

@@ -1,4 +1,5 @@
 import { bot } from "./bot.js";
+import { config } from "./config.js";
 import { registerHandlers } from "./handlers/index.js";
 import logger from "./logger.js";
 import { startServer } from "./server/index.js";
@@ -14,7 +15,13 @@ const stop = () => {
 process.once("SIGINT", stop);
 process.once("SIGTERM", stop);
 
-// Запуск long polling. Прокси (если задан) уже встроен в bot.ts через baseFetchConfig.
-bot.start({
-  onStart: (botInfo) => logger.info({ username: botInfo.username }, "Bot started (long polling)"),
-});
+if (config.botPolling) {
+  // Запуск long polling. Прокси (если задан) уже встроен в bot.ts через baseFetchConfig.
+  bot
+    .start({
+      onStart: (botInfo) => logger.info({ username: botInfo.username }, "Bot started (long polling)"),
+    })
+    .catch((err) => logger.error({ err }, "Long polling stopped unexpectedly"));
+} else {
+  logger.info("Long polling disabled (dev) — set BOT_POLLING=true чтобы включить");
+}

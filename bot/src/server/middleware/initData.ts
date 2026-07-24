@@ -2,7 +2,12 @@ import { parse, validate } from "@tma.js/init-data-node";
 import type { MiddlewareHandler } from "hono";
 import { config } from "../../config.js";
 import logger from "../../logger.js";
-import type { AppVariables } from "./initData.types.js";
+import type { AppVariables, TgUser } from "./initData.types.js";
+
+/** Фейковый пользователь для dev-обхода — минимум полей, требуемых типом TgUser. */
+function makeDevUser(id: number): TgUser {
+  return { id, first_name: "Dev" };
+}
 
 /**
  * Валидация Telegram Mini App initData.
@@ -11,20 +16,21 @@ import type { AppVariables } from "./initData.types.js";
  * Проверяем её HMAC-SHA256 по BOT_TOKEN (@tma.js/init-data-node) и только тогда доверяем
  * переданному пользователю, кладя его в контекст (`c.get("tgUser")`).
  *
- * Без подписи: в проде запрос отклоняем (401), в dev пропускаем — чтобы не мешать отладке
- * webapp из обычного браузера, где initData недоступен.
+ * Без подписи: если задан config.devUserId (dev-обход для браузера без Telegram) —
+ * подставляем фейкового пользователя с этим id, иначе 401.
  */
 export const requireInitData: MiddlewareHandler<{ Variables: AppVariables }> = async (c, next) => {
   const header = c.req.header("Authorization");
   const initDataRaw = header?.replace(/^tma\s+/i, "");
 
   if (!initDataRaw) {
-    if (config.isProduction) {
-      return c.json({ error: "Missing Telegram init data" }, 401);
+    if (config.devUserId !== undefined) {
+      logger.warn({ devUserId: config.devUserId }, "Dev auth: initData bypassed");
+      c.set("tgUser", makeDevUser(config.devUserId));
+      await next();
+      return;
     }
-    logger.warn("Request without initData allowed (dev mode)");
-    await next();
-    return;
+    return c.json({ error: "Missing Telegram init data" }, 401);
   }
 
   try {

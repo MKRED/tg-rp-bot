@@ -10,11 +10,15 @@
   "scripts": {
     "dev": "cd bot && tsx watch src/index.ts",
     "dev:web": "cd webapp && vite",
+    "dev:all": "concurrently -n bot,web -c blue,green \"cd bot && tsx src/index.ts\" \"cd webapp && vite\"",
     "build": "cd bot && tsc && cd ../webapp && tsc --noEmit && vite build",
     "test": "cd bot && vitest run && cd ../webapp && vitest run",
     "test:watch": "cd bot && vitest"
   },
   "engines": {
     "node": ">=24"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3"
   }
 }

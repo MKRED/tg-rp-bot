@@ -74,6 +74,7 @@ yarn workspace bot drizzle-kit migrate   # применить миграции �
 
 yarn dev          # старт бота (= yarn workspace bot dev)
 yarn dev:web      # старт Mini App (Vite dev server)
+yarn dev:all      # оба сразу в одном терминале (concurrently) — Ctrl+C останавливает оба
 ```
 
 ### Полезные команды

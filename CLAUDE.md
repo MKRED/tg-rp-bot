@@ -49,6 +49,7 @@ Always use **yarn**. Never use npm.
 ```
 yarn dev           # start bot (= yarn workspace bot dev) — run in background
 yarn dev:web       # start Mini App (Vite dev server)
+yarn dev:all       # both at once in one terminal (concurrently) — Ctrl+C stops both. Бот БЕЗ watch (tsx, не tsx watch) — на Windows tsx watch намертво виснет под concurrently
 Stop-Process -Name "node"  # stop bot
 yarn workspace bot drizzle-kit generate  # generate migration from schema changes
 yarn workspace bot drizzle-kit migrate   # apply migrations to DB
