@@ -1,6 +1,5 @@
-import { config } from "../config.js";
 import { OPENROUTER_APP_HEADERS } from "./constants.js";
-import type { LlmProvider, LlmProviderName } from "./providers.types.js";
+import type { LlmProvider } from "./providers.types.js";
 import type { ChatCompletionOptions } from "./types.js";
 
 // Типы провайдера живут в providers.types.ts; реэкспорт сохраняет прежние точки импорта
@@ -27,26 +26,33 @@ function deepSeekReasoningBody(opts: ChatCompletionOptions): Record<string, unkn
   };
 }
 
-const PROVIDERS: Record<LlmProviderName, LlmProvider> = {
-  openrouter: {
+/**
+ * Провайдер сейчас резолвится per-user (см. llm/resolveProvider.ts) — ключ/модель приходят из
+ * userSettings, а не из env. Фабрики принимают их параметрами вместо чтения из глобального config.
+ */
+export function buildDeepSeekProvider(apiKey: string, model: string): LlmProvider {
+  return {
+    name: "deepseek",
+    baseUrl: "https://api.deepseek.com",
+    apiKey,
+    defaultModel: model,
+    reasoningBody: deepSeekReasoningBody,
+  };
+}
+
+/**
+ * Задел на будущий выбор провайдера (пока нигде не вызывается — резолвится только DeepSeek,
+ * см. llm/resolveProvider.ts). Оставлена, чтобы не переписывать заново, когда для OpenRouter
+ * появится своя пара полей в userSettings и выбор в UI настроек.
+ */
+export function buildOpenRouterProvider(apiKey: string, model: string): LlmProvider {
+  return {
     name: "openrouter",
     baseUrl: "https://openrouter.ai/api/v1",
-    apiKey: config.openRouterApiKey,
-    defaultModel: config.openRouterModel,
+    apiKey,
+    defaultModel: model,
     appHeaders: OPENROUTER_APP_HEADERS,
     // Тело запросов OpenRouter не трогаем — это запасной путь, работает как раньше.
     reasoningBody: () => ({}),
-  },
-  deepseek: {
-    name: "deepseek",
-    baseUrl: "https://api.deepseek.com",
-    apiKey: config.deepSeekApiKey,
-    defaultModel: config.deepSeekModel,
-    reasoningBody: deepSeekReasoningBody,
-  },
-};
-
-/** Активный провайдер по config.llmProvider; неизвестное значение → openrouter. */
-export function getActiveProvider(): LlmProvider {
-  return PROVIDERS[config.llmProvider as LlmProviderName] ?? PROVIDERS.openrouter;
+  };
 }

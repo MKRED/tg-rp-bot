@@ -101,7 +101,10 @@ export function CompactSettingsSection({
       );
     } catch (err) {
       console.error("Failed to compact story", err);
-      showToast({ type: "error", message: "Не удалось сжать историю" });
+      showToast({
+        type: "error",
+        message: err instanceof Error ? err.message : "Не удалось сжать историю",
+      });
     }
   };
 

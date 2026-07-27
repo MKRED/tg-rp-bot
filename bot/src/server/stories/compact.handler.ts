@@ -22,6 +22,7 @@ import {
   resolveNarratorMarkers,
 } from "../prompt/storyPromptBuilder/index.js";
 import { normalizeStoryPromptOrder } from "../prompt/storyPromptOrder.js";
+import { chatCompletionErrorResponse } from "../shared/apiError.js";
 import { compactAvailable, resolveCompactFloor } from "./compact.gate.js";
 import type { Ctx } from "./stories.types.js";
 import { buildStoryCompletionInput } from "./storyContext.js";
@@ -226,7 +227,7 @@ export async function handleCompactStory(c: Ctx) {
     return c.json({ created: result.created, compactions });
   } catch (err) {
     logger.error({ err, userId, storyId }, "Failed to compact story");
-    return c.json({ error: "Internal error" }, 500);
+    return chatCompletionErrorResponse(c, err);
   }
 }
 

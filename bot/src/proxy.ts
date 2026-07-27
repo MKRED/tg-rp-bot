@@ -11,9 +11,9 @@ import logger from "./logger.js";
  * https://api.telegram.org.
  *
  * Агент подключается ТОЛЬКО к grammY-клиенту (см. bot.ts) — значит через прокси идёт
- * исключительно трафик к Telegram. OpenRouter и прочие fetch идут напрямую.
+ * исключительно трафик к Telegram. LLM-провайдер (DeepSeek) и прочие fetch идут напрямую.
  * Никогда не используем глобальный прокси (env HTTPS_PROXY/ALL_PROXY) — это увело бы
- * через прокси и OpenRouter тоже.
+ * через прокси и LLM-трафик тоже.
  */
 export function createTelegramProxyAgent(): HttpsProxyAgent<string> | undefined {
   if (!config.telegramProxyUrl) return undefined;

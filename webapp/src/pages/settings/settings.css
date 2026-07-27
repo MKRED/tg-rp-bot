@@ -8,3 +8,9 @@
   );
   padding-bottom: 24px;
 }
+
+.settings-page__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

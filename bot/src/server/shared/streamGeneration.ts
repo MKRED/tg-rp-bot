@@ -1,5 +1,6 @@
 import type { SSEStreamingApi } from "hono/streaming";
 import { chatCompletion } from "../../llm/client.js";
+import { MissingApiKeyError } from "../../llm/errors.js";
 import type { ChatCompletionOptions, ChatCompletionResult } from "../../llm/types.js";
 
 /**
@@ -28,4 +29,16 @@ export function streamCompletion(
       ? () => stream.writeSSE({ event: "reset", data: "{}" }).catch(() => {})
       : undefined,
   );
+}
+
+/**
+ * Пишет SSE-событие ошибки генерации хендлеру-catch'у. На MissingApiKeyError (нет персонального
+ * ключа DeepSeek — BYOK) отдаёт готовый пользователю текст с подсказкой, что делать; иначе — общий
+ * текст. Общий хелпер вместо повторения одного и того же в каждом catch (send/edit/regenerate,
+ * impersonate, narrator advance/regenerate).
+ */
+export async function writeGenerationError(stream: SSEStreamingApi, err: unknown): Promise<void> {
+  const message =
+    err instanceof MissingApiKeyError ? err.message : "Не удалось сгенерировать ответ. Попробуйте ещё раз.";
+  await stream.writeSSE({ event: "error", data: JSON.stringify({ message }) });
 }

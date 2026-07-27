@@ -8,7 +8,8 @@ import {
 } from "../../db/impersonations/index.js";
 import logger from "../../logger.js";
 import { presetToCompletionOptions, renderImpersonateMessages } from "../prompt/promptBuilder/index.js";
-import { streamCompletion } from "../shared/streamGeneration.js";
+import { chatCompletionErrorResponse } from "../shared/apiError.js";
+import { streamCompletion, writeGenerationError } from "../shared/streamGeneration.js";
 import { aiTranslate, englishLangName, googleTranslate } from "../shared/translate.js";
 import { loadChatContext } from "./messages.handlers.js";
 import type { Ctx } from "./chats.types.js";
@@ -62,7 +63,7 @@ export async function handleImpersonate(c: Ctx) {
       await stream.writeSSE({ event: "done", data: JSON.stringify({ variant }) });
     } catch (err) {
       logger.error({ err, userId, chatId }, "impersonate stream error");
-      await stream.writeSSE({ event: "error", data: JSON.stringify({ message: "Generation failed" }) });
+      await writeGenerationError(stream, err);
     }
   });
 }
@@ -131,18 +132,23 @@ export async function handleTranslateText(c: Ctx) {
     const ctx = await loadChatContext(userId, chatId);
     if (!ctx) return c.json({ error: "Chat not found" }, 404);
     const { template, preset } = ctx;
-    // Сэмплинг пресета НЕ переиспользуем: его maxTokens обрезал бы длинный перевод, а высокие
-    // temperature/penalties (настроенные под RP) портят верность перевода. Управляющая
-    // поверхность ИИ-режима — промпт перевода из RP-шаблона; параметры оставляем дефолтными.
-    const translation = await aiTranslate(
-      template?.translationSystemPrompt ?? "",
-      text,
-      englishLangName(targetLang),
-      userId,
-      true,
-      preset?.reasoningEffort,
-    );
-    return c.json({ translation });
+    try {
+      // Сэмплинг пресета НЕ переиспользуем: его maxTokens обрезал бы длинный перевод, а высокие
+      // temperature/penalties (настроенные под RP) портят верность перевода. Управляющая
+      // поверхность ИИ-режима — промпт перевода из RP-шаблона; параметры оставляем дефолтными.
+      const translation = await aiTranslate(
+        template?.translationSystemPrompt ?? "",
+        text,
+        englishLangName(targetLang),
+        userId,
+        true,
+        preset?.reasoningEffort,
+      );
+      return c.json({ translation });
+    } catch (err) {
+      logger.error({ err, userId, chatId }, "Failed to translate draft text");
+      return chatCompletionErrorResponse(c, err);
+    }
   }
 
   // Проверяем принадлежность чата пользователю

@@ -5,8 +5,8 @@ import { initData } from "@telegram-apps/sdk-react";
  *
  * Каждый запрос несёт подписанную Telegram строку initData в заголовке
  * `Authorization: tma <initData>` — сервер проверяет её подпись (см. bot/src/server/middleware/initData.ts)
- * и только тогда доверяет пользователю. Ключ OpenRouter живёт ТОЛЬКО на сервере, поэтому
- * вся RP-генерация/перевод идут через этот слой, а не напрямую из браузера.
+ * и только тогда доверяет пользователю. Персональный ключ DeepSeek живёт ТОЛЬКО на сервере
+ * (зашифрован в БД), поэтому вся RP-генерация/перевод идут через этот слой, а не напрямую из браузера.
  */
 const API_BASE = "/api";
 
@@ -41,7 +41,18 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
   const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
   if (!res.ok) {
-    throw new ApiError(res.status, `API ${path} failed: ${res.status}`);
+    // Сервер иногда шлёт содержательный текст (например MissingApiKeyError) в теле —
+    // используем его, если есть; иначе — прежний общий текст.
+    const body = await res.json().catch(() => null);
+    const serverMessage =
+      body && typeof body === "object" && ("message" in body || "error" in body)
+        ? ((body as { message?: unknown; error?: unknown }).message ??
+          (body as { message?: unknown; error?: unknown }).error)
+        : undefined;
+    throw new ApiError(
+      res.status,
+      typeof serverMessage === "string" ? serverMessage : `API ${path} failed: ${res.status}`,
+    );
   }
   return res.json() as Promise<T>;
 }

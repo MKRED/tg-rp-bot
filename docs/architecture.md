@@ -23,9 +23,13 @@ bot/src/
                   narratorTemplates/ rpTemplates/ avatars/ (батч-резолв аватаров для AvatarStack —
                   getAvatarsBatch) (у каждой DAO-файл + types.ts/constants.ts + barrel index.ts),
                   chats/ stories/ (+ storyAvatars.ts — LATERAL-фрагмент топ-N аватаров книги знаний
-                  для карточки истории) knowledge/ (деревья/лорбук), users.ts, userSettings.ts
-  llm/          — LLM client (client/request/errors/types/constants/completionGuard/providers) —
-                  серверно, провайдер (OpenRouter | DeepSeek) выбирается env LLM_PROVIDER;
+                  для карточки истории) knowledge/ (деревья/лорбук), users.ts, userSettings.ts,
+                  userLlmSettings.ts (per-user ключ/модель DeepSeek, BYOK, шифруется ENCRYPTION_KEY)
+  llm/          — LLM client (client/request/errors/types/constants/completionGuard/providers/
+                  resolveProvider/deepseekModels) — серверно; единственный активный провайдер —
+                  DeepSeek, ключ/модель резолвятся per-user через resolveProvider(userId) из
+                  userLlmSettings (без ключа — MissingApiKeyError); фабрика buildOpenRouterProvider
+                  в providers.ts не задействована (задел, нет пути конфигурации);
                   debugCapture (+debug.types) — in-memory перехват RAW-запросов к LLM для экрана отладки
   handlers/     — обработчики команд/кнопок бота (index = registerHandlers, start.ts,
                   photoActions.ts — callback «Закрыть» под фото из лайтбокса)
@@ -33,7 +37,8 @@ bot/src/
                   routes.ts — карта эндпоинтов (монтаж контроллеров), middleware/ (initData — валидация
                   подписи), доменные папки me/ characters/ personas/ presets/ books/ narrator-templates/
                   rp-templates/ chats/ stories/ debug/ avatars/ (POST /batch — батч-резолв аватаров для
-                  AvatarStack, см. ниже) — у каждого <домен>.controller.ts (Hono-роуты) + validation/
+                  AvatarStack, см. ниже) settings/ (per-user ключ/модель DeepSeek, BYOK) — у каждого
+                  <домен>.controller.ts (Hono-роуты) + validation/
                   constants/types рядом + barrel index.ts; chats/ — messages.handlers + impersonate.handlers
                   + stats.handler; stories/ — story.handlers (SSE-генерация RP/narrator); prompt/ —
                   promptBuilder + storyPromptBuilder + общий budget (у каждого constants/types/test рядом);
@@ -56,7 +61,8 @@ webapp/src/
                   narrator-templates/ debug/
   features/     — доменные модули (по подпапкам-категориям + barrel index.ts):
                   characters/ personas/ generation-presets/ rp-templates/ rp-chat/ narrator/
-                  knowledge-books/ narrator-templates/ debug/
+                  knowledge-books/ narrator-templates/ debug/ llm-settings/ (per-user ключ/модель
+                  DeepSeek, BYOK, экран /settings)
   shared/       — кросс-каттинг: api/ (client с Authorization), telegram/ (initData, confirm, profile
                   photo, platform), text/, image/, graph/, hooks/, constants/, toast/, components/,
                   avatar/ (avatarCache — dataURL-кэш на сессию SPA, avatars-api — обёртка над
@@ -88,14 +94,15 @@ option `agent`. undici `dispatcher` он **игнорирует** — хотя �
 доходит до Telegram, с `dispatcher` — уходит напрямую в обход прокси. Отсюда каст в `bot.ts`
 (`proxy.ts` → `HttpsProxyAgent` → `client.baseFetchConfig.agent`).
 
-Глобальный прокси (`HTTPS_PROXY` / `ALL_PROXY`) увёл бы через прокси и трафик к OpenRouter — нельзя.
+Глобальный прокси (`HTTPS_PROXY` / `ALL_PROXY`) увёл бы через прокси и трафик к LLM-провайдеру
+(DeepSeek) — нельзя.
 
 ---
 
 ## Mini App API — детали границы
 
-Правило (в CLAUDE.md): ключ OpenRouter только серверно; webapp ходит в `/api/*` с подписанным
-`initData`. Детали валидации:
+Правило (в CLAUDE.md): ключ LLM-провайдера (DeepSeek, per-user BYOK) только серверно; webapp ходит
+в `/api/*` с подписанным `initData`. Детали валидации:
 
 Запросы webapp → `/api/*` несут подписанный Telegram `initData` в заголовке
 `Authorization: tma <initData>` (webapp: `shared/api/client.ts`). Сервер

@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { useToast } from "../../../shared/toast";
 import { editMessage, regenerateMessage, sendMessage } from "../api/messages-api";
 import type { MessageInPath } from "../types/chat";
 
@@ -17,6 +18,7 @@ export function useSendMessage(
 ) {
   const [sending, setSending] = useState(false);
   const [streamingText, setStreamingText] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   const send = useCallback(
     async (content: string) => {
@@ -32,7 +34,10 @@ export function useSendMessage(
           onReset: () => setStreamingText(""), // ретрай: стираем плохой ответ
           // Стрим НЕ гасим здесь — отдаём commit наверх, он сработает после refresh (без рывка).
           onDone: (assistantMsg) => onDone(userMsg, assistantMsg, () => setStreamingText(null)),
-          onError: () => setStreamingText(null),
+          onError: (message) => {
+            setStreamingText(null);
+            showToast({ type: "error", message });
+          },
         });
       } catch (err) {
         // readSSE на сетевом исключении (offline и т.п.) onError НЕ зовёт — снимаем стрим тут.
@@ -42,7 +47,7 @@ export function useSendMessage(
         setSending(false);
       }
     },
-    [chatId, onDone, sending],
+    [chatId, onDone, sending, showToast],
   );
 
   const edit = useCallback(
@@ -59,7 +64,10 @@ export function useSendMessage(
           onToken: (text) => setStreamingText((prev) => (prev ?? "") + text),
           onReset: () => setStreamingText(""), // ретрай: стираем плохой ответ
           onDone: (assistantMsg) => onDone(userMsg, assistantMsg, () => setStreamingText(null)),
-          onError: () => setStreamingText(null),
+          onError: (message) => {
+            setStreamingText(null);
+            showToast({ type: "error", message });
+          },
         });
       } catch (err) {
         console.error("RP edit failed", err);
@@ -68,7 +76,7 @@ export function useSendMessage(
         setSending(false);
       }
     },
-    [chatId, onDone, sending],
+    [chatId, onDone, sending, showToast],
   );
 
   const regenerate = useCallback(
@@ -82,7 +90,10 @@ export function useSendMessage(
           onToken: (text) => setStreamingText((prev) => (prev ?? "") + text),
           onReset: () => setStreamingText(""), // ретрай: стираем плохой ответ
           onDone: (assistantMsg) => onDone(null, assistantMsg, () => setStreamingText(null)),
-          onError: () => setStreamingText(null),
+          onError: (message) => {
+            setStreamingText(null);
+            showToast({ type: "error", message });
+          },
         });
       } catch (err) {
         console.error("RP regenerate failed", err);
@@ -91,7 +102,7 @@ export function useSendMessage(
         setSending(false);
       }
     },
-    [chatId, onDone, sending],
+    [chatId, onDone, sending, showToast],
   );
 
   return { send, edit, regenerate, sending, streamingText };

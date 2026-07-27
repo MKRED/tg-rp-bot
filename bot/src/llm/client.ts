@@ -4,8 +4,9 @@ import { isUnusableCompletion } from "./completionGuard.js";
 import { CHAT_COMPLETIONS_PATH } from "./constants.js";
 import { type LlmDebugResponse, recordLlmCall } from "./debugCapture.js";
 import { EmptyCompletionError, LlmHttpError } from "./errors.js";
-import { getActiveProvider, type LlmProvider } from "./providers.js";
+import type { LlmProvider } from "./providers.js";
 import { buildBody, makeHeaders } from "./request.js";
+import { resolveProvider } from "./resolveProvider.js";
 import type {
   ChatCompletionOptions,
   ChatCompletionResult,
@@ -14,8 +15,9 @@ import type {
 } from "./types.js";
 
 /**
- * Вызывает chat completion активного LLM-провайдера (OpenRouter или DeepSeek — выбор по
- * config.llmProvider). Оба OpenAI-совместимы, поэтому код общий, различия — в providers.ts.
+ * Вызывает chat completion персонального LLM-провайдера пользователя (BYOK — ключ/модель из
+ * userSettings, см. resolveProvider.ts; общего ключа из env больше нет). Бросает MissingApiKeyError,
+ * если у пользователя ключ не задан.
  *
  * Если передан `onChunk` — использует streaming (Server-Sent Events): каждый токен
  * передаётся в коллбэк, итоговая строка накапливается и возвращается как обычно.
@@ -29,11 +31,7 @@ export async function chatCompletion(
   onChunk?: (token: string) => void,
   onReset?: () => void,
 ): Promise<ChatCompletionResult> {
-  const provider = getActiveProvider();
-  if (!provider.apiKey) {
-    throw new Error(`API key for LLM provider "${provider.name}" is not set — cannot call LLM`);
-  }
-
+  const provider = await resolveProvider(options.userId);
   const model = options.model ?? provider.defaultModel;
   const url = `${provider.baseUrl}${CHAT_COMPLETIONS_PATH}`;
   const t0 = Date.now();
@@ -67,7 +65,7 @@ export async function chatCompletion(
     // точную строку внутри retry, иначе на 3 попытки было бы 3 записи).
     recordLlmCall({
       at: new Date().toISOString(),
-      userId: options.userId ?? null,
+      userId: options.userId,
       label: options.debugLabel ?? "other",
       provider: provider.name,
       model,

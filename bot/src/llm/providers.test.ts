@@ -1,21 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-// config тянет requireEnv(BOT_TOKEN/DATABASE_URL) — мокаем, чтобы тест не требовал .env.
-// Мутабельный объект: меняем llmProvider между кейсами.
-const mockConfig = {
-  llmProvider: "openrouter",
-  openRouterApiKey: "or-key",
-  openRouterModel: "openai/gpt-4o-mini",
-  deepSeekApiKey: "ds-key",
-  deepSeekModel: "deepseek-v4-flash",
-};
-vi.mock("../config.js", () => ({ config: mockConfig }));
-
-const { getActiveProvider, mapEffort } = await import("./providers.js");
-
-beforeEach(() => {
-  mockConfig.llmProvider = "openrouter";
-});
+import { describe, expect, it } from "vitest";
+import { buildDeepSeekProvider, buildOpenRouterProvider, mapEffort } from "./providers.js";
 
 describe("mapEffort", () => {
   it("xhigh → max", () => {
@@ -29,46 +13,29 @@ describe("mapEffort", () => {
   });
 });
 
-describe("getActiveProvider", () => {
-  it("openrouter: base URL, app-заголовки, reasoning не добавляется", () => {
-    mockConfig.llmProvider = "openrouter";
-    const p = getActiveProvider();
-    expect(p.name).toBe("openrouter");
-    expect(p.baseUrl).toBe("https://openrouter.ai/api/v1");
-    expect(p.appHeaders).toBeDefined();
-    // Тело OpenRouter не трогаем — reasoning всегда пустой.
-    expect(p.reasoningBody({ messages: [], requestReasoning: true, reasoningEffort: "xhigh" })).toEqual(
-      {},
-    );
-  });
-
-  it("deepseek: base URL, без app-заголовков", () => {
-    mockConfig.llmProvider = "deepseek";
-    const p = getActiveProvider();
+describe("buildDeepSeekProvider", () => {
+  it("base URL, ключ/модель из аргументов, без app-заголовков", () => {
+    const p = buildDeepSeekProvider("ds-key", "deepseek-v4-flash");
     expect(p.name).toBe("deepseek");
     expect(p.baseUrl).toBe("https://api.deepseek.com");
+    expect(p.apiKey).toBe("ds-key");
+    expect(p.defaultModel).toBe("deepseek-v4-flash");
     expect(p.appHeaders).toBeUndefined();
   });
 
-  it("неизвестный провайдер → openrouter (фолбэк)", () => {
-    mockConfig.llmProvider = "whatever";
-    expect(getActiveProvider().name).toBe("openrouter");
-  });
-});
-
-describe("deepseek reasoningBody", () => {
-  beforeEach(() => {
-    mockConfig.llmProvider = "deepseek";
-  });
-
   it("выключенное мышление → thinking disabled", () => {
-    const body = getActiveProvider().reasoningBody({ messages: [], requestReasoning: false });
+    const body = buildDeepSeekProvider("k", "m").reasoningBody({
+      messages: [],
+      userId: 1,
+      requestReasoning: false,
+    });
     expect(body).toEqual({ thinking: { type: "disabled" } });
   });
 
   it("включённое мышление → thinking enabled + смаппленный effort", () => {
-    const body = getActiveProvider().reasoningBody({
+    const body = buildDeepSeekProvider("k", "m").reasoningBody({
       messages: [],
+      userId: 1,
       requestReasoning: true,
       reasoningEffort: "xhigh",
     });
@@ -76,7 +43,24 @@ describe("deepseek reasoningBody", () => {
   });
 
   it("включённое мышление без уровня → high", () => {
-    const body = getActiveProvider().reasoningBody({ messages: [], requestReasoning: true });
+    const body = buildDeepSeekProvider("k", "m").reasoningBody({
+      messages: [],
+      userId: 1,
+      requestReasoning: true,
+    });
     expect(body).toEqual({ thinking: { type: "enabled" }, reasoning_effort: "high" });
+  });
+});
+
+describe("buildOpenRouterProvider", () => {
+  it("base URL, app-заголовки, reasoning не добавляется — тело OpenRouter не трогаем", () => {
+    const p = buildOpenRouterProvider("or-key", "openai/gpt-4o-mini");
+    expect(p.name).toBe("openrouter");
+    expect(p.baseUrl).toBe("https://openrouter.ai/api/v1");
+    expect(p.apiKey).toBe("or-key");
+    expect(p.appHeaders).toBeDefined();
+    expect(
+      p.reasoningBody({ messages: [], userId: 1, requestReasoning: true, reasoningEffort: "xhigh" }),
+    ).toEqual({});
   });
 });

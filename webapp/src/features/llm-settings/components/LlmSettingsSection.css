@@ -1,0 +1,95 @@
+.llm-settings__field {
+  padding: 8px 16px;
+}
+
+.llm-settings__actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 8px;
+}
+
+.llm-settings__error {
+  margin: 0;
+  padding: 0 16px 8px;
+  color: var(--tgui--destructive_text_color, #e53935);
+  font-size: 13px;
+}
+
+/* --- Выпадающий список моделей (в after-слоте Cell) --- */
+.llm-model-picker {
+  /* Cell (tgui) на платформе "base" рисует ripple-оверлей поверх статичного after-контента
+     (см. тот же приём в features/debug/components/debug.css у .debug-stepper) — поднимаем
+     триггер над ripple, иначе клик по нативной кнопке не доходит. */
+  position: relative;
+  z-index: 1;
+}
+
+.llm-model-picker__trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 46vw;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 10px;
+  background: var(--tgui--secondary_fill, rgba(127, 139, 153, 0.12));
+  color: var(--tgui--text_color, #000);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.llm-model-picker__trigger span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.llm-model-picker__trigger:disabled {
+  color: var(--tgui--hint_color, #7d8b99);
+  opacity: 0.6;
+  cursor: default;
+}
+
+.llm-model-picker__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 220px;
+  max-width: 70vw;
+  max-height: 40vh;
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border-radius: 14px;
+  background: var(--tgui--bg_color, #fff);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+}
+
+.llm-model-picker__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--tgui--text_color, #000);
+  font-size: 14px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.llm-model-picker__option.is-active {
+  color: var(--tgui--link_color, #2481cc);
+  font-weight: 600;
+}
+
+.llm-model-picker__option:active {
+  background: var(--tgui--secondary_fill, rgba(127, 139, 153, 0.12));
+}

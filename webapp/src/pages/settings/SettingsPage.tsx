@@ -1,13 +1,32 @@
-import { Cell, List, Section } from "@telegram-apps/telegram-ui";
+import { Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
+import { LlmSettingsSection, useLlmSettings } from "../../features/llm-settings";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { ThemeToggle } from "../../shared/theme";
 import "./settings.css";
 
 const ITEM_T = { duration: 0.2, ease: "easeOut" as const };
 
-/** Экран «Настройки»: тема оформления и (в перспективе) персональные ключи API ИИ. */
+/**
+ * Экран «Настройки»: тема оформления и персональный ключ/модель ИИ (DeepSeek).
+ *
+ * Статус ключа (useLlmSettings) грузится на уровне страницы: пока не пришёл ответ, показываем
+ * один спиннер на весь экран вместо частичного контента — иначе секция «ИИ» появлялась бы позже
+ * темы и сдвигала бы уже отрисованный список.
+ */
 export function SettingsPage() {
+  const { loading, ...llm } = useLlmSettings();
+
+  if (loading) {
+    return (
+      <PageTransition>
+        <div className="settings-page settings-page__loading">
+          <Spinner size="l" />
+        </div>
+      </PageTransition>
+    );
+  }
+
   return (
     <PageTransition>
       <div className="settings-page">
@@ -19,6 +38,8 @@ export function SettingsPage() {
               </Cell>
             </motion.div>
           </Section>
+
+          <LlmSettingsSection {...llm} />
         </List>
       </div>
     </PageTransition>

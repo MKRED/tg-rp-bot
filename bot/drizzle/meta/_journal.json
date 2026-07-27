@@ -218,6 +218,13 @@
       "when": 1784856798738,
       "tag": "0030_slim_grey_gargoyle",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1785136350577,
+      "tag": "0031_thin_the_hood",
+      "breakpoints": true
     }
   ]
 }

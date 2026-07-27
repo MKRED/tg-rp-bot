@@ -29,10 +29,13 @@ export interface ChatCompletionOptions {
   requestReasoning?: boolean;
   reasoningEffort?: string | null;
 
-  // ─── Только для отладочного перехвата (debugCapture), в тело запроса к LLM НЕ попадают ───
-  // buildBody выбирает поля явно, поэтому эти два сюда «протекают» безопасно.
-  /** Чей это вызов — для фильтра «только мои запросы» на экране отладки. */
-  userId?: number;
+  /**
+   * Чей это вызов. Обязателен: определяет персонального провайдера (resolveProvider, BYOK) —
+   * без него chatCompletion не может выбрать ключ. Также используется debugCapture для фильтра
+   * «только мои запросы» на экране отладки (buildBody выбирает поля явно, поэтому это поле
+   * в тело запроса к LLM не попадает).
+   */
+  userId: number;
   /** Ярлык типа вызова (rp/impersonate/narrator/translate) — для списка на экране отладки. */
   debugLabel?: LlmCallLabel;
 }

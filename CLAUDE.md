@@ -109,12 +109,13 @@ rp-chat, narrator, knowledge-books, narrator-templates, debug.
 
 - **Прокси только для Telegram.** `TELEGRAM_PROXY_URL` цепляется исключительно к grammY-клиенту
   (`bot.ts` → `baseFetchConfig.agent`). НИКОГДА не ставить глобальный прокси (`HTTPS_PROXY` / `ALL_PROXY`) —
-  уведёт через прокси и трафик к OpenRouter. Почему `agent`, а не `dispatcher` (node-fetch@2 quirk) —
-  [docs/architecture.md](docs/architecture.md).
-- **Ключ OpenRouter — только серверно** (`bot/src/llm`), в браузер не попадает; RP-генерация идёт через
-  HTTP API бота, а не напрямую из webapp. Запросы webapp → `/api/*` несут подписанный `initData`
-  (`Authorization: tma …`), сервер проверяет HMAC. Пакет валидации — **`@tma.js/init-data-node`**
-  (НЕ `@telegram-apps/*`), детали — [docs/architecture.md](docs/architecture.md).
+  уведёт через прокси и трафик к LLM-провайдеру (DeepSeek). Почему `agent`, а не `dispatcher`
+  (node-fetch@2 quirk) — [docs/architecture.md](docs/architecture.md).
+- **Ключ LLM-провайдера — только серверно, per-user (BYOK).** Ключ DeepSeek хранится зашифрованным
+  в `user_settings` (`bot/src/db/userLlmSettings.ts`, шифрование — `ENCRYPTION_KEY`), в браузер не
+  отдаётся; RP-генерация идёт через HTTP API бота, а не напрямую из webapp. Запросы webapp → `/api/*`
+  несут подписанный `initData` (`Authorization: tma …`), сервер проверяет HMAC. Пакет валидации —
+  **`@tma.js/init-data-node`** (НЕ `@telegram-apps/*`), детали — [docs/architecture.md](docs/architecture.md).
 - **Narrator: массив промпта не может начинаться с `assistant`.** Перед корнем (openingBeat) вставляется
   синтетический leading-user; отыгранные user-ходы нейтрализуются в `CONTINUE_MARKER` (кроме последнего).
   На эти грабли легко наступить при правке `storyPromptBuilder` — полный нарратив режима «Режиссёр истории»
@@ -220,14 +221,18 @@ Test runner is **vitest** в **обоих** workspace (`bot/` и `webapp/`), у 
 | Service | Used for | Key env var |
 |---|---|---|
 | Telegram | Bot API (через HTTP-прокси) | `BOT_TOKEN`, `TELEGRAM_PROXY_URL` |
-| OpenRouter | LLM (chat completion), серверно | `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` |
-| DeepSeek | LLM (chat completion), серверно | `DEEPSEEK_API_KEY`, `DEEPSEEK_MODEL` |
+| DeepSeek | LLM (chat completion), серверно, ключ per-user (BYOK) | нет — ключ в БД, не в env |
 | Postgres | БД (drizzle) | `DATABASE_URL` |
 
-**Выбор LLM-провайдера** — глобально через env `LLM_PROVIDER` (`openrouter` | `deepseek`, дефолт
-`openrouter`). Оба OpenAI-совместимы, поэтому `bot/src/llm/client.ts` общий, а различия (base URL,
-ключ, app-заголовки, дефолтная модель, формат reasoning) вынесены в `bot/src/llm/providers.ts`
-(`getActiveProvider()`). **Инвариант:** тело запросов OpenRouter не меняем — это запасной путь;
+**LLM-провайдер сейчас единственный активный — DeepSeek**, ключ и модель не глобальные: каждый
+пользователь задаёт свои в Mini App → `/settings` → «ИИ (DeepSeek)» (`webapp/src/features/llm-settings/`
+→ `bot/src/server/settings/`), хранятся зашифрованными в `user_settings`
+(`bot/src/db/userLlmSettings.ts`, ключ шифрования — `ENCRYPTION_KEY`). За запрос провайдер резолвится
+`bot/src/llm/resolveProvider.ts` (`resolveProvider(userId)`); без сохранённого ключа бросает
+`MissingApiKeyError` (`bot/src/llm/errors.ts`) — без фоллбэка на общий/env-ключ. `bot/src/llm/client.ts`
+остаётся общим OpenAI-совместимым клиентом; фабрика `buildOpenRouterProvider()` (`providers.ts`)
+оставлена заделом, но нигде не вызывается — у OpenRouter сейчас нет активного пути конфигурации.
+**Инвариант (сохраняется структурно):** тело запросов OpenRouter не меняем — это запасной путь;
 reasoning («мышление» из пресета, поля `requestReasoning`/`reasoningEffort`) применяется только для
 DeepSeek (`thinking`-режим), для OpenRouter `reasoningBody` возвращает `{}`.
 

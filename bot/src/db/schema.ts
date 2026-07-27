@@ -59,6 +59,12 @@ export const userSettings = pgTable("user_settings", {
   llmDebugMaxRequests: integer("llm_debug_max_requests").notNull().default(30),
   llmDebugHeadMessages: integer("llm_debug_head_messages").notNull().default(3),
   llmDebugTailMessages: integer("llm_debug_tail_messages").notNull().default(5),
+  // Персональный ключ DeepSeek (BYOK — общего ключа из env больше нет). Зашифрован encryptField
+  // (см. utils/crypto.ts), NULL = ключ не задан → генерация падает с MissingApiKeyError.
+  deepseekApiKey: text("deepseek_api_key"),
+  // Id модели DeepSeek (из GET /models), выбранной пользователем. NULL → используется
+  // DEFAULT_DEEPSEEK_MODEL (см. llm/resolveProvider.ts), если ключ уже задан.
+  deepseekModel: text("deepseek_model"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()

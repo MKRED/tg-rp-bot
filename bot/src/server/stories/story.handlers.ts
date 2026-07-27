@@ -14,7 +14,8 @@ import {
 import { getNarratorTemplate } from "../../db/narratorTemplates/index.js";
 import logger from "../../logger.js";
 import { resolveNarratorMarkers } from "../prompt/storyPromptBuilder/index.js";
-import { streamCompletion } from "../shared/streamGeneration.js";
+import { chatCompletionErrorResponse } from "../shared/apiError.js";
+import { streamCompletion, writeGenerationError } from "../shared/streamGeneration.js";
 import {
   aiTranslate,
   englishLangName,
@@ -97,7 +98,7 @@ export async function handleAdvanceStory(c: Ctx) {
           logger.error({ err: rollbackErr, userId, storyId, steerId }, "Failed to roll back dangling story steer"),
         );
       }
-      await stream.writeSSE({ event: "error", data: JSON.stringify({ message: "Generation failed" }) });
+      await writeGenerationError(stream, err);
     }
   });
 }
@@ -145,7 +146,7 @@ export async function handleRegenerateStoryBeat(c: Ctx) {
       await updateActiveStoryMessage(storyId, beat.id).catch((rollbackErr) =>
         logger.error({ err: rollbackErr, userId, storyId, beatId: beat.id }, "Failed to restore story cursor after regenerate"),
       );
-      await stream.writeSSE({ event: "error", data: JSON.stringify({ message: "Generation failed" }) });
+      await writeGenerationError(stream, err);
     }
   });
 }
@@ -247,7 +248,7 @@ export async function handleStoryTranslateMessage(c: Ctx) {
     return c.json({ translation });
   } catch (err) {
     logger.error({ err, userId, storyId, msgId }, "Failed to translate story message");
-    return c.json({ error: "Internal error" }, 500);
+    return chatCompletionErrorResponse(c, err);
   }
 }
 
@@ -330,7 +331,7 @@ export async function handleStoryTranslateText(c: Ctx) {
     return c.json({ translation });
   } catch (err) {
     logger.error({ err, userId, storyId, targetLang, mode }, "Failed to translate story draft");
-    return c.json({ error: "Internal error" }, 500);
+    return chatCompletionErrorResponse(c, err);
   }
 }
 

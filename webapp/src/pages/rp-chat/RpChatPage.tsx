@@ -5,6 +5,7 @@ import { useParams } from "react-router-dom";
 import { chatGraphPath, chatSettingsPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
+import { useToast } from "../../shared/toast";
 import { useChat, useChatSettings, useSendMessage } from "../../features/rp-chat";
 import {
   deleteMessage,
@@ -50,6 +51,7 @@ export function RpChatPage() {
 
   const { chat, loading, error, refresh, setChat } = useChat(chatId);
   const { settings } = useChatSettings(chatId);
+  const { showToast } = useToast();
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const editingMsg = editingId != null
@@ -121,21 +123,28 @@ export function RpChatPage() {
   };
 
   const handleTranslate = useCallback(async (messageId: number, lang: string): Promise<string> => {
-    const translation = await translateMessage(chatId, messageId, lang);
-    setChat((prev) =>
-      prev
-        ? {
-            ...prev,
-            messages: prev.messages.map((m) =>
-              m.id === messageId
-                ? { ...m, translations: { ...(m.translations ?? {}), [lang]: translation } }
-                : m,
-            ),
-          }
-        : prev,
-    );
-    return translation;
-  }, [chatId, setChat]);
+    try {
+      const translation = await translateMessage(chatId, messageId, lang);
+      setChat((prev) =>
+        prev
+          ? {
+              ...prev,
+              messages: prev.messages.map((m) =>
+                m.id === messageId
+                  ? { ...m, translations: { ...(m.translations ?? {}), [lang]: translation } }
+                  : m,
+              ),
+            }
+          : prev,
+      );
+      return translation;
+    } catch (err) {
+      // Прокидываем дальше — useTranslatable.toggle() не должен показать showTranslation=true
+      // без реального перевода (setShowTranslation там не в try, а после await).
+      showToast({ type: "error", message: err instanceof Error ? err.message : "Не удалось перевести сообщение" });
+      throw err;
+    }
+  }, [chatId, setChat, showToast]);
 
   // Пересчитывает перевод сообщения заново (игнорируя кэш) — меню долгого нажатия на Globe.
   // Promise возвращаем, чтобы MessageBubble мог показать спиннер на кнопке на время запроса.
@@ -156,8 +165,9 @@ export function RpChatPage() {
       );
     } catch (err) {
       console.error("Failed to retranslate message", err);
+      showToast({ type: "error", message: err instanceof Error ? err.message : "Не удалось перевести сообщение" });
     }
-  }, [chatId, setChat]);
+  }, [chatId, setChat, showToast]);
 
   // Убирает закэшированный перевод сообщения — меню долгого нажатия на Globe.
   const handleDeleteTranslation = useCallback(async (messageId: number, lang: string) => {

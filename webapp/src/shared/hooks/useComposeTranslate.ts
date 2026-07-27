@@ -28,8 +28,8 @@ export function useComposeTranslate(
       setError(null);
       try {
         setResult(await translateFn(params));
-      } catch {
-        setError("Не удалось перевести");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Не удалось перевести");
       } finally {
         lock.current = false;
         setLoading(false);

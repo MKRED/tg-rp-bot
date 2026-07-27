@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { useToast } from "../../../shared/toast";
 import { deleteImpersonation, listImpersonations, streamImpersonate } from "../api/impersonate-api";
 import type { ImpersonationVariant } from "../types/chat";
 
@@ -14,6 +15,7 @@ export function useImpersonate(chatId: number) {
   const [streamingText, setStreamingText] = useState<string | null>(null);
   // Лок против параллельных генераций — ref, чтобы generate оставался стабильным (deps [chatId]).
   const genLock = useRef(false);
+  const { showToast } = useToast();
 
   const generate = useCallback(async () => {
     if (genLock.current) return;
@@ -28,14 +30,17 @@ export function useImpersonate(chatId: number) {
           setStreamingText(null);
           setVariants((prev) => [...prev, variant]); // новые — в конец списка (снизу)
         },
-        onError: () => setStreamingText(null),
+        onError: (message) => {
+          setStreamingText(null);
+          showToast({ type: "error", message });
+        },
       });
     } finally {
       genLock.current = false;
       setGenerating(false);
       setStreamingText(null);
     }
-  }, [chatId]);
+  }, [chatId, showToast]);
 
   const load = useCallback(async () => {
     setLoading(true);

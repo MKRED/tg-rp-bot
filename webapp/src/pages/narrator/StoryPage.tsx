@@ -62,17 +62,24 @@ export function StoryPage() {
   // Переводит бит/директиву и вливает перевод в локальную ленту (чтобы тоггл показал его сразу).
   const handleTranslate = useCallback(
     async (msgId: number, lang: string): Promise<string> => {
-      const translation = await translateStoryMessage(id, msgId, lang);
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === msgId
-            ? { ...m, translations: { ...(m.translations ?? {}), [lang]: translation } }
-            : m,
-        ),
-      );
-      return translation;
+      try {
+        const translation = await translateStoryMessage(id, msgId, lang);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === msgId
+              ? { ...m, translations: { ...(m.translations ?? {}), [lang]: translation } }
+              : m,
+          ),
+        );
+        return translation;
+      } catch (err) {
+        // Прокидываем дальше — useTranslatable.toggle() не должен показать showTranslation=true
+        // без реального перевода (setShowTranslation там не в try, а после await).
+        showToast({ type: "error", message: err instanceof Error ? err.message : "Не удалось перевести" });
+        throw err;
+      }
     },
-    [id, setMessages],
+    [id, setMessages, showToast],
   );
 
   // Пересчитывает перевод бита/директивы заново (игнорируя кэш) — меню долгого нажатия на Globe.
@@ -89,8 +96,9 @@ export function StoryPage() {
       );
     } catch (err) {
       console.error("Failed to retranslate story message", err);
+      showToast({ type: "error", message: err instanceof Error ? err.message : "Не удалось перевести" });
     }
-  }, [id, setMessages]);
+  }, [id, setMessages, showToast]);
 
   // Убирает закэшированный перевод бита/директивы — меню долгого нажатия на Globe.
   const handleDeleteTranslation = useCallback(async (msgId: number, lang: string) => {
@@ -131,10 +139,10 @@ export function StoryPage() {
         setStatusPhase(null);
         reload(() => setStreamingText(null));
       },
-      onError: () => {
+      onError: (message) => {
         setStatusPhase(null);
         setStreamingText(null);
-        showToast({ type: "error", message: "Не удалось продолжить историю" });
+        showToast({ type: "error", message });
       },
     }).finally(() => {
       setSending(false);
@@ -156,9 +164,9 @@ export function StoryPage() {
       onDone: () => {
         reload(() => setStreamingText(null));
       },
-      onError: () => {
+      onError: (message) => {
         setStreamingText(null);
-        showToast({ type: "error", message: "Не удалось перегенерировать бит" });
+        showToast({ type: "error", message });
         reload(); // вернуть оптимистично убранный бит (сервер откатил курсор на исходный)
       },
     }).finally(() => {

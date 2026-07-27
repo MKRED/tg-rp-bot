@@ -7,7 +7,7 @@ export type LlmProviderName = "openrouter" | "deepseek";
 export interface LlmProvider {
   name: LlmProviderName;
   baseUrl: string;
-  apiKey: string | undefined;
+  apiKey: string;
   defaultModel: string;
   /** Доп. заголовки атрибуции приложения (есть у OpenRouter, нет у DeepSeek). */
   appHeaders?: Record<string, string>;

@@ -19,3 +19,16 @@ export class EmptyCompletionError extends Error {
     this.name = "EmptyCompletionError";
   }
 }
+
+/**
+ * У пользователя не задан персональный ключ LLM-провайдера (BYOK — общего ключа из env больше нет).
+ * Штатное состояние, не авария: сообщение готово для показа пользователю как есть. Текст намеренно
+ * не называет конкретного провайдера (сейчас это всегда DeepSeek, но фраза не должна протухнуть,
+ * когда появится выбор провайдера — см. buildOpenRouterProvider в providers.ts).
+ */
+export class MissingApiKeyError extends Error {
+  constructor() {
+    super("У вас не задан ключ API ИИ. Откройте Настройки → ИИ и добавьте ключ.");
+    this.name = "MissingApiKeyError";
+  }
+}

@@ -11,6 +11,7 @@ import { createNarratorTemplateRoutes } from "./narrator-templates/index.js";
 import { createPersonaRoutes } from "./personas/index.js";
 import { createPresetRoutes } from "./presets/index.js";
 import { createRpTemplateRoutes } from "./rp-templates/index.js";
+import { createSettingsRoutes } from "./settings/index.js";
 import { createStoryRoutes } from "./stories/index.js";
 
 /**
@@ -49,6 +50,9 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
 
   // Отладка: просмотр RAW-запросов к LLM и управление перехватом.
   api.route("/debug", createDebugRoutes());
+
+  // Персональные настройки: ключ и модель DeepSeek (BYOK).
+  api.route("/settings", createSettingsRoutes());
 
   return api;
 }

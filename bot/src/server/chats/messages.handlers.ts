@@ -16,7 +16,8 @@ import { getPreset } from "../../db/presets/index.js";
 import { getRpTemplate } from "../../db/rpTemplates/index.js";
 import logger from "../../logger.js";
 import { buildMessages, DEFAULT_RP_PROMPT_ORDER, presetToCompletionOptions } from "../prompt/promptBuilder/index.js";
-import { streamCompletion } from "../shared/streamGeneration.js";
+import { chatCompletionErrorResponse } from "../shared/apiError.js";
+import { streamCompletion, writeGenerationError } from "../shared/streamGeneration.js";
 import { aiTranslate, englishLangName, googleTranslate } from "../shared/translate.js";
 import type { ChatContext, Ctx } from "./chats.types.js";
 
@@ -116,7 +117,7 @@ export async function handleSendMessage(c: Ctx) {
       await stream.writeSSE({ event: "done", data: JSON.stringify(assistantMsg) });
     } catch (err) {
       logger.error({ err, userId, chatId }, "sendMessage stream error");
-      await stream.writeSSE({ event: "error", data: JSON.stringify({ message: "Generation failed" }) });
+      await writeGenerationError(stream, err);
     }
   });
 }
@@ -171,7 +172,7 @@ export async function handleEditMessage(c: Ctx) {
       logger.error({ err, userId, chatId }, "editMessage stream error");
       // Возвращаем курсор на новую user-реплику (выше неё мы поднимали его лишь ради контекста).
       await updateActiveMessage(chatId, newUserMsg.id).catch(() => {});
-      await stream.writeSSE({ event: "error", data: JSON.stringify({ message: "Generation failed" }) });
+      await writeGenerationError(stream, err);
     }
   });
 }
@@ -223,7 +224,7 @@ export async function handleRegenerateMessage(c: Ctx) {
       // Возвращаем курсор на существующий ответ, чтобы чат не «откатился» к точке до реплики
       // (мы временно подняли его выше user-реплики ради построения контекста).
       await updateActiveMessage(chatId, parentUserMsg.id).catch(() => {});
-      await stream.writeSSE({ event: "error", data: JSON.stringify({ message: "Generation failed" }) });
+      await writeGenerationError(stream, err);
     }
   });
 }
@@ -317,7 +318,7 @@ export async function handleTranslateMessage(c: Ctx) {
     return c.json({ translation });
   } catch (err) {
     logger.error({ err, userId, chatId, msgId }, "Failed to translate message");
-    return c.json({ error: "Internal error" }, 500);
+    return chatCompletionErrorResponse(c, err);
   }
 }
 
