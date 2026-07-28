@@ -34,12 +34,14 @@
   );
 }
 
-.dropdown-picker__subhead {
-  font-size: 15px;
-  /* 22px — line-height Subheadline level2 на базовой платформе tgui (не iOS: там 20px, но это
-     отдельная тема, которая у нас нигде не подключается). */
-  line-height: 22px;
-  color: var(--tgui--subtitle_text_color, #707579);
+/* Основной текст Cell (children), не subhead-подпись: tgui рендерит его через Subheadline level="1"
+   (16px/24px на базовой платформе, не iOS) с font-weight accent3 и обычным text_color — см.
+   useTypographyCellComponents/Cell.js. */
+.dropdown-picker__header {
+  font-size: var(--tgui--subheadline1--font_size, 16px);
+  line-height: var(--tgui--subheadline1--line_height, 24px);
+  font-weight: var(--tgui--font_weight--accent3, 400);
+  color: var(--tgui--text_color, #000);
 }
 
 .dropdown-picker__anchor {
@@ -92,6 +94,21 @@
   flex-shrink: 0;
   color: var(--tgui--hint_color, #7d8b99);
   transition: transform 0.15s;
+}
+
+/* tgui Spinner size="s" рендерит SVG 24×24 без CSS-класса под конкретный размер (сам масштаб
+   задаёт только атрибут width/height у svg) — против 18×18 у ChevronDown это давало заметный
+   скачок триггера при появлении спиннера. Прижимаем к размеру шеврона явно: у replaced-элементов
+   (svg) любое правило CSS для width/height перебивает HTML-атрибут. */
+.dropdown-picker__spinner {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.dropdown-picker__spinner svg {
+  width: 100%;
+  height: 100%;
 }
 
 .dropdown-picker__subtitle {
@@ -168,11 +185,24 @@
   cursor: pointer;
 }
 
+.dropdown-picker__status {
+  padding: 10px 12px;
+  color: var(--tgui--hint_color, #7d8b99);
+  font-size: 15px;
+}
+
 .dropdown-picker__option.is-active {
   color: var(--tgui--link_color, #2481cc);
   font-weight: 600;
 }
 
+.dropdown-picker__option:hover,
 .dropdown-picker__option:active {
   background: var(--tgui--secondary_fill, rgba(127, 139, 153, 0.12));
+}
+
+/* Тонкий разделитель между пунктами — без него строки визуально сливались в один блок текста
+   на фоне карточки меню. На последнем пункте не нужен, поэтому граница у li, а не у кнопки. */
+.dropdown-picker__menu li:not(:last-child) {
+  border-bottom: 1px solid var(--tgui--divider, rgba(0, 0, 0, 0.08));
 }

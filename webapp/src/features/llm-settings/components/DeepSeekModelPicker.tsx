@@ -8,12 +8,15 @@ interface DeepSeekModelPickerProps {
   onChange: (value: string) => void;
   disabled?: boolean;
   className?: string;
+  onOpen?: () => void;
+  pending?: boolean;
 }
 
 /**
  * Выпадающий список моделей DeepSeek — тонкая обёртка над общим DropdownPicker. options приходят
  * из GET /models (см. useLlmSettings.verify) — заранее неизвестны и потенциально длинные, поэтому
- * список динамический, а не константа, как в EffortPicker.
+ * список динамический, а не константа, как в EffortPicker. onOpen/pending — раскрытие списка само
+ * запускает (ре)проверку ключа и подтягивает актуальный список моделей.
  */
 export function DeepSeekModelPicker({
   header,
@@ -23,6 +26,8 @@ export function DeepSeekModelPicker({
   onChange,
   disabled,
   className,
+  onOpen,
+  pending,
 }: DeepSeekModelPickerProps) {
   return (
     <DropdownPicker
@@ -35,6 +40,8 @@ export function DeepSeekModelPicker({
       placeholder="Модель не выбрана"
       disabled={disabled}
       ariaLabel="Модель DeepSeek"
+      onOpen={onOpen}
+      pending={pending}
     />
   );
 }

@@ -1,13 +1,3 @@
-/* 24px — отступ tgui Cell на базовой платформе (см. коммент в PromptEditorField.css); держим
-   его же на этих кастомных блоках, иначе левый край "прыгает" между ними и соседними Cell
-   ("Ключ API", "Тема"). */
-.llm-settings__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 24px;
-}
-
 /* Гутер для DropdownPicker (shared/components/DropdownPicker) — только горизонтальный отступ,
    через padding-inline (не padding!), т.к. сам компонент уже задаёт свой вертикальный ритм
    (padding-block, повторяет tgui Cell) — шорткат padding его бы затёр. */
@@ -15,15 +5,18 @@
   padding-inline: 24px;
 }
 
-.llm-settings__actions {
-  display: flex;
-  gap: 8px;
-  padding: 0 24px 8px;
+/* tgui Button size="s" даёт фиксированную height:36px независимо от иконки внутри — рядом с
+   DropdownPicker (тот же 12px 16px паддинг label, но контент высотой 24px → 48px) Input визуально
+   получался выше (60px). Прижимаем кнопку к 24px, чтобы итоговая высота строки совпала (24+2×12). */
+.llm-settings__key-action {
+  height: 24px !important;
+  min-width: 24px !important;
+  padding: 0 !important;
 }
 
-.llm-settings__error {
-  margin: 0;
-  padding: 0 24px 8px;
-  color: var(--tgui--destructive_text_color, #e53935);
-  font-size: 13px;
+/* Spinner size="s" — 24×24 SVG без CSS-класса под размер (см. коммент в DropdownPicker.css) —
+   в 24×24-кнопке без паддинга обрезался бы краями; прижимаем к 14px, как у Check/Trash2 рядом. */
+.llm-settings__key-action svg {
+  width: 14px;
+  height: 14px;
 }

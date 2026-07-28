@@ -1,3 +1,4 @@
+import { Spinner } from "@telegram-apps/telegram-ui";
 import { Check, ChevronDown } from "lucide-react";
 import { useDropdownPosition } from "../../hooks/useDropdownPosition";
 import "./DropdownPicker.css";
@@ -17,6 +18,10 @@ interface DropdownPickerProps<T extends string> {
   disabled?: boolean;
   className?: string;
   ariaLabel?: string;
+  /** Зовётся при каждом раскрытии меню — например, чтобы подтянуть свежий список опций. */
+  onOpen?: () => void;
+  /** Идёт фоновая загрузка опций (см. onOpen): вместо шеврона — спиннер, вместо списка — заглушка. */
+  pending?: boolean;
 }
 
 /**
@@ -43,31 +48,44 @@ export function DropdownPicker<T extends string>({
   disabled,
   className,
   ariaLabel,
+  onOpen,
+  pending,
 }: DropdownPickerProps<T>) {
   const { open, dir, maxHeight, rootRef, triggerRef, toggle, close } = useDropdownPosition();
-  const isDisabled = disabled || options.length === 0;
+  // Без onOpen пустой список действительно нечего открывать; с ним открытие — единственный способ
+  // его наполнить, поэтому пустота опций до первой загрузки триггер не блокирует.
+  const isDisabled = disabled || (options.length === 0 && !onOpen);
   const current = options.find((o) => o.value === value);
+
+  const handleToggle = () => {
+    if (!open) onOpen?.();
+    toggle();
+  };
 
   return (
     <div className={className ? `dropdown-picker ${className}` : "dropdown-picker"}>
-      {header && <div className="dropdown-picker__subhead">{header}</div>}
+      {header && <div className="dropdown-picker__header">{header}</div>}
       <div className="dropdown-picker__anchor" ref={rootRef}>
         <button
           ref={triggerRef}
           type="button"
           className="dropdown-picker__trigger"
-          onClick={toggle}
+          onClick={handleToggle}
           aria-haspopup="listbox"
           aria-expanded={open}
           aria-label={ariaLabel}
           disabled={isDisabled}
         >
           <span className="dropdown-picker__value">{current?.label ?? placeholder}</span>
-          <ChevronDown
-            size={18}
-            className="dropdown-picker__chevron"
-            style={{ transform: open ? "rotate(180deg)" : "none" }}
-          />
+          {pending ? (
+            <Spinner size="s" className="dropdown-picker__spinner" />
+          ) : (
+            <ChevronDown
+              size={18}
+              className="dropdown-picker__chevron"
+              style={{ transform: open ? "rotate(180deg)" : "none" }}
+            />
+          )}
         </button>
         {open && (
           <ul
@@ -75,23 +93,27 @@ export function DropdownPicker<T extends string>({
             role="listbox"
             style={{ maxHeight }}
           >
-            {options.map((o) => (
-              <li key={o.value}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={o.value === value}
-                  className={`dropdown-picker__option${o.value === value ? " is-active" : ""}`}
-                  onClick={() => {
-                    onChange(o.value);
-                    close();
-                  }}
-                >
-                  <span>{o.label}</span>
-                  {o.value === value && <Check size={16} />}
-                </button>
-              </li>
-            ))}
+            {pending ? (
+              <li className="dropdown-picker__status">Загрузка…</li>
+            ) : (
+              options.map((o) => (
+                <li key={o.value}>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={o.value === value}
+                    className={`dropdown-picker__option${o.value === value ? " is-active" : ""}`}
+                    onClick={() => {
+                      onChange(o.value);
+                      close();
+                    }}
+                  >
+                    <span>{o.label}</span>
+                    {o.value === value && <Check size={16} />}
+                  </button>
+                </li>
+              ))
+            )}
           </ul>
         )}
       </div>

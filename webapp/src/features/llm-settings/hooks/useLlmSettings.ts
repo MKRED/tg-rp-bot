@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useToast } from "../../../shared/toast";
 import { getLlmSettings, saveLlmSettings, verifyDeepSeekKey } from "../api/llm-settings-api";
 import type { LlmSettingsStatus } from "../types/llmSettings";
 
@@ -20,9 +21,8 @@ export function useLlmSettings() {
   const [models, setModels] = useState<string[] | null>(null);
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
-  const [verifyError, setVerifyError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   const refresh = useCallback(() => {
     setLoading(true);
@@ -40,51 +40,75 @@ export function useLlmSettings() {
   }, [refresh]);
 
   // Проверяет введённый ключ (или уже сохранённый, если поле пустое) и подтягивает список моделей.
-  const verify = useCallback(async () => {
+  // Возвращает исход вызывающему коду (verifyAndSave), т.к. state-сеттеры асинхронны и читать
+  // selectedModel сразу после setSelectedModel в том же тике нельзя — вернём выбранную модель явно.
+  // silent — без тоста об успехе: раскрытие DeepSeekModelPicker дёргает verify() на каждый показ
+  // меню (см. onOpen в LlmSettingsSection), и тост при обычном пролистывании моделей был бы спамом;
+  // ошибку показываем в любом случае — она значима независимо от того, кто вызвал verify().
+  const verify = useCallback(async (opts?: { silent?: boolean }): Promise<
+    { ok: true; model: string | null } | { ok: false }
+  > => {
     setVerifying(true);
-    setVerifyError(null);
     try {
       const res = await verifyDeepSeekKey(keyInput.trim() || undefined);
       if (!res.ok) {
         setModels(null);
-        setVerifyError(VERIFY_ERROR_MESSAGES[res.error ?? ""] ?? "Не удалось проверить ключ.");
-        return;
+        showToast({
+          type: "error",
+          message: VERIFY_ERROR_MESSAGES[res.error ?? ""] ?? "Не удалось проверить ключ.",
+        });
+        return { ok: false };
       }
       setModels(res.models ?? []);
       // Сохраняем текущий выбор, если он есть в списке; иначе — первая доступная модель.
-      setSelectedModel((prev) =>
-        prev && res.models?.includes(prev) ? prev : (res.models?.[0] ?? null),
-      );
+      const nextModel = selectedModel && res.models?.includes(selectedModel)
+        ? selectedModel
+        : (res.models?.[0] ?? null);
+      setSelectedModel(nextModel);
+      if (!opts?.silent) {
+        showToast({ type: "success", message: `Ключ действителен, доступно моделей: ${res.models?.length ?? 0}` });
+      }
+      return { ok: true, model: nextModel };
     } catch (err) {
       console.error("Failed to verify DeepSeek key", err);
-      setVerifyError("Не удалось проверить ключ. Попробуйте ещё раз.");
+      showToast({ type: "error", message: "Не удалось проверить ключ. Попробуйте ещё раз." });
+      return { ok: false };
     } finally {
       setVerifying(false);
     }
-  }, [keyInput]);
+  }, [keyInput, selectedModel, showToast]);
 
-  const save = useCallback(async () => {
+  // modelOverride нужен verifyAndSave: свежерезолвленная verify() модель ещё не осела в state.
+  const save = useCallback(async (modelOverride?: string | null) => {
     setSaving(true);
-    setSaveError(null);
     try {
       const trimmed = keyInput.trim();
+      const modelToSave = modelOverride !== undefined ? modelOverride : selectedModel;
       const res = await saveLlmSettings({
         ...(trimmed && { apiKey: trimmed }),
-        ...(selectedModel && { model: selectedModel }),
+        ...(modelToSave && { model: modelToSave }),
       });
       setStatus(res);
       setKeyInput("");
     } catch (err) {
       console.error("Failed to save LLM settings", err);
-      setSaveError(err instanceof Error ? err.message : "Не удалось сохранить настройки.");
+      showToast({
+        type: "error",
+        message: err instanceof Error ? err.message : "Не удалось сохранить настройки.",
+      });
     } finally {
       setSaving(false);
     }
-  }, [keyInput, selectedModel]);
+  }, [keyInput, selectedModel, showToast]);
+
+  // Комбо для кнопки в after поля ввода: проверить новый ключ и сразу сохранить с резолвленной моделью.
+  const verifyAndSave = useCallback(async () => {
+    const result = await verify();
+    if (result.ok) await save(result.model);
+  }, [verify, save]);
 
   const clearKey = useCallback(async () => {
     setSaving(true);
-    setSaveError(null);
     try {
       setStatus(await saveLlmSettings({ apiKey: null }));
       setKeyInput("");
@@ -92,11 +116,11 @@ export function useLlmSettings() {
       setSelectedModel(null);
     } catch (err) {
       console.error("Failed to clear DeepSeek key", err);
-      setSaveError("Не удалось удалить ключ.");
+      showToast({ type: "error", message: "Не удалось удалить ключ." });
     } finally {
       setSaving(false);
     }
-  }, []);
+  }, [showToast]);
 
   return {
     status,
@@ -107,10 +131,9 @@ export function useLlmSettings() {
     selectedModel,
     setSelectedModel,
     verifying,
-    verifyError,
     verify,
+    verifyAndSave,
     saving,
-    saveError,
     save,
     clearKey,
   };
