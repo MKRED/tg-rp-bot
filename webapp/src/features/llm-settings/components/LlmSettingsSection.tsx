@@ -1,5 +1,6 @@
 import { Button, Cell, Input, Spinner } from "@telegram-apps/telegram-ui";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
+import { FieldHint } from "../../../shared/components/FieldHint";
 import { SectionWithFooter } from "../../../shared/components/SectionWithFooter";
 import { confirmAction } from "../../../shared/telegram/confirm";
 import type { useLlmSettings } from "../hooks/useLlmSettings";
@@ -53,15 +54,13 @@ export function LlmSettingsSection({
         >
           Ключ API
         </Cell>
-        <div className="llm-settings__field">
-          <Input
-            type="password"
-            placeholder={status.hasKey ? "Введите новый, чтобы заменить" : "sk-…"}
-            value={keyInput}
-            onChange={(e) => setKeyInput(e.target.value)}
-            autoComplete="off"
-          />
-        </div>
+        <Input
+          type="password"
+          placeholder={status.hasKey ? "Введите новый, чтобы заменить" : "sk-…"}
+          value={keyInput}
+          onChange={(e) => setKeyInput(e.target.value)}
+          autoComplete="off"
+        />
 
         <div className="llm-settings__actions">
           <Button size="s" mode="bezeled" disabled={!canVerify} onClick={() => void verify()}>
@@ -71,19 +70,18 @@ export function LlmSettingsSection({
         {verifyError && <p className="llm-settings__error">{verifyError}</p>}
 
         {(models || status.model) && (
-          <Cell
-            subtitle={models ? "Список получен от DeepSeek" : "Проверьте ключ, чтобы сменить модель"}
-            after={
-              <DeepSeekModelPicker
-                value={selectedModel}
-                options={models ?? (status.model ? [status.model] : [])}
-                onChange={setSelectedModel}
-                disabled={!models}
-              />
-            }
-          >
-            Модель
-          </Cell>
+          <div className="llm-settings__field">
+            <DeepSeekModelPicker
+              header="Модель"
+              value={selectedModel}
+              options={models ?? (status.model ? [status.model] : [])}
+              onChange={setSelectedModel}
+              disabled={!models}
+            />
+            <FieldHint>
+              {models ? "Список получен от DeepSeek" : "Проверьте ключ, чтобы сменить модель"}
+            </FieldHint>
+          </div>
         )}
 
         <div className="llm-settings__field">

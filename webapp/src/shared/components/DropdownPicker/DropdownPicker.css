@@ -1,0 +1,120 @@
+/* Full-width выпадающий список — общий для EffortPicker (generation-presets) и DeepSeekModelPicker
+   (llm-settings). Горизонтальные отступы задаёт обёртка-потребитель через className (по образцу
+   FieldHint), сам компонент их не имеет — меню (left:0; right:0) выравнивается по внутреннему краю
+   padding-box родителя, каким бы он ни был. */
+.dropdown-picker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dropdown-picker__header {
+  font-size: 13px;
+  color: var(--tgui--hint_color, #7d8b99);
+}
+
+.dropdown-picker__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 12px;
+  background: var(--tgui--secondary_fill, rgba(127, 139, 153, 0.12));
+  color: var(--tgui--text_color, #000);
+  font-size: 16px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.dropdown-picker__trigger span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdown-picker__trigger:disabled {
+  color: var(--tgui--hint_color, #7d8b99);
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Направление раскрытия и max-height считает useDropdownPosition по месту вокруг триггера — здесь
+   только визуал обеих сторон. */
+.dropdown-picker__menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border-radius: 14px;
+  background: var(--tgui--bg_color, #fff);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+}
+
+.dropdown-picker__menu--down {
+  top: calc(100% + 6px);
+  transform-origin: top;
+  animation: dropdown-picker-in-down 0.14s ease-out;
+}
+
+.dropdown-picker__menu--up {
+  bottom: calc(100% + 6px);
+  transform-origin: bottom;
+  animation: dropdown-picker-in-up 0.14s ease-out;
+}
+
+@keyframes dropdown-picker-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes dropdown-picker-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.dropdown-picker__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--tgui--text_color, #000);
+  font-size: 15px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dropdown-picker__option.is-active {
+  color: var(--tgui--link_color, #2481cc);
+  font-weight: 600;
+}
+
+.dropdown-picker__option:active {
+  background: var(--tgui--secondary_fill, rgba(127, 139, 153, 0.12));
+}
