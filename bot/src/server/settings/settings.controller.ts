@@ -5,6 +5,7 @@ import {
   upsertUserLlmSettings,
 } from "../../db/userLlmSettings.js";
 import { ensureUser } from "../../db/users.js";
+import { getDeepSeekBalance } from "../../llm/deepseekBalance.js";
 import { listDeepSeekModels } from "../../llm/deepseekModels.js";
 import { LlmHttpError } from "../../llm/errors.js";
 import logger from "../../logger.js";
@@ -56,6 +57,24 @@ export function createSettingsRoutes(): Hono<{ Variables: AppVariables }> {
         return c.json({ ok: false, error: "invalid_key" });
       }
       logger.error({ err, userId: user.id }, "Failed to verify DeepSeek key");
+      return c.json({ error: "Internal error" }, 500);
+    }
+  });
+
+  // Остаток баланса DeepSeek для сохранённого ключа — отдельно от /verify: verify нужен и с ещё
+  // не сохранённым ключом (ввод нового), баланс имеет смысл только для уже сохранённого.
+  api.get("/llm/balance", async (c) => {
+    const user = c.get("tgUser");
+    if (!user) return c.json({ error: "Auth required" }, 401);
+    try {
+      const creds = await getDecryptedDeepSeekCredentials(user.id);
+      if (!creds) return c.json({ error: "no_key" }, 400);
+      return c.json(await getDeepSeekBalance(creds.apiKey));
+    } catch (err) {
+      if (err instanceof LlmHttpError && err.status === 401) {
+        return c.json({ error: "invalid_key" }, 400);
+      }
+      logger.error({ err, userId: user.id }, "Failed to fetch DeepSeek balance");
       return c.json({ error: "Internal error" }, 500);
     }
   });

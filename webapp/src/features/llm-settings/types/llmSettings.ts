@@ -18,3 +18,16 @@ export interface LlmSettingsPatch {
   apiKey?: string | null;
   model?: string;
 }
+
+export interface DeepSeekBalanceInfo {
+  currency: string;
+  totalBalance: string;
+  grantedBalance: string;
+  toppedUpBalance: string;
+}
+
+export interface DeepSeekBalance {
+  /** Хватает ли баланса на API-запросы. */
+  isAvailable: boolean;
+  balanceInfos: DeepSeekBalanceInfo[];
+}

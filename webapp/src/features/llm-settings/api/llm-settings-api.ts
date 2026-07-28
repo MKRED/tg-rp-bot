@@ -1,5 +1,10 @@
 import { apiFetch } from "../../../shared/api/client";
-import type { LlmSettingsPatch, LlmSettingsStatus, VerifyDeepSeekKeyResult } from "../types/llmSettings";
+import type {
+  DeepSeekBalance,
+  LlmSettingsPatch,
+  LlmSettingsStatus,
+  VerifyDeepSeekKeyResult,
+} from "../types/llmSettings";
 
 /** Статус ключа/модели (без самого ключа). */
 export function getLlmSettings(): Promise<LlmSettingsStatus> {
@@ -22,4 +27,9 @@ export function saveLlmSettings(patch: LlmSettingsPatch): Promise<LlmSettingsSta
     method: "PATCH",
     body: JSON.stringify(patch),
   });
+}
+
+/** Остаток баланса DeepSeek для сохранённого ключа. */
+export function getDeepSeekBalance(): Promise<DeepSeekBalance> {
+  return apiFetch<DeepSeekBalance>("/settings/llm/balance");
 }

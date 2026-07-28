@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useToast } from "../../../shared/toast";
-import { getLlmSettings, saveLlmSettings, verifyDeepSeekKey } from "../api/llm-settings-api";
-import type { LlmSettingsStatus } from "../types/llmSettings";
+import { getDeepSeekBalance, getLlmSettings, saveLlmSettings, verifyDeepSeekKey } from "../api/llm-settings-api";
+import type { DeepSeekBalance, LlmSettingsStatus } from "../types/llmSettings";
 
 const VERIFY_ERROR_MESSAGES: Record<string, string> = {
   invalid_key: "Ключ не принят DeepSeek — проверьте, что он скопирован полностью и без опечаток.",
@@ -22,6 +22,8 @@ export function useLlmSettings() {
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [balance, setBalance] = useState<DeepSeekBalance | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
   const { showToast } = useToast();
 
   const refresh = useCallback(() => {
@@ -38,6 +40,39 @@ export function useLlmSettings() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // Молча — баланс информационный, отдельного тоста об ошибке не показываем (сама секция скрыта,
+  // когда ключа нет, поэтому "no_key"/401 тут — гонка с ещё не осевшим статусом, не пользовательский ввод).
+  // balanceRequestRef — счётчик поколения запроса: при быстрой смене/удалении ключа предыдущий
+  // ещё летящий запрос может разрешиться позже нового и перезаписать state чужим (устаревшим)
+  // балансом; применяем результат, только если это всё ещё последний запущенный запрос.
+  const balanceRequestRef = useRef(0);
+  const loadBalance = useCallback(async () => {
+    const requestId = ++balanceRequestRef.current;
+    setBalanceLoading(true);
+    try {
+      const result = await getDeepSeekBalance();
+      if (balanceRequestRef.current === requestId) setBalance(result);
+    } catch (err) {
+      console.error("Failed to load DeepSeek balance", err);
+      if (balanceRequestRef.current === requestId) setBalance(null);
+    } finally {
+      if (balanceRequestRef.current === requestId) setBalanceLoading(false);
+    }
+  }, []);
+
+  // Зависимость от last4 (не всего status) — last4 меняется ровно при замене сохранённого ключа
+  // на новый, поэтому баланс перезапрашивается на реально значимые события (появился/пропал/сменился
+  // ключ), а не на каждое сохранение модели (то же hasKey/last4, но другой status как объект).
+  useEffect(() => {
+    if (status.hasKey) {
+      void loadBalance();
+    } else {
+      balanceRequestRef.current++; // инвалидируем всё ещё летящий запрос для уже удалённого ключа
+      setBalance(null);
+      setBalanceLoading(false);
+    }
+  }, [status.hasKey, status.last4, loadBalance]);
 
   // Проверяет введённый ключ (или уже сохранённый, если поле пустое) и подтягивает список моделей.
   // Возвращает исход вызывающему коду (verifyAndSave), т.к. state-сеттеры асинхронны и читать
@@ -136,5 +171,7 @@ export function useLlmSettings() {
     saving,
     save,
     clearKey,
+    balance,
+    balanceLoading,
   };
 }

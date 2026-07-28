@@ -4,6 +4,7 @@ import { Check, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { confirmAction } from "../../../shared/telegram/confirm";
 import type { useLlmSettings } from "../hooks/useLlmSettings";
+import { formatBalanceDescription, formatBalanceSubtitle } from "../lib/formatBalance";
 import { DeepSeekModelPicker } from "./DeepSeekModelPicker";
 import "./LlmSettingsSection.css";
 
@@ -35,6 +36,8 @@ export function LlmSettingsSection({
   saving,
   save,
   clearKey,
+  balance,
+  balanceLoading,
 }: LlmSettingsSectionProps) {
   const hasInput = keyInput.trim().length > 0;
   const keyAction: "save" | "delete" | "none" = hasInput ? "save" : status.hasKey ? "delete" : "none";
@@ -124,6 +127,12 @@ export function LlmSettingsSection({
                 }}
                 pending={verifying}
               />
+              <Cell
+                subtitle={formatBalanceSubtitle(balance, balanceLoading)}
+                description={formatBalanceDescription(balance)}
+              >
+                Баланс DeepSeek
+              </Cell>
             </motion.div>
           )}
         </AnimatePresence>
