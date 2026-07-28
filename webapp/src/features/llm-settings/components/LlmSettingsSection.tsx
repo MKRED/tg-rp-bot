@@ -1,6 +1,5 @@
 import { Button, Cell, Input, Spinner } from "@telegram-apps/telegram-ui";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
-import { FieldHint } from "../../../shared/components/FieldHint";
 import { SectionWithFooter } from "../../../shared/components/SectionWithFooter";
 import { confirmAction } from "../../../shared/telegram/confirm";
 import type { useLlmSettings } from "../hooks/useLlmSettings";
@@ -70,18 +69,15 @@ export function LlmSettingsSection({
         {verifyError && <p className="llm-settings__error">{verifyError}</p>}
 
         {(models || status.model) && (
-          <div className="llm-settings__field">
-            <DeepSeekModelPicker
-              header="Модель"
-              value={selectedModel}
-              options={models ?? (status.model ? [status.model] : [])}
-              onChange={setSelectedModel}
-              disabled={!models}
-            />
-            <FieldHint>
-              {models ? "Список получен от DeepSeek" : "Проверьте ключ, чтобы сменить модель"}
-            </FieldHint>
-          </div>
+          <DeepSeekModelPicker
+            className="llm-settings__picker-gutter"
+            header="Модель"
+            subtitle={models ? "Список получен от DeepSeek" : "Проверьте ключ, чтобы сменить модель"}
+            value={selectedModel}
+            options={models ?? (status.model ? [status.model] : [])}
+            onChange={setSelectedModel}
+            disabled={!models}
+          />
         )}
 
         <div className="llm-settings__field">

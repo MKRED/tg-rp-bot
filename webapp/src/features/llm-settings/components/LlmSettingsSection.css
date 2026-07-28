@@ -8,6 +8,13 @@
   padding: 8px 24px;
 }
 
+/* Гутер для DropdownPicker (shared/components/DropdownPicker) — только горизонтальный отступ,
+   через padding-inline (не padding!), т.к. сам компонент уже задаёт свой вертикальный ритм
+   (padding-block, повторяет tgui Cell) — шорткат padding его бы затёр. */
+.llm-settings__picker-gutter {
+  padding-inline: 24px;
+}
+
 .llm-settings__actions {
   display: flex;
   gap: 8px;

@@ -233,9 +233,12 @@
 }
 
 /* Гутер для DropdownPicker (shared/components/DropdownPicker) в форме пресета — выравнивает его
-   по тем же 22px, что и остальные поля формы. Сам компонент горизонтальных отступов не имеет. */
+   по тем же 22px, что и остальные поля формы. padding-block обнуляем: в этом контексте DropdownPicker —
+   прямой flex-ребёнок .preset-form (gap: 16px), который уже даёт вертикальный ритм между полями;
+   собственный padding-block компонента (тот же 16px, повторяет tgui Cell) здесь бы удвоил отступ. */
 .preset-picker-gutter {
-  padding: 0 22px;
+  padding-inline: 22px;
+  padding-block: 0;
 }
 
 /* --- Параметры сэмплинга (слайдеры) --- */

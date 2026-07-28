@@ -1,45 +1,103 @@
 /* Full-width выпадающий список — общий для EffortPicker (generation-presets) и DeepSeekModelPicker
    (llm-settings). Горизонтальные отступы задаёт обёртка-потребитель через className (по образцу
-   FieldHint), сам компонент их не имеет — меню (left:0; right:0) выравнивается по внутреннему краю
-   padding-box родителя, каким бы он ни был. */
+   FieldHint) — ТОЛЬКО через padding-inline (не шорткат padding!), иначе он затрёт свой
+   padding-block компонента. Меню (left:0; right:0) выравнивается по внутреннему краю padding-box
+   родителя, каким бы он ни был.
+
+   Раскладка и шрифты скопированы с tgui `Cell` (subhead → title → subtitle — та же типографика,
+   subhead/subtitle 15px), но сам триггер оформлен как поле ввода tgui `Input`/`FormInput` на
+   базовой платформе: без заливки, постоянный 2px ring через box-shadow (var(--tgui--outline),
+   на фокусе/открытом меню — var(--tgui--link_color)), radius 14px, internal padding 12px 16px —
+   именно так `Input` даёт "пространство" вокруг текста через свой `<label>`-бокс (залитый фон и
+   radius 12px — это отдельная iOS-тема, у нас нигде не подключается). В tgui нет готового
+   select-варианта такого поля, поэтому "самописный". Кликабелен только бокс-триггер; subhead/
+   subtitle — обычный текст вокруг, как header/hint у Input. */
 .dropdown-picker {
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  padding-block: 16px;
+  padding-inline: 0;
+  /* tgui даёт --tgui--font-family только как CSS-переменную — саму font-family на body/root
+     никто не проставляет, её явно ставят только компоненты Typography (Text/Subheadline/…).
+     Без этой строки текст (и особенно <button>, который не наследует шрифт по умолчанию)
+     падает на дефолтный serif браузера (Times New Roman). */
+  font-family: var(
+    --tgui--font-family,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Roboto",
+    "Apple Color Emoji",
+    "Helvetica Neue",
+    sans-serif
+  );
 }
 
-.dropdown-picker__header {
-  font-size: 13px;
-  color: var(--tgui--hint_color, #7d8b99);
+.dropdown-picker__subhead {
+  font-size: 15px;
+  /* 22px — line-height Subheadline level2 на базовой платформе tgui (не iOS: там 20px, но это
+     отдельная тема, которая у нас нигде не подключается). */
+  line-height: 22px;
+  color: var(--tgui--subtitle_text_color, #707579);
+}
+
+.dropdown-picker__anchor {
+  position: relative;
 }
 
 .dropdown-picker__trigger {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
   width: 100%;
-  padding: 10px 14px;
+  padding: 12px 16px;
   border: none;
-  border-radius: 12px;
-  background: var(--tgui--secondary_fill, rgba(127, 139, 153, 0.12));
+  border-radius: 14px;
+  /* На базовой платформе tgui `Input` фона не заливает вообще — только постоянный ринг-бордер
+     через box-shadow (iOS-тема с заливкой var(--tgui--bg_color) у нас нигде не подключается). */
+  background: none;
+  box-shadow: 0 0 0 2px var(--tgui--outline, rgba(0, 0, 0, 0.15));
   color: var(--tgui--text_color, #000);
   font-size: 16px;
+  line-height: 24px;
   font-family: inherit;
+  text-align: left;
   cursor: pointer;
+  transition: box-shadow 0.12s ease;
 }
 
-.dropdown-picker__trigger span {
+/* Открытое меню/фокус — тот же ринг, что у Input в состоянии focused (там его включает
+   внутренний isFocused, у нас — нативный фокус кнопки или открытое состояние). */
+.dropdown-picker__trigger:not(:disabled):hover,
+.dropdown-picker__trigger:not(:disabled):focus-visible,
+.dropdown-picker__trigger[aria-expanded="true"] {
+  box-shadow: 0 0 0 2px var(--tgui--link_color, #2481cc);
+}
+
+.dropdown-picker__trigger:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.dropdown-picker__value {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.dropdown-picker__trigger:disabled {
+.dropdown-picker__chevron {
+  flex-shrink: 0;
   color: var(--tgui--hint_color, #7d8b99);
-  opacity: 0.6;
-  cursor: default;
+  transition: transform 0.15s;
+}
+
+.dropdown-picker__subtitle {
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--tgui--hint_color, #7d8b99);
 }
 
 /* Направление раскрытия и max-height считает useDropdownPosition по месту вокруг триггера — здесь
