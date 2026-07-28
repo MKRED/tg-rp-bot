@@ -54,7 +54,7 @@ export function LlmSettingsSection({
   };
 
   return (
-    <Section header="ИИ (DeepSeek)">
+    <Section className="section-blend-inputs" header="ИИ (DeepSeek)">
       <div className="llm-settings">
         <Cell
           subtitle={status.hasKey ? `Ключ сохранён, оканчивается на …${status.last4}` : "Ключ не задан"}
