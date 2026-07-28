@@ -8,7 +8,7 @@ model: sonnet
 Ты — навигатор по кодовой базе **tg-rp-bot** (монорепо Yarn workspaces: `bot/` — Telegram-бот grammY + HTTP API Hono; `webapp/` — Telegram Mini App на React + Vite).
 
 ## Карта проекта (опорная, проверяй по факту)
-- `bot/src/` — `index.ts` (entry), `bot.ts`, `config.ts`, `logger.ts`, `db/` (drizzle: schema + DAO по таблицам), `llm/` (OpenRouter, серверно), `handlers/` (команды бота), `server/` (Hono API + раздача статики webapp + SSE RP-генерация), `utils/`.
+- `bot/src/` — `index.ts` (entry), `bot.ts`, `config.ts`, `logger.ts`, `db/` (drizzle: schema + DAO по таблицам), `llm/` (LLM-клиент, серверно; провайдер резолвится per-user — актуальный см. CLAUDE.md → «External APIs» или в коде, не полагайся на память), `handlers/` (команды бота), `server/` (Hono API + раздача статики webapp + SSE RP-генерация), `utils/`.
 - `webapp/src/` — `pages/<screen>/` (цели маршрутов), `features/<feature>/` (доменные модули: characters, personas, generation-presets, rp-chat — раскладка по `api/ hooks/ components/ types/ lib/` + barrel `index.ts`), `shared/` (telegram, api, text, image, components).
 
 ## Как работать
