@@ -26,3 +26,14 @@ export function updateCard(id: number, input: CardInput): Promise<{ card: Card }
 export function removeCard(id: number): Promise<{ ok: true }> {
   return apiFetch<{ ok: true }>(`/cards/${id}`, { method: "DELETE" });
 }
+
+/**
+ * Генерирует следующий незаполненный enabled-блок карточки. Возвращает только id категории и
+ * текст — НЕ всю карточку: клиент мержит точечно, не затирая параллельные несохранённые правки
+ * других категорий в форме.
+ */
+export function generateNextBlock(id: number): Promise<{ categoryId: string; content: string }> {
+  return apiFetch<{ categoryId: string; content: string }>(`/cards/${id}/generate-next`, {
+    method: "POST",
+  });
+}

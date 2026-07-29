@@ -1,10 +1,42 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import logger from "../../logger.js";
+import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/index.js";
 import { db, schema } from "../index.js";
-import type { Card } from "../schema.js";
+import type { Card, CardCategory } from "../schema.js";
+import { DEFAULT_CARD_CATEGORIES, DEFAULT_CARD_PROMPT } from "./cards.constants.js";
 import type { CardInput, CardListItem } from "./types.js";
 
 export { ensureUser } from "../users.js";
+
+/** Шифрует текстовые поля категорий (title/description/content), id/enabled — как есть. */
+function encryptCategories(categories: CardCategory[], key: Buffer): CardCategory[] {
+  return categories.map((c) => ({
+    ...c,
+    title: encryptField(c.title, key),
+    description: encryptField(c.description, key),
+    content: encryptField(c.content, key),
+  }));
+}
+
+/** Расшифровывает текстовые поля категорий — обратная операция encryptCategories. */
+function decryptCategories(categories: CardCategory[], key: Buffer): CardCategory[] {
+  return categories.map((c) => ({
+    ...c,
+    title: decryptField(c.title, key),
+    description: decryptField(c.description, key),
+    content: decryptField(c.content, key),
+  }));
+}
+
+/** Расшифровывает prompt и категории строки карточки для её владельца. */
+function decryptCardRow(row: Card, userId: number): Card {
+  const key = getUserEncryptionKey(userId);
+  return {
+    ...row,
+    prompt: decryptField(row.prompt, key),
+    categories: decryptCategories(row.categories, key),
+  };
+}
 
 /** Список карточек пользователя — свежие сверху. */
 export async function listCards(userId: number): Promise<CardListItem[]> {
@@ -34,29 +66,44 @@ export async function countCards(userId: number): Promise<number> {
   return count;
 }
 
-/** Полная карточка по id, только если она принадлежит этому пользователю. */
+/** Полная карточка по id, только если она принадлежит этому пользователю (расшифрована). */
 export async function getCard(userId: number, id: number): Promise<Card | undefined> {
   const rows = await db
     .select()
     .from(schema.cards)
     .where(and(eq(schema.cards.id, id), eq(schema.cards.userId, userId)));
-  return rows[0];
-}
-
-/** Создаёт карточку и возвращает созданную строку. */
-export async function createCard(userId: number, input: CardInput): Promise<Card> {
-  const t0 = Date.now();
-  const rows = await db
-    .insert(schema.cards)
-    .values({ userId, name: input.name })
-    .returning();
-  const created = rows[0]!;
-  logger.info({ durationMs: Date.now() - t0, userId, id: created.id }, "Card created");
-  return created;
+  const row = rows[0];
+  return row ? decryptCardRow(row, userId) : undefined;
 }
 
 /**
- * Обновляет карточку (только свою). Возвращает обновлённую строку или undefined,
+ * Создаёт карточку и возвращает созданную строку (расшифрованную).
+ * Пустой prompt/categories от клиента (новая карточка ещё без явных значений) заменяются
+ * дефолтной структурой — раньше это было бы DB default колонки, но текст шифруется per-user,
+ * поэтому дефолт применяется здесь, на вставке.
+ */
+export async function createCard(userId: number, input: CardInput): Promise<Card> {
+  const t0 = Date.now();
+  const key = getUserEncryptionKey(userId);
+  const prompt = input.prompt.trim() || DEFAULT_CARD_PROMPT;
+  const categories = input.categories.length > 0 ? input.categories : DEFAULT_CARD_CATEGORIES;
+  const rows = await db
+    .insert(schema.cards)
+    .values({
+      userId,
+      name: input.name,
+      prompt: encryptField(prompt, key),
+      categories: encryptCategories(categories, key),
+      presetId: input.presetId,
+    })
+    .returning();
+  const created = rows[0]!;
+  logger.info({ durationMs: Date.now() - t0, userId, id: created.id }, "Card created");
+  return decryptCardRow(created, userId);
+}
+
+/**
+ * Обновляет карточку (только свою). Возвращает обновлённую строку (расшифрованную) или undefined,
  * если карточки с таким id у пользователя нет.
  */
 export async function updateCard(
@@ -65,9 +112,15 @@ export async function updateCard(
   input: CardInput,
 ): Promise<Card | undefined> {
   const t0 = Date.now();
+  const key = getUserEncryptionKey(userId);
   const rows = await db
     .update(schema.cards)
-    .set({ name: input.name })
+    .set({
+      name: input.name,
+      prompt: encryptField(input.prompt, key),
+      categories: encryptCategories(input.categories, key),
+      presetId: input.presetId,
+    })
     .where(and(eq(schema.cards.id, id), eq(schema.cards.userId, userId)))
     .returning();
   const updated = rows[0];
@@ -75,7 +128,7 @@ export async function updateCard(
     { durationMs: Date.now() - t0, userId, id, found: Boolean(updated) },
     "Card update attempted",
   );
-  return updated;
+  return updated ? decryptCardRow(updated, userId) : undefined;
 }
 
 /** Удаляет карточку (только свою). true — если строка была удалена. */
@@ -88,4 +141,27 @@ export async function deleteCard(userId: number, id: number): Promise<boolean> {
   const deleted = rows.length > 0;
   logger.info({ durationMs: Date.now() - t0, userId, id, deleted }, "Card delete attempted");
   return deleted;
+}
+
+/**
+ * Сохраняет сгенерированный/отредактированный текст одной категории (только своя карточка).
+ * Возвращает обновлённую (расшифрованную) карточку или undefined, если карточка не найдена.
+ * Точечная запись вместо полного updateCard — используется хендлером генерации блока, где
+ * меняется только content одной категории, а не вся форма.
+ */
+export async function setCardCategoryContent(
+  userId: number,
+  id: number,
+  categoryId: string,
+  content: string,
+): Promise<Card | undefined> {
+  const card = await getCard(userId, id);
+  if (!card) return undefined;
+  const categories = card.categories.map((c) => (c.id === categoryId ? { ...c, content } : c));
+  return updateCard(userId, id, {
+    name: card.name,
+    prompt: card.prompt,
+    categories,
+    presetId: card.presetId,
+  });
 }

@@ -12,14 +12,16 @@ import {
   useCard,
   type Card,
   type CardInput,
+  type CardPresetOption,
 } from "../../features/cards";
+import { presetSummary, usePresets } from "../../features/generation-presets";
 import { confirmAction } from "../../shared/telegram/confirm";
 import { useToast } from "../../shared/toast";
 import "./cards.css";
 
 /** Маппинг полной карточки в значения формы. */
 function toInput(c: Card): CardInput {
-  return { name: c.name };
+  return { name: c.name, prompt: c.prompt, categories: c.categories, presetId: c.presetId };
 }
 
 /**
@@ -38,9 +40,19 @@ export function CardEditPage() {
   const [submitting, setSubmitting] = useState(false);
   // После первого успешного сохранения новой карточки держим её id локально: «Сохранить»
   // больше не покидает экран (маршрут остаётся /cards/new), поэтому без этого повторное
-  // сохранение продолжило бы создавать дубликаты вместо обновления уже созданной.
+  // сохранение продолжило бы создавать дубликаты вместо обновления уже созданной. Тот же id
+  // разблокирует GenerationSection (кнопка генерации требует существующую карточку на сервере).
   const [createdId, setCreatedId] = useState<number>();
   const id = routeId ?? createdId;
+
+  // Пресеты для выбора в форме — фича cards самодостаточна и не тянет generation-presets сама
+  // (границы фичи), поэтому список подтягивает и маппит страница (см. CardPresetOption).
+  const { items: rawPresets, loading: presetsLoading } = usePresets();
+  const presets: CardPresetOption[] = rawPresets.map((p) => ({
+    id: p.id,
+    name: p.name,
+    summary: presetSummary(p),
+  }));
 
   const handleSubmit = (input: CardInput) => {
     setSubmitting(true);
@@ -92,6 +104,9 @@ export function CardEditPage() {
       <div className="cards-page">
         <CardForm
           initial={card ? toInput(card) : undefined}
+          cardId={id}
+          presets={presets}
+          presetsLoading={presetsLoading}
           submitting={submitting}
           onSubmit={handleSubmit}
           onDelete={id === undefined ? undefined : handleDelete}

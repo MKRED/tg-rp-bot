@@ -28,3 +28,18 @@ export type StoryPromptComponentId =
 
 /** Элемент порядка narrator-промптов: какой компонент и включён ли он в запрос. */
 export type StoryPromptOrderItem = { id: StoryPromptComponentId; enabled: boolean };
+
+/**
+ * Категория карточки «Мастерской» (cards.categories) — редактируемый пользователем блок структуры
+ * (например "Base", "Body"): title/description — то, что ИИ видит как заголовок и пример формата
+ * (собирается в <example>…</example>), content — сгенерированный/отредактированный текст блока
+ * (пусто = ещё не сгенерирован). Порядок генерации/сборки промпта = порядок элементов массива.
+ * Все текстовые поля шифруются per-user в DAO (как prompt/footnote у characters), enabled/id — нет.
+ */
+export type CardCategory = {
+  id: string;
+  title: string;
+  description: string;
+  content: string;
+  enabled: boolean;
+};

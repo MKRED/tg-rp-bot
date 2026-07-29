@@ -1,6 +1,13 @@
+import type { CardCategory } from "../schema.js";
+
+export type { CardCategory };
+
 /** Поля карточки, которые приходят из формы Mini App (без серверных id/timestamps). */
 export type CardInput = {
   name: string;
+  prompt: string;
+  categories: CardCategory[];
+  presetId: number | null;
 };
 
 /** Лёгкая проекция для списка: имя + дата обновления (для строки списка «Мастерской»). */

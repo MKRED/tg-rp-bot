@@ -232,6 +232,13 @@
       "when": 1785303664303,
       "tag": "0032_flat_arachne",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1785324523154,
+      "tag": "0033_charming_red_hulk",
+      "breakpoints": true
     }
   ]
 }

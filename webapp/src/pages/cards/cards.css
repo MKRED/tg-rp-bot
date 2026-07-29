@@ -115,3 +115,77 @@
   font-size: 13px;
   color: var(--tgui--hint_color, #7d8b99);
 }
+
+.card-form__section-title {
+  margin-top: 8px;
+  padding: 0 22px;
+  font-weight: 600;
+  color: var(--tgui--text_color, #000);
+}
+
+/* Иконка/шеврон пикера пресета (PresetPicker) — те же тона, что у RpChatNewPage. */
+.card-form__icon {
+  color: var(--tgui--link_color, #2481cc);
+}
+.card-form__icon--hint {
+  color: var(--tgui--hint_color, #999);
+}
+.card-form__chevron {
+  color: var(--tgui--hint_color, #999);
+}
+.card-form__center {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0;
+}
+
+/* --- Структура карточки (CategoryList/CategoryRow) --- */
+.card-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 22px;
+}
+
+.card-category {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--tgui--secondary_bg_color, #f0f0f0);
+}
+
+.card-category__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-category__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-categories__add {
+  align-self: flex-start;
+}
+
+/* --- Генерация блоков (GenerationSection) --- */
+.card-generation {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 22px;
+}
+
+.card-generation__hint {
+  text-align: center;
+  font-size: 13px;
+  color: var(--tgui--hint_color, #7d8b99);
+}
+
+.card-generation__empty {
+  padding: 0 22px;
+  color: var(--tgui--hint_color, #7d8b99);
+}

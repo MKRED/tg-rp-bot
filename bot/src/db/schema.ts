@@ -10,11 +10,12 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
-import type { PromptOrderItem, StoryPromptOrderItem } from "./schema.types.js";
+import type { CardCategory, PromptOrderItem, StoryPromptOrderItem } from "./schema.types.js";
 
 // Типы компонентов промптов живут в schema.types.ts; реэкспорт сохраняет прежнюю точку
 // импорта `db/schema.js` для пресетов, narrator-шаблонов и билдеров промптов.
 export type {
+  CardCategory,
   PromptComponentId,
   PromptOrderItem,
   StoryPromptComponentId,
@@ -147,7 +148,20 @@ export type NewPersona = typeof personas.$inferInsert;
  * `characters`/`personas`: пока в разработке, не участвует в RP-чате/narrator и ни на что не
  * ссылается. Цель фичи — довести карточку через ИИ-генерацию до готовой и сконвертировать
  * в персонажа или персону (конвертация — отдельный этап, здесь только каркас). Схема растёт
- * миграциями по мере готовности этапов формы — намеренно минимальна на старте.
+ * миграциями по мере готовности этапов формы.
+ *
+ * prompt — основной промпт карточки (что за персонаж, вводные для ИИ); может содержать плейсхолдер
+ * {{example}} — на его место при сборке промпта генерации вставляется <example>-блок, собранный из
+ * enabled-категорий (title+description); если плейсхолдера нет, блок дописывается в конец.
+ * categories — редактируемая пользователем структура карточки (см. CardCategory в schema.types.ts):
+ * порядок элементов массива = порядок генерации/сборки промпта. content каждой категории — либо
+ * ИИ-сгенерированный, либо отредактированный вручную текст блока (пусто = блок ещё не сгенерирован).
+ * presetId — пресет сэмплинга для генерации блоков (generation_presets, как у RP-чата/narrator);
+ * nullable — карточка существует до того, как пресет выбран, эндпоинт генерации требует его явно.
+ * FK без onDelete (= restrict): пресет, используемый карточкой, нельзя удалить (23503 → 409 in_use,
+ * как у chats/story_chats).
+ * prompt и текстовые поля categories (title/description/content) шифруются per-user в DAO,
+ * как prompt/footnote у characters.
  */
 export const cards = pgTable("cards", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
@@ -155,6 +169,9 @@ export const cards = pgTable("cards", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
+  prompt: text("prompt").notNull().default(""),
+  categories: jsonb("categories").$type<CardCategory[]>().notNull().default(sql`'[]'::jsonb`),
+  presetId: bigint("preset_id", { mode: "number" }).references(() => generationPresets.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()

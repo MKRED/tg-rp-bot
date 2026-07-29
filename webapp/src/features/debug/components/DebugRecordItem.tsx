@@ -11,6 +11,7 @@ const LABEL_TEXT: Record<LlmDebugRecord["label"], string> = {
   narrator: "Нарратор",
   translate: "Перевод",
   compact: "Сжатие",
+  cards: "Карточки",
   other: "Другое",
 };
 
