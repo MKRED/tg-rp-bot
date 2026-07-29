@@ -20,7 +20,7 @@ export function formatBalanceSubtitle(balance: DeepSeekBalance | null, loading: 
 
 export function formatBalanceDescription(balance: DeepSeekBalance | null): string | undefined {
   const info = pickBalanceInfo(balance);
-  if (!info) return undefined;
+  if (!info || !balance) return undefined;
   const parts = [`пополнено ${info.toppedUpBalance}`, `бонус ${info.grantedBalance}`];
   if (!balance.isAvailable) parts.push("баланс исчерпан");
   return parts.join(" · ");
