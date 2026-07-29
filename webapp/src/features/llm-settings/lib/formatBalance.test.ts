@@ -21,6 +21,17 @@ describe("formatBalanceSubtitle", () => {
   it("shows total and currency", () => {
     expect(formatBalanceSubtitle(balance, false)).toBe("110.00 CNY");
   });
+
+  it("picks the currency with an actual balance regardless of array order", () => {
+    const multiCurrency: DeepSeekBalance = {
+      isAvailable: true,
+      balanceInfos: [
+        { currency: "USD", totalBalance: "0.00", grantedBalance: "0.00", toppedUpBalance: "0.00" },
+        { currency: "CNY", totalBalance: "47.27", grantedBalance: "0.00", toppedUpBalance: "47.27" },
+      ],
+    };
+    expect(formatBalanceSubtitle(multiCurrency, false)).toBe("47.27 CNY");
+  });
 });
 
 describe("formatBalanceDescription", () => {
