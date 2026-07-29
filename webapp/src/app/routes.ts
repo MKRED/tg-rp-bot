@@ -33,6 +33,12 @@ export const ROUTES = {
   personaNew: "/personas/new",
   /** Форма редактирования персоны по id (статический `new` приоритетнее `:id`). */
   personaEdit: "/personas/:id",
+  /** Мастерская: список карточек-черновиков персонажей/персон. */
+  cards: "/cards",
+  /** Форма создания новой карточки. */
+  cardNew: "/cards/new",
+  /** Форма редактирования карточки по id (статический `new` приоритетнее `:id`). */
+  cardEdit: "/cards/:id",
 
   // ─── Narrator-режим («Режиссёр истории») ───────────────────────────────────
   /** Хаб историй: все истории (бесконечный скролл) + кнопка «Новая история». */
@@ -108,6 +114,9 @@ export const presetEditPath = (id: number): string => `/presets/${id}`;
 /** Путь к редактированию конкретной персоны. */
 export const personaEditPath = (id: number): string => `/personas/${id}`;
 
+/** Путь к редактированию конкретной карточки. */
+export const cardEditPath = (id: number): string => `/cards/${id}`;
+
 /**
  * Родительский маршрут для кнопки «Назад» — возврат вверх по иерархии, а не по истории.
  * Так после, например, удаления пресета (→ список) «Назад» ведёт на главную, а не на
@@ -118,6 +127,7 @@ export function parentPath(pathname: string): string {
   if (pathname.startsWith("/characters/")) return ROUTES.characters;
   if (pathname.startsWith("/presets/")) return ROUTES.presets;
   if (pathname.startsWith("/personas/")) return ROUTES.personas;
+  if (pathname.startsWith("/cards/")) return ROUTES.cards;
   if (/^\/chats\/\d+\/(settings|graph)$/.test(pathname)) {
     // Настройки и граф → назад к чату
     const id = pathname.split("/")[2];

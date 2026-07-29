@@ -115,7 +115,7 @@ webapp/src/ — main/init (Telegram SDK) · app/ (оболочка, HashRouter) 
               features/ (доменные модули) · shared/ (кросс-каттинг)
 ```
 
-Домены bot и webapp зеркалят друг друга: characters, personas, generation-presets, rp-templates,
+Домены bot и webapp зеркалят друг друга: characters, personas, cards, generation-presets, rp-templates,
 rp-chat, narrator, knowledge-books, narrator-templates, debug.
 
 ### Структура webapp — pages vs features

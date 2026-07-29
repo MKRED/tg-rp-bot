@@ -1,0 +1,117 @@
+.cards-page {
+  min-height: 100dvh;
+  /* Верхний отступ под Full Screen — тот же приём, что в home.css/rp-chat.css. */
+  padding-top: calc(
+    8px +
+    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
+  padding-bottom: 24px;
+}
+
+/* Полноэкранное центрирование — для спиннера загрузки и состояния «не найдена»
+   на экране редактирования (нет списка, центрируем по всему вьюпорту). */
+.cards-page__fullcenter {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100dvh;
+  padding: 16px;
+  color: var(--tgui--hint_color, #7d8b99);
+}
+
+/* Хаб «Карточки»: страница НЕ скроллится целиком — фиксированная высота вьюпорта.
+   Внутри — две секции в ОДНОМ List: секция списка (растянута на всю высоту, скролл ВНУТРИ её
+   карточки) и секция кнопки (естественной высоты, докнута к нижней кромке). Тот же приём,
+   что в хабе «Персонажи» (characters-hub). */
+.cards-hub {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  /* Верхний отступ под Full Screen — на самом хабе, чтобы Banner-шапка ушла из-под чёлки/шапки. */
+  padding-top: calc(
+    8px +
+    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
+}
+
+/* Иконка в Banner-шапке. */
+.cards-hub__banner-icon {
+  color: var(--tgui--link_color, #2481cc);
+}
+
+/* List с обеими секциями занимает всё место под Banner; сам — flex-колонка, чтобы секция списка
+   могла растянуться (flex:1), а секция кнопки осталась внизу естественной высоты. */
+.cards-hub__list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Секция списка карточек растягивается на всю высоту, а прокрутка живёт ВНУТРИ её карточки. */
+.cards-hub__list-section,
+.cards-hub__list-section > div {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.cards-hub__list-section > div > div {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Секция кнопки не сжимается — flex:1 у секции списка уже поглощает всё свободное место. */
+.cards-hub__actions-section {
+  flex-shrink: 0;
+}
+
+.cards-hub__center {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* Кнопка создания внутри секции-карточки: внутренние отступы (своих у карточки Section нет) +
+   нижняя safe-area, т.к. секция докнута к нижней кромке вьюпорта. */
+.cards-hub__create {
+  padding: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}
+
+.cards-hub__limit {
+  display: block;
+  margin-top: 8px;
+  text-align: center;
+  color: var(--tgui--hint_color, #7d8b99);
+}
+
+/* --- Форма карточки --- */
+.card-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.card-form__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 0 22px;
+}
+
+/* Пассивная метка несохранённых правок над кнопкой «Сохранить» (активная защита — confirm
+   на уходе через useUnsavedChangesGuard, эта метка лишь сигнализирует). */
+.card-form__unsaved {
+  text-align: center;
+  font-size: 13px;
+  color: var(--tgui--hint_color, #7d8b99);
+}

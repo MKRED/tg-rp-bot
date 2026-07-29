@@ -19,7 +19,8 @@ bot/src/
   logger.ts     — pino logger (daily rolling, pino-pretty in TTY)
   proxy.ts      — HttpsProxyAgent (https-proxy-agent) ТОЛЬКО для Telegram
   db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + клиент +
-                  DAO-папки по таблицам: characters/ personas/ presets/ (только сэмплинг) impersonations/
+                  DAO-папки по таблицам: characters/ personas/ cards/ (черновики «Мастерской», пока
+                  только name — первый этап) presets/ (только сэмплинг) impersonations/
                   narratorTemplates/ rpTemplates/ avatars/ (батч-резолв аватаров для AvatarStack —
                   getAvatarsBatch) (у каждой DAO-файл + types.ts/constants.ts + barrel index.ts),
                   chats/ stories/ (+ storyAvatars.ts — LATERAL-фрагмент топ-N аватаров книги знаний
@@ -35,7 +36,7 @@ bot/src/
                   photoActions.ts — callback «Закрыть» под фото из лайтбокса)
   server/       — Hono HTTP API, разложен по доменным папкам (зеркало webapp): index=startServer,
                   routes.ts — карта эндпоинтов (монтаж контроллеров), middleware/ (initData — валидация
-                  подписи), доменные папки me/ characters/ personas/ presets/ books/ narrator-templates/
+                  подписи), доменные папки me/ characters/ personas/ cards/ presets/ books/ narrator-templates/
                   rp-templates/ chats/ stories/ debug/ avatars/ (POST /batch — батч-резолв аватаров для
                   AvatarStack, см. ниже) settings/ (per-user ключ/модель DeepSeek, BYOK) — у каждого
                   <домен>.controller.ts (Hono-роуты) + validation/
@@ -56,11 +57,12 @@ webapp/src/
   main.tsx      — точка входа: initTelegram() + рендер <App/>
   init.ts       — инициализация @telegram-apps SDK (защищённая) + initData.restore()
   app/          — оболочка: App.tsx (AppRoot + HashRouter), routes.ts, BackButtonBridge, deepLink.ts
-  pages/        — экраны-маршруты (один на маршрут): home/ characters/ personas/
+  pages/        — экраны-маршруты (один на маршрут): home/ characters/ personas/ cards/
                   generation-presets/ rp-templates/ rp-chat/ narrator/ knowledge-books/
                   narrator-templates/ debug/
   features/     — доменные модули (по подпапкам-категориям + barrel index.ts):
-                  characters/ personas/ generation-presets/ rp-templates/ rp-chat/ narrator/
+                  characters/ personas/ cards/ (черновики «Мастерской», пока только name — первый этап)
+                  generation-presets/ rp-templates/ rp-chat/ narrator/
                   knowledge-books/ narrator-templates/ debug/ llm-settings/ (per-user ключ/модель
                   DeepSeek, BYOK, экран /settings)
   shared/       — кросс-каттинг: api/ (client с Authorization), telegram/ (initData, confirm, profile

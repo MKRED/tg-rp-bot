@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { createAvatarRoutes } from "./avatars/index.js";
 import { createBookRoutes } from "./books/index.js";
+import { createCardRoutes } from "./cards/index.js";
 import { createCharacterRoutes } from "./characters/index.js";
 import { createChatRoutes } from "./chats/index.js";
 import { createDebugRoutes } from "./debug/index.js";
@@ -36,6 +37,9 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
   api.route("/personas", createPersonaRoutes());
   api.route("/presets", createPresetRoutes());
   api.route("/rp-templates", createRpTemplateRoutes());
+
+  // Карточки «Мастерской» — черновики, ещё не сконвертированные в персонажа/персону.
+  api.route("/cards", createCardRoutes());
 
   // Батч-резолв аватаров (AvatarStack в списке историй / шапке чата narrator).
   api.route("/avatars", createAvatarRoutes());

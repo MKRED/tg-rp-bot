@@ -1,5 +1,5 @@
 import { Avatar, Caption, Cell, List, Section, Title } from "@telegram-apps/telegram-ui";
-import { MessageCircle, Users, User, Smile, SlidersHorizontal, Clapperboard, BookOpen, ScrollText, FileText, Settings, Bug } from "lucide-react";
+import { MessageCircle, Users, User, Smile, SlidersHorizontal, Clapperboard, BookOpen, ScrollText, FileText, Settings, Bug, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { ROUTES } from "../../app/routes";
@@ -112,8 +112,20 @@ export function HomePage() {
             </motion.div>
           </Section>
 
-          <Section header="Конфигурация">
+          <Section header="Мастерская">
             <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.25 }}>
+              <Cell
+                before={<Sparkles size={24} className="home__icon" />}
+                subtitle="Крафт карточек персонажей и персон"
+                onClick={() => navigate(ROUTES.cards)}
+              >
+                Карточки
+              </Cell>
+            </motion.div>
+          </Section>
+
+          <Section header="Конфигурация">
+            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.3 }}>
               <Cell
                 before={<SlidersHorizontal size={24} className="home__icon" />}
                 subtitle="Пресеты параметров генерации"
@@ -122,7 +134,7 @@ export function HomePage() {
                 Настройки ответа ИИ
               </Cell>
             </motion.div>
-            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.3 }}>
+            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.35 }}>
               <Cell
                 before={<FileText size={24} className="home__icon" />}
                 subtitle="Промпты RP-чата"
@@ -131,7 +143,7 @@ export function HomePage() {
                 RP-шаблоны
               </Cell>
             </motion.div>
-            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.35 }}>
+            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.4 }}>
               <Cell
                 before={<ScrollText size={24} className="home__icon" />}
                 subtitle="Инструкции нарратора"
@@ -143,7 +155,7 @@ export function HomePage() {
           </Section>
 
           <Section header="Настройки">
-            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.4 }}>
+            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.45 }}>
               <Cell
                 before={<Settings size={24} className="home__icon" />}
                 subtitle="Тема оформления"
@@ -155,7 +167,7 @@ export function HomePage() {
           </Section>
 
           <Section header="Отладка">
-            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.45 }}>
+            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.5 }}>
               <Cell
                 before={<Bug size={24} className="home__icon" />}
                 subtitle="RAW-запросы к ИИ (последние запросы и настройки перехвата)"

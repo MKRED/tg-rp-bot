@@ -143,6 +143,29 @@ export type Persona = typeof personas.$inferSelect;
 export type NewPersona = typeof personas.$inferInsert;
 
 /**
+ * Карточки — черновики персонажей/персон в «Мастерской» (`/cards`), отдельная сущность от
+ * `characters`/`personas`: пока в разработке, не участвует в RP-чате/narrator и ни на что не
+ * ссылается. Цель фичи — довести карточку через ИИ-генерацию до готовой и сконвертировать
+ * в персонажа или персону (конвертация — отдельный этап, здесь только каркас). Схема растёт
+ * миграциями по мере готовности этапов формы — намеренно минимальна на старте.
+ */
+export const cards = pgTable("cards", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  userId: bigint("user_id", { mode: "number" })
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export type Card = typeof cards.$inferSelect;
+export type NewCard = typeof cards.$inferInsert;
+
+/**
  * Пресеты настроек генерации («Настройки ответа ИИ»). Один пользователь — много пресетов,
  * описывающих, КАК нейросеть сэмплирует ответ (сэмплинг, лимиты токенов, reasoning). Режимо-
  * независим — общий для RP-чата и narrator (промпты живут отдельно: у RP-чата — в rp_templates,

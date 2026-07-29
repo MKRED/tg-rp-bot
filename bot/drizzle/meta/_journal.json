@@ -225,6 +225,13 @@
       "when": 1785136350577,
       "tag": "0031_thin_the_hood",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1785303664303,
+      "tag": "0032_flat_arachne",
+      "breakpoints": true
     }
   ]
 }

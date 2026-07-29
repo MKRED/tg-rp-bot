@@ -32,7 +32,7 @@ tg-rp-bot/
 │  │  ├─ config.ts     # переменные окружения
 │  │  ├─ logger.ts     # pino
 │  │  ├─ proxy.ts      # HttpsProxyAgent (https-proxy-agent) только для Telegram
-│  │  ├─ db/           # drizzle: schema + клиент + DAO-папки по таблицам (characters/ personas/
+│  │  ├─ db/           # drizzle: schema + клиент + DAO-папки по таблицам (characters/ personas/ cards/
 │  │  │                #   presets/ chats/ stories/ knowledge/ … — у каждой DAO + types/constants + barrel)
 │  │  ├─ llm/          # клиент LLM (DeepSeek, ключ per-user BYOK через resolveProvider)
 │  │  ├─ handlers/     # обработчики команд бота (/start …)
@@ -47,10 +47,10 @@ tg-rp-bot/
       ├─ main.tsx      # точка входа + init Telegram SDK
       ├─ init.ts       # инициализация SDK + restore initData
       ├─ app/          # оболочка: App (AppRoot + HashRouter), routes, BackButton-мост
-      ├─ pages/        # экраны-маршруты (home/ characters/ personas/ generation-presets/ rp-chat/
+      ├─ pages/        # экраны-маршруты (home/ characters/ personas/ cards/ generation-presets/ rp-chat/
       │                #   narrator/ knowledge-books/ narrator-templates/ debug/)
       ├─ shared/       # api/client (граница к /api), telegram/, text/, image/, components/
-      └─ features/     # доменные модули: characters, personas, generation-presets, rp-chat,
+      └─ features/     # доменные модули: characters, personas, cards, generation-presets, rp-chat,
                         #   narrator, knowledge-books, narrator-templates, debug, llm-settings
 ```
 
