@@ -10,7 +10,8 @@
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "drizzle-kit": "drizzle-kit"
+    "drizzle-kit": "drizzle-kit",
+    "test-web-search": "tsx src/scripts/test-web-search.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.4",
@@ -22,7 +23,8 @@
     "https-proxy-agent": "^9.0.0",
     "pino": "^10.3.1",
     "pino-roll": "^4.0.0",
-    "postgres": "^3.4.9"
+    "postgres": "^3.4.9",
+    "undici": "^8.9.0"
   },
   "engines": {
     "node": ">=24"
