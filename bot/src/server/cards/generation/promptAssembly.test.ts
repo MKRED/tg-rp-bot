@@ -93,6 +93,63 @@ describe("assembleCardBlockPrompt", () => {
     expect(result!.messages[1]!.content).not.toContain("Generate the");
   });
 
+  describe("targetCategoryId (перегенерация)", () => {
+    it("явная цель — уже заполненный блок, а не первый пустой", () => {
+      const categories = [
+        cat({ id: "base", title: "Base", content: "Текст Base" }),
+        cat({ id: "body", title: "Body", content: "Текст Body" }),
+        cat({ id: "outfit", title: "Outfit" }),
+      ];
+      const result = assembleCardBlockPrompt("System", "Prompt", categories, "base");
+      expect(result?.targetCategoryId).toBe("base");
+    });
+
+    it("контекст — только блоки строго до цели по позиции; блоки после неё не попадают в messages", () => {
+      const categories = [
+        cat({ id: "base", title: "Base", content: "Текст Base" }),
+        cat({ id: "body", title: "Body", content: "Текст Body" }),
+        cat({ id: "outfit", title: "Outfit", content: "Текст Outfit" }),
+      ];
+      const result = assembleCardBlockPrompt("System", "Prompt", categories, "body");
+      const roles = result!.messages.map((m) => m.role);
+      expect(roles).toEqual(["system", "user", "assistant", "user"]);
+      expect(result!.messages[2]!.content).toBe("Текст Base");
+      expect(result!.messages[3]!.content).toBe('Generate the "Body" block.');
+      const combined = result!.messages.map((m) => m.content).join("\n");
+      expect(combined).not.toContain("Текст Outfit");
+      expect(combined).not.toContain("Текст Body");
+    });
+
+    it("явная цель — первая enabled-категория: форма первой генерации, старый content цели не используется", () => {
+      const categories = [cat({ id: "base", title: "Base", description: "Name: ...", content: "Старый текст Base" })];
+      const result = assembleCardBlockPrompt("System", "Prompt", categories, "base");
+      expect(result!.messages).toEqual([
+        { role: "system", content: "System" },
+        {
+          role: "user",
+          content: 'Prompt\n\n<example>\n# Base\nName: ...\n</example>\n\nGenerate the "Base" block.',
+        },
+      ]);
+    });
+
+    it("явная цель невалидна, если что-то ПЕРЕД ней по позиции ещё не заполнено — undefined", () => {
+      const categories = [
+        cat({ id: "base", title: "Base" }),
+        cat({ id: "body", title: "Body", content: "Текст Body" }),
+      ];
+      expect(assembleCardBlockPrompt("System", "Prompt", categories, "body")).toBeUndefined();
+    });
+
+    it("неизвестный или disabled id — undefined", () => {
+      const categories = [
+        cat({ id: "base", title: "Base", content: "Текст Base" }),
+        cat({ id: "hidden", title: "Hidden", content: "Текст Hidden", enabled: false }),
+      ];
+      expect(assembleCardBlockPrompt("System", "Prompt", categories, "missing")).toBeUndefined();
+      expect(assembleCardBlockPrompt("System", "Prompt", categories, "hidden")).toBeUndefined();
+    });
+  });
+
   it("повторные вызовы независимы друг от друга (идемпотентность, без module-level состояния)", () => {
     const categories = [cat({ id: "base", title: "Base", description: "D" })];
     // Регрессионный тест: если бы insertExampleBlock когда-нибудь стал хранить regex в module-level

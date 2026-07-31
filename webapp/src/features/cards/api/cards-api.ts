@@ -28,12 +28,14 @@ export function removeCard(id: number): Promise<{ ok: true }> {
 }
 
 /**
- * Генерирует следующий незаполненный enabled-блок карточки. Возвращает только id категории и
- * текст — НЕ всю карточку: клиент мержит точечно, не затирая параллельные несохранённые правки
- * других категорий в форме.
+ * Генерирует блок карточки: без categoryId — следующий незаполненный enabled-блок, с categoryId —
+ * явная перегенерация уже заполненного (см. generateCardBlock на сервере). Возвращает только id
+ * категории и текст — НЕ всю карточку: клиент мержит точечно, не затирая параллельные несохранённые
+ * правки других категорий в форме.
  */
-export function generateNextBlock(id: number): Promise<{ categoryId: string; content: string }> {
-  return apiFetch<{ categoryId: string; content: string }>(`/cards/${id}/generate-next`, {
+export function generateCardBlock(id: number, categoryId?: string): Promise<{ categoryId: string; content: string }> {
+  return apiFetch<{ categoryId: string; content: string }>(`/cards/${id}/generate`, {
     method: "POST",
+    body: JSON.stringify({ categoryId }),
   });
 }

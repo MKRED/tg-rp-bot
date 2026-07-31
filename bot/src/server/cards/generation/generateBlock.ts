@@ -14,18 +14,22 @@ export type GenerateCardBlockResult =
   | { ok: false; status: 400 | 404 | 409; reason: string };
 
 /**
- * Генерирует следующий незаполненный enabled-блок карточки (см. assembleCardBlockPrompt) и
- * сохраняет результат в его content. Сэмплинг/reasoning — из пресета карточки (presetToCompletionOptions,
- * как у RP-чата/narrator): пользователь явно предпочёл reasoning форсированному JSON-режиму ответа,
- * поэтому здесь нет ни response_format, ни отключения thinking — обычная генерация текста.
+ * Генерирует блок карточки (см. assembleCardBlockPrompt) и сохраняет результат в его content.
+ * Без categoryId — следующий незаполненный enabled-блок (обычный сценарий «Сгенерировать»);
+ * с categoryId — явно указанный блок, перегенерация уже заполненного «как если бы шли по очереди»
+ * (кнопка «Перегенерировать» на клиенте, доступна только для блоков выше первого пустого).
+ * Сэмплинг/reasoning — из пресета карточки (presetToCompletionOptions, как у RP-чата/narrator):
+ * пользователь явно предпочёл reasoning форсированному JSON-режиму ответа, поэтому здесь нет ни
+ * response_format, ни отключения thinking — обычная генерация текста.
  *
  * Держит cardLock на всё время вызова (включая сам LLM-запрос) — не только против повторного клика
- * «Сгенерировать» на той же карточке, но и против параллельного PUT /:id (сохранение формы): оба пути
- * заканчиваются read-modify-write полной строки (см. cardLock.ts).
+ * «Сгенерировать»/«Перегенерировать» на той же карточке, но и против параллельного PUT /:id
+ * (сохранение формы): оба пути заканчиваются read-modify-write полной строки (см. cardLock.ts).
  */
-export async function generateNextCardBlock(
+export async function generateCardBlock(
   userId: number,
   cardId: number,
+  categoryId?: string,
 ): Promise<GenerateCardBlockResult> {
   if (!tryLockCard(cardId)) return { ok: false, status: 409, reason: "busy" };
   const t0 = Date.now();
@@ -37,8 +41,16 @@ export async function generateNextCardBlock(
     const preset = await getPreset(userId, card.presetId);
     if (!preset) return { ok: false, status: 400, reason: "preset_required" };
 
-    const assembled = assembleCardBlockPrompt(card.systemPrompt, card.prompt, card.categories);
-    if (!assembled) return { ok: false, status: 409, reason: "nothing_to_generate" };
+    const assembled = assembleCardBlockPrompt(card.systemPrompt, card.prompt, card.categories, categoryId);
+    if (!assembled) {
+      // categoryId пришёл явно (кнопка «Перегенерировать») — раз assembleCardBlockPrompt не нашёл
+      // валидную цель, значит локальное состояние клиента разошлось с сохранённым (категория
+      // удалена/выключена/что-то перед ней ещё не заполнено в параллельной сессии) — не тот же
+      // случай, что «генерировать больше нечего» у обычной кнопки «Сгенерировать».
+      return categoryId
+        ? { ok: false, status: 400, reason: "target_not_found" }
+        : { ok: false, status: 409, reason: "nothing_to_generate" };
+    }
 
     const result = await chatCompletion({
       userId,

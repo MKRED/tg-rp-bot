@@ -173,11 +173,20 @@
 }
 
 /* --- Генерация блоков (GenerationSection) ---
-   Сами блоки — PromptEditorField внутри своей Section (нативный Divider между ними вместо
-   ручного gap); пустое состояние — Cell (см. PresetPicker), кнопка генерации — в SectionActions
-   вместе с подсказками о недоступности. */
+   Сами блоки — PromptEditorField внутри своей Section, каждый в обёртке <div> вместе со своей
+   кнопкой (Section считает Divider по top-level children, обёртка не ломает нативный Divider
+   между блоками); кнопка под блоком — «Перегенерировать» (уже заполнен) или «Сгенерировать»
+   (первый пустой), у остальных блоков ниже кнопки нет. Пустое состояние — Cell (см. PresetPicker),
+   подсказки о недоступности генерации — в SectionActions под Section. */
+/* Размер/начертание — от Caption (level="1", 13px, обычный вес), здесь только то, что она сама не даёт. */
 .card-generation__hint {
   text-align: center;
-  font-size: 13px;
   color: var(--tgui--hint_color, #7d8b99);
+}
+
+/* Гуттер как у SectionActions (22px), но без её большого нижнего отступа/margin-top — это
+   действие относится к конкретному блоку выше, а не к подвалу всей секции. */
+.card-generation__block-action {
+  display: flex;
+  padding: 8px 22px 16px;
 }

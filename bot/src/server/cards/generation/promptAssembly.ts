@@ -20,17 +20,29 @@ export interface CardBlockPrompt {
  * Отключённые (enabled: false) категории не попадают ни в <example>, ни в историю — как будто их
  * не существует.
  *
- * undefined — генерировать больше нечего: все enabled-категории уже имеют content, либо
- * enabled-категорий нет вовсе.
+ * targetCategoryId — явная цель (перегенерация уже заполненного блока «как если бы шли по
+ * очереди»): контекстом служат блоки СТРОГО ДО него по позиции (их текущий content), сам блок
+ * и всё, что после — не читаются, будто ещё не существуют. Без параметра — как раньше, целью
+ * становится первая enabled-категория с пустым content.
+ *
+ * undefined — генерировать нечего: явная цель не найдена среди enabled-категорий, целевая позиция
+ * не первая, но что-то ПЕРЕД ней ещё не заполнено (иначе в историю ушло бы пустое assistant-
+ * сообщение — рассинхрон с реальной последовательностью), либо (без targetCategoryId) все
+ * enabled-категории уже имеют content, либо enabled-категорий нет вовсе.
  */
 export function assembleCardBlockPrompt(
   systemPrompt: string,
   prompt: string,
   categories: CardCategory[],
+  targetCategoryId?: string,
 ): CardBlockPrompt | undefined {
   const enabled = categories.filter((c) => c.enabled);
-  const targetIndex = enabled.findIndex((c) => c.content.trim() === "");
+  const targetIndex =
+    targetCategoryId !== undefined
+      ? enabled.findIndex((c) => c.id === targetCategoryId)
+      : enabled.findIndex((c) => c.content.trim() === "");
   if (targetIndex === -1) return undefined;
+  if (enabled.slice(0, targetIndex).some((c) => c.content.trim() === "")) return undefined;
   const target = enabled[targetIndex]!;
 
   const messages: ChatMessage[] = [{ role: "system", content: systemPrompt }];

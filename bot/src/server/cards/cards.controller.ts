@@ -15,7 +15,7 @@ import { chatCompletionErrorResponse } from "../shared/apiError.js";
 import { tryLockCard, unlockCard } from "./cardLock.js";
 import { MAX_CARDS_PER_USER } from "./cards.constants.js";
 import { parseCardInput } from "./cards.validation.js";
-import { generateNextCardBlock } from "./generation/generateBlock.js";
+import { generateCardBlock } from "./generation/generateBlock.js";
 
 /**
  * presetId опционален (null = пресет ещё не выбран), но если задан — обязан принадлежать
@@ -102,8 +102,8 @@ export function createCardRoutes(): Hono<{ Variables: AppVariables }> {
       return c.json({ error: "Preset not found" }, 404);
     }
 
-    // Тот же лок, что у generate-next (cardLock.ts): оба пути делают read-modify-write полной
-    // строки, без него параллельные PUT и «Сгенерировать» могли бы затереть друг друга.
+    // Тот же лок, что у generate (cardLock.ts): оба пути делают read-modify-write полной
+    // строки, без него параллельные PUT и «Сгенерировать»/«Перегенерировать» могли бы затереть друг друга.
     if (!tryLockCard(id)) return c.json({ error: "busy" }, 409);
     try {
       const card = await updateCard(user.id, id, parsed.input);
@@ -117,14 +117,20 @@ export function createCardRoutes(): Hono<{ Variables: AppVariables }> {
     }
   });
 
-  // Генерация следующего незаполненного блока структуры карточки (см. generateNextCardBlock).
-  api.post("/:id/generate-next", async (c) => {
+  // Генерация блока структуры карточки (см. generateCardBlock): без categoryId — следующий
+  // незаполненный, с categoryId — явная перегенерация уже заполненного блока.
+  api.post("/:id/generate", async (c) => {
     const user = c.get("tgUser");
     if (!user) return c.json({ error: "Auth required" }, 401);
     const id = Number(c.req.param("id"));
     if (!Number.isInteger(id)) return c.json({ error: "Invalid id" }, 400);
+    const body = await c.req.json().catch(() => null);
+    const categoryId =
+      typeof body === "object" && body !== null && typeof (body as Record<string, unknown>).categoryId === "string"
+        ? ((body as Record<string, unknown>).categoryId as string)
+        : undefined;
     try {
-      const result = await generateNextCardBlock(user.id, id);
+      const result = await generateCardBlock(user.id, id, categoryId);
       if (!result.ok) return c.json({ error: result.reason }, result.status);
       return c.json({ categoryId: result.categoryId, content: result.content });
     } catch (err) {

@@ -70,18 +70,27 @@ export function CardForm({
 
   const canSubmit = name.trim().length > 0 && !submitting;
 
-  const handleSubmit = async () => {
-    if (!canSubmit) return;
+  // Вынесено из handleSubmit — тем же путём сохраняет карточку и GenerationSection перед
+  // генерацией по несохранённым данным (см. onSaveBeforeGenerate): результат нужен как boolean,
+  // чтобы вызывающий знал, продолжать ли (генерацию не запускаем поверх проваленного сохранения).
+  const save = async (): Promise<boolean> => {
+    if (!canSubmit) return false;
     const payload = normalizeCardDraft({ name, systemPrompt, prompt, categories, presetId });
     try {
       await onSubmit(payload);
       setBaseline(payload);
+      return true;
     } catch {
       // Ошибку показывает CardEditPage (тост) — здесь просто не сбрасываем baseline.
+      return false;
     }
   };
 
-  // Генерация блока уже сохранена на сервере (см. generateNextBlock) — синхронизируем и локальный
+  const handleSubmit = () => {
+    void save();
+  };
+
+  // Генерация блока уже сохранена на сервере (см. generateCardBlock) — синхронизируем и локальный
   // стейт, и baseline той же точечной правкой, иначе guard посчитал бы уже сохранённый текст
   // «несохранённым изменением». Мержим по categoryId (а не заменяем весь массив с сервера), чтобы
   // не затереть параллельные несохранённые правки других категорий.
@@ -144,6 +153,7 @@ export function CardForm({
           categories={categories}
           presetId={presetId}
           formDirty={isDirty}
+          onSaveBeforeGenerate={save}
           onContentChange={setCategories}
           onGenerated={handleGenerated}
         />

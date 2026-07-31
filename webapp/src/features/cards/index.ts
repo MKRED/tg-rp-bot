@@ -6,7 +6,7 @@
 export { CardForm } from "./components/CardForm";
 export { useCards } from "./hooks/useCards";
 export { useCard } from "./hooks/useCard";
-export { getCard, createCard, updateCard, removeCard, generateNextBlock } from "./api/cards-api";
+export { getCard, createCard, updateCard, removeCard, generateCardBlock } from "./api/cards-api";
 export type { Card, CardCategory, CardInput, CardListItem, CardPresetOption } from "./types/card";
 export {
   DEFAULT_CARD_CATEGORIES,
