@@ -1,4 +1,4 @@
-import { AppRoot, Button } from "@telegram-apps/telegram-ui";
+import { AppRoot, Button, Subheadline } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -78,10 +78,12 @@ export function PromptEditorOverlay({ title, placeholder, value, onSave, onCance
     >
       <AppRoot appearance={appearance} platform={platform} className="prompt-editor-overlay__root">
         <div className="prompt-editor-overlay__header">
-          <Button mode="plain" size="s" onClick={handleDiscard}>
+          <Button mode="outline" size="s" onClick={handleDiscard}>
             Отмена
           </Button>
-          <span className="prompt-editor-overlay__title">{title}</span>
+          <Subheadline level="1" weight="2" className="prompt-editor-overlay__title" plain>
+            {title}
+          </Subheadline>
           <Button mode="filled" size="s" disabled={!dirty} onClick={() => onSave(draft)}>
             Готово
           </Button>
