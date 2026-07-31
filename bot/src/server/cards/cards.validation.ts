@@ -40,6 +40,7 @@ export function parseCardInput(body: unknown): { input: CardInput } | { error: s
   const name = typeof b.name === "string" ? b.name.trim() : "";
   if (!name) return { error: "Name is required" };
 
+  const systemPrompt = typeof b.systemPrompt === "string" ? b.systemPrompt : "";
   const prompt = typeof b.prompt === "string" ? b.prompt : "";
 
   if (!Array.isArray(b.categories)) return { error: "categories must be an array" };
@@ -67,5 +68,5 @@ export function parseCardInput(body: unknown): { input: CardInput } | { error: s
     presetId = b.presetId;
   }
 
-  return { input: { name, prompt, categories, presetId } };
+  return { input: { name, systemPrompt, prompt, categories, presetId } };
 }

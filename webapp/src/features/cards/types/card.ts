@@ -11,6 +11,7 @@ export interface CardCategory {
 export interface Card {
   id: number;
   name: string;
+  systemPrompt: string;
   prompt: string;
   categories: CardCategory[];
   presetId: number | null;
@@ -28,6 +29,7 @@ export interface CardListItem {
 /** Тело формы создания/редактирования (POST/PUT). */
 export interface CardInput {
   name: string;
+  systemPrompt: string;
   prompt: string;
   categories: CardCategory[];
   presetId: number | null;
@@ -50,6 +52,18 @@ export const MAX_CARDS_PER_USER = 50;
 
 /** Максимум категорий структуры — дублирует MAX_CARD_CATEGORIES (bot/src/server/cards/cards.constants.ts). */
 export const MAX_CARD_CATEGORIES = 30;
+
+/**
+ * Дефолтные системные инструкции новой карточки — дублирует DEFAULT_CARD_SYSTEM_PROMPT
+ * (bot/src/db/cards/cards.constants.ts). См. DEFAULT_CARD_PROMPT — тот же повод для дублирования.
+ */
+export const DEFAULT_CARD_SYSTEM_PROMPT =
+  "You are generating a character card block by block. The user's first message contains a " +
+  "character brief and an <example> block showing the title and expected format of every block " +
+  "in the card — treat <example> only as a structural reference, never copy its placeholder text. " +
+  "Each user request names exactly one block to generate; reply with that block's content only — " +
+  "plain text, no title, no markdown wrapping, no explanations. Stay consistent with any blocks " +
+  "you already generated earlier in this conversation.";
 
 /**
  * Дефолтный основной промпт новой карточки — дублирует DEFAULT_CARD_PROMPT

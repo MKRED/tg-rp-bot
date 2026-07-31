@@ -7,16 +7,24 @@ export interface CardBlockPrompt {
 }
 
 /**
- * Собирает messages[] для генерации следующего блока карточки: system = основной промпт со
- * вставленным <example>-блоком структуры (title+description enabled-категорий), история —
- * уже сгенерированные enabled-категории как пары user/assistant (модель «помнит» свои прошлые
- * блоки), последний user-запрос — просьба сгенерировать конкретно следующий блок. Отключённые
- * (enabled: false) категории не попадают ни в <example>, ни в историю — как будто их не существует.
+ * Собирает messages[] для генерации следующего блока карточки:
+ * - system = systemPrompt карточки как есть (поблочный контракт генерации — формат ответа,
+ *   что <example> ниже только образец структуры, задаётся пользователем один раз, не зависит
+ *   от конкретного персонажа);
+ * - первый user = основной промпт со вставленным <example>-блоком (title+description enabled-
+ *   категорий); для самой первой генерации к нему же в конец добавляется запрос на первый блок —
+ *   единый первый ход диалога, отдельного user-сообщения не нужно;
+ * - далее уже сгенерированные enabled-категории — парами assistant (сохранённый content) / user
+ *   (короткий запрос на следующий блок), история делает предыдущие блоки видимыми модели;
+ * - последний user (если это не первая генерация) — запрос на целевой блок.
+ * Отключённые (enabled: false) категории не попадают ни в <example>, ни в историю — как будто их
+ * не существует.
  *
  * undefined — генерировать больше нечего: все enabled-категории уже имеют content, либо
  * enabled-категорий нет вовсе.
  */
 export function assembleCardBlockPrompt(
+  systemPrompt: string,
   prompt: string,
   categories: CardCategory[],
 ): CardBlockPrompt | undefined {
@@ -25,21 +33,29 @@ export function assembleCardBlockPrompt(
   if (targetIndex === -1) return undefined;
   const target = enabled[targetIndex]!;
 
-  const messages: ChatMessage[] = [
-    { role: "system", content: insertExampleBlock(prompt, buildExampleBlock(enabled)) },
-  ];
+  const messages: ChatMessage[] = [{ role: "system", content: systemPrompt }];
 
-  for (const cat of enabled.slice(0, targetIndex)) {
-    messages.push({ role: "user", content: `Сгенерируй блок "${cat.title}".` });
-    messages.push({ role: "assistant", content: cat.content });
-  }
-
+  const mainUserContent = insertExampleBlock(prompt, buildExampleBlock(enabled));
   messages.push({
     role: "user",
-    content: `Сгенерируй блок "${target.title}", используя описание/пример выше. Ответь только текстом блока — без заголовка, markdown-обрамления и пояснений.`,
+    content: targetIndex === 0 ? `${mainUserContent}\n\n${blockRequest(target.title)}` : mainUserContent,
   });
 
+  if (targetIndex > 0) {
+    messages.push({ role: "assistant", content: enabled[0]!.content });
+    for (const cat of enabled.slice(1, targetIndex)) {
+      messages.push({ role: "user", content: blockRequest(cat.title) });
+      messages.push({ role: "assistant", content: cat.content });
+    }
+    messages.push({ role: "user", content: blockRequest(target.title) });
+  }
+
   return { messages, targetCategoryId: target.id };
+}
+
+/** Короткий запрос на генерацию конкретного блока — на английском, формат ответа задаёт system. */
+function blockRequest(title: string): string {
+  return `Generate the "${title}" block.`;
 }
 
 /** <example>-блок из title+description enabled-категорий — образец формата для ИИ. */

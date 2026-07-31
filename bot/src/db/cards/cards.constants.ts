@@ -1,6 +1,20 @@
 import type { CardCategory } from "../schema.js";
 
 /**
+ * Дефолтные системные инструкции новой карточки (role: system, см. assembleCardBlockPrompt) —
+ * поблочный контракт генерации: <example> в первом user-сообщении — только образец структуры,
+ * ответ — только текст блока без обрамления, дальнейшие блоки должны быть согласованы с уже
+ * сгенерированными (они приходят как прошлые assistant-реплики). Пользователь может отредактировать.
+ */
+export const DEFAULT_CARD_SYSTEM_PROMPT =
+  "You are generating a character card block by block. The user's first message contains a " +
+  "character brief and an <example> block showing the title and expected format of every block " +
+  "in the card — treat <example> only as a structural reference, never copy its placeholder text. " +
+  "Each user request names exactly one block to generate; reply with that block's content only — " +
+  "plain text, no title, no markdown wrapping, no explanations. Stay consistent with any blocks " +
+  "you already generated earlier in this conversation.";
+
+/**
  * Дефолтный основной промпт новой карточки. Содержит {{example}} неявно (через автодобавление
  * в конец при сборке — см. assembleCardBlockPrompt), пользователь может вставить плейсхолдер
  * явно, если хочет переставить структуру внутрь текста.

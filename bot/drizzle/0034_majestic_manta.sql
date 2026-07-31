@@ -1,0 +1,1 @@
+ALTER TABLE "cards" ADD COLUMN "system_prompt" text DEFAULT '' NOT NULL;

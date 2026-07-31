@@ -5,7 +5,11 @@ import { PromptEditorField } from "../../../../shared/components/PromptEditorFie
 import { SectionActions } from "../../../../shared/components/SectionActions";
 import { useUnsavedChangesGuard } from "../../../../shared/telegram/useUnsavedChangesGuard";
 import { hasUnsavedChanges, normalizeCardDraft } from "../../lib/formDirty";
-import { DEFAULT_CARD_CATEGORIES, DEFAULT_CARD_PROMPT } from "../../types/card";
+import {
+  DEFAULT_CARD_CATEGORIES,
+  DEFAULT_CARD_PROMPT,
+  DEFAULT_CARD_SYSTEM_PROMPT,
+} from "../../types/card";
 import type { CardCategory, CardInput, CardPresetOption } from "../../types/card";
 import { CategoryList } from "./CategoryList";
 import { CategoryOrderList } from "./CategoryOrderList";
@@ -38,6 +42,10 @@ export function CardForm({
   onDelete,
 }: CardFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
+  // || а не ?? — пустая строка (карточка без явного system-промпта) тоже должна замениться
+  // дефолтом, а не остаться пустой (сервер теперь подстраховывает то же самое на чтении/записи,
+  // см. decryptCardRow/updateCard, но форма не должна на это полагаться).
+  const [systemPrompt, setSystemPrompt] = useState(initial?.systemPrompt || DEFAULT_CARD_SYSTEM_PROMPT);
   const [prompt, setPrompt] = useState(initial?.prompt ?? DEFAULT_CARD_PROMPT);
   const [categories, setCategories] = useState<CardCategory[]>(
     initial?.categories ?? DEFAULT_CARD_CATEGORIES,
@@ -48,14 +56,15 @@ export function CardForm({
   const [baseline, setBaseline] = useState<CardInput>(() =>
     normalizeCardDraft({
       name: initial?.name ?? "",
+      systemPrompt: initial?.systemPrompt || DEFAULT_CARD_SYSTEM_PROMPT,
       prompt: initial?.prompt ?? DEFAULT_CARD_PROMPT,
       categories: initial?.categories ?? DEFAULT_CARD_CATEGORIES,
       presetId: initial?.presetId ?? null,
     }),
   );
   const isDirty = useMemo(
-    () => hasUnsavedChanges({ name, prompt, categories, presetId }, baseline),
-    [name, prompt, categories, presetId, baseline],
+    () => hasUnsavedChanges({ name, systemPrompt, prompt, categories, presetId }, baseline),
+    [name, systemPrompt, prompt, categories, presetId, baseline],
   );
   useUnsavedChangesGuard(isDirty);
 
@@ -63,7 +72,7 @@ export function CardForm({
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
-    const payload = normalizeCardDraft({ name, prompt, categories, presetId });
+    const payload = normalizeCardDraft({ name, systemPrompt, prompt, categories, presetId });
     try {
       await onSubmit(payload);
       setBaseline(payload);
@@ -93,6 +102,15 @@ export function CardForm({
           placeholder="Название карточки"
           value={name}
           onChange={(e) => setName(e.target.value)}
+        />
+
+        <PromptEditorField
+          header="Системный промпт"
+          hint="Инструкции ИИ о самом процессе генерации: что блоки создаются строго по одному, что <example> ниже — только образец формата, а не готовый ответ. Не зависит от конкретного персонажа."
+          placeholder={DEFAULT_CARD_SYSTEM_PROMPT}
+          value={systemPrompt}
+          previewLines={6}
+          onChange={setSystemPrompt}
         />
 
         <PromptEditorField

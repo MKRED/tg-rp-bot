@@ -239,6 +239,13 @@
       "when": 1785324523154,
       "tag": "0033_charming_red_hulk",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1785461071460,
+      "tag": "0034_majestic_manta",
+      "breakpoints": true
     }
   ]
 }

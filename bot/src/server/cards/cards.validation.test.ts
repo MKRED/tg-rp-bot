@@ -15,9 +15,9 @@ describe("parseCardInput", () => {
     expect(parseCardInput({ name: "   ", categories: [] })).toEqual({ error: "Name is required" });
   });
 
-  it("принимает и обрезает имя по краям, дефолтит пустые prompt/categories/presetId", () => {
+  it("принимает и обрезает имя по краям, дефолтит пустые systemPrompt/prompt/categories/presetId", () => {
     expect(parseCardInput({ name: "  Артур  ", categories: [] })).toEqual({
-      input: { name: "Артур", prompt: "", categories: [], presetId: null },
+      input: { name: "Артур", systemPrompt: "", prompt: "", categories: [], presetId: null },
     });
   });
 
@@ -58,10 +58,11 @@ describe("parseCardInput", () => {
     ).toEqual({ error: "Category 0: enabled must be a boolean" });
   });
 
-  it("принимает полный валидный вход с prompt, категориями и presetId", () => {
+  it("принимает полный валидный вход с systemPrompt, prompt, категориями и presetId", () => {
     expect(
       parseCardInput({
         name: "Артур",
+        systemPrompt: "Custom system instructions",
         prompt: "Custom prompt {{example}}",
         categories: [{ id: "base", title: "Base", description: "Name: ...", content: "", enabled: true }],
         presetId: 5,
@@ -69,6 +70,7 @@ describe("parseCardInput", () => {
     ).toEqual({
       input: {
         name: "Артур",
+        systemPrompt: "Custom system instructions",
         prompt: "Custom prompt {{example}}",
         categories: [{ id: "base", title: "Base", description: "Name: ...", content: "", enabled: true }],
         presetId: 5,
@@ -102,6 +104,7 @@ describe("parseCardInput", () => {
     expect(result).toEqual({
       input: {
         name: "Артур",
+        systemPrompt: "",
         prompt: "",
         categories: [{ id: "base", title: "Base", description: "Name: ...", content: "  raw  ", enabled: true }],
         presetId: null,

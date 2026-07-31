@@ -3,6 +3,7 @@ import type { CardCategory, CardInput } from "../types/card";
 /** Черновик формы — тот же набор полей, что и локальный стейт CardForm. */
 export type CardFormDraft = {
   name: string;
+  systemPrompt: string;
   prompt: string;
   categories: CardCategory[];
   presetId: number | null;
@@ -12,6 +13,7 @@ export type CardFormDraft = {
 export function normalizeCardDraft(draft: CardFormDraft): CardInput {
   return {
     name: draft.name.trim(),
+    systemPrompt: draft.systemPrompt,
     prompt: draft.prompt,
     categories: draft.categories,
     presetId: draft.presetId,

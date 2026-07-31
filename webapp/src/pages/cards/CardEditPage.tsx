@@ -21,7 +21,13 @@ import "./cards.css";
 
 /** Маппинг полной карточки в значения формы. */
 function toInput(c: Card): CardInput {
-  return { name: c.name, prompt: c.prompt, categories: c.categories, presetId: c.presetId };
+  return {
+    name: c.name,
+    systemPrompt: c.systemPrompt,
+    prompt: c.prompt,
+    categories: c.categories,
+    presetId: c.presetId,
+  };
 }
 
 /**

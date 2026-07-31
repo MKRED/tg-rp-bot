@@ -37,7 +37,7 @@ export async function generateNextCardBlock(
     const preset = await getPreset(userId, card.presetId);
     if (!preset) return { ok: false, status: 400, reason: "preset_required" };
 
-    const assembled = assembleCardBlockPrompt(card.prompt, card.categories);
+    const assembled = assembleCardBlockPrompt(card.systemPrompt, card.prompt, card.categories);
     if (!assembled) return { ok: false, status: 409, reason: "nothing_to_generate" };
 
     const result = await chatCompletion({

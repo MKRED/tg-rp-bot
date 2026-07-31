@@ -150,9 +150,12 @@ export type NewPersona = typeof personas.$inferInsert;
  * в персонажа или персону (конвертация — отдельный этап, здесь только каркас). Схема растёт
  * миграциями по мере готовности этапов формы.
  *
- * prompt — основной промпт карточки (что за персонаж, вводные для ИИ); может содержать плейсхолдер
- * {{example}} — на его место при сборке промпта генерации вставляется <example>-блок, собранный из
- * enabled-категорий (title+description); если плейсхолдера нет, блок дописывается в конец.
+ * systemPrompt — system-роль в сборке генерации (см. assembleCardBlockPrompt): инструкции ИИ о
+ * формате ответа и поблочной генерации (что <example> в первом user-сообщении — только образец
+ * структуры, а не готовый ответ). Редактируется пользователем, не зависит от конкретного персонажа.
+ * prompt — основной промпт карточки (что за персонаж, вводные для ИИ), уходит user-сообщением;
+ * может содержать плейсхолдер {{example}} — на его место при сборке вставляется <example>-блок,
+ * собранный из enabled-категорий (title+description); если плейсхолдера нет, блок дописывается в конец.
  * categories — редактируемая пользователем структура карточки (см. CardCategory в schema.types.ts):
  * порядок элементов массива = порядок генерации/сборки промпта. content каждой категории — либо
  * ИИ-сгенерированный, либо отредактированный вручную текст блока (пусто = блок ещё не сгенерирован).
@@ -160,8 +163,8 @@ export type NewPersona = typeof personas.$inferInsert;
  * nullable — карточка существует до того, как пресет выбран, эндпоинт генерации требует его явно.
  * FK без onDelete (= restrict): пресет, используемый карточкой, нельзя удалить (23503 → 409 in_use,
  * как у chats/story_chats).
- * prompt и текстовые поля categories (title/description/content) шифруются per-user в DAO,
- * как prompt/footnote у characters.
+ * systemPrompt, prompt и текстовые поля categories (title/description/content) шифруются per-user
+ * в DAO, как prompt/footnote у characters.
  */
 export const cards = pgTable("cards", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
@@ -169,6 +172,7 @@ export const cards = pgTable("cards", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
+  systemPrompt: text("system_prompt").notNull().default(""),
   prompt: text("prompt").notNull().default(""),
   categories: jsonb("categories").$type<CardCategory[]>().notNull().default(sql`'[]'::jsonb`),
   presetId: bigint("preset_id", { mode: "number" }).references(() => generationPresets.id),

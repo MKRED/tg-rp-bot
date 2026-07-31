@@ -3,6 +3,7 @@ import { hasUnsavedChanges, normalizeCardDraft, type CardFormDraft } from "./for
 
 const baseDraft: CardFormDraft = {
   name: "Алиса",
+  systemPrompt: "Системные инструкции",
   prompt: "Промпт",
   categories: [
     { id: "base", title: "Base", description: "Name: ...", content: "", enabled: true },
@@ -14,6 +15,7 @@ describe("normalizeCardDraft", () => {
   it("трим имени, остальные поля без изменений", () => {
     expect(normalizeCardDraft({ ...baseDraft, name: "  Алиса  " })).toEqual({
       name: "Алиса",
+      systemPrompt: "Системные инструкции",
       prompt: "Промпт",
       categories: baseDraft.categories,
       presetId: 1,

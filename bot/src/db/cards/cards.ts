@@ -3,7 +3,11 @@ import logger from "../../logger.js";
 import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/index.js";
 import { db, schema } from "../index.js";
 import type { Card, CardCategory } from "../schema.js";
-import { DEFAULT_CARD_CATEGORIES, DEFAULT_CARD_PROMPT } from "./cards.constants.js";
+import {
+  DEFAULT_CARD_CATEGORIES,
+  DEFAULT_CARD_PROMPT,
+  DEFAULT_CARD_SYSTEM_PROMPT,
+} from "./cards.constants.js";
 import type { CardInput, CardListItem } from "./types.js";
 
 export { ensureUser } from "../users.js";
@@ -28,11 +32,18 @@ function decryptCategories(categories: CardCategory[], key: Buffer): CardCategor
   }));
 }
 
-/** Расшифровывает prompt и категории строки карточки для её владельца. */
+/**
+ * Расшифровывает systemPrompt, prompt и категории строки карточки для её владельца.
+ * systemPrompt — фоллбэк на дефолт: у карточек, созданных до появления этого поля, в колонке
+ * пустая строка (миграция не может подставить осмысленный per-user шифротекст), без фоллбэка
+ * они молча уходили бы на генерацию с пустым system-сообщением — контракт поблочной генерации
+ * (формат ответа, что <example> лишь образец) исчезал бы целиком.
+ */
 function decryptCardRow(row: Card, userId: number): Card {
   const key = getUserEncryptionKey(userId);
   return {
     ...row,
+    systemPrompt: decryptField(row.systemPrompt, key) || DEFAULT_CARD_SYSTEM_PROMPT,
     prompt: decryptField(row.prompt, key),
     categories: decryptCategories(row.categories, key),
   };
@@ -85,6 +96,7 @@ export async function getCard(userId: number, id: number): Promise<Card | undefi
 export async function createCard(userId: number, input: CardInput): Promise<Card> {
   const t0 = Date.now();
   const key = getUserEncryptionKey(userId);
+  const systemPrompt = input.systemPrompt.trim() || DEFAULT_CARD_SYSTEM_PROMPT;
   const prompt = input.prompt.trim() || DEFAULT_CARD_PROMPT;
   const categories = input.categories.length > 0 ? input.categories : DEFAULT_CARD_CATEGORIES;
   const rows = await db
@@ -92,6 +104,7 @@ export async function createCard(userId: number, input: CardInput): Promise<Card
     .values({
       userId,
       name: input.name,
+      systemPrompt: encryptField(systemPrompt, key),
       prompt: encryptField(prompt, key),
       categories: encryptCategories(categories, key),
       presetId: input.presetId,
@@ -113,10 +126,14 @@ export async function updateCard(
 ): Promise<Card | undefined> {
   const t0 = Date.now();
   const key = getUserEncryptionKey(userId);
+  // Тот же фоллбэк, что в createCard: пустой systemPrompt (например, из CardForm у карточки,
+  // у которой это поле ещё не заполнено) не должен затирать контракт поблочной генерации пустотой.
+  const systemPrompt = input.systemPrompt.trim() || DEFAULT_CARD_SYSTEM_PROMPT;
   const rows = await db
     .update(schema.cards)
     .set({
       name: input.name,
+      systemPrompt: encryptField(systemPrompt, key),
       prompt: encryptField(input.prompt, key),
       categories: encryptCategories(input.categories, key),
       presetId: input.presetId,
@@ -160,6 +177,7 @@ export async function setCardCategoryContent(
   const categories = card.categories.map((c) => (c.id === categoryId ? { ...c, content } : c));
   return updateCard(userId, id, {
     name: card.name,
+    systemPrompt: card.systemPrompt,
     prompt: card.prompt,
     categories,
     presetId: card.presetId,
