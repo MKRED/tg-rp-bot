@@ -1,6 +1,7 @@
 import { Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import { LlmSettingsSection, useLlmSettings } from "../../features/llm-settings";
+import { TavilySettingsSection, useTavilySettings } from "../../features/tavily-settings";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { ThemeToggle } from "../../shared/theme";
 import "./settings.css";
@@ -8,16 +9,17 @@ import "./settings.css";
 const ITEM_T = { duration: 0.2, ease: "easeOut" as const };
 
 /**
- * Экран «Настройки»: тема оформления и персональный ключ/модель ИИ (DeepSeek).
+ * Экран «Настройки»: тема оформления и персональные ключи ИИ (DeepSeek) + веб-поиска (Tavily).
  *
- * Статус ключа (useLlmSettings) грузится на уровне страницы: пока не пришёл ответ, показываем
- * один спиннер на весь экран вместо частичного контента — иначе секция «ИИ» появлялась бы позже
- * темы и сдвигала бы уже отрисованный список.
+ * Статусы ключей (useLlmSettings/useTavilySettings) грузятся на уровне страницы: пока не пришли
+ * оба ответа, показываем один спиннер на весь экран вместо частичного контента — иначе секции
+ * появлялись бы позже темы и сдвигали бы уже отрисованный список.
  */
 export function SettingsPage() {
-  const { loading, ...llm } = useLlmSettings();
+  const { loading: llmLoading, ...llm } = useLlmSettings();
+  const { loading: tavilyLoading, ...tavily } = useTavilySettings();
 
-  if (loading) {
+  if (llmLoading || tavilyLoading) {
     return (
       <PageTransition>
         <div className="settings-page settings-page__loading">
@@ -40,6 +42,7 @@ export function SettingsPage() {
           </Section>
 
           <LlmSettingsSection {...llm} />
+          <TavilySettingsSection {...tavily} />
         </List>
       </div>
     </PageTransition>

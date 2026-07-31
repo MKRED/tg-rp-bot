@@ -1,0 +1,13 @@
+/* tgui Button size="s" даёт фиксированную height:36px независимо от иконки внутри — прижимаем
+   к 24px, тот же фикс, что и в llm-settings/components/LlmSettingsSection.css. */
+.tavily-settings__key-action {
+  height: 24px !important;
+  min-width: 24px !important;
+  padding: 0 !important;
+}
+
+.tavily-settings__key-action svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}

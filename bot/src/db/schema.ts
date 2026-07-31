@@ -66,6 +66,9 @@ export const userSettings = pgTable("user_settings", {
   // Id модели DeepSeek (из GET /models), выбранной пользователем. NULL → используется
   // DEFAULT_DEEPSEEK_MODEL (см. llm/resolveProvider.ts), если ключ уже задан.
   deepseekModel: text("deepseek_model"),
+  // Персональный ключ Tavily (веб-поиск, BYOK). Зашифрован encryptField (см. utils/crypto.ts),
+  // NULL = ключ не задан. Квота не кэшируется в БД — запрашивается у Tavily "на лету" (GET /usage).
+  tavilyApiKey: text("tavily_api_key"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()

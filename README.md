@@ -11,10 +11,11 @@ Telegram-бот для ролевой игры (RP) с упором на **Teleg
 | HTTP API | [Hono](https://hono.dev) + `@hono/node-server` |
 | БД | Postgres + [drizzle-orm](https://orm.drizzle.team) / drizzle-kit |
 | LLM | DeepSeek (OpenAI-совместимый API); ключ/модель — персональные (BYOK), задаются пользователем в Mini App |
+| Веб-поиск | Tavily (квота ключа); ключ — персональный (BYOK), задаётся пользователем в Mini App |
 | Логи | pino (+ pino-roll, pino-pretty) |
 | Mini App | React 19 + Vite + `@telegram-apps/sdk-react` + `@telegram-apps/telegram-ui` + `react-router-dom` (HashRouter) + `@xyflow/react` (граф диалога) + `framer-motion` + `react-easy-crop` (кроп аватара) |
 | initData | подпись проверяется серверно через `@tma.js/init-data-node` |
-| Прокси | `https-proxy-agent` (HttpsProxyAgent, CONNECT-туннель) — только для Telegram |
+| Прокси | `https-proxy-agent` (Telegram, agent) + `undici` `ProxyAgent` (Tavily, dispatcher) — оба сервиса недоступны напрямую с сети сервера |
 | Тесты | vitest (bot + webapp) |
 
 ## Структура
@@ -31,10 +32,11 @@ tg-rp-bot/
 │  │  ├─ bot.ts        # инстанс grammY (+ прокси для Telegram)
 │  │  ├─ config.ts     # переменные окружения
 │  │  ├─ logger.ts     # pino
-│  │  ├─ proxy.ts      # HttpsProxyAgent (https-proxy-agent) только для Telegram
+│  │  ├─ proxy.ts      # HttpsProxyAgent (https-proxy-agent) для Telegram; тот же прокси — и для Tavily
 │  │  ├─ db/           # drizzle: schema + клиент + DAO-папки по таблицам (characters/ personas/ cards/
 │  │  │                #   presets/ chats/ stories/ knowledge/ … — у каждой DAO + types/constants + barrel)
 │  │  ├─ llm/          # клиент LLM (DeepSeek, ключ per-user BYOK через resolveProvider)
+│  │  ├─ tavily/       # клиент Tavily (квота ключа, GET /usage), ключ per-user BYOK
 │  │  ├─ handlers/     # обработчики команд бота (/start …)
 │  │  ├─ server/       # Hono HTTP API (/health, /api), доменные папки (зеркало webapp): routes —
 │  │  │                #   карта эндпоинтов, у каждого домена *.controller.ts + validation/constants/
@@ -51,15 +53,17 @@ tg-rp-bot/
       │                #   narrator/ knowledge-books/ narrator-templates/ debug/)
       ├─ shared/       # api/client (граница к /api), telegram/, text/, image/, components/
       └─ features/     # доменные модули: characters, personas, cards, generation-presets, rp-chat,
-                        #   narrator, knowledge-books, narrator-templates, debug, llm-settings
+                        #   narrator, knowledge-books, narrator-templates, debug, llm-settings,
+                        #   tavily-settings
 ```
 
-## Прокси для Telegram
+## Прокси
 
-Запросы **только к Telegram Bot API** проходят через локальный HTTP-прокси (`TELEGRAM_PROXY_URL`,
-например `http://127.0.0.1:8080`, без авторизации). Реализовано через `https-proxy-agent`
-(`HttpsProxyAgent`, CONNECT-туннелирование), который подключается исключительно к grammY-клиенту —
-DeepSeek и любые другие запросы идут напрямую.
+Запросы к Telegram Bot API и к Tavily проходят через локальный HTTP-прокси (`TELEGRAM_PROXY_URL`,
+например `http://127.0.0.1:8080`, без авторизации) — оба сервиса недоступны напрямую с сети
+сервера. Telegram проксируется через `https-proxy-agent` (`HttpsProxyAgent`, CONNECT-туннель) на
+grammY-клиенте, Tavily — через `ProxyAgent` из пакета `undici`. DeepSeek и любые другие запросы
+идут напрямую.
 
 ## Запуск
 
@@ -93,6 +97,9 @@ yarn workspace bot drizzle-kit migrate      # применить миграци�
 **LLM (DeepSeek)** — BYOK: общего ключа в env нет, каждый пользователь задаёт свой ключ DeepSeek
 (и опционально модель) в Mini App → `/settings` → «ИИ (DeepSeek)». Без сохранённого ключа
 генерация и ИИ-перевод вернут пользователю ошибку с просьбой добавить ключ.
+
+**Веб-поиск (Tavily)** — тоже BYOK: свой ключ Tavily и месячная квота задаются/отображаются в
+Mini App → `/settings` → «Веб-поиск (Tavily)».
 
 ## Деплой
 

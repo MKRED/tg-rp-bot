@@ -28,7 +28,7 @@ ssh -p 2222 aoshi@home.aoshiloli.ru 'docker logs --since 1h kvach_tg_rp_bot 2>&1
 - LLM: `bot/src/llm/client.ts` (стриминг, ретраи пустых/отказных ответов), `bot/src/llm/resolveProvider.ts` (резолв активного провайдера per-user — актуальный см. CLAUDE.md → «External APIs» или в коде, не полагайся на память).
 - Граница webapp↔API: `webapp/src/shared/api/client.ts`, `bot/src/server/middleware/initData.ts` (валидация подписи; в проде без подписи → 401).
 - БД: `bot/src/db/` (DAO по таблицам).
-- Прокси Telegram: только grammY через node-fetch `agent` (`bot.ts`); LLM-провайдер идёт напрямую, без прокси.
+- Прокси: grammY через node-fetch `agent` (`bot.ts`) и Tavily через undici `ProxyAgent` (`tavily/tavilyUsage.ts`); LLM-провайдер идёт напрямую, без прокси.
 
 ## Что вернуть
 1. **Симптом** (как понял) — 1 строка.

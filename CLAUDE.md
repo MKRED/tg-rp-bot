@@ -69,8 +69,8 @@ yarn build         # build bot + webapp
 
 ```
 bot/src/    — index (thin entry) · bot.ts (grammY) · config · logger · proxy · db/ (drizzle DAO
-              по таблицам) · llm/ (LLM client, провайдер по env) · handlers/ · server/ (Hono API +
-              раздача статики Mini App) · utils/ (retry, crypto)
+              по таблицам) · llm/ (LLM client, провайдер по env) · tavily/ (веб-поиск, квота) ·
+              handlers/ · server/ (Hono API + раздача статики Mini App) · utils/ (retry, crypto)
 webapp/src/ — main/init (Telegram SDK) · app/ (оболочка, HashRouter) · pages/ (экран на маршрут) ·
               features/ (доменные модули) · shared/ (кросс-каттинг)
 ```
@@ -101,10 +101,12 @@ rp-chat, narrator, knowledge-books, narrator-templates, debug.
 
 > 📘 Подробности «почему и как устроено» — в docs. Здесь — короткие правила, которые нельзя нарушить.
 
-- **Прокси только для Telegram.** `TELEGRAM_PROXY_URL` цепляется исключительно к grammY-клиенту
-  (`bot.ts` → `baseFetchConfig.agent`). НИКОГДА не ставить глобальный прокси (`HTTPS_PROXY` / `ALL_PROXY`) —
-  уведёт через прокси и трафик к LLM-провайдеру (DeepSeek). Почему `agent`, а не `dispatcher`
-  (node-fetch@2 quirk) — [docs/architecture.md](docs/architecture.md).
+- **Прокси — только для сервисов, недоступных напрямую с сети сервера.** Сейчас это Telegram
+  (`bot.ts` → `baseFetchConfig.agent`, HttpsProxyAgent) и Tavily (`tavily/tavilyUsage.ts`, undici
+  ProxyAgent) — оба используют один и тот же `TELEGRAM_PROXY_URL`. LLM-провайдер (DeepSeek) и прочие
+  fetch идут напрямую. НИКОГДА не ставить глобальный прокси (`HTTPS_PROXY` / `ALL_PROXY`) — уведёт
+  через прокси и трафик к LLM-провайдеру. Почему у Telegram `agent`, а не `dispatcher` (node-fetch@2
+  quirk) — [docs/architecture.md](docs/architecture.md).
 - **Ключ LLM-провайдера — только серверно, per-user (BYOK).** Ключ DeepSeek хранится зашифрованным
   в `user_settings` (`bot/src/db/userLlmSettings.ts`, шифрование — `ENCRYPTION_KEY`), в браузер не
   отдаётся; RP-генерация идёт через HTTP API бота, а не напрямую из webapp. Запросы webapp → `/api/*`
@@ -216,6 +218,7 @@ Test runner is **vitest** в **обоих** workspace (`bot/` и `webapp/`), у 
 |---|---|---|
 | Telegram | Bot API (через HTTP-прокси) | `BOT_TOKEN`, `TELEGRAM_PROXY_URL` |
 | DeepSeek | LLM (chat completion), серверно, ключ per-user (BYOK) | нет — ключ в БД, не в env |
+| Tavily | Веб-поиск (квота), серверно, ключ per-user (BYOK), через HTTP-прокси | нет — ключ в БД, не в env |
 | Postgres | БД (drizzle) | `DATABASE_URL` |
 
 **LLM-провайдер сейчас единственный активный — DeepSeek**, ключ и модель не глобальные: каждый

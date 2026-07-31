@@ -10,11 +10,7 @@ import { listDeepSeekModels } from "../../llm/deepseekModels.js";
 import { LlmHttpError } from "../../llm/errors.js";
 import logger from "../../logger.js";
 import type { AppVariables } from "../middleware/initData.types.js";
-
-const MAX_KEY_LENGTH = 200;
-// Отклоняем пробелы/переводы строк внутри ключа — частый баг копипасты из мессенджера: ключ с "\n"
-// уходит в Authorization-заголовок и undici бросает малопонятный "Invalid header value".
-const INVALID_KEY_CHARS = /[\s\x00-\x1f]/;
+import { INVALID_KEY_FORMAT_RESPONSE, isValidKeyFormat } from "./validation.js";
 
 /**
  * Роуты под /api/settings — персональные ключ/модель DeepSeek пользователя (BYOK). Монтируются
@@ -90,14 +86,8 @@ export function createSettingsRoutes(): Hono<{ Variables: AppVariables }> {
       patch.apiKey = null;
     } else if (typeof body.apiKey === "string") {
       const trimmed = body.apiKey.trim();
-      if (!trimmed || INVALID_KEY_CHARS.test(trimmed) || trimmed.length > MAX_KEY_LENGTH) {
-        return c.json(
-          {
-            error: "invalid_key_format",
-            message: "Некорректный ключ: проверьте, не попали ли лишние пробелы или перевод строки.",
-          },
-          400,
-        );
+      if (!isValidKeyFormat(trimmed)) {
+        return c.json(INVALID_KEY_FORMAT_RESPONSE, 400);
       }
       patch.apiKey = trimmed;
     }

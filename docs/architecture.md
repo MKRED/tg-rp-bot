@@ -17,7 +17,8 @@ bot/src/
   bot.constants.ts
   config.ts     — env vars (requireEnv для обязательных, process.env для опциональных)
   logger.ts     — pino logger (daily rolling, pino-pretty in TTY)
-  proxy.ts      — HttpsProxyAgent (https-proxy-agent) ТОЛЬКО для Telegram
+  proxy.ts      — HttpsProxyAgent (https-proxy-agent) для Telegram; тот же TELEGRAM_PROXY_URL
+                  переиспользуется для Tavily, но через отдельный undici ProxyAgent (см. tavily/)
   db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + клиент +
                   DAO-папки по таблицам: characters/ personas/ cards/ (черновики «Мастерской», пока
                   только name — первый этап) presets/ (только сэмплинг) impersonations/
@@ -25,20 +26,24 @@ bot/src/
                   getAvatarsBatch) (у каждой DAO-файл + types.ts/constants.ts + barrel index.ts),
                   chats/ stories/ (+ storyAvatars.ts — LATERAL-фрагмент топ-N аватаров книги знаний
                   для карточки истории) knowledge/ (деревья/лорбук), users.ts, userSettings.ts,
-                  userLlmSettings.ts (per-user ключ/модель DeepSeek, BYOK, шифруется ENCRYPTION_KEY)
+                  userLlmSettings.ts (per-user ключ/модель DeepSeek, BYOK, шифруется ENCRYPTION_KEY),
+                  userTavilySettings.ts (per-user ключ Tavily, BYOK, шифруется ENCRYPTION_KEY)
   llm/          — LLM client (client/request/errors/types/constants/completionGuard/providers/
                   resolveProvider/deepseekModels) — серверно; единственный активный провайдер —
                   DeepSeek, ключ/модель резолвятся per-user через resolveProvider(userId) из
                   userLlmSettings (без ключа — MissingApiKeyError); фабрика buildOpenRouterProvider
                   в providers.ts не задействована (задел, нет пути конфигурации);
                   debugCapture (+debug.types) — in-memory перехват RAW-запросов к LLM для экрана отладки
+  tavily/       — Tavily API client (per-user BYOK): tavilyUsage.ts (getTavilyUsage — GET /usage,
+                  через fetch/ProxyAgent из пакета undici, TELEGRAM_PROXY_URL), errors.ts (TavilyHttpError)
   handlers/     — обработчики команд/кнопок бота (index = registerHandlers, start.ts,
                   photoActions.ts — callback «Закрыть» под фото из лайтбокса)
   server/       — Hono HTTP API, разложен по доменным папкам (зеркало webapp): index=startServer,
                   routes.ts — карта эндпоинтов (монтаж контроллеров), middleware/ (initData — валидация
                   подписи), доменные папки me/ characters/ personas/ cards/ presets/ books/ narrator-templates/
                   rp-templates/ chats/ stories/ debug/ avatars/ (POST /batch — батч-резолв аватаров для
-                  AvatarStack, см. ниже) settings/ (per-user ключ/модель DeepSeek, BYOK) — у каждого
+                  AvatarStack, см. ниже) settings/ (settings.controller.ts — per-user ключ/модель
+                  DeepSeek + tavily.controller.ts — per-user ключ/квота Tavily, оба BYOK) — у каждого
                   <домен>.controller.ts (Hono-роуты) + validation/
                   constants/types рядом + barrel index.ts; chats/ — messages.handlers + impersonate.handlers
                   + stats.handler; stories/ — story.handlers (SSE-генерация RP/narrator); prompt/ —
@@ -64,7 +69,8 @@ webapp/src/
                   characters/ personas/ cards/ (черновики «Мастерской», пока только name — первый этап)
                   generation-presets/ rp-templates/ rp-chat/ narrator/
                   knowledge-books/ narrator-templates/ debug/ llm-settings/ (per-user ключ/модель
-                  DeepSeek, BYOK, экран /settings)
+                  DeepSeek, BYOK, экран /settings) tavily-settings/ (per-user ключ Tavily + квота,
+                  BYOK, экран /settings)
   shared/       — кросс-каттинг: api/ (client с Authorization), telegram/ (initData, confirm, profile
                   photo, platform), text/, image/, graph/, hooks/, constants/, toast/, components/,
                   avatar/ (avatarCache — dataURL-кэш на сессию SPA, avatars-api — обёртка над
@@ -85,16 +91,23 @@ lib/        — чистые хелперы и данные (форматтер�
 
 ---
 
-## Прокси для Telegram — детали
+## Прокси для Telegram и Tavily — детали
 
-Правило (в CLAUDE.md): прокси `TELEGRAM_PROXY_URL` цепляется **только** к grammY-клиенту,
-глобальный прокси запрещён. Почему именно `agent`, а не `dispatcher`:
+Правило (в CLAUDE.md): прокси `TELEGRAM_PROXY_URL` цепляется только к сервисам, недоступным
+напрямую с сети сервера — Telegram и Tavily (оба отдают `403 Forbidden` от awselb ещё до
+приложения без прокси), глобальный прокси запрещён. У Telegram и Tavily механизм проксирования
+разный:
 
 ⚠️ grammY в Node использует **node-fetch@2** (не нативный fetch!), который проксируется через
 option `agent`. undici `dispatcher` он **игнорирует** — хотя тип `baseFetchConfig` выведен из
 нативного fetch и обманчиво подсказывает `dispatcher`. Проверено рантайм-тестом: с `agent` getMe
 доходит до Telegram, с `dispatcher` — уходит напрямую в обход прокси. Отсюда каст в `bot.ts`
 (`proxy.ts` → `HttpsProxyAgent` → `client.baseFetchConfig.agent`).
+
+Tavily-клиент (`bot/src/tavily/tavilyUsage.ts`) устроен иначе: он вызывает `fetch` и `ProxyAgent`
+из самого пакета **undici**, а не встроенный Node `fetch` с `dispatcher` — та комбинация не
+заводится из-за несовместимой версии undici внутри Node. Прокси там подключается через
+`dispatcher`, а не `agent` (в отличие от grammY выше).
 
 Глобальный прокси (`HTTPS_PROXY` / `ALL_PROXY`) увёл бы через прокси и трафик к LLM-провайдеру
 (DeepSeek) — нельзя.
