@@ -1,5 +1,6 @@
-import { Button } from "@telegram-apps/telegram-ui";
+import { Button, List } from "@telegram-apps/telegram-ui";
 import { AnimatePresence, motion } from "framer-motion";
+import { SectionActions } from "../../../../shared/components/SectionActions";
 import { MAX_CARD_CATEGORIES } from "../../types/card";
 import type { CardCategory } from "../../types/card";
 import { CategoryRow } from "./CategoryRow";
@@ -12,7 +13,8 @@ interface CategoryListProps {
 /**
  * Редактор структуры карточки: список категорий (заголовок + пример + вкл/выкл) с добавлением
  * и удалением. Порядок = порядок элементов массива = порядок сборки <example> и генерации блоков
- * (см. assembleCardBlockPrompt на сервере) — переупорядочивание пока не нужно (не запрошено).
+ * (см. assembleCardBlockPrompt на сервере) — сама перестановка живёт в отдельной секции
+ * (CategoryOrderList), эта отвечает только за содержимое категорий.
  */
 export function CategoryList({ categories, onChange }: CategoryListProps) {
   const updateAt = (index: number, next: CardCategory) => {
@@ -32,7 +34,7 @@ export function CategoryList({ categories, onChange }: CategoryListProps) {
   };
 
   return (
-    <div className="card-categories">
+    <List>
       <AnimatePresence initial={false}>
         {categories.map((category, index) => (
           <motion.div
@@ -52,15 +54,17 @@ export function CategoryList({ categories, onChange }: CategoryListProps) {
           </motion.div>
         ))}
       </AnimatePresence>
-      <Button
-        size="s"
-        mode="outline"
-        className="card-categories__add"
-        disabled={categories.length >= MAX_CARD_CATEGORIES}
-        onClick={add}
-      >
-        + Добавить категорию
-      </Button>
-    </div>
+      <SectionActions>
+        <Button
+          size="s"
+          mode="outline"
+          className="card-categories__add"
+          disabled={categories.length >= MAX_CARD_CATEGORIES}
+          onClick={add}
+        >
+          + Добавить категорию
+        </Button>
+      </SectionActions>
+    </List>
   );
 }

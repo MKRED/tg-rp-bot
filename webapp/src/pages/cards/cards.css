@@ -92,21 +92,9 @@
   color: var(--tgui--hint_color, #7d8b99);
 }
 
-/* --- Форма карточки --- */
-.card-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 8px 0;
-}
-
-.card-form__actions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 8px;
-  padding: 0 22px;
-}
+/* --- Форма карточки ---
+   Форма — Section (см. BookForm/TemplateForm), собственной раскладки ей не нужно: гуттер,
+   фон карточки и промежутки между полями даёт сам Section/section-blend-inputs. */
 
 /* Пассивная метка несохранённых правок над кнопкой «Сохранить» (активная защита — confirm
    на уходе через useUnsavedChangesGuard, эта метка лишь сигнализирует). */
@@ -114,13 +102,6 @@
   text-align: center;
   font-size: 13px;
   color: var(--tgui--hint_color, #7d8b99);
-}
-
-.card-form__section-title {
-  margin-top: 8px;
-  padding: 0 22px;
-  font-weight: 600;
-  color: var(--tgui--text_color, #000);
 }
 
 /* Иконка/шеврон пикера пресета (PresetPicker) — те же тона, что у RpChatNewPage. */
@@ -139,53 +120,64 @@
   padding: 16px 0;
 }
 
-/* --- Структура карточки (CategoryList/CategoryRow) --- */
-.card-categories {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 0 22px;
-}
-
-.card-category {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px;
-  border-radius: 12px;
-  background: var(--tgui--secondary_bg_color, #f0f0f0);
-}
-
-.card-category__header {
+/* --- Структура карточки (CategoryList/CategoryRow) ---
+   CategoryList — List (нативный margin-bottom между категориями и перед кнопкой «Добавить»,
+   вместо ручного gap); кнопка «Добавить» — в SectionActions (гуттер + нижний отступ, которых
+   у голой Button нет — иначе она сливается с разделителем между секциями формы). Каждая
+   категория — своя вложенная Section (card-category), карточный фон/скругления даёт сам
+   компонент. */
+.card-category__controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
 }
 
-.card-category__title {
-  flex: 1;
-  min-width: 0;
-}
-
+/* SectionActions — flex-column с align-items:stretch по умолчанию; эта кнопка — маленькая
+   outline-кнопка, а не stretched на всю ширину, поэтому явно отменяем растяжение. */
 .card-categories__add {
   align-self: flex-start;
 }
 
-/* --- Генерация блоков (GenerationSection) --- */
-.card-generation {
+/* --- Последовательность полей (CategoryOrderList) ---
+   Стрелки ↑/↓ — в слоте after Cell (см. BookEditPage, тот же паттерн). Cell (tgui) — Tappable: на
+   платформе "base" рисует ripple-оверлей (span position:absolute; inset:0; БЕЗ pointer-events:none),
+   который перекрывает статичный after-контент и съедает клики по нативным кнопкам — поднимаем
+   стрелки в позиционированный слой над ним. */
+.card-order {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 0 22px;
+  gap: 4px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
+.card-order-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--tgui--text_color, #000);
+  background: var(--tgui--secondary_fill, rgba(127, 139, 153, 0.12));
+}
+
+/* Граница списка — не нативный disabled (клик по disabled-кнопке в Chromium/WebKit ретаргетится на
+   ближайшего некликабельного предка, т.е. на сам Cell), а aria-disabled: кнопка кликабельна, но
+   визуально/семантически неактивна; сам клик — no-op через ранний return в moveAt. */
+.card-order-btn[aria-disabled="true"] {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* --- Генерация блоков (GenerationSection) ---
+   Сами блоки — PromptEditorField внутри своей Section (нативный Divider между ними вместо
+   ручного gap); пустое состояние — Cell (см. PresetPicker), кнопка генерации — в SectionActions
+   вместе с подсказками о недоступности. */
 .card-generation__hint {
   text-align: center;
   font-size: 13px;
-  color: var(--tgui--hint_color, #7d8b99);
-}
-
-.card-generation__empty {
-  padding: 0 22px;
   color: var(--tgui--hint_color, #7d8b99);
 }

@@ -1,4 +1,4 @@
-import { Spinner } from "@telegram-apps/telegram-ui";
+import { List, Spinner } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { ROUTES } from "../../app/routes";
@@ -102,15 +102,17 @@ export function CardEditPage() {
   return (
     <PageTransition>
       <div className="cards-page">
-        <CardForm
-          initial={card ? toInput(card) : undefined}
-          cardId={id}
-          presets={presets}
-          presetsLoading={presetsLoading}
-          submitting={submitting}
-          onSubmit={handleSubmit}
-          onDelete={id === undefined ? undefined : handleDelete}
-        />
+        <List>
+          <CardForm
+            initial={card ? toInput(card) : undefined}
+            cardId={id}
+            presets={presets}
+            presetsLoading={presetsLoading}
+            submitting={submitting}
+            onSubmit={handleSubmit}
+            onDelete={id === undefined ? undefined : handleDelete}
+          />
+        </List>
       </div>
     </PageTransition>
   );

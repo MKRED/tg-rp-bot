@@ -1,12 +1,14 @@
-import { Button, Input } from "@telegram-apps/telegram-ui";
+import { Button, Input, Section } from "@telegram-apps/telegram-ui";
 import { useMemo, useState } from "react";
 import { DeleteButton } from "../../../../shared/components/DeleteButton";
 import { PromptEditorField } from "../../../../shared/components/PromptEditorField";
+import { SectionActions } from "../../../../shared/components/SectionActions";
 import { useUnsavedChangesGuard } from "../../../../shared/telegram/useUnsavedChangesGuard";
 import { hasUnsavedChanges, normalizeCardDraft } from "../../lib/formDirty";
 import { DEFAULT_CARD_CATEGORIES, DEFAULT_CARD_PROMPT } from "../../types/card";
 import type { CardCategory, CardInput, CardPresetOption } from "../../types/card";
 import { CategoryList } from "./CategoryList";
+import { CategoryOrderList } from "./CategoryOrderList";
 import { GenerationSection } from "./GenerationSection";
 import { PresetPicker } from "./PresetPicker";
 
@@ -84,54 +86,64 @@ export function CardForm({
   };
 
   return (
-    <div className="card-form">
-      <Input
-        header="Название"
-        placeholder="Название карточки"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
+    <>
+      <Section className="section-blend-inputs" header="Карточка">
+        <Input
+          header="Название"
+          placeholder="Название карточки"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
 
-      <PromptEditorField
-        header="Основной промпт"
-        hint="Общая инструкция для ИИ. Можно вставить {{example}} — на его место встанет структура категорий; если не вставить, она допишется в конец."
-        placeholder={DEFAULT_CARD_PROMPT}
-        value={prompt}
-        previewLines={6}
-        onChange={setPrompt}
-      />
+        <PromptEditorField
+          header="Основной промпт"
+          hint="Общая инструкция для ИИ. Можно вставить {{example}} — на его место встанет структура категорий; если не вставить, она допишется в конец."
+          placeholder={DEFAULT_CARD_PROMPT}
+          value={prompt}
+          previewLines={6}
+          onChange={setPrompt}
+        />
 
-      <PresetPicker
-        presets={presets}
-        loading={presetsLoading}
-        presetId={presetId}
-        onChange={setPresetId}
-      />
+        <PresetPicker
+          presets={presets}
+          loading={presetsLoading}
+          presetId={presetId}
+          onChange={setPresetId}
+        />
+      </Section>
 
-      <div className="card-form__section-title">Структура карточки</div>
-      <CategoryList categories={categories} onChange={setCategories} />
+      <Section className="section-blend-inputs" header="Структура карточки">
+        <CategoryList categories={categories} onChange={setCategories} />
+      </Section>
 
-      <div className="card-form__section-title">Генерация</div>
-      <GenerationSection
-        cardId={cardId}
-        categories={categories}
-        presetId={presetId}
-        formDirty={isDirty}
-        onContentChange={setCategories}
-        onGenerated={handleGenerated}
-      />
+      <Section className="section-blend-inputs" header="Последовательность полей">
+        <CategoryOrderList categories={categories} onChange={setCategories} />
+      </Section>
 
-      <div className="card-form__actions">
-        {isDirty && !submitting && <span className="card-form__unsaved">Есть несохранённые изменения</span>}
-        <Button size="l" stretched disabled={!canSubmit} onClick={handleSubmit}>
-          {submitting ? "Сохранение…" : "Сохранить"}
-        </Button>
-        {onDelete && (
-          <DeleteButton disabled={submitting} onClick={onDelete}>
-            Удалить карточку
-          </DeleteButton>
-        )}
-      </div>
-    </div>
+      <Section className="section-blend-inputs" header="Генерация">
+        <GenerationSection
+          cardId={cardId}
+          categories={categories}
+          presetId={presetId}
+          formDirty={isDirty}
+          onContentChange={setCategories}
+          onGenerated={handleGenerated}
+        />
+
+        <SectionActions>
+          {isDirty && !submitting && (
+            <span className="card-form__unsaved">Есть несохранённые изменения</span>
+          )}
+          <Button size="l" stretched disabled={!canSubmit} onClick={handleSubmit}>
+            {submitting ? "Сохранение…" : "Сохранить"}
+          </Button>
+          {onDelete && (
+            <DeleteButton disabled={submitting} onClick={onDelete}>
+              Удалить карточку
+            </DeleteButton>
+          )}
+        </SectionActions>
+      </Section>
+    </>
   );
 }

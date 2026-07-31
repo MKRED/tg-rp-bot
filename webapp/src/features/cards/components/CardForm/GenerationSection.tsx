@@ -1,7 +1,8 @@
-import { Button, Spinner } from "@telegram-apps/telegram-ui";
+import { Button, Cell, Section, Spinner } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { ApiError } from "../../../../shared/api/client";
 import { PromptEditorField } from "../../../../shared/components/PromptEditorField";
+import { SectionActions } from "../../../../shared/components/SectionActions";
 import { useToast } from "../../../../shared/toast";
 import { generateNextBlock } from "../../api/cards-api";
 import type { CardCategory } from "../../types/card";
@@ -68,37 +69,41 @@ export function GenerationSection({
   };
 
   if (enabled.length === 0) {
-    return <div className="card-generation__empty">Нет включённых категорий для генерации</div>;
+    return <Cell subtitle="Включите хотя бы одну категорию в структуре, чтобы начать генерацию">Нет категорий для генерации</Cell>;
   }
 
   return (
-    <div className="card-generation">
-      {enabled.map((category) => (
-        <PromptEditorField
-          key={category.id}
-          header={category.title || "Без названия"}
-          placeholder="Ещё не сгенерирован…"
-          value={category.content}
-          previewLines={4}
-          onChange={(value) => updateContent(category.id, value)}
-        />
-      ))}
+    <>
+      <Section className="section-blend-inputs">
+        {enabled.map((category) => (
+          <PromptEditorField
+            key={category.id}
+            header={category.title || "Без названия"}
+            placeholder="Ещё не сгенерирован…"
+            value={category.content}
+            previewLines={4}
+            onChange={(value) => updateContent(category.id, value)}
+          />
+        ))}
+      </Section>
 
-      {cardId === undefined ? (
-        <span className="card-generation__hint">Сначала сохраните карточку</span>
-      ) : formDirty ? (
-        <span className="card-generation__hint">
-          Есть несохранённые изменения — сохраните карточку, чтобы генерация использовала актуальные данные
-        </span>
-      ) : presetId === null ? (
-        <span className="card-generation__hint">Выберите пресет ИИ, чтобы включить генерацию</span>
-      ) : (
-        nextTarget && (
-          <Button size="l" stretched disabled={generating} onClick={handleGenerate}>
-            {generating ? <Spinner size="s" /> : `Сгенерировать блок «${nextTarget.title || "…"}»`}
-          </Button>
-        )
-      )}
-    </div>
+      <SectionActions>
+        {cardId === undefined ? (
+          <span className="card-generation__hint">Сначала сохраните карточку</span>
+        ) : formDirty ? (
+          <span className="card-generation__hint">
+            Есть несохранённые изменения — сохраните карточку, чтобы генерация использовала актуальные данные
+          </span>
+        ) : presetId === null ? (
+          <span className="card-generation__hint">Выберите пресет ИИ, чтобы включить генерацию</span>
+        ) : (
+          nextTarget && (
+            <Button size="l" stretched disabled={generating} onClick={handleGenerate}>
+              {generating ? <Spinner size="s" /> : `Сгенерировать блок «${nextTarget.title || "…"}»`}
+            </Button>
+          )
+        )}
+      </SectionActions>
+    </>
   );
 }

@@ -1,6 +1,7 @@
-import { IconButton, Input, Switch } from "@telegram-apps/telegram-ui";
+import { IconButton, Input, Section, Switch } from "@telegram-apps/telegram-ui";
 import { Trash2 } from "lucide-react";
-import { ExpandableTextarea } from "../../../../shared/components/ExpandableTextarea";
+import { PromptEditorField } from "../../../../shared/components/PromptEditorField";
+import { confirmAction } from "../../../../shared/telegram/confirm";
 import type { CardCategory } from "../../types/card";
 
 interface CategoryRowProps {
@@ -13,31 +14,46 @@ interface CategoryRowProps {
  * Один блок структуры карточки: заголовок категории (title), пример формата для ИИ (description),
  * включена ли категория в <example>/генерацию (enabled), удаление. Сгенерированный/отредактированный
  * текст (content) сюда не входит — это GenerationSection, отдельная секция формы.
+ *
+ * Своя `Section` на категорию (а не ручной div-бокс) — Switch и кнопка удаления живут в слоте
+ * `after` самого `Input` (FormInput поддерживает before/after из коробки), а не в кастомном
+ * flex-контейнере рядом с ним.
  */
 export function CategoryRow({ category, onChange, onRemove }: CategoryRowProps) {
+  const handleRemove = async () => {
+    const confirmed = await confirmAction(
+      `Удалить категорию${category.title ? ` «${category.title}»` : ""}?`,
+      { title: "Удаление категории" },
+    );
+    if (confirmed) onRemove();
+  };
+
   return (
-    <div className="card-category">
-      <div className="card-category__header">
-        <Input
-          className="card-category__title"
-          placeholder="Название категории"
-          value={category.title}
-          onChange={(e) => onChange({ ...category, title: e.target.value })}
-        />
-        <Switch
-          checked={category.enabled}
-          onChange={() => onChange({ ...category, enabled: !category.enabled })}
-        />
-        <IconButton size="s" mode="plain" aria-label="Удалить категорию" onClick={onRemove}>
-          <Trash2 size={18} />
-        </IconButton>
-      </div>
-      <ExpandableTextarea
-        placeholder="Пример формата для этой категории (что должен сгенерировать ИИ)…"
-        value={category.description}
-        rows={3}
-        onChange={(e) => onChange({ ...category, description: e.target.value })}
+    <Section className="section-blend-inputs card-category">
+      <Input
+        placeholder="Название категории"
+        value={category.title}
+        onChange={(e) => onChange({ ...category, title: e.target.value })}
+        after={
+          <div className="card-category__controls">
+            <Switch
+              checked={category.enabled}
+              onChange={() => onChange({ ...category, enabled: !category.enabled })}
+            />
+            <IconButton size="s" mode="plain" aria-label="Удалить категорию" onClick={handleRemove}>
+              <Trash2 size={18} />
+            </IconButton>
+          </div>
+        }
       />
-    </div>
+      <PromptEditorField
+        header="Пример формата"
+        hint="Что должен сгенерировать ИИ для этой категории — задаёт формат и объём ответа."
+        placeholder="Пример формата для этой категории…"
+        value={category.description}
+        previewLines={3}
+        onChange={(value) => onChange({ ...category, description: value })}
+      />
+    </Section>
   );
 }
