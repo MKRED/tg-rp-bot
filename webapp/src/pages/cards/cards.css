@@ -99,9 +99,8 @@
 /* Пассивная метка несохранённых правок над кнопкой «Сохранить» (активная защита — confirm
    на уходе через useUnsavedChangesGuard, эта метка лишь сигнализирует). */
 .card-form__unsaved {
+  display: block;
   text-align: center;
-  font-size: 13px;
-  color: var(--tgui--hint_color, #7d8b99);
 }
 
 /* Иконка/шеврон пикера пресета (PresetPicker) — те же тона, что у RpChatNewPage. */

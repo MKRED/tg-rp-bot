@@ -1,4 +1,5 @@
-import { Accordion, Button, Input, Section } from "@telegram-apps/telegram-ui";
+import { Accordion, Button, Caption, Input, Section } from "@telegram-apps/telegram-ui";
+import { AnimatePresence, motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { DeleteButton } from "../../../../shared/components/DeleteButton";
 import { PromptEditorField } from "../../../../shared/components/PromptEditorField";
@@ -15,6 +16,8 @@ import { CategoryList } from "./CategoryList";
 import { CategoryOrderList } from "./CategoryOrderList";
 import { GenerationSection } from "./GenerationSection";
 import { PresetPicker } from "./PresetPicker";
+
+const UNSAVED_T = { duration: 0.2, ease: "easeOut" as const };
 
 interface CardFormProps {
   /** Начальные значения (режим редактирования); отсутствуют — режим создания. */
@@ -169,9 +172,21 @@ export function CardForm({
         />
 
         <SectionActions>
-          {isDirty && !submitting && (
-            <span className="card-form__unsaved">Есть несохранённые изменения</span>
-          )}
+          <AnimatePresence initial={false}>
+            {isDirty && !submitting && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={UNSAVED_T}
+                style={{ overflow: "hidden" }}
+              >
+                <Caption level="1" className="card-form__unsaved">
+                  Есть несохранённые изменения
+                </Caption>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <Button size="l" stretched disabled={!canSubmit} onClick={handleSubmit}>
             {submitting ? "Сохранение…" : "Сохранить"}
           </Button>
