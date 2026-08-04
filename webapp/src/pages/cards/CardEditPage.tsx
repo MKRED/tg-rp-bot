@@ -75,9 +75,27 @@ export function CardEditPage() {
       .finally(() => setSubmitting(false));
   };
 
-  const handleDelete = async () => {
+  // Копия строится из текущих значений формы (см. CardForm.onDuplicate) — новая карточка, поэтому
+  // просто createCard с суффиксом в названии; на успехе уходим в общий список карточек (а не на
+  // саму копию), чтобы явно увидеть её среди остальных.
+  const handleDuplicate = async (input: CardInput) => {
+    const confirmed = await confirmAction("Создать копию карточки?", { title: "Копирование карточки" });
+    if (!confirmed) return;
+    setSubmitting(true);
+    createCard({ ...input, name: `${input.name} (копия)` })
+      .then(() => {
+        showToast({ type: "success", message: "Карточка скопирована" });
+        navigate(ROUTES.cards);
+      })
+      .catch(() => {
+        showToast({ type: "error", message: "Не удалось скопировать карточку" });
+        setSubmitting(false);
+      });
+  };
+
+  const handleDelete = async (name: string) => {
     if (id === undefined) return;
-    const confirmed = await confirmAction("Удалить карточку? Это действие необратимо.", {
+    const confirmed = await confirmAction(`Удалить карточку «${name}»? Это действие необратимо.`, {
       title: "Удаление карточки",
     });
     if (!confirmed) return;
@@ -117,6 +135,7 @@ export function CardEditPage() {
             submitting={submitting}
             onSubmit={handleSubmit}
             onDelete={id === undefined ? undefined : handleDelete}
+            onDuplicate={id === undefined ? undefined : handleDuplicate}
           />
         </List>
       </div>

@@ -30,8 +30,14 @@ interface CardFormProps {
   /** Промис нужен, чтобы форма знала об успехе и сбросила «грязный» снапшот — окно после
    * сохранения не закрывается, а показывает уведомление (см. CardEditPage). */
   onSubmit: (input: CardInput) => Promise<void>;
-  /** Удаление доступно только при редактировании. */
-  onDelete?: () => void;
+  /** Удаление доступно только при редактировании. Текущее название формы (не последний сохранённый
+   * снапшот) — чтобы подтверждение показывало то же имя, что видит пользователь прямо сейчас. */
+  onDelete?: (name: string) => void;
+  /** Копирование доступно только при редактировании — как и удаление, для ещё не созданной
+   * карточки копировать нечего (это просто повторное создание). Текущие значения формы (в т.ч.
+   * несохранённые правки) — то, что видит пользователь, поэтому копия строится из них, а не
+   * из последнего сохранённого снапшота. */
+  onDuplicate?: (input: CardInput) => void;
 }
 
 /** Форма создания/редактирования карточки «Мастерской»: имя, промпт, структура, пресет, генерация блоков. */
@@ -43,6 +49,7 @@ export function CardForm({
   submitting,
   onSubmit,
   onDelete,
+  onDuplicate,
 }: CardFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
   // || а не ?? — пустая строка (карточка без явного system-промпта) тоже должна замениться
@@ -95,6 +102,10 @@ export function CardForm({
 
   const handleSubmit = () => {
     void save();
+  };
+
+  const handleDuplicate = () => {
+    onDuplicate?.(normalizeCardDraft({ name, systemPrompt, prompt, categories, presetId }));
   };
 
   // Генерация блока уже сохранена на сервере (см. generateCardBlock) — синхронизируем и локальный
@@ -190,8 +201,13 @@ export function CardForm({
           <Button size="l" stretched disabled={!canSubmit} onClick={handleSubmit}>
             {submitting ? "Сохранение…" : "Сохранить"}
           </Button>
+          {onDuplicate && (
+            <Button size="l" stretched mode="outline" disabled={submitting} onClick={handleDuplicate}>
+              Скопировать карточку
+            </Button>
+          )}
           {onDelete && (
-            <DeleteButton disabled={submitting} onClick={onDelete}>
+            <DeleteButton disabled={submitting} onClick={() => onDelete(name)}>
               Удалить карточку
             </DeleteButton>
           )}
