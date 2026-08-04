@@ -7,7 +7,7 @@ import {
   showTranslateActionsPopup,
 } from "../../../shared/telegram/translateActionsPopup";
 import { RpText } from "../../../shared/components/RpText";
-import { TranslateActionMenu } from "../../../shared/components/TranslateActionMenu";
+import { TranslateActionModal } from "../../../shared/components/TranslateActionModal";
 import { useLongPress } from "../../../shared/hooks/useLongPress";
 import type { MessageInPath } from "../types/chat";
 
@@ -50,8 +50,8 @@ export function MessageBubble({
   onDelete,
 }: MessageBubbleProps) {
   const [showTranslation, setShowTranslation] = useState(false);
-  // Плавающее меню — фоллбэк только для дев-браузера вне Telegram, где нативный попап недоступен.
-  const [translateMenuOpen, setTranslateMenuOpen] = useState(false);
+  // Модалка — фоллбэк там, где нативный попап Telegram недоступен (ПК-клиенты, дев-браузер).
+  const [translateModalOpen, setTranslateModalOpen] = useState(false);
   const longPress = useLongPress(() => {
     if (isTranslateActionsPopupAvailable()) {
       showTranslateActionsPopup()
@@ -61,7 +61,7 @@ export function MessageBubble({
         })
         .catch((err) => console.error("Failed to show translate actions popup", err));
     } else {
-      setTranslateMenuOpen(true);
+      setTranslateModalOpen(true);
     }
   });
 
@@ -140,7 +140,7 @@ export function MessageBubble({
             (StoryMessageItem, где Globe идёт первой кнопкой). */}
         <div className="message-bubble__actions">
           {showTranslateButton && (
-            <span style={{ position: "relative" }}>
+            <>
               <button
                 className={`message-bubble__action-btn${showTranslation ? " message-bubble__action-btn--active" : ""}`}
                 onClick={handleTranslateToggle}
@@ -151,14 +151,13 @@ export function MessageBubble({
               >
                 {translating || translateActionPending || autoTranslating ? <Spinner size="s" /> : <Globe size={16} />}
               </button>
-              {translateMenuOpen && (
-                <TranslateActionMenu
-                  onRegenerate={handleRegenerateTranslation}
-                  onDelete={handleDeleteTranslationAction}
-                  onClose={() => setTranslateMenuOpen(false)}
-                />
-              )}
-            </span>
+              <TranslateActionModal
+                open={translateModalOpen}
+                onOpenChange={setTranslateModalOpen}
+                onRegenerate={handleRegenerateTranslation}
+                onDelete={handleDeleteTranslationAction}
+              />
+            </>
           )}
           {message.siblingCount > 1 && (
             <span className="message-bubble__siblings">

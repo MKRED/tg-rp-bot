@@ -2,7 +2,7 @@ import { Spinner } from "@telegram-apps/telegram-ui";
 import { ChevronLeft, ChevronRight, Clapperboard, Globe, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { RpText } from "../../../shared/components/RpText";
-import { TranslateActionMenu } from "../../../shared/components/TranslateActionMenu";
+import { TranslateActionModal } from "../../../shared/components/TranslateActionModal";
 import { useLongPress } from "../../../shared/hooks/useLongPress";
 import {
   isTranslateActionsPopupAvailable,
@@ -61,8 +61,8 @@ export function StoryMessageItem({
     autoShowTranslation,
     onTranslate,
   );
-  // Плавающее меню — фоллбэк только для дев-браузера вне Telegram, где нативный попап недоступен.
-  const [translateMenuOpen, setTranslateMenuOpen] = useState(false);
+  // Модалка — фоллбэк там, где нативный попап Telegram недоступен (ПК-клиенты, дев-браузер).
+  const [translateModalOpen, setTranslateModalOpen] = useState(false);
   // Пендинг регенерации/удаления перевода из меню долгого нажатия — отдельно от translating
   // (тот только для первого перевода по тапу), чтобы кнопка Globe крутила спиннер и на этих действиях.
   const [translateActionPending, setTranslateActionPending] = useState(false);
@@ -75,7 +75,7 @@ export function StoryMessageItem({
         })
         .catch((err) => console.error("Failed to show translate actions popup", err));
     } else {
-      setTranslateMenuOpen(true);
+      setTranslateModalOpen(true);
     }
   });
   const hasCachedTranslation = Boolean(message.translations?.[targetLang]);
@@ -121,7 +121,7 @@ export function StoryMessageItem({
         <Clapperboard size={14} style={{ flexShrink: 0 }} />
         <span>{displayText}</span>
         {showTranslateButton && (
-          <span style={{ position: "relative" }}>
+          <>
             <button
               type="button"
               disabled={translating || translateActionPending || autoTranslating}
@@ -133,14 +133,13 @@ export function StoryMessageItem({
             >
               {translating || translateActionPending || autoTranslating ? <Spinner size="s" /> : <Globe size={14} />}
             </button>
-            {translateMenuOpen && (
-              <TranslateActionMenu
-                onRegenerate={handleRegenerateTranslation}
-                onDelete={handleDeleteTranslationAction}
-                onClose={() => setTranslateMenuOpen(false)}
-              />
-            )}
-          </span>
+            <TranslateActionModal
+              open={translateModalOpen}
+              onOpenChange={setTranslateModalOpen}
+              onRegenerate={handleRegenerateTranslation}
+              onDelete={handleDeleteTranslationAction}
+            />
+          </>
         )}
       </div>
     );
@@ -171,7 +170,7 @@ export function StoryMessageItem({
       {(showTranslateButton || showActions) && (
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6, color: "var(--tgui--hint_color)" }}>
           {showTranslateButton && (
-            <span style={{ position: "relative" }}>
+            <>
               <button
                 type="button"
                 disabled={translating || translateActionPending || autoTranslating}
@@ -183,14 +182,13 @@ export function StoryMessageItem({
               >
                 {translating || translateActionPending || autoTranslating ? <Spinner size="s" /> : <Globe size={16} />}
               </button>
-              {translateMenuOpen && (
-                <TranslateActionMenu
-                  onRegenerate={handleRegenerateTranslation}
-                  onDelete={handleDeleteTranslationAction}
-                  onClose={() => setTranslateMenuOpen(false)}
-                />
-              )}
-            </span>
+              <TranslateActionModal
+                open={translateModalOpen}
+                onOpenChange={setTranslateModalOpen}
+                onRegenerate={handleRegenerateTranslation}
+                onDelete={handleDeleteTranslationAction}
+              />
+            </>
           )}
           {canSwitch && showActions && (
             <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13 }}>
