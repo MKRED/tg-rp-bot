@@ -130,6 +130,16 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  /* Switch (tgui) фиксирован на 32px и не даёт пропа size — after-слот раздувает строку Input
+     с обычных 24px до 32px под его высоту. Отрицательный вертикальный margin не меняет реальный
+     размер Switch/IconButton (они по-прежнему рисуются в полный размер и центрируются
+     align-items:center), а лишь уменьшает вклад этого блока в высоту строки Input — Switch
+     визуально «нависает» на 4px в паддинг строки (12px сверху/снизу у FormInput), не обрезаясь
+     (у Section/FormInput нет overflow:hidden) и не задевая соседние поля. Число завязано на
+     текущий фиксированный размер Switch в @telegram-apps/telegram-ui — при апдейте пакета,
+     если высота Switch изменится, просто разъедется на несколько px, ничего не сломается.
+     Проверить при апдейте tgui. */
+  margin: -4px 0;
 }
 
 /* SectionActions — flex-column с align-items:stretch по умолчанию; эта кнопка — маленькая
