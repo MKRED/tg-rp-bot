@@ -3,8 +3,11 @@ import { popup } from "@telegram-apps/sdk-react";
 interface ConfirmOptions {
   /** Обязателен — попап без хедера выглядит как случайная подсказка, а не как диалог. */
   title: string;
-  /** Текст подтверждающей (деструктивной) кнопки. */
+  /** Текст подтверждающей кнопки. */
   confirmText?: string;
+  /** Стиль подтверждающей кнопки — красный "destructive" (по умолчанию, для удаления)
+   * или обычный "default" (для неразрушительных действий вроде копирования). */
+  destructive?: boolean;
 }
 
 /**
@@ -32,14 +35,14 @@ export async function showAlert(message: string, title: string): Promise<void> {
 
 export async function confirmAction(
   message: string,
-  { title, confirmText = "Удалить" }: ConfirmOptions,
+  { title, confirmText = "Удалить", destructive = true }: ConfirmOptions,
 ): Promise<boolean> {
   if (popup.show.isAvailable()) {
     const pressed = await popup.show({
       title,
       message,
       buttons: [
-        { id: "confirm", type: "destructive", text: confirmText },
+        { id: "confirm", type: destructive ? "destructive" : "default", text: confirmText },
         { id: "cancel", type: "cancel" },
       ],
     });

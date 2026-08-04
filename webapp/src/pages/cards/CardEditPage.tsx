@@ -87,7 +87,11 @@ export function CardEditPage() {
   // просто createCard с суффиксом в названии; на успехе уходим в общий список карточек (а не на
   // саму копию), чтобы явно увидеть её среди остальных.
   const handleDuplicate = async (input: CardInput) => {
-    const confirmed = await confirmAction("Создать копию карточки?", { title: "Копирование карточки" });
+    const confirmed = await confirmAction("Создать копию карточки?", {
+      title: "Копирование карточки",
+      confirmText: "Скопировать",
+      destructive: false,
+    });
     if (!confirmed) return;
     setSubmitting(true);
     createCard({ ...input, name: `${input.name} (копия)` })
