@@ -1,4 +1,4 @@
-import { Button, Input, Section } from "@telegram-apps/telegram-ui";
+import { Accordion, Button, Input, Section } from "@telegram-apps/telegram-ui";
 import { useMemo, useState } from "react";
 import { DeleteButton } from "../../../../shared/components/DeleteButton";
 import { PromptEditorField } from "../../../../shared/components/PromptEditorField";
@@ -51,6 +51,10 @@ export function CardForm({
     initial?.categories ?? DEFAULT_CARD_CATEGORIES,
   );
   const [presetId, setPresetId] = useState<number | null>(initial?.presetId ?? null);
+
+  // Структура/порядок полей свёрнуты по умолчанию — редактируются реже основного промпта.
+  const [structureOpen, setStructureOpen] = useState(false);
+  const [orderOpen, setOrderOpen] = useState(false);
 
   // Снапшот последних сохранённых значений — база для «грязного» статуса (см. CharacterForm).
   const [baseline, setBaseline] = useState<CardInput>(() =>
@@ -139,13 +143,19 @@ export function CardForm({
         />
       </Section>
 
-      <Section className="section-blend-inputs" header="Структура карточки">
-        <CategoryList categories={categories} onChange={setCategories} />
-      </Section>
+      <Accordion expanded={structureOpen} onChange={setStructureOpen}>
+        <Accordion.Summary>Структура карточки</Accordion.Summary>
+        <Accordion.Content>
+          <CategoryList categories={categories} onChange={setCategories} />
+        </Accordion.Content>
+      </Accordion>
 
-      <Section className="section-blend-inputs" header="Последовательность полей">
-        <CategoryOrderList categories={categories} onChange={setCategories} />
-      </Section>
+      <Accordion expanded={orderOpen} onChange={setOrderOpen}>
+        <Accordion.Summary>Последовательность полей</Accordion.Summary>
+        <Accordion.Content>
+          <CategoryOrderList categories={categories} onChange={setCategories} />
+        </Accordion.Content>
+      </Accordion>
 
       <Section className="section-blend-inputs" header="Генерация">
         <GenerationSection
