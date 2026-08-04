@@ -51,7 +51,13 @@ export async function chatCompletion(
     const result = onChunk
       ? await chatCompletionStreaming(options, provider, model, url, t0, onChunk, onReset)
       : await chatCompletionSingle(options, provider, model, url, t0);
-    response = { ok: true, content: result.content, model: result.model, usage: result.usage };
+    response = {
+      ok: true,
+      content: result.content,
+      model: result.model,
+      usage: result.usage,
+      toolCalls: result.toolCalls,
+    };
     return result;
   } catch (err) {
     response = {
@@ -100,7 +106,10 @@ async function chatCompletionSingle(
         throw new LlmHttpError(provider.name, response.status, text);
       }
       const json = (await response.json()) as LlmResponse;
-      if (isUnusableCompletion(json.choices[0]?.message.content ?? "")) {
+      // Ответ с tool_calls обычно приходит с пустым/null content — это не отказ/пустая генерация,
+      // а штатный запрос вызвать инструмент, гвард на пустой текст здесь не применим.
+      const hasToolCalls = !!json.choices[0]?.message.tool_calls?.length;
+      if (!hasToolCalls && isUnusableCompletion(json.choices[0]?.message.content ?? "")) {
         throw new EmptyCompletionError();
       }
       return json;
@@ -123,6 +132,7 @@ async function chatCompletionSingle(
           totalTokens: data.usage.total_tokens,
         }
       : undefined,
+    toolCalls: data.choices[0]?.message.tool_calls,
   };
 
   logger.info(

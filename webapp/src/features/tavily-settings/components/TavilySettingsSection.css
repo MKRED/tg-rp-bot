@@ -11,3 +11,29 @@
   width: 14px;
   height: 14px;
 }
+
+/* Слайдер лимита раундов поиска — тот же вид, что у .preset-slider (generation-presets/presets.css). */
+.tavily-settings__rounds {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 22px 12px;
+}
+
+.tavily-settings__rounds-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tavily-settings__rounds-label {
+  flex: 1;
+  color: var(--tgui--text_color, #000);
+}
+
+.tavily-settings__rounds-value {
+  min-width: 3ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--tgui--hint_color, #7d8b99);
+}

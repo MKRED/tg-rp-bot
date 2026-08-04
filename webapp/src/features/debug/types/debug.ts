@@ -13,6 +13,12 @@ export type LlmCallLabel =
   | "cards"
   | "other";
 
+export interface ToolCall {
+  id: string;
+  type: "function";
+  function: { name: string; arguments: string };
+}
+
 export interface LlmDebugResponse {
   ok: boolean;
   status?: number;
@@ -20,6 +26,8 @@ export interface LlmDebugResponse {
   model?: string;
   usage?: { promptTokens: number; completionTokens: number; totalTokens?: number };
   error?: string;
+  /** Модель запросила инструмент(ы) вместо текста (веб-поиск карточек) — иначе content пуст. */
+  toolCalls?: ToolCall[];
 }
 
 export interface LlmDebugRecord {

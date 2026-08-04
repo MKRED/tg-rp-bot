@@ -9,9 +9,49 @@ export interface ChatMessage {
   content: string;
 }
 
+/** Один вызов инструмента моделью (OpenAI-совместимый tool_calls[i]). */
+export interface ToolCall {
+  id: string;
+  type: "function";
+  function: { name: string; arguments: string };
+}
+
+/**
+ * Ответ-инструмента (assistant с tool_calls) в истории диалога. content часто пустой/null —
+ * модель просит вызвать инструмент(ы) вместо текстового ответа.
+ */
+export interface ToolCallMessage {
+  role: "assistant";
+  content: string | null;
+  tool_calls: ToolCall[];
+}
+
+/** Результат выполнения одного tool_call — уходит в историю следующим сообщением. */
+export interface ToolResultMessage {
+  role: "tool";
+  tool_call_id: string;
+  content: string;
+}
+
+/** OpenAI-совместимое описание функции-инструмента для tool_choice: "auto". */
+export interface ToolDefinition {
+  type: "function";
+  function: {
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+  };
+}
+
 /** Параметры запроса к LLM chat completion (OpenAI-совместимый формат). */
 export interface ChatCompletionOptions {
-  messages: ChatMessage[];
+  // Union — а не расширение ChatMessage.content до string|null: ChatMessage используется
+  // повсеместно (промпт-билдеры, компакция нарратора, перевод) с .trim()/.length, расширение
+  // content каскадом сломало бы typecheck далеко за пределами tool-calling.
+  messages: Array<ChatMessage | ToolCallMessage | ToolResultMessage>;
+  /** Доступные модели инструменты (function calling). Без tool_choice — провайдер решает сам ("auto"). */
+  tools?: ToolDefinition[];
+  toolChoice?: "auto" | "none";
   /** Переопределить модель из конфига для конкретного вызова. */
   model?: string;
   // Базовые
@@ -49,12 +89,14 @@ export interface ChatCompletionResult {
     completionTokens: number;
     totalTokens: number;
   };
+  /** Заполнено, только если модель запросила инструмент(ы) вместо текстового ответа. */
+  toolCalls?: ToolCall[];
 }
 
 /** Сырой ответ LLM (OpenAI-совместимый, только нужные нам поля). */
 export interface LlmResponse {
   model: string;
-  choices: Array<{ message: { role: string; content: string } }>;
+  choices: Array<{ message: { role: string; content: string | null; tool_calls?: ToolCall[] } }>;
   usage?: {
     prompt_tokens: number;
     completion_tokens: number;

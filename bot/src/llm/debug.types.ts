@@ -1,4 +1,5 @@
 /** Типы перехвата RAW-запросов к LLM — вынесены из debugCapture.ts (там остаётся логика кольца). */
+import type { ToolCall } from "./types.js";
 
 /** Ярлык типа вызова — чтобы в списке было видно, что за запрос. */
 export type LlmCallLabel =
@@ -20,6 +21,8 @@ export interface LlmDebugResponse {
   usage?: { promptTokens: number; completionTokens: number; totalTokens?: number };
   /** Текст ошибки/тела при провале (4xx/5xx, пустой/отказной ответ). */
   error?: string;
+  /** Модель запросила инструмент(ы) вместо текста — иначе content выглядел бы пустым «успехом». */
+  toolCalls?: ToolCall[];
 }
 
 /** Одна запись перехвата: что ушло в LLM и что вернулось. */

@@ -1,10 +1,12 @@
 import { getCard, setCardCategoryContent } from "../../../db/cards/index.js";
 import { getPreset } from "../../../db/presets/index.js";
+import { getDecryptedTavilyKey, getTavilyMaxSearchRounds } from "../../../db/userTavilySettings.js";
 import { chatCompletion } from "../../../llm/client.js";
 import logger from "../../../logger.js";
 import { presetToCompletionOptions } from "../../prompt/promptBuilder/index.js";
 import { tryLockCard, unlockCard } from "../cardLock.js";
 import { assembleCardBlockPrompt } from "./promptAssembly.js";
+import { generateCardBlockWithWebSearch } from "./webSearchLoop.js";
 
 export type GenerateCardBlockResult =
   // Отдаём только categoryId+content (не всю карточку): клиент мержит точечно по id, не трогая
@@ -52,14 +54,28 @@ export async function generateCardBlock(
         : { ok: false, status: 409, reason: "nothing_to_generate" };
     }
 
-    const result = await chatCompletion({
+    const completionOptions = {
       userId,
-      messages: assembled.messages,
-      debugLabel: "cards",
+      debugLabel: "cards" as const,
       ...presetToCompletionOptions(preset),
-    });
+    };
 
-    const content = result.content.trim();
+    // Ключ мог быть удалён в настройках уже после того, как тумблер остался включённым на
+    // карточке — генерируем без поиска, а не роняем всю генерацию блока из-за этого (но не молчим).
+    const tavilyApiKey = card.useWebSearch ? await getDecryptedTavilyKey(userId) : null;
+    if (card.useWebSearch && !tavilyApiKey) {
+      logger.warn({ userId, cardId }, "Card useWebSearch включён, но ключ Tavily не задан — генерируем без поиска");
+    }
+    const rawContent = tavilyApiKey
+      ? await generateCardBlockWithWebSearch(
+          completionOptions,
+          assembled.messages,
+          tavilyApiKey,
+          await getTavilyMaxSearchRounds(userId),
+        )
+      : (await chatCompletion({ ...completionOptions, messages: assembled.messages })).content;
+
+    const content = rawContent.trim();
     const updated = await setCardCategoryContent(userId, cardId, assembled.targetCategoryId, content);
     if (!updated) return { ok: false, status: 404, reason: "not_found" };
 

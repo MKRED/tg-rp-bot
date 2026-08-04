@@ -21,6 +21,8 @@ export function buildBody(
     ...(options.repetitionPenalty !== undefined && { repetition_penalty: options.repetitionPenalty }),
     ...(options.minP !== undefined && { min_p: options.minP }),
     ...(options.topA !== undefined && { top_a: options.topA }),
+    ...(options.tools !== undefined && { tools: options.tools }),
+    ...(options.toolChoice !== undefined && { tool_choice: options.toolChoice }),
     // Reasoning подключается провайдеро-специфично (для DeepSeek — thinking-режим).
     ...provider.reasoningBody(options),
   };

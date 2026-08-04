@@ -69,6 +69,11 @@ export const userSettings = pgTable("user_settings", {
   // Персональный ключ Tavily (веб-поиск, BYOK). Зашифрован encryptField (см. utils/crypto.ts),
   // NULL = ключ не задан. Квота не кэшируется в БД — запрашивается у Tavily "на лету" (GET /usage).
   tavilyApiKey: text("tavily_api_key"),
+  // Максимум раундов tool-calling (запрос модели → web_search → результат) подряд за одну
+  // генерацию с включённым веб-поиском (см. tavily/searchSettings.ts). Жёсткий серверный лимит:
+  // после его достижения модель получает финальный раунд без инструмента tools и обязана
+  // ответить тем, что успела найти, а не просьбой к пользователю.
+  tavilyMaxSearchRounds: integer("tavily_max_search_rounds").notNull().default(4),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
@@ -179,6 +184,11 @@ export const cards = pgTable("cards", {
   prompt: text("prompt").notNull().default(""),
   categories: jsonb("categories").$type<CardCategory[]>().notNull().default(sql`'[]'::jsonb`),
   presetId: bigint("preset_id", { mode: "number" }).references(() => generationPresets.id),
+  // Веб-поиск (Tavily, BYOK) при генерации блоков этой карточки: модель сама решает,
+  // когда звать web_search (tool_choice: "auto"), в пределах user_settings.tavilyMaxSearchRounds.
+  // Действует, только если у пользователя сохранён ключ Tavily (см. generateBlock.ts) — иначе
+  // тихо генерирует без поиска, тумблер в форме мог остаться включённым после удаления ключа.
+  useWebSearch: boolean("use_web_search").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()

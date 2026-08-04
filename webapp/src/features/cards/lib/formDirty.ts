@@ -7,6 +7,7 @@ export type CardFormDraft = {
   prompt: string;
   categories: CardCategory[];
   presetId: number | null;
+  useWebSearch: boolean;
 };
 
 /** Нормализация черновика под сравнение — тот же протокол, что при сохранении (handleSubmit). */
@@ -17,6 +18,7 @@ export function normalizeCardDraft(draft: CardFormDraft): CardInput {
     prompt: draft.prompt,
     categories: draft.categories,
     presetId: draft.presetId,
+    useWebSearch: draft.useWebSearch,
   };
 }
 

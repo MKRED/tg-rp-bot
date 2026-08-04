@@ -1,8 +1,10 @@
-import { Button, Cell, Input, Section, Spinner } from "@telegram-apps/telegram-ui";
+import { Button, Cell, Input, Section, Slider, Spinner, Text } from "@telegram-apps/telegram-ui";
 import { Check, Trash2 } from "lucide-react";
+import { FieldHint } from "../../../shared/components/FieldHint";
 import { confirmAction } from "../../../shared/telegram/confirm";
 import type { useTavilySettings } from "../hooks/useTavilySettings";
 import { formatUsageDescription, formatUsageSubtitle } from "../lib/formatUsage";
+import { MAX_SEARCH_ROUNDS, MIN_SEARCH_ROUNDS } from "../lib/searchRounds";
 import "./TavilySettingsSection.css";
 
 type TavilySettingsSectionProps = Omit<ReturnType<typeof useTavilySettings>, "loading">;
@@ -26,6 +28,8 @@ export function TavilySettingsSection({
   usage,
   usageLoading,
   clearKey,
+  maxSearchRounds,
+  setMaxSearchRounds,
 }: TavilySettingsSectionProps) {
   const hasInput = keyInput.trim().length > 0;
   const keyAction: "save" | "delete" | "none" = hasInput ? "save" : status.hasKey ? "delete" : "none";
@@ -87,6 +91,26 @@ export function TavilySettingsSection({
           >
             Квота Tavily
           </Cell>
+        )}
+
+        {status.hasKey && (
+          <div className="tavily-settings__rounds">
+            <div className="tavily-settings__rounds-head">
+              <Text className="tavily-settings__rounds-label">Лимит раундов веб-поиска</Text>
+              <Text className="tavily-settings__rounds-value">{maxSearchRounds}</Text>
+            </div>
+            <Slider
+              min={MIN_SEARCH_ROUNDS}
+              max={MAX_SEARCH_ROUNDS}
+              step={1}
+              value={maxSearchRounds}
+              onChange={(v) => setMaxSearchRounds(v)}
+            />
+            <FieldHint>
+              Максимум обращений к веб-поиску подряд за одну генерацию блока карточки. По
+              достижении лимита модель отвечает тем, что успела найти.
+            </FieldHint>
+          </div>
         )}
       </div>
     </Section>

@@ -17,7 +17,14 @@ describe("parseCardInput", () => {
 
   it("принимает и обрезает имя по краям, дефолтит пустые systemPrompt/prompt/categories/presetId", () => {
     expect(parseCardInput({ name: "  Артур  ", categories: [] })).toEqual({
-      input: { name: "Артур", systemPrompt: "", prompt: "", categories: [], presetId: null },
+      input: {
+        name: "Артур",
+        systemPrompt: "",
+        prompt: "",
+        categories: [],
+        presetId: null,
+        useWebSearch: false,
+      },
     });
   });
 
@@ -74,6 +81,7 @@ describe("parseCardInput", () => {
         prompt: "Custom prompt {{example}}",
         categories: [{ id: "base", title: "Base", description: "Name: ...", content: "", enabled: true }],
         presetId: 5,
+        useWebSearch: false,
       },
     });
   });
@@ -82,6 +90,11 @@ describe("parseCardInput", () => {
     expect(parseCardInput({ name: "Артур", categories: [], presetId: 1.5 })).toEqual({
       error: "presetId must be an integer",
     });
+  });
+
+  it("принимает useWebSearch: true", () => {
+    const result = parseCardInput({ name: "Артур", categories: [], useWebSearch: true });
+    expect("input" in result && result.input.useWebSearch).toBe(true);
   });
 
   it("отклоняет дубликат id категорий", () => {
@@ -108,6 +121,7 @@ describe("parseCardInput", () => {
         prompt: "",
         categories: [{ id: "base", title: "Base", description: "Name: ...", content: "  raw  ", enabled: true }],
         presetId: null,
+        useWebSearch: false,
       },
     });
   });

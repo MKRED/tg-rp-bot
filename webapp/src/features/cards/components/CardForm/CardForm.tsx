@@ -1,4 +1,4 @@
-import { Accordion, Button, Caption, Input, Section } from "@telegram-apps/telegram-ui";
+import { Accordion, Button, Caption, Cell, Input, Section, Switch } from "@telegram-apps/telegram-ui";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { DeleteButton } from "../../../../shared/components/DeleteButton";
@@ -26,6 +26,12 @@ interface CardFormProps {
   cardId?: number;
   presets: CardPresetOption[];
   presetsLoading: boolean;
+  /** Есть ли у пользователя сохранённый ключ Tavily — тумблер веб-поиска активен только тогда
+   * (см. useTavilyKeyStatus в CardEditPage). */
+  webSearchAvailable: boolean;
+  /** Статус ключа ещё грузится — не показываем «добавьте ключ» (webSearchAvailable по умолчанию
+   * false) тому, у кого ключ на самом деле есть, пока запрос не вернулся. */
+  webSearchStatusLoading: boolean;
   submitting: boolean;
   /** Промис нужен, чтобы форма знала об успехе и сбросила «грязный» снапшот — окно после
    * сохранения не закрывается, а показывает уведомление (см. CardEditPage). */
@@ -46,6 +52,8 @@ export function CardForm({
   cardId,
   presets,
   presetsLoading,
+  webSearchAvailable,
+  webSearchStatusLoading,
   submitting,
   onSubmit,
   onDelete,
@@ -61,6 +69,7 @@ export function CardForm({
     initial?.categories ?? DEFAULT_CARD_CATEGORIES,
   );
   const [presetId, setPresetId] = useState<number | null>(initial?.presetId ?? null);
+  const [useWebSearch, setUseWebSearch] = useState(initial?.useWebSearch ?? false);
 
   // Структура/порядок полей свёрнуты по умолчанию — редактируются реже основного промпта.
   const [structureOpen, setStructureOpen] = useState(false);
@@ -74,11 +83,12 @@ export function CardForm({
       prompt: initial?.prompt ?? DEFAULT_CARD_PROMPT,
       categories: initial?.categories ?? DEFAULT_CARD_CATEGORIES,
       presetId: initial?.presetId ?? null,
+      useWebSearch: initial?.useWebSearch ?? false,
     }),
   );
   const isDirty = useMemo(
-    () => hasUnsavedChanges({ name, systemPrompt, prompt, categories, presetId }, baseline),
-    [name, systemPrompt, prompt, categories, presetId, baseline],
+    () => hasUnsavedChanges({ name, systemPrompt, prompt, categories, presetId, useWebSearch }, baseline),
+    [name, systemPrompt, prompt, categories, presetId, useWebSearch, baseline],
   );
   useUnsavedChangesGuard(isDirty);
 
@@ -89,7 +99,7 @@ export function CardForm({
   // чтобы вызывающий знал, продолжать ли (генерацию не запускаем поверх проваленного сохранения).
   const save = async (): Promise<boolean> => {
     if (!canSubmit) return false;
-    const payload = normalizeCardDraft({ name, systemPrompt, prompt, categories, presetId });
+    const payload = normalizeCardDraft({ name, systemPrompt, prompt, categories, presetId, useWebSearch });
     try {
       await onSubmit(payload);
       setBaseline(payload);
@@ -105,7 +115,7 @@ export function CardForm({
   };
 
   const handleDuplicate = () => {
-    onDuplicate?.(normalizeCardDraft({ name, systemPrompt, prompt, categories, presetId }));
+    onDuplicate?.(normalizeCardDraft({ name, systemPrompt, prompt, categories, presetId, useWebSearch }));
   };
 
   // Генерация блока уже сохранена на сервере (см. generateCardBlock) — синхронизируем и локальный
@@ -155,6 +165,25 @@ export function CardForm({
           presetId={presetId}
           onChange={setPresetId}
         />
+
+        <Cell
+          after={
+            <Switch
+              checked={useWebSearch}
+              disabled={webSearchStatusLoading || !webSearchAvailable}
+              onChange={(e) => setUseWebSearch(e.target.checked)}
+            />
+          }
+          subtitle={
+            webSearchStatusLoading
+              ? "Проверяем ключ Tavily…"
+              : webSearchAvailable
+                ? "Модель сможет искать в интернете при генерации блоков"
+                : "Добавьте ключ Tavily в настройках, чтобы включить"
+          }
+        >
+          Использовать веб-поиск
+        </Cell>
       </Section>
 
       <Accordion expanded={structureOpen} onChange={setStructureOpen}>

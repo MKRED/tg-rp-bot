@@ -15,6 +15,7 @@ export interface Card {
   prompt: string;
   categories: CardCategory[];
   presetId: number | null;
+  useWebSearch: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -33,6 +34,7 @@ export interface CardInput {
   prompt: string;
   categories: CardCategory[];
   presetId: number | null;
+  useWebSearch: boolean;
 }
 
 /**

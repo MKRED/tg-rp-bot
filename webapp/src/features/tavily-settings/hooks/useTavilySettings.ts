@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useToast } from "../../../shared/toast";
 import { getTavilySettings, saveTavilySettings, verifyTavilyKey } from "../api/tavily-settings-api";
+import { DEFAULT_SEARCH_ROUNDS } from "../lib/searchRounds";
 import type { TavilySettingsStatus, TavilyUsage } from "../types/tavilySettings";
 
 const VERIFY_ERROR_MESSAGES: Record<string, string> = {
@@ -15,7 +16,11 @@ const VERIFY_ERROR_MESSAGES: Record<string, string> = {
  * никогда не префиллится значением с сервера — только last4 в подписи.
  */
 export function useTavilySettings() {
-  const [status, setStatus] = useState<TavilySettingsStatus>({ hasKey: false, last4: null });
+  const [status, setStatus] = useState<TavilySettingsStatus>({
+    hasKey: false,
+    last4: null,
+    maxSearchRounds: DEFAULT_SEARCH_ROUNDS,
+  });
   const [loading, setLoading] = useState(true);
   const [keyInput, setKeyInput] = useState("");
   const [verifying, setVerifying] = useState(false);
@@ -134,6 +139,32 @@ export function useTavilySettings() {
     }
   }, [showToast]);
 
+  // Локальное значение слайдера — для отклика на каждый шаг перетаскивания; PATCH уходит с
+  // дебаунсом (у Slider tgui нет отдельного onChangeEnd), а не на каждый промежуточный шаг.
+  const [maxSearchRounds, setMaxSearchRoundsLocal] = useState(DEFAULT_SEARCH_ROUNDS);
+  useEffect(() => {
+    setMaxSearchRoundsLocal(status.maxSearchRounds);
+  }, [status.maxSearchRounds]);
+
+  const saveRoundsTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(saveRoundsTimer.current), []);
+
+  const setMaxSearchRounds = useCallback(
+    (value: number) => {
+      setMaxSearchRoundsLocal(value);
+      clearTimeout(saveRoundsTimer.current);
+      saveRoundsTimer.current = setTimeout(() => {
+        saveTavilySettings({ maxSearchRounds: value })
+          .then(setStatus)
+          .catch((err) => {
+            console.error("Failed to save max search rounds", err);
+            showToast({ type: "error", message: "Не удалось сохранить лимит раундов поиска." });
+          });
+      }, 500);
+    },
+    [showToast],
+  );
+
   return {
     status,
     loading,
@@ -145,5 +176,7 @@ export function useTavilySettings() {
     usage,
     usageLoading,
     clearKey,
+    maxSearchRounds,
+    setMaxSearchRounds,
   };
 }

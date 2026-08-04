@@ -9,6 +9,7 @@ const baseDraft: CardFormDraft = {
     { id: "base", title: "Base", description: "Name: ...", content: "", enabled: true },
   ],
   presetId: 1,
+  useWebSearch: false,
 };
 
 describe("normalizeCardDraft", () => {
@@ -19,6 +20,7 @@ describe("normalizeCardDraft", () => {
       prompt: "Промпт",
       categories: baseDraft.categories,
       presetId: 1,
+      useWebSearch: false,
     });
   });
 });

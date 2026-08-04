@@ -253,6 +253,13 @@
       "when": 1785481790526,
       "tag": "0035_freezing_black_panther",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1785809304532,
+      "tag": "0036_third_redwing",
+      "breakpoints": true
     }
   ]
 }

@@ -42,6 +42,14 @@ export function DebugRecordItem({
     JSON.stringify(elideRequest(record.request, headK, tailK), null, 2),
   );
 
+  // content и tool_calls не взаимоисключающие — DeepSeek может отдать короткую преамбулу текстом
+  // и tool_calls в одном ответе, || скрыл бы вызов инструмента, раз текст уже непустой.
+  const responseText = r.ok
+    ? [r.content, r.toolCalls?.length ? JSON.stringify(r.toolCalls, null, 2) : null]
+        .filter(Boolean)
+        .join("\n\n")
+    : (r.error ?? "(без текста)");
+
   return (
     <Accordion expanded={open} onChange={setOpen}>
       <Accordion.Summary
@@ -75,7 +83,7 @@ export function DebugRecordItem({
             Ответ
           </Caption>
           <Text Component="pre" className="debug-record__pre">
-            {r.ok ? (r.content ?? "") : (r.error ?? "(без текста)")}
+            {responseText}
           </Text>
         </div>
       </Accordion.Content>

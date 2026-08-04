@@ -15,6 +15,7 @@ import {
   type CardPresetOption,
 } from "../../features/cards";
 import { presetSummary, usePresets } from "../../features/generation-presets";
+import { useTavilyKeyStatus } from "../../features/tavily-settings";
 import { confirmAction } from "../../shared/telegram/confirm";
 import { useToast } from "../../shared/toast";
 import "./cards.css";
@@ -27,6 +28,7 @@ function toInput(c: Card): CardInput {
     prompt: c.prompt,
     categories: c.categories,
     presetId: c.presetId,
+    useWebSearch: c.useWebSearch,
   };
 }
 
@@ -59,6 +61,12 @@ export function CardEditPage() {
     name: p.name,
     summary: presetSummary(p),
   }));
+
+  // Тумблер веб-поиска в форме активен, только если у пользователя сохранён ключ Tavily —
+  // лёгкий статус без квоты/verify (см. useTavilyKeyStatus), не usePresets-подобный полный хук.
+  // loading прокидывается отдельно: пока статус не пришёл, hasKey по умолчанию false — без этого
+  // форма на миг показала бы «добавьте ключ» даже пользователю, у которого ключ есть.
+  const { hasKey: webSearchAvailable, loading: webSearchStatusLoading } = useTavilyKeyStatus();
 
   const handleSubmit = (input: CardInput) => {
     setSubmitting(true);
@@ -132,6 +140,8 @@ export function CardEditPage() {
             cardId={id}
             presets={presets}
             presetsLoading={presetsLoading}
+            webSearchAvailable={webSearchAvailable}
+            webSearchStatusLoading={webSearchStatusLoading}
             submitting={submitting}
             onSubmit={handleSubmit}
             onDelete={id === undefined ? undefined : handleDelete}

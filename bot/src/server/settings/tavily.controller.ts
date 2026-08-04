@@ -49,13 +49,13 @@ export function createTavilySettingsRoutes(): Hono<{ Variables: AppVariables }> 
     }
   });
 
-  // Сохраняет/удаляет ключ. apiKey: null — удалить.
+  // Сохраняет/удаляет ключ и/или лимит раундов веб-поиска. apiKey: null — удалить ключ.
   api.patch("/tavily", async (c) => {
     const user = c.get("tgUser");
     if (!user) return c.json({ error: "Auth required" }, 401);
-    const body = (await c.req.json().catch(() => ({}))) as { apiKey?: unknown };
+    const body = (await c.req.json().catch(() => ({}))) as { apiKey?: unknown; maxSearchRounds?: unknown };
 
-    const patch: { apiKey?: string | null } = {};
+    const patch: { apiKey?: string | null; maxSearchRounds?: number } = {};
     if (body.apiKey === null) {
       patch.apiKey = null;
     } else if (typeof body.apiKey === "string") {
@@ -64,6 +64,10 @@ export function createTavilySettingsRoutes(): Hono<{ Variables: AppVariables }> 
         return c.json(INVALID_KEY_FORMAT_RESPONSE, 400);
       }
       patch.apiKey = trimmed;
+    }
+    // Кламп — в upsertUserTavilySettings (см. tavily/searchSettings.ts), здесь только фильтр типа.
+    if (typeof body.maxSearchRounds === "number") {
+      patch.maxSearchRounds = body.maxSearchRounds;
     }
 
     try {

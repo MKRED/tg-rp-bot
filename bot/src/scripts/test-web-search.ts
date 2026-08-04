@@ -106,6 +106,10 @@ async function deepseekChat(messages: ChatMessage[]): Promise<ChatMessage> {
       messages,
       tools,
       tool_choice: "auto",
+      // thinking включён намеренно: cards-генерация всегда идёт с reasoning из пресета —
+      // проверено, что DeepSeek принимает tools вместе с thinking:enabled и не роняет запрос.
+      thinking: { type: "enabled" },
+      reasoning_effort: "high",
     }),
   });
   if (!res.ok) {

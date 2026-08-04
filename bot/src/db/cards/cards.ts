@@ -108,6 +108,7 @@ export async function createCard(userId: number, input: CardInput): Promise<Card
       prompt: encryptField(prompt, key),
       categories: encryptCategories(categories, key),
       presetId: input.presetId,
+      useWebSearch: input.useWebSearch,
     })
     .returning();
   const created = rows[0]!;
@@ -137,6 +138,7 @@ export async function updateCard(
       prompt: encryptField(input.prompt, key),
       categories: encryptCategories(input.categories, key),
       presetId: input.presetId,
+      useWebSearch: input.useWebSearch,
     })
     .where(and(eq(schema.cards.id, id), eq(schema.cards.userId, userId)))
     .returning();
@@ -181,5 +183,6 @@ export async function setCardCategoryContent(
     prompt: card.prompt,
     categories,
     presetId: card.presetId,
+    useWebSearch: card.useWebSearch,
   });
 }

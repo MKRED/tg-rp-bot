@@ -1,3 +1,4 @@
+import { Caption } from "@telegram-apps/telegram-ui";
 import type { CSSProperties, ReactNode } from "react";
 import "./FieldHint.css";
 
@@ -11,8 +12,8 @@ interface FieldHintProps {
 export function FieldHint({ children, className, style }: FieldHintProps) {
   const cls = className ? `field-hint ${className}` : "field-hint";
   return (
-    <span className={cls} style={style}>
+    <Caption level="1" className={cls} style={style}>
       {children}
-    </span>
+    </Caption>
   );
 }

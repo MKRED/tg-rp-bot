@@ -9,6 +9,7 @@ export type CardInput = {
   prompt: string;
   categories: CardCategory[];
   presetId: number | null;
+  useWebSearch: boolean;
 };
 
 /** Лёгкая проекция для списка: имя + дата обновления (для строки списка «Мастерской»). */
