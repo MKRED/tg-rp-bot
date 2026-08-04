@@ -18,18 +18,6 @@ interface ToolCallOutcome {
   authFailed: boolean;
 }
 
-/** Инструкция без счётной формы существительного — не гоняемся за русским склонением по числу N. */
-function searchInstruction(maxRounds: number): ChatMessage {
-  return {
-    role: "system",
-    content:
-      `Тебе доступен инструмент ${WEB_SEARCH_TOOL_NAME} для поиска актуальной информации в интернете. ` +
-      `Используй его по необходимости. Лимит обращений к нему для этого блока: ${maxRounds}. ` +
-      `Как только лимит будет исчерпан, инструмент станет недоступен — в этом случае дай финальный ` +
-      `ответ на основе уже найденной информации, не проси пользователя повторить запрос.`,
-  };
-}
-
 /** Выполняет один tool_call. Ошибки (битые аргументы, сбой Tavily) уходят в content — модель узнаёт
  * о неудаче тем же путём, что и об успехе, и может ответить без этого результата, а не всей генерацией. */
 async function runToolCall(call: ToolCall, tavilyApiKey: string): Promise<ToolCallOutcome> {
@@ -81,7 +69,6 @@ export async function generateCardBlockWithWebSearch(
   logger.info({ userId, maxRounds }, "Card web search: старт генерации блока");
 
   const history: LoopMessage[] = [...messages];
-  history.splice(1, 0, searchInstruction(maxRounds));
 
   let searchesUsed = 0;
   let llmCalls = 0;
