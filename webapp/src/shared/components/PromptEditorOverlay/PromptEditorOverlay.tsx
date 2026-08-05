@@ -1,5 +1,5 @@
-import { AppRoot, Button, Subheadline } from "@telegram-apps/telegram-ui";
-import { motion } from "framer-motion";
+import { AppRoot } from "@telegram-apps/telegram-ui";
+import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { getPlatform } from "../../telegram/platform";
@@ -7,6 +7,9 @@ import { pushBackInterceptor } from "../../telegram/backInterceptor";
 import { confirmAction } from "../../telegram/confirm";
 import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
 import { useTheme } from "../../theme";
+import { PromptEditorHeader } from "./PromptEditorHeader";
+import { PromptEditorToolbar } from "./PromptEditorToolbar";
+import { useTextHistory } from "./useTextHistory";
 import "./PromptEditorOverlay.css";
 
 // Платформа сессии не меняется — маппим в стиль telegram-ui один раз, как в App.tsx.
@@ -35,11 +38,16 @@ interface PromptEditorOverlayProps {
  * и оверлей «телепортировался» бы в другую тему, чем основное приложение. Сам textarea — обычный
  * HTML-элемент (не tgui Textarea): тот визуально не подходит для полноэкранного редактора,
  * стилизуем вручную под --tgui--* цвета.
+ *
+ * Панель инструментов (undo/redo, очистка, копировать/вставить) скрыта по умолчанию —
+ * открывается тапом по заголовку, чтобы не отжирать место у textarea, когда не нужна.
  */
 export function PromptEditorOverlay({ title, placeholder, value, onSave, onCancel }: PromptEditorOverlayProps) {
   const { appearance } = useTheme();
-  const [draft, setDraft] = useState(value);
+  const { draft, canUndo, canRedo, onChange, commit, undo, redo } = useTextHistory(value);
   const dirty = draft !== value;
+  const [toolbarVisible, setToolbarVisible] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Не даём открыть второй confirm поверх уже открытого при повторном нажатии «Назад».
   const confirmingRef = useRef(false);
 
@@ -65,6 +73,42 @@ export function PromptEditorOverlay({ title, placeholder, value, onSave, onCance
       });
   }, [dirty, onCancel]);
 
+  const handleClear = useCallback(() => {
+    if (!draft) return;
+    if (confirmingRef.current) return;
+    confirmingRef.current = true;
+    confirmAction("Весь текст будет удалён.", {
+      title: "Очистить текст?",
+      confirmText: "Очистить",
+    })
+      .then((ok) => {
+        if (ok) commit("");
+      })
+      .catch((err) => console.error("Не удалось показать подтверждение очистки текста промпта", err))
+      .finally(() => {
+        confirmingRef.current = false;
+      });
+  }, [draft, commit]);
+
+  // Вставляем на месте курсора, а не поверх всего текста — textarea не controlled-onPaste,
+  // поэтому позицию курсора берём напрямую из DOM-элемента через ref.
+  const handlePasteText = useCallback(
+    (text: string) => {
+      const el = textareaRef.current;
+      const start = el?.selectionStart ?? draft.length;
+      const end = el?.selectionEnd ?? draft.length;
+      const next = draft.slice(0, start) + text + draft.slice(end);
+      commit(next);
+      requestAnimationFrame(() => {
+        if (!el) return;
+        const caret = start + text.length;
+        el.selectionStart = el.selectionEnd = caret;
+        el.focus();
+      });
+    },
+    [draft, commit],
+  );
+
   // Нативная «Назад» закрывает редактор (с подтверждением при правках), а не уводит со страницы.
   useEffect(() => pushBackInterceptor(handleDiscard), [handleDiscard]);
 
@@ -77,23 +121,44 @@ export function PromptEditorOverlay({ title, placeholder, value, onSave, onCance
       transition={{ duration: 0.2 }}
     >
       <AppRoot appearance={appearance} platform={platform} className="prompt-editor-overlay__root">
-        <div className="prompt-editor-overlay__header">
-          <Button mode="outline" size="s" onClick={handleDiscard}>
-            Отмена
-          </Button>
-          <Subheadline level="1" weight="2" className="prompt-editor-overlay__title" plain>
-            {title}
-          </Subheadline>
-          <Button mode="filled" size="s" disabled={!dirty} onClick={() => onSave(draft)}>
-            Готово
-          </Button>
-        </div>
+        <PromptEditorHeader
+          title={title}
+          dirty={dirty}
+          toolbarVisible={toolbarVisible}
+          onToggleToolbar={() => setToolbarVisible((v) => !v)}
+          onDiscard={handleDiscard}
+          onSave={() => onSave(draft)}
+        />
+
+        <AnimatePresence initial={false}>
+          {toolbarVisible && (
+            <motion.div
+              key="toolbar"
+              className="prompt-editor-overlay__toolbar-wrap"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.18 }}
+            >
+              <PromptEditorToolbar
+                draft={draft}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                onUndo={undo}
+                onRedo={redo}
+                onClear={handleClear}
+                onPaste={handlePasteText}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="prompt-editor-overlay__textarea-wrap">
           <textarea
+            ref={textareaRef}
             className="prompt-editor-overlay__textarea"
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
             autoFocus
           />

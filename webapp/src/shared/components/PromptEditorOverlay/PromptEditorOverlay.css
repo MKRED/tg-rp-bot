@@ -33,14 +33,88 @@
   border-bottom: 1px solid var(--tgui--secondary_bg_color, rgba(255, 255, 255, 0.08));
 }
 
-.prompt-editor-overlay__title {
+/* Тап по заголовку разворачивает панель инструментов (см. .prompt-editor-overlay__toolbar-wrap) —
+   шеврон рядом с текстом даёт понять, что заголовок кликабелен. */
+.prompt-editor-overlay__title-toggle {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  color: var(--tgui--hint_color, #7d8b99);
+  cursor: pointer;
+}
+
+.prompt-editor-overlay__title {
   min-width: 0;
   text-align: center;
   color: var(--tgui--text_color);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Обёртка под framer-motion height-анимацию раскрытия/схлопывания — overflow: hidden
+   не даёт содержимому "выпрыгнуть" наружу, пока height анимируется от 0 до auto. */
+.prompt-editor-overlay__toolbar-wrap {
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.prompt-editor-overlay__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--tgui--secondary_bg_color, rgba(255, 255, 255, 0.08));
+}
+
+.prompt-editor-overlay__toolbar-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 4px 4px;
+  background: var(--tgui--secondary_bg_color, rgba(255, 255, 255, 0.08));
+}
+
+.prompt-editor-overlay__toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--tgui--text_color);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.prompt-editor-overlay__toolbar-btn:active {
+  background: var(--tgui--secondary_bg_color, rgba(255, 255, 255, 0.08));
+}
+
+.prompt-editor-overlay__toolbar-btn:disabled {
+  color: var(--tgui--hint_color, #7d8b99);
+  opacity: 0.4;
+  cursor: default;
+}
+
+.prompt-editor-overlay__toolbar-btn--danger {
+  color: #e53935;
+}
+
+.prompt-editor-overlay__toolbar-btn--push {
+  margin-left: auto;
+}
+
+/* Явно перекрываем цвет --danger при disabled: у обоих правил одинаковая специфичность
+   (класс + класс/псевдокласс), порядок объявления сам по себе ничего не гарантирует. */
+.prompt-editor-overlay__toolbar-btn--danger:disabled {
+  color: var(--tgui--hint_color, #7d8b99);
 }
 
 .prompt-editor-overlay__textarea-wrap {
