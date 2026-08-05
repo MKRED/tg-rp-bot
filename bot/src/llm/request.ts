@@ -9,7 +9,11 @@ export function buildBody(
 ): Record<string, unknown> {
   return {
     model: options.model ?? provider.defaultModel,
-    messages: options.messages,
+    // Копия массива, не ссылка: вызывающие (webSearchLoop) переиспользуют один и тот же
+    // messages-массив между раундами и продолжают push'ить в него — без копии все прошлые
+    // debug-записи (см. debugCapture.ts) ретроактивно показали бы финальную историю целиком,
+    // так как хранили бы ссылку на один и тот же мутируемый массив.
+    messages: [...options.messages],
     stream,
     // Передаём только заданные параметры — провайдер применяет дефолты на undefined.
     ...(options.temperature !== undefined && { temperature: options.temperature }),
