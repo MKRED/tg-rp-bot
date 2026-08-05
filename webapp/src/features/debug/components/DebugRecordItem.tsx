@@ -42,9 +42,15 @@ export function DebugRecordItem({
     JSON.stringify(elideRequest(record.request, headK, tailK), null, 2),
   );
 
-  // Раунд цикла веб-поиска карточек, где модели ещё доступен инструмент (см. webSearchLoop.ts) —
-  // tools кладётся в RAW-тело только тогда, финальный безынструментный раунд его не несёт.
-  const hasTools = Array.isArray(record.request.tools) && record.request.tools.length > 0;
+  // tools в RAW-теле значит лишь то, что инструмент был ПРЕДЛОЖЕН — webSearchLoop кладёт его,
+  // пока не исчерпан бюджет раундов, даже если модель в итоге не позвала поиск. Поэтому смотрим
+  // на факт использования: либо сама модель в этом раунде запросила инструмент (response.toolCalls),
+  // либо в history уже лежит результат поиска (role: "tool") из более раннего раунда цикла.
+  const requestMessages = record.request.messages;
+  const hasSearchResultInHistory =
+    Array.isArray(requestMessages) &&
+    requestMessages.some((m) => (m as { role?: string })?.role === "tool");
+  const usedWebSearch = Boolean(r.toolCalls?.length) || hasSearchResultInHistory;
 
   // content и tool_calls не взаимоисключающие — DeepSeek может отдать короткую преамбулу текстом
   // и tool_calls в одном ответе, || скрыл бы вызов инструмента, раз текст уже непустой.
@@ -57,7 +63,7 @@ export function DebugRecordItem({
   return (
     <Accordion expanded={open} onChange={setOpen}>
       <Accordion.Summary
-        subtitle={hasTools ? `${record.model} · веб-поиск` : record.model}
+        subtitle={usedWebSearch ? `${record.model} · веб-поиск` : record.model}
         hint={fmtTime(record.at)}
         after={
           r.ok ? (
