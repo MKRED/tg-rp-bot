@@ -42,6 +42,10 @@ export function DebugRecordItem({
     JSON.stringify(elideRequest(record.request, headK, tailK), null, 2),
   );
 
+  // Раунд цикла веб-поиска карточек, где модели ещё доступен инструмент (см. webSearchLoop.ts) —
+  // tools кладётся в RAW-тело только тогда, финальный безынструментный раунд его не несёт.
+  const hasTools = Array.isArray(record.request.tools) && record.request.tools.length > 0;
+
   // content и tool_calls не взаимоисключающие — DeepSeek может отдать короткую преамбулу текстом
   // и tool_calls в одном ответе, || скрыл бы вызов инструмента, раз текст уже непустой.
   const responseText = r.ok
@@ -53,7 +57,7 @@ export function DebugRecordItem({
   return (
     <Accordion expanded={open} onChange={setOpen}>
       <Accordion.Summary
-        subtitle={record.model}
+        subtitle={hasTools ? `${record.model} · веб-поиск` : record.model}
         hint={fmtTime(record.at)}
         after={
           r.ok ? (

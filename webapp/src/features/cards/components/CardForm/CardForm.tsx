@@ -186,19 +186,23 @@ export function CardForm({
         </Cell>
       </Section>
 
-      <Accordion expanded={structureOpen} onChange={setStructureOpen}>
-        <Accordion.Summary>Структура карточки</Accordion.Summary>
-        <Accordion.Content>
-          <CategoryList categories={categories} onChange={setCategories} />
-        </Accordion.Content>
-      </Accordion>
+      <Section>
+        <Accordion expanded={structureOpen} onChange={setStructureOpen}>
+          <Accordion.Summary>Структура карточки</Accordion.Summary>
+          <Accordion.Content>
+            <CategoryList categories={categories} onChange={setCategories} />
+          </Accordion.Content>
+        </Accordion>
+      </Section>
 
-      <Accordion expanded={orderOpen} onChange={setOrderOpen}>
-        <Accordion.Summary>Последовательность полей</Accordion.Summary>
-        <Accordion.Content>
-          <CategoryOrderList categories={categories} onChange={setCategories} />
-        </Accordion.Content>
-      </Accordion>
+      <Section>
+        <Accordion expanded={orderOpen} onChange={setOrderOpen}>
+          <Accordion.Summary>Последовательность полей</Accordion.Summary>
+          <Accordion.Content>
+            <CategoryOrderList categories={categories} onChange={setCategories} />
+          </Accordion.Content>
+        </Accordion>
+      </Section>
 
       <Section className="section-blend-inputs" header="Генерация">
         <GenerationSection
