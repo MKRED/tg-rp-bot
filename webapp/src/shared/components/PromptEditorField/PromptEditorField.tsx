@@ -1,4 +1,4 @@
-import { Cell, IconButton, Tooltip } from "@telegram-apps/telegram-ui";
+import { Caption, Cell, IconButton, Tooltip } from "@telegram-apps/telegram-ui";
 import { ChevronRight, Info } from "lucide-react";
 import { type RefObject, useEffect, useRef, useState } from "react";
 import { estimateTokens } from "../../text/tokens";
@@ -84,7 +84,9 @@ export function PromptEditorField({
             )}
           </>
         )}
-        <span className="prompt-editor-field__tokens">~{estimateTokens(value)} токенов</span>
+        <Caption level="1" className="prompt-editor-field__tokens">
+          ~{estimateTokens(value)} токенов
+        </Caption>
       </div>
 
       {open && (

@@ -1,4 +1,4 @@
-import { Button, List } from "@telegram-apps/telegram-ui";
+import { Button, Divider } from "@telegram-apps/telegram-ui";
 import { AnimatePresence, motion } from "framer-motion";
 import { SectionActions } from "../../../../shared/components/SectionActions";
 import { MAX_CARD_CATEGORIES } from "../../types/card";
@@ -15,6 +15,11 @@ interface CategoryListProps {
  * и удалением. Порядок = порядок элементов массива = порядок сборки <example> и генерации блоков
  * (см. assembleCardBlockPrompt на сервере) — сама перестановка живёт в отдельной секции
  * (CategoryOrderList), эта отвечает только за содержимое категорий.
+ *
+ * Все категории — в одной общей карточке (фон/скругления даёт внешняя Section в CardForm), между
+ * ними — Divider (tgui). Section сама вставляет Divider между прямыми детьми, но не видит сквозь
+ * AnimatePresence (см. docs/telegram-ui.md, 1.4.2) — категории лежат внутри неё ради exit-анимации
+ * при удалении, поэтому разделители ставим вручную по индексу, а не полагаемся на автоматику Section.
  */
 export function CategoryList({ categories, onChange }: CategoryListProps) {
   const updateAt = (index: number, next: CardCategory) => {
@@ -34,7 +39,7 @@ export function CategoryList({ categories, onChange }: CategoryListProps) {
   };
 
   return (
-    <List>
+    <>
       <AnimatePresence initial={false}>
         {categories.map((category, index) => (
           <motion.div
@@ -46,6 +51,9 @@ export function CategoryList({ categories, onChange }: CategoryListProps) {
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
             style={{ overflow: "hidden" }}
           >
+            {/* Разделитель — leading, не trailing: индекс пересчитывается на каждый рендер, так что
+                после удаления категории он остаётся ровно между оставшимися блоками, без "хвоста". */}
+            {index > 0 && <Divider />}
             <CategoryRow
               category={category}
               onChange={(next) => updateAt(index, next)}
@@ -54,6 +62,7 @@ export function CategoryList({ categories, onChange }: CategoryListProps) {
           </motion.div>
         ))}
       </AnimatePresence>
+      {categories.length > 0 && <Divider />}
       <SectionActions>
         <Button
           size="s"
@@ -65,6 +74,6 @@ export function CategoryList({ categories, onChange }: CategoryListProps) {
           + Добавить категорию
         </Button>
       </SectionActions>
-    </List>
+    </>
   );
 }

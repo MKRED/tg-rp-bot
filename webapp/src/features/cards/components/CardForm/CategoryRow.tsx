@@ -1,4 +1,4 @@
-import { IconButton, Input, Section, Switch } from "@telegram-apps/telegram-ui";
+import { IconButton, Input, Switch } from "@telegram-apps/telegram-ui";
 import { Trash2 } from "lucide-react";
 import { PromptEditorField } from "../../../../shared/components/PromptEditorField";
 import { confirmAction } from "../../../../shared/telegram/confirm";
@@ -15,9 +15,10 @@ interface CategoryRowProps {
  * включена ли категория в <example>/генерацию (enabled), удаление. Сгенерированный/отредактированный
  * текст (content) сюда не входит — это GenerationSection, отдельная секция формы.
  *
- * Своя `Section` на категорию (а не ручной div-бокс) — Switch и кнопка удаления живут в слоте
- * `after` самого `Input` (FormInput поддерживает before/after из коробки), а не в кастомном
- * flex-контейнере рядом с ним.
+ * Без своей `Section` — все категории живут в одной общей карточке (фон/скругления даёт внешняя
+ * Section в CardForm), а разделители между категориями рисует сам CategoryList. Switch и кнопка
+ * удаления — в слоте `after` самого `Input` (FormInput поддерживает before/after из коробки), а не
+ * в кастомном flex-контейнере рядом с ним.
  */
 export function CategoryRow({ category, onChange, onRemove }: CategoryRowProps) {
   const handleRemove = async () => {
@@ -29,7 +30,7 @@ export function CategoryRow({ category, onChange, onRemove }: CategoryRowProps) 
   };
 
   return (
-    <Section className="section-blend-inputs card-category">
+    <>
       <Input
         placeholder="Название категории"
         value={category.title}
@@ -54,6 +55,6 @@ export function CategoryRow({ category, onChange, onRemove }: CategoryRowProps) 
         previewLines={3}
         onChange={(value) => onChange({ ...category, description: value })}
       />
-    </Section>
+    </>
   );
 }

@@ -187,9 +187,8 @@ export function CardForm({
       </Section>
 
       {/* section-blend-inputs: у Accordion.Content свой фон захардкожен как --tgui--bg_color
-          (страничный токен, не section_bg_color) — CategoryList рендерит строки через List
-          (margin-bottom между ними), и в этих зазорах без блендинга просвечивал бы цвет страницы,
-          а не карточки. */}
+          (страничный токен, не section_bg_color) — без блендинга тело аккордеона (и Input внутри
+          CategoryList/CategoryRow) просвечивало бы цветом страницы, а не карточки. */}
       <Section className="section-blend-inputs">
         <Accordion expanded={structureOpen} onChange={setStructureOpen}>
           <Accordion.Summary>Структура карточки</Accordion.Summary>
@@ -199,9 +198,10 @@ export function CardForm({
         </Accordion>
       </Section>
 
-      {/* Без section-blend-inputs: CategoryOrderList рендерит строки без List, впритык друг к
-          другу — они полностью закрывают собой фон Accordion.Content, блендить нечего. */}
-      <Section>
+      {/* section-blend-inputs: строки CategoryOrderList — голые Cell без своего фона (background
+          красит только сама Section), поэтому без блендинга сквозь них просвечивал бы захардкоженный
+          --tgui--bg_color самого Accordion.Content, а не цвет карточки. */}
+      <Section className="section-blend-inputs">
         <Accordion expanded={orderOpen} onChange={setOrderOpen}>
           <Accordion.Summary>Последовательность полей</Accordion.Summary>
           <Accordion.Content>

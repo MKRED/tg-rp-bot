@@ -18,29 +18,34 @@
 }
 
 /* Meta-строка под Cell — иконка-подсказка слева (может отсутствовать), счётчик токенов справа.
-   Отступ 24px — как у базовой платформы tgui Cell (см. коммент про personas.css при первом
-   внедрении компонента). */
+   Паддинг 0 24px — как у самого Cell (tgui-b8dfba0b5c3d054c), чтобы левый/правый край строки
+   совпадал с краем текста/chevron в Cell выше. padding-bottom 16px — низовой гуттер, как у
+   большинства элементов tgui (Cell/Section и т.п.), чтобы строка не липла к следующему полю формы.
+   min-height — высота IconButton size="s" (16px иконка + 2×6px паддинг), чтобы строка не "прыгала"
+   на 16px→28px при появлении/исчезновении кнопки-подсказки (hint). */
 .prompt-editor-field__meta {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 16px 0 12px;
+  min-height: 28px;
+  padding: 0 24px 16px;
 }
 
 /* margin-left: auto вместо justify-content: space-between на родителе — при отсутствии
    кнопки-подсказки счётчик токенов остаётся единственным flex-элементом, и space-between
-   прижал бы его к началу строки (левее заголовка Cell), а не к правому краю. */
+   прижал бы его к началу строки (левее заголовка Cell), а не к правому краю.
+   Размер/межстрочный интервал — Caption (tgui), тут только цвет и раскладка. */
 .prompt-editor-field__tokens {
   margin-left: auto;
-  font-size: 13px;
   white-space: nowrap;
   color: var(--tgui--link_color, #2481cc);
 }
 
 .prompt-editor-field__hint-button {
   color: var(--tgui--link_color, #2481cc);
-  /* margin-left компенсирует паддинг IconButton, чтобы иконка визуально встала на отступ Cell (24px). */
-  margin-left: 4px;
+  /* У IconButton свой паддинг 6px вокруг иконки (tgui-b92d762e02762017) — отрицательный margin-left
+     гасит его, чтобы сама иконка (не хитбокс кнопки) визуально встала на 24px отступ Cell. */
+  margin-left: -6px;
 }
 
 .prompt-editor-field__hint-tooltip {
