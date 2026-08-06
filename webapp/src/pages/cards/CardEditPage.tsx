@@ -1,7 +1,7 @@
 import { List, Spinner } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { ROUTES } from "../../app/routes";
+import { ROUTES, cardExportPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
 import {
@@ -105,6 +105,14 @@ export function CardEditPage() {
       });
   };
 
+  // Кнопка «Выгрузить» в CardForm видна и без сохранённой карточки (id === undefined), но задизейблена
+  // самой формой (canExport требует cardId) — navigate тут вызывается только когда кнопка реально
+  // кликабельна, поэтому id уже определён.
+  const handleExport = () => {
+    if (id === undefined) return;
+    navigate(cardExportPath(id));
+  };
+
   const handleDelete = async (name: string) => {
     if (id === undefined) return;
     const confirmed = await confirmAction(`Удалить карточку «${name}»? Это действие необратимо.`, {
@@ -150,6 +158,7 @@ export function CardEditPage() {
             onSubmit={handleSubmit}
             onDelete={id === undefined ? undefined : handleDelete}
             onDuplicate={id === undefined ? undefined : handleDuplicate}
+            onExport={handleExport}
           />
         </List>
       </div>

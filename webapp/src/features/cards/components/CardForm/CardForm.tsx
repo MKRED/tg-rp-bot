@@ -44,6 +44,9 @@ interface CardFormProps {
    * несохранённые правки) — то, что видит пользователь, поэтому копия строится из них, а не
    * из последнего сохранённого снапшота. */
   onDuplicate?: (input: CardInput) => void;
+  /** Переход на экран выгрузки карточки в персонажа/персону (CardExportPage) — сама навигация
+   * на совести страницы, форма только знает, когда кнопка должна быть доступна. */
+  onExport: () => void;
 }
 
 /** Форма создания/редактирования карточки «Мастерской»: имя, промпт, структура, пресет, генерация блоков. */
@@ -58,6 +61,7 @@ export function CardForm({
   onSubmit,
   onDelete,
   onDuplicate,
+  onExport,
 }: CardFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
   // || а не ?? — пустая строка (карточка без явного system-промпта) тоже должна замениться
@@ -94,6 +98,18 @@ export function CardForm({
 
   const canSubmit = name.trim().length > 0 && !submitting;
 
+  // Выгружать есть смысл, только когда карточка уже сохранена (нужен cardId для страницы экспорта)
+  // и генерировать больше нечего — все включённые категории заполнены. Кнопка при этом всегда
+  // видна (не скрывается), просто задизейблена, пока условие не выполнено. Имя — та же проверка,
+  // что у canSubmit: при isDirty handleExport ниже вызывает save(), а save() сам отказывает при
+  // пустом имени (см. canSubmit) — без этого условия здесь кнопка стала бы кликабельной, но при
+  // пустом имени молча ничего не делала бы (save() вернёт false ещё до сетевого запроса).
+  const canExport =
+    cardId !== undefined &&
+    canSubmit &&
+    categories.some((c) => c.enabled) &&
+    categories.filter((c) => c.enabled).every((c) => c.content.trim().length > 0);
+
   // Вынесено из handleSubmit — тем же путём сохраняет карточку и GenerationSection перед
   // генерацией по несохранённым данным (см. onSaveBeforeGenerate): результат нужен как boolean,
   // чтобы вызывающий знал, продолжать ли (генерацию не запускаем поверх проваленного сохранения).
@@ -112,6 +128,18 @@ export function CardForm({
 
   const handleSubmit = () => {
     void save();
+  };
+
+  // CardExportPage читает промпт и имя с сервера (последнюю СОХРАНЁННУЮ версию) — та же причина,
+  // что у onSaveBeforeGenerate в GenerationSection: без implicit-сохранения при isDirty экспорт
+  // собрал бы промпт по устаревшим блокам, а не по тому, что видно в форме прямо сейчас.
+  const handleExport = async () => {
+    if (!canExport) return;
+    if (isDirty) {
+      const saved = await save();
+      if (!saved) return;
+    }
+    onExport();
   };
 
   const handleDuplicate = () => {
@@ -239,6 +267,9 @@ export function CardForm({
           </AnimatePresence>
           <Button size="l" stretched disabled={!canSubmit} onClick={handleSubmit}>
             {submitting ? "Сохранение…" : "Сохранить"}
+          </Button>
+          <Button size="l" stretched mode="outline" disabled={!canExport} onClick={handleExport}>
+            Выгрузить
           </Button>
           {onDuplicate && (
             <Button size="l" stretched mode="outline" disabled={submitting} onClick={handleDuplicate}>

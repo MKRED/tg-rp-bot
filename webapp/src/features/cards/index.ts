@@ -7,6 +7,7 @@ export { CardForm } from "./components/CardForm";
 export { useCards } from "./hooks/useCards";
 export { useCard } from "./hooks/useCard";
 export { getCard, createCard, updateCard, removeCard, generateCardBlock } from "./api/cards-api";
+export { assembleExportPrompt } from "./lib/assembleExportPrompt";
 export type { Card, CardCategory, CardInput, CardListItem, CardPresetOption } from "./types/card";
 export {
   DEFAULT_CARD_CATEGORIES,

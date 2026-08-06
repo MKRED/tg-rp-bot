@@ -20,8 +20,8 @@ bot/src/
   proxy.ts      — HttpsProxyAgent (https-proxy-agent) для Telegram; тот же TELEGRAM_PROXY_URL
                   переиспользуется для Tavily, но через отдельный undici ProxyAgent (см. tavily/)
   db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + клиент +
-                  DAO-папки по таблицам: characters/ personas/ cards/ (черновики «Мастерской», пока
-                  только name — первый этап) presets/ (только сэмплинг) impersonations/
+                  DAO-папки по таблицам: characters/ personas/ cards/ (черновики «Мастерской»)
+                  presets/ (только сэмплинг) impersonations/
                   narratorTemplates/ rpTemplates/ avatars/ (батч-резолв аватаров для AvatarStack —
                   getAvatarsBatch) (у каждой DAO-файл + types.ts/constants.ts + barrel index.ts),
                   chats/ stories/ (+ storyAvatars.ts — LATERAL-фрагмент топ-N аватаров книги знаний
@@ -66,7 +66,7 @@ webapp/src/
                   generation-presets/ rp-templates/ rp-chat/ narrator/ knowledge-books/
                   narrator-templates/ debug/
   features/     — доменные модули (по подпапкам-категориям + barrel index.ts):
-                  characters/ personas/ cards/ (черновики «Мастерской», пока только name — первый этап)
+                  characters/ personas/ cards/ (черновики «Мастерской», с выгрузкой в персонажа/персону)
                   generation-presets/ rp-templates/ rp-chat/ narrator/
                   knowledge-books/ narrator-templates/ debug/ llm-settings/ (per-user ключ/модель
                   DeepSeek, BYOK, экран /settings) tavily-settings/ (per-user ключ Tavily + квота,
