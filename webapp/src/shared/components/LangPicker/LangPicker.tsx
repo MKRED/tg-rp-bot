@@ -1,5 +1,6 @@
 import { Check, ChevronDown } from "lucide-react";
-import { useDropdownPosition } from "../hooks/useDropdownPosition";
+import { useDropdownPosition } from "../../hooks/useDropdownPosition";
+import "./LangPicker.css";
 
 export interface LangOption {
   value: string;
@@ -21,7 +22,7 @@ interface LangPickerProps {
  * клику вне или скролл.
  */
 export function LangPicker({ value, onChange, options }: LangPickerProps) {
-  const { open, dir, maxHeight, rootRef, triggerRef, toggle, close } = useDropdownPosition();
+  const { open, dir, maxHeight, align, maxWidth, rootRef, triggerRef, toggle, close } = useDropdownPosition();
 
   const current = options.find((o) => o.value === value);
 
@@ -44,9 +45,9 @@ export function LangPicker({ value, onChange, options }: LangPickerProps) {
       </button>
       {open && (
         <ul
-          className={`lang-picker__menu lang-picker__menu--${dir}`}
+          className={`lang-picker__menu lang-picker__menu--${dir} lang-picker__menu--${align}`}
           role="listbox"
-          style={{ maxHeight }}
+          style={{ maxHeight, maxWidth, minWidth: Math.min(160, maxWidth) }}
         >
           {options.map((o) => (
             <li key={o.value}>

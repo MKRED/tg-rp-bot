@@ -13,22 +13,19 @@ const DEFAULTS: TranslateSettings = {
 /**
  * Состояние секции «Перевод в редакторе» на экране настроек — дефолты для режима перевода в
  * PromptEditorOverlay (usePromptTranslate.ts сидируется этими значениями один раз при открытии
- * оверлея). Свой ИИ-промпт — отдельный черновик (promptDraft), сохраняется явной кнопкой, а не на
- * каждое нажатие клавиши.
+ * оверлея). Свой ИИ-промпт редактируется через PromptEditorField/-Overlay (как
+ * translationSystemPrompt у RP-шаблонов) — сохраняется на «Готово» внутри оверлея, отдельного
+ * черновика/кнопки сохранения на уровне секции не нужно.
  */
 export function useTranslateSettings() {
   const [settings, setSettings] = useState<TranslateSettings>(DEFAULTS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [promptDraft, setPromptDraft] = useState("");
   const { showToast } = useToast();
 
   useEffect(() => {
     getTranslateSettings()
-      .then((res) => {
-        setSettings(res);
-        setPromptDraft(res.promptTemplate ?? "");
-      })
+      .then((res) => setSettings(res))
       .catch((err) => console.error("Failed to load translate settings", err))
       .finally(() => setLoading(false));
   }, []);
@@ -39,7 +36,6 @@ export function useTranslateSettings() {
       try {
         const res = await saveTranslateSettings(patch);
         setSettings(res);
-        if (patch.promptTemplate !== undefined) setPromptDraft(res.promptTemplate ?? "");
       } catch (err) {
         console.error("Failed to save translate settings", err);
         showToast({ type: "error", message: "Не удалось сохранить настройки перевода." });
@@ -54,11 +50,8 @@ export function useTranslateSettings() {
     settings,
     loading,
     saving,
-    promptDraft,
-    setPromptDraft,
     setEngine: (engine: TranslateSettings["engine"]) => void save({ engine }),
     setTargetLang: (targetLang: string) => void save({ targetLang }),
-    savePromptTemplate: () => void save({ promptTemplate: promptDraft.trim() || null }),
-    resetPromptTemplate: () => void save({ promptTemplate: null }),
+    setPromptTemplate: (next: string) => void save({ promptTemplate: next.trim() || null }),
   };
 }

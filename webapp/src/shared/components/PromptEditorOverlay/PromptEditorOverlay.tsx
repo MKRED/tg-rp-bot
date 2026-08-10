@@ -63,6 +63,12 @@ export function PromptEditorOverlay({ title, placeholder, value, onSave, onCance
   const translation = useTextHistory("");
   const dirty = source.draft !== value;
   const [toolbarVisible, setToolbarVisible] = useState(false);
+  // overflow: hidden на обёртке нужен ТОЛЬКО пока framer-motion анимирует высоту (иначе контент
+  // на кадр "выпрыгивает" из ещё не выросшего 0-высотного бокса) — как только анимация раскрытия
+  // завершилась, обёртка переключается на overflow: visible, иначе выпадающее меню LangPicker
+  // (position: absolute, не портал — см. useDropdownPosition) навсегда обрезано по границе этой
+  // обёртки и невидимо, хотя в RP-чате/Narrator тот же LangPicker открыт без такого предка.
+  const [toolbarSettled, setToolbarSettled] = useState(false);
   const [toolbarKind, setToolbarKind] = useState<ToolbarKind>("text");
   const [activeBuffer, setActiveBuffer] = useState<TranslateBuffer>("source");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -181,7 +187,10 @@ export function PromptEditorOverlay({ title, placeholder, value, onSave, onCance
           title={title}
           dirty={dirty}
           toolbarVisible={toolbarVisible}
-          onToggleToolbar={() => setToolbarVisible((v) => !v)}
+          onToggleToolbar={() => {
+            setToolbarVisible((v) => !v);
+            setToolbarSettled(false);
+          }}
           onDiscard={handleDiscard}
           onSave={handleSave}
         />
@@ -191,10 +200,14 @@ export function PromptEditorOverlay({ title, placeholder, value, onSave, onCance
             <motion.div
               key="toolbar"
               className="prompt-editor-overlay__toolbar-wrap"
+              style={{ overflow: toolbarSettled ? "visible" : "hidden" }}
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.18 }}
+              onAnimationComplete={() => {
+                if (toolbarVisible) setToolbarSettled(true);
+              }}
             >
               {toolbarKind === "text" ? (
                 <PromptEditorToolbar

@@ -58,11 +58,13 @@
   white-space: nowrap;
 }
 
-/* Обёртка под framer-motion height-анимацию раскрытия/схлопывания — overflow: hidden
-   не даёт содержимому "выпрыгнуть" наружу, пока height анимируется от 0 до auto. */
+/* Обёртка под framer-motion height-анимацию раскрытия/схлопывания. overflow задаётся инлайн
+   в PromptEditorOverlay.tsx (toolbarSettled) — hidden, ПОКА height анимируется от 0 до auto
+   (иначе контент "выпрыгивает" из ещё не выросшего бокса), и visible после того, как анимация
+   раскрытия завершилась: иначе выпадающее меню LangPicker в баре перевода (position: absolute,
+   не портал) навсегда обрезано границей этой обёртки. */
 .prompt-editor-overlay__toolbar-wrap {
   flex-shrink: 0;
-  overflow: hidden;
 }
 
 .prompt-editor-overlay__toolbar {

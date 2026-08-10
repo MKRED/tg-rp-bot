@@ -3,6 +3,9 @@ import { computeDropPosition, type DropPosition } from "./computeDropPosition";
 
 const MENU_GAP = 6;
 const VIEWPORT_MARGIN = 8;
+// Ширина "таблетки" LangPicker (см. min-width в LangPicker.css) — DropdownPicker меню full-width
+// и это значение не использует, но общая геометрия для обоих потребителей.
+const MIN_MENU_WIDTH = 160;
 
 function safeAreaInset(varName: string): number {
   const raw = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
@@ -20,7 +23,12 @@ function safeAreaInset(varName: string): number {
  */
 export function useDropdownPosition() {
   const [open, setOpen] = useState(false);
-  const [position, setPosition] = useState<DropPosition>({ dir: "down", maxHeight: 0 });
+  const [position, setPosition] = useState<DropPosition>({
+    dir: "down",
+    maxHeight: 0,
+    align: "end",
+    maxWidth: 0,
+  });
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -35,11 +43,12 @@ export function useDropdownPosition() {
       safeAreaInset("--tg-viewport-safe-area-inset-bottom") +
       safeAreaInset("--tg-viewport-content-safe-area-inset-bottom");
     setPosition(
-      computeDropPosition(rect, window.innerHeight, {
+      computeDropPosition(rect, { width: window.innerWidth, height: window.innerHeight }, {
         gap: MENU_GAP,
         margin: VIEWPORT_MARGIN,
         insetTop,
         insetBottom,
+        minMenuWidth: MIN_MENU_WIDTH,
       }),
     );
   }, []);

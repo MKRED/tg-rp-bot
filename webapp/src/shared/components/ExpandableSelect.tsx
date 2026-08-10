@@ -1,4 +1,4 @@
-import { Cell } from "@telegram-apps/telegram-ui";
+import { Caption, Cell } from "@telegram-apps/telegram-ui";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown } from "lucide-react";
 
@@ -51,7 +51,7 @@ export function ExpandableSelect<T extends string>({
           onClick={onToggle}
           after={
             <div style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--tgui--hint_color)" }}>
-              <span style={{ fontSize: 14 }}>{currentLabel}</span>
+              <Caption level="1">{currentLabel}</Caption>
               <ChevronDown
                 size={16}
                 style={{
