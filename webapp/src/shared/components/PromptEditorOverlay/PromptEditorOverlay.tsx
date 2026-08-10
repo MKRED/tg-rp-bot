@@ -7,14 +7,19 @@ import { pushBackInterceptor } from "../../telegram/backInterceptor";
 import { confirmAction } from "../../telegram/confirm";
 import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
 import { useTheme } from "../../theme";
+import { useToast } from "../../toast";
 import { PromptEditorHeader } from "./PromptEditorHeader";
 import { PromptEditorToolbar } from "./PromptEditorToolbar";
+import { PromptEditorTranslateToolbar, type TranslateBuffer } from "./PromptEditorTranslateToolbar";
 import { useTextHistory } from "./useTextHistory";
+import { usePromptTranslate } from "./usePromptTranslate";
 import "./PromptEditorOverlay.css";
 
 // Платформа сессии не меняется — маппим в стиль telegram-ui один раз, как в App.tsx.
 const rawPlatform = getPlatform();
 const platform: "ios" | "base" = rawPlatform === "ios" || rawPlatform === "macos" ? "ios" : "base";
+
+type ToolbarKind = "text" | "translate";
 
 interface PromptEditorOverlayProps {
   title: string;
@@ -41,20 +46,50 @@ interface PromptEditorOverlayProps {
  *
  * Панель инструментов (undo/redo, очистка, копировать/вставить) скрыта по умолчанию —
  * открывается тапом по заголовку, чтобы не отжирать место у textarea, когда не нужна.
+ *
+ * Второй режим панели — перевод (toolbarKind, кнопка Languages в PromptEditorToolbar). Два
+ * независимых буфера/истории (source — исходный текст поля, translation — рабочий перевод,
+ * useTextHistory х2, НИКОГДА не общий стек — иначе undo прыгал бы между языками): activeBuffer
+ * определяет, какой из них сейчас в textarea, независимо от того, какой БАР сейчас показан
+ * (toolbarKind) — можно смотреть текстовые инструменты, продолжая редактировать перевод. Состояние
+ * перевода эфемерно на сессию оверлея (как и обычный draft — теряется без сохранения при закрытии);
+ * onSave ВСЕГДА пишет только source — перевод в сущность не сохраняется. См. usePromptTranslate.ts
+ * и translateBlocks.ts за моделью синхронизации по абзацам.
  */
 export function PromptEditorOverlay({ title, placeholder, value, onSave, onCancel }: PromptEditorOverlayProps) {
   const { appearance } = useTheme();
-  const { draft, canUndo, canRedo, onChange, commit, undo, redo } = useTextHistory(value);
-  const dirty = draft !== value;
+  const { showToast } = useToast();
+  const source = useTextHistory(value);
+  const translation = useTextHistory("");
+  const dirty = source.draft !== value;
   const [toolbarVisible, setToolbarVisible] = useState(false);
+  const [toolbarKind, setToolbarKind] = useState<ToolbarKind>("text");
+  const [activeBuffer, setActiveBuffer] = useState<TranslateBuffer>("source");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  // Не даём открыть второй confirm поверх уже открытого при повторном нажатии «Назад».
+  // Не даём открыть второй confirm поверх уже открытого при повторном нажатии «Назад»/«Готово».
   const confirmingRef = useRef(false);
 
   useBodyScrollLock();
 
+  const promptTranslate = usePromptTranslate(
+    source.draft,
+    translation.draft,
+    translation.reset,
+    source.commit,
+    setActiveBuffer,
+  );
+
+  useEffect(() => {
+    if (promptTranslate.error) showToast({ type: "error", message: promptTranslate.error });
+  }, [promptTranslate.error, showToast]);
+
+  const active = activeBuffer === "translation" ? translation : source;
+  // Есть контент в переводе, ещё не перенесённый в source — потеряется молча при закрытии/сохранении
+  // (onSave пишет только source), поэтому это отдельный повод для confirm, не просто dirty.
+  const hasUnsavedWork = dirty || promptTranslate.hasUnsyncedTranslation;
+
   const handleDiscard = useCallback(() => {
-    if (!dirty) {
+    if (!hasUnsavedWork) {
       onCancel();
       return;
     }
@@ -71,10 +106,30 @@ export function PromptEditorOverlay({ title, placeholder, value, onSave, onCance
       .finally(() => {
         confirmingRef.current = false;
       });
-  }, [dirty, onCancel]);
+  }, [hasUnsavedWork, onCancel]);
+
+  const handleSave = useCallback(() => {
+    if (confirmingRef.current) return;
+    if (!promptTranslate.hasUnsyncedTranslation) {
+      onSave(source.draft);
+      return;
+    }
+    confirmingRef.current = true;
+    confirmAction("Переведённый текст не перенесён в оригинал — сохранится исходный текст.", {
+      title: "Сохранить без переноса перевода?",
+      confirmText: "Сохранить",
+    })
+      .then((ok) => {
+        if (ok) onSave(source.draft);
+      })
+      .catch((err) => console.error("Не удалось показать подтверждение сохранения редактора промпта", err))
+      .finally(() => {
+        confirmingRef.current = false;
+      });
+  }, [promptTranslate.hasUnsyncedTranslation, onSave, source.draft]);
 
   const handleClear = useCallback(() => {
-    if (!draft) return;
+    if (!active.draft) return;
     if (confirmingRef.current) return;
     confirmingRef.current = true;
     confirmAction("Весь текст будет удалён.", {
@@ -82,23 +137,24 @@ export function PromptEditorOverlay({ title, placeholder, value, onSave, onCance
       confirmText: "Очистить",
     })
       .then((ok) => {
-        if (ok) commit("");
+        if (ok) active.commit("");
       })
       .catch((err) => console.error("Не удалось показать подтверждение очистки текста промпта", err))
       .finally(() => {
         confirmingRef.current = false;
       });
-  }, [draft, commit]);
+  }, [active]);
 
   // Вставляем на месте курсора, а не поверх всего текста — textarea не controlled-onPaste,
-  // поэтому позицию курсора берём напрямую из DOM-элемента через ref.
+  // поэтому позицию курсора берём напрямую из DOM-элемента через ref. Работает через active —
+  // иначе при просмотре перевода вставка попала бы в невидимый буфер оригинала.
   const handlePasteText = useCallback(
     (text: string) => {
       const el = textareaRef.current;
-      const start = el?.selectionStart ?? draft.length;
-      const end = el?.selectionEnd ?? draft.length;
-      const next = draft.slice(0, start) + text + draft.slice(end);
-      commit(next);
+      const start = el?.selectionStart ?? active.draft.length;
+      const end = el?.selectionEnd ?? active.draft.length;
+      const next = active.draft.slice(0, start) + text + active.draft.slice(end);
+      active.commit(next);
       requestAnimationFrame(() => {
         if (!el) return;
         const caret = start + text.length;
@@ -106,7 +162,7 @@ export function PromptEditorOverlay({ title, placeholder, value, onSave, onCance
         el.focus();
       });
     },
-    [draft, commit],
+    [active],
   );
 
   // Нативная «Назад» закрывает редактор (с подтверждением при правках), а не уводит со страницы.
@@ -127,7 +183,7 @@ export function PromptEditorOverlay({ title, placeholder, value, onSave, onCance
           toolbarVisible={toolbarVisible}
           onToggleToolbar={() => setToolbarVisible((v) => !v)}
           onDiscard={handleDiscard}
-          onSave={() => onSave(draft)}
+          onSave={handleSave}
         />
 
         <AnimatePresence initial={false}>
@@ -140,15 +196,39 @@ export function PromptEditorOverlay({ title, placeholder, value, onSave, onCance
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.18 }}
             >
-              <PromptEditorToolbar
-                draft={draft}
-                canUndo={canUndo}
-                canRedo={canRedo}
-                onUndo={undo}
-                onRedo={redo}
-                onClear={handleClear}
-                onPaste={handlePasteText}
-              />
+              {toolbarKind === "text" ? (
+                <PromptEditorToolbar
+                  draft={active.draft}
+                  canUndo={active.canUndo}
+                  canRedo={active.canRedo}
+                  onUndo={active.undo}
+                  onRedo={active.redo}
+                  onClear={handleClear}
+                  onPaste={handlePasteText}
+                  clearDisabled={activeBuffer === "translation"}
+                  onOpenTranslate={() => setToolbarKind("translate")}
+                />
+              ) : (
+                <PromptEditorTranslateToolbar
+                  onBack={() => setToolbarKind("text")}
+                  engine={promptTranslate.engine}
+                  onEngineChange={promptTranslate.setEngine}
+                  sourceLang={promptTranslate.sourceLang}
+                  onSourceLangChange={promptTranslate.setSourceLang}
+                  targetLang={promptTranslate.targetLang}
+                  onTargetLangChange={promptTranslate.setTargetLang}
+                  onSwapLangs={promptTranslate.swapLangs}
+                  activeBuffer={activeBuffer}
+                  onActiveBufferChange={setActiveBuffer}
+                  loading={promptTranslate.loading}
+                  canSyncToTranslation={promptTranslate.canSyncToTranslation}
+                  canSyncToSource={promptTranslate.canSyncToSource}
+                  onSyncToTranslation={promptTranslate.syncToTranslation}
+                  onSyncToSource={promptTranslate.syncToSource}
+                  sourceDirtyCount={promptTranslate.sourceDirtyCount}
+                  translationDirtyCount={promptTranslate.translationDirtyCount}
+                />
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -157,9 +237,9 @@ export function PromptEditorOverlay({ title, placeholder, value, onSave, onCance
           <textarea
             ref={textareaRef}
             className="prompt-editor-overlay__textarea"
-            value={draft}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder}
+            value={active.draft}
+            onChange={(e) => active.onChange(e.target.value)}
+            placeholder={activeBuffer === "translation" ? "Текст перевода…" : placeholder}
             autoFocus
           />
         </div>

@@ -24,6 +24,9 @@ export interface UseTextHistoryResult {
   commit: (value: string) => void;
   undo: () => void;
   redo: () => void;
+  /** Заменяет ВСЮ историю (не шаг) — для переключения буфера режима перевода на новое значение,
+   * без протаскивания истории предыдущего языка/сессии. */
+  reset: (value: string) => void;
 }
 
 export function useTextHistory(initialValue: string): UseTextHistoryResult {
@@ -88,6 +91,16 @@ export function useTextHistory(initialValue: string): UseTextHistoryResult {
     bump((n) => n + 1);
   }, []);
 
+  const reset = useCallback((value: string) => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    stateRef.current = createTextHistory(value);
+    setDraft(value);
+    bump((n) => n + 1);
+  }, []);
+
   return {
     draft,
     canUndo: canUndoText(stateRef.current),
@@ -96,5 +109,6 @@ export function useTextHistory(initialValue: string): UseTextHistoryResult {
     commit,
     undo,
     redo,
+    reset,
   };
 }

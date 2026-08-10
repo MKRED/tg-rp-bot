@@ -14,6 +14,7 @@ import { createPresetRoutes } from "./presets/index.js";
 import { createRpTemplateRoutes } from "./rp-templates/index.js";
 import { createSettingsRoutes } from "./settings/index.js";
 import { createStoryRoutes } from "./stories/index.js";
+import { createTranslateRoutes } from "./translate/index.js";
 
 /**
  * Маршруты Mini App API под префиксом /api — карта всех эндпоинтов.
@@ -57,6 +58,9 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
 
   // Персональные настройки: ключ и модель DeepSeek (BYOK).
   api.route("/settings", createSettingsRoutes());
+
+  // Безэнтитный батч-перевод абзацев (режим перевода в PromptEditorOverlay).
+  api.route("/translate", createTranslateRoutes());
 
   return api;
 }

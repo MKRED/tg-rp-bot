@@ -1,4 +1,4 @@
-import { Check, ClipboardPaste, Copy, Redo2, Trash2, Undo2 } from "lucide-react";
+import { Check, ClipboardPaste, Copy, Languages, Redo2, Trash2, Undo2 } from "lucide-react";
 import { useCallback, useState } from "react";
 
 interface PromptEditorToolbarProps {
@@ -10,6 +10,10 @@ interface PromptEditorToolbarProps {
   onClear: () => void;
   /** Текст уже прочитан из буфера обмена — вставка на месте курсора остаётся за родителем (он держит ref textarea). */
   onPaste: (text: string) => void;
+  /** Очистка недоступна в режиме перевода (viewer сейчас показывает translation-буфер — см. PromptEditorOverlay). */
+  clearDisabled?: boolean;
+  /** Переключает бар на PromptEditorTranslateToolbar (второй режим панели). */
+  onOpenTranslate: () => void;
 }
 
 /**
@@ -25,6 +29,8 @@ export function PromptEditorToolbar({
   onRedo,
   onClear,
   onPaste,
+  clearDisabled,
+  onOpenTranslate,
 }: PromptEditorToolbarProps) {
   const [copied, setCopied] = useState(false);
 
@@ -52,7 +58,7 @@ export function PromptEditorToolbar({
       <button
         className="prompt-editor-overlay__toolbar-btn prompt-editor-overlay__toolbar-btn--danger"
         onClick={onClear}
-        disabled={!draft}
+        disabled={!draft || clearDisabled}
         type="button"
         aria-label="Очистить текст"
       >
@@ -77,6 +83,14 @@ export function PromptEditorToolbar({
         aria-label="Вставить"
       >
         <ClipboardPaste size={18} />
+      </button>
+      <button
+        className="prompt-editor-overlay__toolbar-btn"
+        onClick={onOpenTranslate}
+        type="button"
+        aria-label="Режим перевода"
+      >
+        <Languages size={18} />
       </button>
 
       {/* margin-left: auto на первой кнопке группы прижимает Undo/Redo к правому краю панели */}

@@ -1,0 +1,24 @@
+.translate-settings__prompt {
+  box-sizing: border-box;
+  margin: 8px 24px 0;
+  padding: 10px 12px;
+  width: calc(100% - 48px);
+  resize: vertical;
+  border: 1px solid var(--tgui--secondary_bg_color, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  background: var(--tgui--bg_color);
+  color: var(--tgui--text_color);
+  font-family: var(--tgui--font-family);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.translate-settings__prompt::placeholder {
+  color: var(--tgui--hint_color, #7d8b99);
+}
+
+.translate-settings__prompt-actions {
+  display: flex;
+  gap: 8px;
+  margin: 8px 24px 12px;
+}

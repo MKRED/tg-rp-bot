@@ -1,0 +1,48 @@
+.prompt-editor-translate-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--tgui--secondary_bg_color, rgba(255, 255, 255, 0.08));
+}
+
+.prompt-editor-translate-toolbar__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.prompt-editor-translate-toolbar__sync {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-left: auto;
+  background: var(--tgui--button_color, #2ea6ff);
+  color: var(--tgui--button_text_color, #fff);
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.prompt-editor-translate-toolbar__sync:disabled {
+  background: var(--tgui--secondary_bg_color, rgba(255, 255, 255, 0.08));
+  color: var(--tgui--hint_color, #7d8b99);
+  cursor: default;
+}
+
+.prompt-editor-translate-toolbar__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  font-size: 11px;
+  line-height: 1;
+}

@@ -74,6 +74,18 @@ export const userSettings = pgTable("user_settings", {
   // после его достижения модель получает финальный раунд без инструмента tools и обязана
   // ответить тем, что успела найти, а не просьбой к пользователю.
   tavilyMaxSearchRounds: integer("tavily_max_search_rounds").notNull().default(4),
+  // Настройки режима перевода в PromptEditorOverlay (полноэкранный редактор промпт-полей —
+  // персонажи/персоны/карточки/пресеты/шаблоны). НЕ путать с template-scoped
+  // rpTemplates/narratorTemplates.translationSystemPrompt — та фича отдельная (Globe-кнопка
+  // RP-чата), префикс promptTranslate* здесь маркирует другой, безэнтитный контекст.
+  promptTranslateEngine: text("prompt_translate_engine").$type<"google" | "ai">().notNull().default("google"),
+  promptTranslateTargetLang: text("prompt_translate_target_lang").notNull().default("en"),
+  // Свой системный промпт ИИ-перевода (плейсхолдер {{target_lang}}). NULL/пусто → DEFAULT_TRANSLATION_TEMPLATE.
+  promptTranslateSystemPrompt: text("prompt_translate_system_prompt"),
+  // "off" — без рассуждения (дефолт: пер-абзацных вызовов может быть много за одно действие
+  // пользователя, платить thinking-токены за каждый — дорого и медленно для того, что должно
+  // ощущаться мгновенным во время редактирования промпта); иначе — уровень effort.
+  promptTranslateReasoningEffort: text("prompt_translate_reasoning_effort").notNull().default("off"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
