@@ -274,6 +274,13 @@
       "when": 1786517333477,
       "tag": "0038_aromatic_mathemanic",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1786519643541,
+      "tag": "0039_minor_gauntlet",
+      "breakpoints": true
     }
   ]
 }

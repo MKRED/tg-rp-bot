@@ -639,6 +639,9 @@ export const storySettings = pgTable("story_settings", {
   compactAutoEnabled: boolean("compact_auto_enabled").notNull().default(false),
   compactFloorTokens: integer("compact_floor_tokens").notNull().default(0),
   compactWords: integer("compact_words").notNull().default(200),
+  // Быстрый откат: кнопка в тулбаре под каждым битом (кроме последнего), переносящая курсор
+  // истории на этот бит — короткий путь к тому же, что делает клик по узлу в графе веток.
+  quickRollbackEnabled: boolean("quick_rollback_enabled").notNull().default(false),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow()

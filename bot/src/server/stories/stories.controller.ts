@@ -208,6 +208,7 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
       compactAutoEnabled?: unknown;
       compactFloorTokens?: unknown;
       compactWords?: unknown;
+      quickRollbackEnabled?: unknown;
     };
 
     const patch: Record<string, unknown> = {};
@@ -224,6 +225,7 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
     }
     if (typeof body.compactEnabled === "boolean") patch.compactEnabled = body.compactEnabled;
     if (typeof body.compactAutoEnabled === "boolean") patch.compactAutoEnabled = body.compactAutoEnabled;
+    if (typeof body.quickRollbackEnabled === "boolean") patch.quickRollbackEnabled = body.quickRollbackEnabled;
     if (typeof body.compactWords === "number" && Number.isFinite(body.compactWords)) {
       patch.compactWords = clamp(Math.round(body.compactWords), COMPACT_WORDS_MIN, COMPACT_WORDS_MAX);
     }

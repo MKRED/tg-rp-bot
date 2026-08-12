@@ -1,0 +1,1 @@
+ALTER TABLE "story_settings" ADD COLUMN "quick_rollback_enabled" boolean DEFAULT false NOT NULL;

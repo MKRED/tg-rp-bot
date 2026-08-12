@@ -262,6 +262,28 @@ export function StorySettingsPage() {
             />
           </Section>
 
+          {!settingsLoading && (
+            <Section header="Быстрый откат">
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ ...ITEM_T, delay: 0 }}
+              >
+                <Cell
+                  after={
+                    <Switch
+                      checked={settings.quickRollbackEnabled}
+                      onChange={(e) => updateSettings({ quickRollbackEnabled: e.target.checked })}
+                    />
+                  }
+                  subtitle="Кнопка в ленте под каждым битом (кроме последнего) — переносит курсор истории на него, как клик по узлу в графе веток"
+                >
+                  Откат к биту из ленты
+                </Cell>
+              </motion.div>
+            </Section>
+          )}
+
           <Section header="Перевод">
             {settingsLoading ? (
               <div style={{ display: "flex", justifyContent: "center", padding: 16 }}>

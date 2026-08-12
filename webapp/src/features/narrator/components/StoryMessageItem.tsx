@@ -1,5 +1,5 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
-import { ChevronLeft, ChevronRight, Clapperboard, Globe, RefreshCw, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clapperboard, Globe, History, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { RpText } from "../../../shared/components/RpText";
 import { TranslateActionModal } from "../../../shared/components/TranslateActionModal";
@@ -32,6 +32,9 @@ interface StoryMessageItemProps {
   onRegenerate: () => void;
   onDelete: () => void;
   onSwitchSibling: (siblingId: number) => void;
+  /** Настройка «быстрый откат» включена в чате — показывать кнопку отката на не-последних битах. */
+  quickRollbackEnabled: boolean;
+  onQuickRollback: (messageId: number) => Promise<void>;
 }
 
 /**
@@ -53,6 +56,8 @@ export function StoryMessageItem({
   onRegenerate,
   onDelete,
   onSwitchSibling,
+  quickRollbackEnabled,
+  onQuickRollback,
 }: StoryMessageItemProps) {
   // Хук вызываем до ранних return (правила хуков); для continue он просто простаивает.
   const { displayText, showTranslation, translating, toggle } = useTranslatable(
@@ -66,6 +71,8 @@ export function StoryMessageItem({
   // Пендинг регенерации/удаления перевода из меню долгого нажатия — отдельно от translating
   // (тот только для первого перевода по тапу), чтобы кнопка Globe крутила спиннер и на этих действиях.
   const [translateActionPending, setTranslateActionPending] = useState(false);
+  // Пендинг быстрого отката — крутим спиннер на кнопке History, пока курсор истории переносится.
+  const [rollbackPending, setRollbackPending] = useState(false);
   const longPress = useLongPress(() => {
     if (isTranslateActionsPopupAvailable()) {
       showTranslateActionsPopup()
@@ -95,6 +102,15 @@ export function StoryMessageItem({
       await onDeleteTranslation(message.id, targetLang);
     } finally {
       setTranslateActionPending(false);
+    }
+  };
+
+  const handleQuickRollback = async () => {
+    setRollbackPending(true);
+    try {
+      await onQuickRollback(message.id);
+    } finally {
+      setRollbackPending(false);
     }
   };
 
@@ -153,6 +169,8 @@ export function StoryMessageItem({
   // ни удалить (сервер вернёт 400), поэтому панель действий под ним не показываем.
   const isOpening = message.parentId === null;
   const showActions = isLast && !isOpening;
+  // Быстрый откат — на всех битах, кроме последнего (на нём мы уже и так стоим).
+  const showQuickRollback = quickRollbackEnabled && !isLast;
 
   return (
     <div style={{ margin: "8px 0" }}>
@@ -167,7 +185,7 @@ export function StoryMessageItem({
         <RpText text={displayText} />
       </div>
 
-      {(showTranslateButton || showActions) && (
+      {(showTranslateButton || showActions || showQuickRollback) && (
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6, color: "var(--tgui--hint_color)" }}>
           {showTranslateButton && (
             <>
@@ -189,6 +207,18 @@ export function StoryMessageItem({
                 onDelete={handleDeleteTranslationAction}
               />
             </>
+          )}
+          {showQuickRollback && (
+            <button
+              type="button"
+              disabled={disabled || rollbackPending}
+              onClick={handleQuickRollback}
+              className="story-quick-rollback-btn"
+              style={iconBtn}
+              aria-label="Откатиться к этому сообщению"
+            >
+              {rollbackPending ? <Spinner size="s" /> : <History size={16} />}
+            </button>
           )}
           {canSwitch && showActions && (
             <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13 }}>

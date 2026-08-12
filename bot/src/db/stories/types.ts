@@ -55,6 +55,8 @@ export type StorySettingsRow = {
   compactAutoEnabled: boolean;
   compactFloorTokens: number;
   compactWords: number;
+  /** Кнопка «откат к этому биту» в тулбаре сообщения (кроме последнего). */
+  quickRollbackEnabled: boolean;
 };
 
 /** Пересказ сжатого диапазона активной ветки (summary расшифрован). */

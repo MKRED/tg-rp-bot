@@ -199,6 +199,18 @@ export function StoryPage() {
     reload();
   };
 
+  // Быстрый откат из ленты — тот же переход курсора истории, что и клик по узлу в графе веток.
+  const handleQuickRollback = async (msgId: number) => {
+    if (sending) return;
+    suppressNextRun();
+    try {
+      await switchBranch(id, msgId);
+    } catch {
+      showToast({ type: "error", message: "Не удалось откатиться к сообщению" });
+    }
+    reload();
+  };
+
   if (loading) {
     return (
       <PageTransition>
@@ -257,6 +269,8 @@ export function StoryPage() {
                   onRegenerate={() => regenerate(m.id)}
                   onDelete={() => handleDelete(m.id)}
                   onSwitchSibling={handleSwitch}
+                  quickRollbackEnabled={settings.quickRollbackEnabled}
+                  onQuickRollback={handleQuickRollback}
                 />
               </Fragment>
             );

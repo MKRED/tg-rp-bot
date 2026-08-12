@@ -12,6 +12,7 @@ const DEFAULT_SETTINGS: StorySettings = {
   compactAutoEnabled: false,
   compactFloorTokens: 0,
   compactWords: 200,
+  quickRollbackEnabled: false,
 };
 
 /** Загружает настройки перевода истории; update — оптимистичный PUT с откатом при ошибке. */
