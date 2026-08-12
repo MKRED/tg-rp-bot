@@ -32,4 +32,15 @@ describe("assembleExportPrompt", () => {
     const result = assembleExportPrompt([category({ content: "" })]);
     expect(result).toBe("");
   });
+
+  it("с includeHeaders=false собирает только текст блоков без заголовков", () => {
+    const result = assembleExportPrompt(
+      [
+        category({ id: "base", title: "Base", content: "Высокая, тёмные волосы" }),
+        category({ id: "personality", title: "Personality", content: "Спокойная, ироничная" }),
+      ],
+      false,
+    );
+    expect(result).toBe("Высокая, тёмные волосы\n\nСпокойная, ироничная");
+  });
 });
