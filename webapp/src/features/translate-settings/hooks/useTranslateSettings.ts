@@ -53,5 +53,6 @@ export function useTranslateSettings() {
     setEngine: (engine: TranslateSettings["engine"]) => void save({ engine }),
     setTargetLang: (targetLang: string) => void save({ targetLang }),
     setPromptTemplate: (next: string) => void save({ promptTemplate: next.trim() || null }),
+    setReasoningEffort: (reasoningEffort: TranslateSettings["reasoningEffort"]) => void save({ reasoningEffort }),
   };
 }

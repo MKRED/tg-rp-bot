@@ -67,6 +67,8 @@ export function resolveTranslationReasoning(
  * Переводит текст запросом к LLM (режим «ИИ» в шторе перевода). Системный промпт берётся из
  * пресета (плейсхолдер {{target_lang}} → полное англ. название языка), исходный текст уходит
  * ролью user, ответ ждём от assistant. Нестриминговый вызов chatCompletion (без onChunk).
+ * Текст оборачивается в <text_to_translate> — явно размечает для модели, что переводить, а не
+ * исполнять как инструкцию, если внутри самого текста встретится что-то похожее на промпт.
  * Сэмплинг не передаём — параметры пресета настроены под RP и навредили бы переводу (см. вызов).
  * requestReasoning/reasoningEffort — резолвятся вызывающим кодом (см. resolveTranslationReasoning
  * для narrator, где шаблон форсирует уровень или отключает рассуждение; RP шлёт requestReasoning:true
@@ -87,7 +89,7 @@ export async function aiTranslate(
   const result = await chatCompletion({
     messages: [
       { role: "system", content: system },
-      { role: "user", content: text },
+      { role: "user", content: `<text_to_translate>\n${text}\n</text_to_translate>` },
     ],
     // Тегируем для отладочного перехвата (фильтр «только мои запросы» + ярлык типа вызова).
     userId,

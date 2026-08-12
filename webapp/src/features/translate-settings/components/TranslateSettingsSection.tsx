@@ -5,12 +5,22 @@ import { PromptEditorField } from "../../../shared/components/PromptEditorField"
 import { SegmentedToggle } from "../../../shared/components/SegmentedToggle";
 import { LANG_OPTIONS } from "../../../shared/constants/lang-options";
 import type { useTranslateSettings } from "../hooks/useTranslateSettings";
-import type { TranslateSettings } from "../types/translateSettings";
+import {
+  PROMPT_TRANSLATE_REASONING_LABELS,
+  PROMPT_TRANSLATE_REASONING_LEVELS,
+  type PromptTranslateReasoningEffort,
+  type TranslateSettings,
+} from "../types/translateSettings";
 
 const ENGINE_OPTIONS = [
   { value: "google", label: "Google" },
   { value: "ai", label: "ИИ" },
 ] as const satisfies { value: TranslateSettings["engine"]; label: string }[];
+
+const REASONING_OPTIONS = PROMPT_TRANSLATE_REASONING_LEVELS.map((level) => ({
+  value: level,
+  label: PROMPT_TRANSLATE_REASONING_LABELS[level],
+}));
 
 type TranslateSettingsSectionProps = Omit<ReturnType<typeof useTranslateSettings>, "loading" | "saving">;
 
@@ -26,8 +36,10 @@ export function TranslateSettingsSection({
   setEngine,
   setTargetLang,
   setPromptTemplate,
+  setReasoningEffort,
 }: TranslateSettingsSectionProps) {
   const [langSelectOpen, setLangSelectOpen] = useState(false);
+  const [reasoningSelectOpen, setReasoningSelectOpen] = useState(false);
 
   return (
     <Section className="section-blend-inputs" header="Перевод в редакторе">
@@ -63,6 +75,18 @@ export function TranslateSettingsSection({
         value={settings.promptTemplate ?? ""}
         onChange={setPromptTemplate}
         previewLines={3}
+      />
+      <ExpandableSelect<PromptTranslateReasoningEffort>
+        title="Рассуждение для перевода"
+        subtitle="Уровень «мышления» модели при ИИ-переводе, не зависит от настроек ответа ИИ"
+        options={REASONING_OPTIONS}
+        value={settings.reasoningEffort}
+        onChange={(value) => {
+          setReasoningEffort(value);
+          setReasoningSelectOpen(false);
+        }}
+        open={reasoningSelectOpen}
+        onToggle={() => setReasoningSelectOpen((v) => !v)}
       />
     </Section>
   );
