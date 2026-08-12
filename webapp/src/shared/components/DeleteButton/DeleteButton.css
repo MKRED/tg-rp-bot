@@ -1,5 +1,0 @@
-/* Деструктивное действие — красим outline поверх стандартного tg-ui Button. */
-.delete-button {
-  color: var(--tgui--destructive_text_color, #e53935) !important;
-  border-color: var(--tgui--destructive_text_color, #e53935) !important;
-}

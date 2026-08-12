@@ -52,3 +52,18 @@ body {
   line-height: 1.35;
   color: var(--tgui--hint_color, #7d8b99);
 }
+
+/*
+  Деструктивное действие (кнопка/иконка удаления) — красим поверх стандартных tg-ui Button/IconButton.
+  У tg-ui Button нет деструктивного mode (он есть только у ButtonCell — другой, не pill-стиль).
+  Класс живёт здесь, а не в CSS конкретного компонента (напр. DeleteButton), потому что его переиспользуют
+  несколько независимых фич (cards, characters, personas, llm-settings, tavily-settings, ...) — обычный
+  CSS-импорт из компонента подгружается только когда этот компонент реально смонтирован где-то в дереве,
+  поэтому цвет включался/выключался в зависимости от истории навигации (какие страницы уже успели
+  подгрузить свои чанки). index.css импортируется один раз в main.tsx до первого рендера — правило
+  доступно сразу и везде.
+*/
+.delete-button {
+  color: var(--tgui--destructive_text_color, #e53935) !important;
+  border-color: var(--tgui--destructive_text_color, #e53935) !important;
+}

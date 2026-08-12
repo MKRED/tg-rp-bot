@@ -1,6 +1,5 @@
 import { Button } from "@telegram-apps/telegram-ui";
 import type { ReactNode } from "react";
-import "./DeleteButton.css";
 
 interface DeleteButtonProps {
   onClick: () => void;
@@ -9,9 +8,8 @@ interface DeleteButtonProps {
 }
 
 /**
- * Растянутая кнопка деструктивного действия («Удалить …») для подвала форм. У tg-ui Button
- * нет деструктивного mode (он есть только у ButtonCell — другой, не pill-стиль), поэтому красим
- * outline-кнопку своим CSS-классом.
+ * Растянутая кнопка деструктивного действия («Удалить …») для подвала форм. Красный цвет —
+ * класс .delete-button из глобального index.css (см. комментарий там же про причину).
  */
 export function DeleteButton({ onClick, disabled, children }: DeleteButtonProps) {
   return (
