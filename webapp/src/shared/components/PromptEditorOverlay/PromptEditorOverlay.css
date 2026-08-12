@@ -58,6 +58,13 @@
   white-space: nowrap;
 }
 
+/* На длинном заголовке ужиматься должен текст (обрезается эллипсисом за счёт min-width: 0 выше),
+   а не шеврон — без явного flex-shrink: 0 это держится на неочевидном auto-min-size у svg как
+   replaced-элемента (не везде надёжно, напр. в старых Android WebView). */
+.prompt-editor-overlay__title-toggle svg {
+  flex-shrink: 0;
+}
+
 /* Обёртка под framer-motion height-анимацию раскрытия/схлопывания. overflow задаётся инлайн
    в PromptEditorOverlay.tsx (toolbarSettled) — hidden, ПОКА height анимируется от 0 до auto
    (иначе контент "выпрыгивает" из ещё не выросшего бокса), и visible после того, как анимация
