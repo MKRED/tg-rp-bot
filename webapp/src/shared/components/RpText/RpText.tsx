@@ -1,3 +1,4 @@
+import { Text } from "@telegram-apps/telegram-ui";
 import "./RpText.css";
 import { parseRpText } from "../../text/parseRpText";
 
@@ -12,11 +13,11 @@ export function RpText({ text }: RpTextProps) {
     <>
       {tokens.map((token, i) =>
         token.type === "plain" ? (
-          <span key={i}>{token.text}</span>
+          <Text key={i}>{token.text}</Text>
         ) : (
-          <span key={i} className={`rp-token--${token.type}`}>
+          <Text key={i} className={`rp-token--${token.type}`}>
             {token.text}
-          </span>
+          </Text>
         )
       )}
     </>
