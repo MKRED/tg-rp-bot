@@ -1,5 +1,6 @@
 import { Spinner } from "@telegram-apps/telegram-ui";
-import { ArrowLeftRight, ChevronLeft, Languages } from "lucide-react";
+import { ArrowLeftRight, ChevronLeft, FileText, Globe, Languages, Sparkles } from "lucide-react";
+import type { ReactNode } from "react";
 import type { PromptTranslateEngine } from "../../api/promptTranslate";
 import { LANG_OPTIONS } from "../../constants/lang-options";
 import { LangPicker } from "../LangPicker";
@@ -8,15 +9,17 @@ import "./PromptEditorTranslateToolbar.css";
 
 export type TranslateBuffer = "source" | "translation";
 
+const ICON_SIZE = 16;
+
 const ENGINE_OPTIONS = [
-  { value: "google", label: "Google" },
-  { value: "ai", label: "ИИ" },
-] as const satisfies { value: PromptTranslateEngine; label: string }[];
+  { value: "google", label: "Google", icon: <Globe size={ICON_SIZE} /> },
+  { value: "ai", label: "ИИ", icon: <Sparkles size={ICON_SIZE} /> },
+] as const satisfies { value: PromptTranslateEngine; label: string; icon: ReactNode }[];
 
 const BUFFER_OPTIONS = [
-  { value: "source", label: "Оригинал" },
-  { value: "translation", label: "Перевод" },
-] as const satisfies { value: TranslateBuffer; label: string }[];
+  { value: "source", label: "Оригинал", icon: <FileText size={ICON_SIZE} /> },
+  { value: "translation", label: "Перевод", icon: <Languages size={ICON_SIZE} /> },
+] as const satisfies { value: TranslateBuffer; label: string; icon: ReactNode }[];
 
 interface PromptEditorTranslateToolbarProps {
   onBack: () => void;
@@ -111,7 +114,7 @@ export function PromptEditorTranslateToolbar({
         />
       </div>
       <div className="prompt-editor-translate-toolbar__row">
-        <LangPicker value={sourceLang} onChange={onSourceLangChange} options={LANG_OPTIONS} />
+        <LangPicker value={sourceLang} onChange={onSourceLangChange} options={LANG_OPTIONS} compact />
         <button
           type="button"
           className="prompt-editor-overlay__toolbar-btn"
@@ -120,7 +123,7 @@ export function PromptEditorTranslateToolbar({
         >
           <ArrowLeftRight size={16} />
         </button>
-        <LangPicker value={targetLang} onChange={onTargetLangChange} options={LANG_OPTIONS} />
+        <LangPicker value={targetLang} onChange={onTargetLangChange} options={LANG_OPTIONS} compact />
         <button
           type="button"
           className="prompt-editor-translate-toolbar__sync"

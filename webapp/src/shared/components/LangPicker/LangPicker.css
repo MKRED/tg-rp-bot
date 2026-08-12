@@ -12,7 +12,6 @@
   border-radius: 999px;
   background: var(--tgui--secondary_bg_color, #f4f4f5);
   color: var(--tgui--text_color, #000);
-  font-size: 14px;
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
@@ -78,7 +77,6 @@
   border-radius: 10px;
   background: none;
   color: var(--tgui--text_color, #000);
-  font-size: 14px;
   font-family: inherit;
   text-align: left;
   cursor: pointer;

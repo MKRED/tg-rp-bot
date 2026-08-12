@@ -1,3 +1,4 @@
+import { Caption } from "@telegram-apps/telegram-ui";
 import { Check, ChevronDown } from "lucide-react";
 import { useDropdownPosition } from "../../hooks/useDropdownPosition";
 import "./LangPicker.css";
@@ -5,6 +6,8 @@ import "./LangPicker.css";
 export interface LangOption {
   value: string;
   label: string;
+  /** Сокращённая метка (напр. "En" вместо "English") — используется на кнопке-триггере при compact. */
+  shortLabel?: string;
 }
 
 interface LangPickerProps {
@@ -12,6 +15,9 @@ interface LangPickerProps {
   onChange: (value: string) => void;
   /** Список языков (передаётся фичей: LANG_OPTIONS у RP/narrator одинаков, но живёт в каждой фиче). */
   options: LangOption[];
+  /** Кнопка-триггер показывает shortLabel вместо label — экономит место в тесных тулбарах. Список
+   * при раскрытии всегда с полными названиями (compact не влияет на распознаваемость варианта). */
+  compact?: boolean;
 }
 
 /**
@@ -21,10 +27,11 @@ interface LangPickerProps {
  * llm-settings); здесь остаётся свой компактный pill-вариант разметки/CSS. Закрывается по выбору,
  * клику вне или скролл.
  */
-export function LangPicker({ value, onChange, options }: LangPickerProps) {
+export function LangPicker({ value, onChange, options, compact }: LangPickerProps) {
   const { open, dir, maxHeight, align, maxWidth, rootRef, triggerRef, toggle, close } = useDropdownPosition();
 
   const current = options.find((o) => o.value === value);
+  const triggerLabel = (compact ? current?.shortLabel : undefined) ?? current?.label ?? value;
 
   return (
     <div className="lang-picker" ref={rootRef}>
@@ -37,7 +44,7 @@ export function LangPicker({ value, onChange, options }: LangPickerProps) {
         aria-expanded={open}
         aria-label="Язык перевода"
       >
-        <span>{current?.label ?? value}</span>
+        <Caption level="1">{triggerLabel}</Caption>
         <ChevronDown
           size={16}
           style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
@@ -61,7 +68,7 @@ export function LangPicker({ value, onChange, options }: LangPickerProps) {
                   close();
                 }}
               >
-                <span>{o.label}</span>
+                <Caption level="1">{o.label}</Caption>
                 {o.value === value && <Check size={16} />}
               </button>
             </li>

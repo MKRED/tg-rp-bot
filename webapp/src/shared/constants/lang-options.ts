@@ -7,11 +7,11 @@ import type { LangOption } from "../components/LangPicker";
  * (ответы ИИ vs биты, мои сообщения vs директивы).
  */
 export const LANG_OPTIONS: LangOption[] = [
-  { value: "ru", label: "Русский" },
-  { value: "en", label: "English" },
-  { value: "de", label: "Deutsch" },
-  { value: "ja", label: "日本語" },
-  { value: "zh", label: "中文" },
-  { value: "fr", label: "Français" },
-  { value: "es", label: "Español" },
+  { value: "ru", label: "Русский", shortLabel: "Ru" },
+  { value: "en", label: "English", shortLabel: "En" },
+  { value: "de", label: "Deutsch", shortLabel: "De" },
+  { value: "ja", label: "日本語", shortLabel: "日" },
+  { value: "zh", label: "中文", shortLabel: "中" },
+  { value: "fr", label: "Français", shortLabel: "Fr" },
+  { value: "es", label: "Español", shortLabel: "Es" },
 ];
