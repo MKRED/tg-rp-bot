@@ -19,6 +19,7 @@ export {
   createStory,
   renameStory,
   updateStoryPremise,
+  updateStoryOpeningBeat,
   removeStory,
   advanceStory,
   regenerateBeat,

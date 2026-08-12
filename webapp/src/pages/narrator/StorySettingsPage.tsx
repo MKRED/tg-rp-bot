@@ -24,6 +24,7 @@ import {
   SCOPE_OPTIONS,
   removeStory,
   renameStory,
+  updateStoryOpeningBeat,
   updateStoryPremise,
   useStory,
   useStorySettings,
@@ -59,22 +60,29 @@ export function StorySettingsPage() {
   const [openSelect, setOpenSelect] = useState<OpenSelect>(null);
   const toggleSelect = (key: Exclude<OpenSelect, null>) =>
     setOpenSelect((cur) => (cur === key ? null : key));
-  // Локальное поле названия правится свободно, сохраняется по blur. Премиза — через оверлей
-  // PromptEditorField, значение коммитится онным onChange только по нажатию «Сохранить».
+  // Локальное поле названия правится свободно, сохраняется по blur. Премиза и первое сообщение —
+  // через оверлей PromptEditorField, значение коммитится онным onChange только по нажатию «Сохранить».
   const [title, setTitle] = useState("");
   const [premise, setPremise] = useState("");
+  const [openingBeat, setOpeningBeat] = useState("");
   // Последние сохранённые значения — база для сравнения на blur (useStory не отдаёт setStory,
   // поэтому держим их в ref'ах, а не пересинхронизируем story).
   const savedTitle = useRef("");
   const savedPremise = useRef("");
+  const savedOpeningBeat = useRef("");
 
-  // Подхватываем сохранённые значения, когда история загрузилась.
+  // Подхватываем сохранённые значения, когда история загрузилась. Первое сообщение — content
+  // корневого узла активного пути (messages[0], parentId null): messages всегда начинается
+  // с openingBeat, а курсор (activeMessageId) существует всегда для уже созданной истории
+  // (см. защиту "openingBeat удалять нельзя" на сервере).
   useEffect(() => {
     if (!story) return;
     setTitle(story.title ?? "");
     setPremise(story.premise);
+    setOpeningBeat(story.messages[0]?.content ?? "");
     savedTitle.current = story.title ?? "";
     savedPremise.current = story.premise;
+    savedOpeningBeat.current = story.messages[0]?.content ?? "";
   }, [story?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleTitleBlur = async () => {
@@ -103,6 +111,28 @@ export function StorySettingsPage() {
       console.error("Failed to update story premise", err);
       setPremise(savedPremise.current);
       showToast({ type: "error", message: "Не удалось сохранить премизу" });
+    }
+  };
+
+  // В отличие от премизы, первое сообщение не может стать пустым (openingBeat — обязательный
+  // авторский текст, сервер отклонит пустую строку) — пустой ввод просто откатываем без запроса.
+  const handleOpeningBeatChange = async (next: string) => {
+    const trimmed = next.trim();
+    if (!trimmed) {
+      setOpeningBeat(savedOpeningBeat.current);
+      showToast({ type: "error", message: "Первое сообщение не может быть пустым" });
+      return;
+    }
+    setOpeningBeat(trimmed);
+    if (trimmed === savedOpeningBeat.current.trim()) return;
+    try {
+      const res = await updateStoryOpeningBeat(id, trimmed);
+      savedOpeningBeat.current = res.content;
+      setOpeningBeat(res.content);
+    } catch (err) {
+      console.error("Failed to update story opening beat", err);
+      setOpeningBeat(savedOpeningBeat.current);
+      showToast({ type: "error", message: "Не удалось сохранить первое сообщение" });
     }
   };
 
@@ -215,12 +245,18 @@ export function StorySettingsPage() {
             )}
           </Section>
 
-          <Section className="section-blend-inputs" header="Сценарий">
+          <Section className="section-blend-inputs" header="Начало истории">
+            <PromptEditorField
+              header="Первое сообщение"
+              hint="Дословный текст, с которого начинается история. Правка меняет только сам текст — ИИ его не перегенерирует, дальнейшие биты не затрагивает."
+              placeholder="Открытие истории…"
+              value={openingBeat}
+              onChange={handleOpeningBeatChange}
+            />
             <PromptEditorField
               header="Сценарий / премиза"
               hint="Куда вести сцену, тон, завязка. В текст истории не попадает, но влияет на следующие биты."
               placeholder="Куда ведём историю, тон, завязка…"
-              previewLines={6}
               value={premise}
               onChange={handlePremiseChange}
             />

@@ -1,0 +1,1 @@
+ALTER TABLE "story_chats" DROP COLUMN "opening_beat";

@@ -12,6 +12,7 @@ export {
   updateActiveStoryMessage,
   setActiveStoryMessage,
   deleteStoryMessage,
+  updateStoryOpeningBeat,
 } from "./messages.js";
 
 export { findNewestStoryChild, queryStoryActivePathIds } from "./queries.js";

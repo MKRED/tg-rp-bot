@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import logger from "../../logger.js";
 import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/index.js";
 import { db, schema } from "../index.js";
@@ -40,6 +40,37 @@ export async function insertStoryMessage(
     "Story message inserted",
   );
   return decryptRow(rows[0]!, userId);
+}
+
+/**
+ * Правит контент корневого сообщения истории (openingBeat) — единственный разрешённый способ
+ * изменить контент сообщения напрямую (не через regenerate/новый ход). Владение storyChatId
+ * проверяем здесь же, а не полагаемся на вызывающий код — запись пишет сразу content без выборки.
+ */
+export async function updateStoryOpeningBeat(
+  userId: number,
+  storyChatId: number,
+  content: string,
+): Promise<StoryMessage | undefined> {
+  const t0 = Date.now();
+  const owned = await db
+    .select({ id: schema.storyChats.id })
+    .from(schema.storyChats)
+    .where(and(eq(schema.storyChats.id, storyChatId), eq(schema.storyChats.userId, userId)));
+  if (owned.length === 0) return undefined;
+
+  const key = getUserEncryptionKey(userId);
+  const rows = await db
+    .update(schema.storyMessages)
+    .set({ content: encryptField(content, key) })
+    .where(and(eq(schema.storyMessages.storyChatId, storyChatId), isNull(schema.storyMessages.parentId)))
+    .returning();
+  const root = rows[0];
+  logger.info(
+    { durationMs: Date.now() - t0, userId, storyChatId, found: root != null },
+    "Story opening beat update attempted",
+  );
+  return root ? decryptRow(root, userId) : undefined;
 }
 
 /** Читает одно сообщение по id (без проверки владельца — storyChatId уже прошёл авторизацию выше). */

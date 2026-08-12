@@ -10,6 +10,7 @@ import {
   getStoryTree,
   listStories,
   renameStory,
+  updateStoryOpeningBeat,
   updateStoryPremise,
   upsertStorySettings,
 } from "../../db/stories/index.js";
@@ -122,28 +123,41 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
     const user = c.get("tgUser");
     if (!user) return c.json({ error: "Auth required" }, 401);
     const storyId = Number(c.req.param("id"));
-    // Webapp шлёт title и premise отдельными PATCH-запросами (сохранение по blur каждого поля),
-    // поэтому принимаем любой из них; 400 — только если не передано ни одного.
-    const body = (await c.req.json().catch(() => ({}))) as { title?: unknown; premise?: unknown };
+    // Webapp шлёт title/premise/openingBeat отдельными PATCH-запросами (сохранение по blur/save
+    // каждого поля), поэтому принимаем любой из них; 400 — только если не передано ни одного.
+    const body = (await c.req.json().catch(() => ({}))) as {
+      title?: unknown;
+      premise?: unknown;
+      openingBeat?: unknown;
+    };
     const hasTitle = typeof body.title === "string";
     const hasPremise = typeof body.premise === "string";
-    if (!hasTitle && !hasPremise) {
-      return c.json({ error: "title or premise must be a string" }, 400);
+    const hasOpeningBeat = typeof body.openingBeat === "string";
+    if (!hasTitle && !hasPremise && !hasOpeningBeat) {
+      return c.json({ error: "title, premise or openingBeat must be a string" }, 400);
     }
+    const op = hasTitle ? "rename" : hasPremise ? "premise" : "openingBeat";
     try {
       if (hasTitle) {
         const result = await renameStory(user.id, storyId, (body.title as string).slice(0, 100));
         if (!result) return c.json({ error: "Story not found" }, 404);
         return c.json({ title: result.title });
       }
-      // Премизу не обрезаем (в отличие от title): это вводная-сценарий, может быть длинной;
-      // Postgres text без лимита, шифрование AES-GCM размер не ограничивает.
-      const result = await updateStoryPremise(user.id, storyId, body.premise as string);
+      if (hasPremise) {
+        // Премизу не обрезаем (в отличие от title): это вводная-сценарий, может быть длинной;
+        // Postgres text без лимита, шифрование AES-GCM размер не ограничивает.
+        const result = await updateStoryPremise(user.id, storyId, body.premise as string);
+        if (!result) return c.json({ error: "Story not found" }, 404);
+        return c.json({ premise: result.premise });
+      }
+      // openingBeat — авторский дословный первый бит, не может стать пустым (в отличие от premise).
+      const openingBeat = (body.openingBeat as string).trim();
+      if (!openingBeat) return c.json({ error: "openingBeat cannot be empty" }, 400);
+      const result = await updateStoryOpeningBeat(user.id, storyId, openingBeat);
       if (!result) return c.json({ error: "Story not found" }, 404);
-      return c.json({ premise: result.premise });
+      return c.json({ content: result.content });
     } catch (err) {
-      // Общий catch для обеих веток — в контекст кладём, какое поле обновлялось.
-      logger.error({ err, userId: user.id, storyId, op: hasTitle ? "rename" : "premise" }, "Failed to update story");
+      logger.error({ err, userId: user.id, storyId, op }, "Failed to update story");
       return c.json({ error: "Internal error" }, 500);
     }
   });

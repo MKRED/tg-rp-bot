@@ -39,6 +39,14 @@ export function updateStoryPremise(id: number, premise: string): Promise<{ premi
   });
 }
 
+/** Правит дословный текст первого бита (openingBeat) — только корневое сообщение, без перегенерации. */
+export function updateStoryOpeningBeat(id: number, content: string): Promise<{ content: string }> {
+  return apiFetch<{ content: string }>(`/stories/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ openingBeat: content }),
+  });
+}
+
 export function removeStory(id: number): Promise<{ ok: true }> {
   return apiFetch<{ ok: true }>(`/stories/${id}`, { method: "DELETE" });
 }

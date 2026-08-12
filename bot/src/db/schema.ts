@@ -549,7 +549,8 @@ export type NewNarratorTemplate = typeof narratorTemplates.$inferInsert;
 /**
  * Narrator-история: ИИ ведёт повествование, пользователь — режиссёр. Отдельно от chats (без персоны/
  * одного персонажа — персонажи берутся из книги знаний). bookId/templateId/presetId обязательны;
- * template — источник системного промпта; preset — только сэмплинг. openingBeat (зашифрован) ОБЯЗАТЕЛЕН — дословный бит 1.
+ * template — источник системного промпта; preset — только сэмплинг. Авторское открытие (дословный
+ * бит 1) живёт только в story_messages (корневой узел, parentId null) — здесь не дублируется.
  * premise (зашифрован) опционален — системная вводная «куда вести сцену».
  * activeMessageId — курсор активной ветки; намеренно НЕ FK (цикл story_chats ↔ story_messages).
  */
@@ -570,8 +571,6 @@ export const storyChats = pgTable("story_chats", {
     .notNull()
     .references(() => generationPresets.id),
   title: text("title"),
-  // Авторское открытие — дословный первый бит (assistant). Зашифровано per-user, как content сообщений.
-  openingBeat: text("opening_beat").notNull(),
   // Системная вводная (куда вести сцену), опц. — пустая строка = не задано. Зашифровано per-user.
   premise: text("premise").notNull().default(""),
   activeMessageId: bigint("active_message_id", { mode: "number" }),

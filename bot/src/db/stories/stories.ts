@@ -255,7 +255,6 @@ export async function createStory(
       bookId: input.bookId,
       templateId: input.templateId,
       presetId: input.presetId,
-      openingBeat: encryptField(openingBeat, key),
       premise: encryptField(premise, key),
     })
     .returning();
