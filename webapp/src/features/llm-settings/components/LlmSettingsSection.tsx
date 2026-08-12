@@ -109,7 +109,6 @@ export function LlmSettingsSection({
               onAnimationComplete={() => setPickerAnimating(false)}
             >
               <DeepSeekModelPicker
-                className="llm-settings__picker-gutter"
                 header="Модель"
                 subtitle={verifying ? "Загрузка моделей…" : models ? "Список получен от DeepSeek" : "Откройте список, чтобы загрузить модели"}
                 value={selectedModel}

@@ -1,6 +1,7 @@
 /* Full-width выпадающий список — общий для EffortPicker (generation-presets) и DeepSeekModelPicker
-   (llm-settings). Горизонтальные отступы задаёт обёртка-потребитель через className (по образцу
-   FieldHint) — ТОЛЬКО через padding-inline (не шорткат padding!), иначе он затрёт свой
+   (llm-settings). Горизонтальный отступ по умолчанию — 24px, как у базового паддинга tgui `Cell`
+   (0 24px, см. styles.css) — тот же слот в layout. Консьюмер может переопределить через className
+   (по образцу FieldHint) — ТОЛЬКО через padding-inline (не шорткат padding!), иначе он затрёт свой
    padding-block компонента. Меню (left:0; right:0) выравнивается по внутреннему краю padding-box
    родителя, каким бы он ни был.
 
@@ -17,7 +18,7 @@
   flex-direction: column;
   gap: 6px;
   padding-block: 16px;
-  padding-inline: 0;
+  padding-inline: 24px;
   /* tgui даёт --tgui--font-family только как CSS-переменную — саму font-family на body/root
      никто не проставляет, её явно ставят только компоненты Typography (Text/Subheadline/…).
      Без этой строки текст (и особенно <button>, который не наследует шрифт по умолчанию)
