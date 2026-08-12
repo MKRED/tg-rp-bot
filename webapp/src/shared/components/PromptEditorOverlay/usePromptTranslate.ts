@@ -54,6 +54,13 @@ export function usePromptTranslate(
   const [blocks, setBlocks] = useState<TranslateBlock[]>(() => realignBlocks([], sourceText, "source"));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Движок, которым была получена ТЕКУЩАЯ версия каждой стороны (null — сторона ни разу не была
+  // синкана из противоположной). Отдельно от dirty-трекинга блоков: переключение Google↔ИИ без
+  // единой правки текста не меняет sourceAtLastSync/translationAtLastSync, поэтому без этого стейта
+  // кнопка синка оставалась бы disabled — казалось бы, синкать нечего, хотя пользователь хочет
+  // просто перевести тем же текстом другим движком.
+  const [translationEngineUsed, setTranslationEngineUsed] = useState<PromptTranslateEngine | null>(null);
+  const [sourceEngineUsed, setSourceEngineUsed] = useState<PromptTranslateEngine | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -89,17 +96,22 @@ export function usePromptTranslate(
   const sourcePending = hasDirty(sourceRealigned, "source");
   const translationPending = hasDirty(translationRealigned, "translation");
   const sameLang = sourceLang === targetLang;
+  // Движок сменился с момента последнего синка этой стороны — есть смысл повторно нажать синк,
+  // даже если сам текст не менялся (переводим то же самое, но другим движком).
+  const translationEngineStale = translationEngineUsed !== null && translationEngineUsed !== engine;
+  const sourceEngineStale = sourceEngineUsed !== null && sourceEngineUsed !== engine;
 
-  const canSyncToTranslation = sourcePending && !translationPending && !sameLang && !loading;
-  const canSyncToSource = translationPending && !sourcePending && !sameLang && !loading;
+  const canSyncToTranslation =
+    (sourcePending || translationEngineStale) && !translationPending && !sameLang && !loading;
+  const canSyncToSource = (translationPending || sourceEngineStale) && !sourcePending && !sameLang && !loading;
 
   const runSync = useCallback(
-    async (side: BlockSide, currentText: string): Promise<string | null> => {
+    async (side: BlockSide, currentText: string, forceAll: boolean): Promise<string | null> => {
       setLoading(true);
       setError(null);
       try {
         const realigned = realignBlocks(blocks, currentText, side);
-        const dirty = dirtyIndices(realigned, side);
+        const dirty = forceAll ? realigned.map((_, i) => i) : dirtyIndices(realigned, side);
         if (dirty.length === 0) {
           setBlocks(realigned);
           return side === "source" ? joinTranslation(realigned) : joinSource(realigned);
@@ -143,18 +155,20 @@ export function usePromptTranslate(
   );
 
   const syncToTranslation = useCallback(async () => {
-    const result = await runSync("source", sourceText);
+    const result = await runSync("source", sourceText, !sourcePending && translationEngineStale);
     if (result === null) return;
+    setTranslationEngineUsed(engine);
     onTranslationSynced(result);
     onBufferChange("translation");
-  }, [runSync, sourceText, onTranslationSynced, onBufferChange]);
+  }, [runSync, sourceText, sourcePending, translationEngineStale, engine, onTranslationSynced, onBufferChange]);
 
   const syncToSource = useCallback(async () => {
-    const result = await runSync("translation", translationText);
+    const result = await runSync("translation", translationText, !translationPending && sourceEngineStale);
     if (result === null) return;
+    setSourceEngineUsed(engine);
     onSourceSynced(result);
     onBufferChange("source");
-  }, [runSync, translationText, onSourceSynced, onBufferChange]);
+  }, [runSync, translationText, translationPending, sourceEngineStale, engine, onSourceSynced, onBufferChange]);
 
   return {
     engine,
