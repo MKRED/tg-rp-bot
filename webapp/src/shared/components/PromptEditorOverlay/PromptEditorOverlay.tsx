@@ -53,8 +53,11 @@ interface PromptEditorOverlayProps {
  * определяет, какой из них сейчас в textarea, независимо от того, какой БАР сейчас показан
  * (toolbarKind) — можно смотреть текстовые инструменты, продолжая редактировать перевод. Состояние
  * перевода эфемерно на сессию оверлея (как и обычный draft — теряется без сохранения при закрытии);
- * onSave ВСЕГДА пишет только source — перевод в сущность не сохраняется. См. usePromptTranslate.ts
- * и translateBlocks.ts за моделью синхронизации по абзацам.
+ * onSave ВСЕГДА пишет только source — перевод в сущность не сохраняется НАПРЯМУЮ. Чтобы получившийся
+ * перевод стал итоговым текстом (режим «переводчик для нового текста»), сначала жмут «Применить»
+ * в PromptEditorTranslateToolbar (usePromptTranslate.applyTranslation) — он переносит текст перевода
+ * в source БЕЗ повторного перевода, и уже после этого обычный Save сохраняет его как source.
+ * См. usePromptTranslate.ts и translateBlocks.ts за моделью синхронизации по абзацам.
  */
 export function PromptEditorOverlay({ title, placeholder, value, onSave, onCancel }: PromptEditorOverlayProps) {
   const { appearance } = useTheme();
@@ -240,6 +243,8 @@ export function PromptEditorOverlay({ title, placeholder, value, onSave, onCance
                   onSyncToSource={promptTranslate.syncToSource}
                   sourceDirtyCount={promptTranslate.sourceDirtyCount}
                   translationDirtyCount={promptTranslate.translationDirtyCount}
+                  canApplyTranslation={promptTranslate.canApplyTranslation}
+                  onApplyTranslation={promptTranslate.applyTranslation}
                 />
               )}
             </motion.div>

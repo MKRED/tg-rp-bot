@@ -1,5 +1,5 @@
-import { Spinner } from "@telegram-apps/telegram-ui";
-import { ArrowLeftRight, ChevronLeft, FileText, Globe, Languages, Sparkles } from "lucide-react";
+import { Caption, Spinner } from "@telegram-apps/telegram-ui";
+import { ArrowLeftRight, Check, ChevronLeft, FileText, Globe, Languages, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 import type { PromptTranslateEngine } from "../../api/promptTranslate";
 import { LANG_OPTIONS } from "../../constants/lang-options";
@@ -39,6 +39,33 @@ interface PromptEditorTranslateToolbarProps {
   onSyncToSource: () => void;
   sourceDirtyCount: number;
   translationDirtyCount: number;
+  canApplyTranslation: boolean;
+  onApplyTranslation: () => void;
+}
+
+/** Почему кнопка синка сейчас неактивна — коротким текстом в title, а не молчаливым disabled:
+ * без объяснения серая кнопка выглядит как баг, а не как ожидаемое состояние (см. вопрос
+ * пользователя "почему кнопка серая", разобранный при добавлении этой подсказки). */
+function syncDisabledHint(
+  activeBuffer: TranslateBuffer,
+  sameLang: boolean,
+  sourceDirtyCount: number,
+  translationDirtyCount: number,
+): string | undefined {
+  if (sameLang) return "Исходный и целевой язык совпадают — переводить нечего.";
+  const bothPending = sourceDirtyCount > 0 && translationDirtyCount > 0;
+  if (bothPending) {
+    return "Обе стороны изменены и не синхронизированы — сначала разрешите одну: " +
+      "отмените правки (Undo) либо очистите буфер на вкладке «Оригинал».";
+  }
+  if (activeBuffer === "source" && sourceDirtyCount === 0) {
+    return "В оригинале нет новых правок для перевода. Если нужный текст уже есть на вкладке " +
+      "«Перевод», переключитесь туда и нажмите «Применить».";
+  }
+  if (activeBuffer === "translation" && translationDirtyCount === 0) {
+    return "В переводе нет новых правок для переноса в оригинал.";
+  }
+  return undefined;
 }
 
 /**
@@ -67,13 +94,10 @@ export function PromptEditorTranslateToolbar({
   onSyncToSource,
   sourceDirtyCount,
   translationDirtyCount,
+  canApplyTranslation,
+  onApplyTranslation,
 }: PromptEditorTranslateToolbarProps) {
-  // Обе стороны одновременно "грязные" (есть неперенесённые правки и там, и там) — синк в любую
-  // сторону намеренно заблокирован (перезаписал бы несинхронизированные правки другой стороны).
-  // Явно объясняем это в title — иначе неактивная кнопка выглядит как баг, а не как защита.
-  const bothPending = sourceDirtyCount > 0 && translationDirtyCount > 0;
-  const conflictHint = "Обе стороны изменены и не синхронизированы — сначала разрешите одну: " +
-    "отмените правки (Undo) либо очистите буфер на вкладке «Оригинал».";
+  const sameLang = sourceLang === targetLang;
 
   const sync =
     activeBuffer === "source"
@@ -83,7 +107,6 @@ export function PromptEditorTranslateToolbar({
           onClick: onSyncToTranslation,
           disabled: !canSyncToTranslation,
           dirty: sourceDirtyCount,
-          title: !canSyncToTranslation && bothPending ? conflictHint : undefined,
         }
       : {
           label: "→ Оригинал",
@@ -91,8 +114,10 @@ export function PromptEditorTranslateToolbar({
           onClick: onSyncToSource,
           disabled: !canSyncToSource,
           dirty: translationDirtyCount,
-          title: !canSyncToSource && bothPending ? conflictHint : undefined,
         };
+  const syncTitle = sync.disabled
+    ? syncDisabledHint(activeBuffer, sameLang, sourceDirtyCount, translationDirtyCount)
+    : undefined;
 
   return (
     <div className="prompt-editor-translate-toolbar">
@@ -121,21 +146,38 @@ export function PromptEditorTranslateToolbar({
           onClick={onSwapLangs}
           aria-label="Поменять языки местами"
         >
-          <ArrowLeftRight size={16} />
+          <ArrowLeftRight size={18} />
         </button>
         <LangPicker value={targetLang} onChange={onTargetLangChange} options={LANG_OPTIONS} compact />
-        <button
-          type="button"
-          className="prompt-editor-translate-toolbar__sync"
-          onClick={sync.onClick}
-          disabled={sync.disabled}
-          aria-label={sync.ariaLabel}
-          title={sync.title}
-        >
-          {loading ? <Spinner size="s" /> : <Languages size={16} />}
-          <span>{sync.label}</span>
-          {sync.dirty > 0 && <span className="prompt-editor-translate-toolbar__badge">{sync.dirty}</span>}
-        </button>
+        <div className="prompt-editor-translate-toolbar__actions">
+          {activeBuffer === "translation" && (
+            <button
+              type="button"
+              className="prompt-editor-translate-toolbar__apply"
+              onClick={onApplyTranslation}
+              disabled={!canApplyTranslation}
+              aria-label="Использовать перевод как оригинал"
+              title="Сделать текущий перевод оригиналом — без повторного перевода"
+            >
+              <Check size={16} />
+            </button>
+          )}
+          <button
+            type="button"
+            className="prompt-editor-translate-toolbar__sync"
+            onClick={sync.onClick}
+            disabled={sync.disabled}
+            aria-label={sync.ariaLabel}
+            title={syncTitle ?? sync.label}
+          >
+            {loading ? <Spinner size="s" /> : <Languages size={16} />}
+            {sync.dirty > 0 && (
+              <Caption level="1" className="prompt-editor-translate-toolbar__badge">
+                {sync.dirty}
+              </Caption>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import {
 } from "../../api/promptTranslate";
 import {
   applySyncResults,
+  buildIdentityBlocks,
   dirtyIndices,
   hasDirty,
   joinSource,
@@ -40,6 +41,15 @@ type BufferSide = "source" | "translation";
  * onTranslationSynced/onSourceSynced/onBufferChange — коллбэки применения результата к
  * useTextHistory-буферам родителя (reset для перевода — новая сессия перевода не должна быть шагом
  * undo прежней; commit для оригинала — перенос остаётся отменяемым шагом истории source).
+ *
+ * applyTranslation — режим «переводчик для нового текста»: перевод уже готов и его нужно просто
+ * СДЕЛАТЬ оригиналом (без повторного перевода обратно, в отличие от syncToSource, который именно
+ * переводит — со swapped языковой парой). Актуально и когда source вообще не трогали (текст сразу
+ * набран на вкладке «Перевод») — тогда canSyncToSource остаётся false (синкать формально нечего,
+ * sourcePending=false), а applyTranslation работает независимо от dirty-состояния source/blocks.
+ * После применения строит blocks через buildIdentityBlocks — обе стороны блока = applied-текст,
+ * поэтому обе AtLastSync сразу совпадают и дальнейшие sourceDirtyCount/translationDirtyCount не
+ * показывают ложных «непринесённых» правок.
  */
 export function usePromptTranslate(
   sourceText: string,
@@ -170,6 +180,19 @@ export function usePromptTranslate(
     onBufferChange("source");
   }, [runSync, translationText, translationPending, sourceEngineStale, engine, onSourceSynced, onBufferChange]);
 
+  const canApplyTranslation = translationText.trim() !== "" && !loading;
+
+  const applyTranslation = useCallback(() => {
+    setBlocks(buildIdentityBlocks(translationText));
+    // Оба движка сбрасываются: применённый текст теперь идентичен на обеих сторонах, сравнивать
+    // его с engine текущей сессии больше не с чем — иначе стейл-флаг мог бы обмануть следующий
+    // синк, посчитав уже применённый текст "устаревшим по движку".
+    setTranslationEngineUsed(null);
+    setSourceEngineUsed(null);
+    onSourceSynced(translationText);
+    onBufferChange("source");
+  }, [translationText, onSourceSynced, onBufferChange]);
+
   return {
     engine,
     setEngine,
@@ -190,6 +213,10 @@ export function usePromptTranslate(
     canSyncToSource,
     syncToTranslation,
     syncToSource,
+    /** Есть непустой перевод, который можно сделать оригиналом напрямую — независимо от того,
+     * "грязна" ли какая-то сторона по блокам (см. applyTranslation в доке выше). */
+    canApplyTranslation,
+    applyTranslation,
   };
 }
 

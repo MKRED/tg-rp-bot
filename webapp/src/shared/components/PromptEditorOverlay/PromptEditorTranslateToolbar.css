@@ -9,22 +9,32 @@
 .prompt-editor-translate-toolbar__row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  /* 4px — как в .prompt-editor-overlay__toolbar (текстовый режим тулбара), тот же слот в layout. */
+  gap: 4px;
 }
 
+.prompt-editor-translate-toolbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+/* Иконки без текста — при двух LangPicker + swap в той же строке текстовые лейблы вылезали за
+   рамки тулбара на узких экранах. Направление синка теперь только в title/aria-label (как и у
+   соседней кнопки swap, тоже иконка без подписи). */
 .prompt-editor-translate-toolbar__sync {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  margin-left: auto;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
   background: var(--tgui--button_color, #2ea6ff);
   color: var(--tgui--button_text_color, #fff);
   border: none;
   border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 13px;
-  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -34,7 +44,34 @@
   cursor: default;
 }
 
+/* Отдельная кнопка "Применить" — не привычный синк (без повторного перевода), поэтому
+   намеренно не голубая: контурный стиль отличает её от основной кнопки синка рядом. */
+.prompt-editor-translate-toolbar__apply {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  background: none;
+  color: var(--tgui--link_color, #2ea6ff);
+  border: 1px solid var(--tgui--link_color, #2ea6ff);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.prompt-editor-translate-toolbar__apply:disabled {
+  border-color: var(--tgui--secondary_bg_color, rgba(255, 255, 255, 0.08));
+  color: var(--tgui--hint_color, #7d8b99);
+  cursor: default;
+}
+
+/* Счётчик "грязных" абзацев — раньше пилюлей после текста, теперь бейджем поверх иконки
+   (кнопка сама стала квадратной без текста, инлайновому счётчику разместиться уже негде). */
 .prompt-editor-translate-toolbar__badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -42,7 +79,9 @@
   height: 16px;
   padding: 0 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.25);
-  font-size: 11px;
+  border: 2px solid var(--tgui--bg_color, #17212b);
+  background: #e5484d;
+  color: #fff;
+  font-size: 10px;
   line-height: 1;
 }

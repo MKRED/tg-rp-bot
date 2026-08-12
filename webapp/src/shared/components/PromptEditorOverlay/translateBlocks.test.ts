@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applySyncResults,
+  buildIdentityBlocks,
   buildInitialBlocks,
   dirtyIndices,
   hasDirty,
@@ -76,6 +77,23 @@ describe("buildInitialBlocks", () => {
 
   it("empty source produces no blocks", () => {
     expect(buildInitialBlocks("", [])).toEqual([]);
+  });
+});
+
+describe("buildIdentityBlocks", () => {
+  it("mirrors text into both sides so neither is dirty", () => {
+    const text = "Hello.\n\nWorld.";
+    const blocks = buildIdentityBlocks(text);
+    expect(blocks.map((b) => b.source)).toEqual(["Hello.", "World."]);
+    expect(blocks.map((b) => b.translation)).toEqual(["Hello.", "World."]);
+    expect(hasDirty(blocks, "source")).toBe(false);
+    expect(hasDirty(blocks, "translation")).toBe(false);
+    expect(joinSource(blocks)).toBe(text);
+    expect(joinTranslation(blocks)).toBe(text);
+  });
+
+  it("empty text produces no blocks", () => {
+    expect(buildIdentityBlocks("")).toEqual([]);
   });
 });
 

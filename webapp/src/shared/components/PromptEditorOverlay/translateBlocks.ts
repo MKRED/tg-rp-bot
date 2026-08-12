@@ -71,6 +71,17 @@ export function buildInitialBlocks(sourceText: string, translations: string[]): 
   });
 }
 
+/**
+ * Блоки для «Применить перевод как оригинал» — режим переводчика для нового текста: перевод уже
+ * готов, повторный вызов переводчика не нужен, просто зеркалим текущий текст в обе стороны блока
+ * (source = translation = text), чтобы обе AtLastSync сразу совпали с текущими значениями и синк
+ * не считался нужным ни в одну сторону. См. usePromptTranslate.applyTranslation.
+ */
+export function buildIdentityBlocks(text: string): TranslateBlock[] {
+  const segments = splitIntoSegments(text).map((s) => s.content);
+  return buildInitialBlocks(text, segments);
+}
+
 export interface TranslatableSplit {
   /** Индексы непустых сегментов — то, что реально нужно отправить переводчику. */
   indices: number[];
