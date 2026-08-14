@@ -83,6 +83,13 @@ rp-chat, narrator, knowledge-books, narrator-templates, debug.
 > compact/full-screen, mobile vs desktop: см. [docs/telegram-ui.md](docs/telegram-ui.md).
 > Свериться с ним перед правкой UI webapp или обновлением tgui/SDK.
 
+- **Единый стиль через компоненты tgui — mandatory.** Любая новая вёрстка или правка существующей в
+  `webapp/` в первую очередь использует готовые компоненты `@telegram-apps/telegram-ui` (типографика
+  `Text`/`Subheadline`/`Caption`/…, структура `Cell`/`Section`/`List`/…, формы, оверлеи) — это даёт всему
+  приложению единый визуальный стиль. Если подходящего компонента tgui нет — делаем свой в
+  `shared/components/`, максимально переиспользуя примитивы tgui внутри (а не голый `div`/`span` с CSS
+  с нуля). Полный каталог компонентов tgui по категориям с назначением каждого —
+  [docs/tgui-components.md](docs/tgui-components.md).
 - **`pages/<screen>/`** — цель маршрута, по одной на `ROUTES.*`. Тонкая обёртка, собирающая фичи.
 - **`features/<feature>/`** — самодостаточный доменный модуль (UI + логика).
 - **Раскладка фичи по категориям — mandatory.** Внутри фичи файлы лежат в подпапках `api/ hooks/ components/
