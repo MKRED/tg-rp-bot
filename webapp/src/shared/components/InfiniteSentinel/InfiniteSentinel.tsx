@@ -1,4 +1,4 @@
-import { Spinner } from "@telegram-apps/telegram-ui";
+import { Caption, Spinner } from "@telegram-apps/telegram-ui";
 import { useEffect, useRef } from "react";
 import "./InfiniteSentinel.css";
 
@@ -45,7 +45,7 @@ export function InfiniteSentinel({ hasMore, loading, error = false, onLoadMore }
     <div ref={ref} className="infinite-sentinel">
       {error ? (
         <button type="button" className="infinite-sentinel__retry" onClick={onLoadMore}>
-          Не удалось загрузить — повторить
+          <Caption level="1" Component="span">Не удалось загрузить — повторить</Caption>
         </button>
       ) : loading ? (
         <Spinner size="s" />

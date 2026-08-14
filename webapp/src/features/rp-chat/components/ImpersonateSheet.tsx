@@ -113,7 +113,16 @@ export function ImpersonateSheet({ chatId, targetLang, onPick, onClose }: Impers
           disabled={generating}
           type="button"
         >
-          {generating ? <Spinner size="s" /> : (<><Sparkles size={16} /> Сгенерировать ещё</>)}
+          {generating ? (
+            <Spinner size="s" />
+          ) : (
+            <>
+              <Sparkles size={16} />
+              <Subheadline level="2" weight="2" Component="span">
+                Сгенерировать ещё
+              </Subheadline>
+            </>
+          )}
         </button>
       </motion.div>
     </motion.div>

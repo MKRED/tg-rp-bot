@@ -88,7 +88,7 @@ export function FirstMessagesEditor({ messages, onChange }: FirstMessagesEditorP
                   className="char-firsts__remove"
                   onClick={() => removeAt(index)}
                 >
-                  Удалить вариант
+                  <Caption level="1" Component="span">Удалить вариант</Caption>
                 </button>
               )}
             </div>

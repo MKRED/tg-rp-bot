@@ -149,7 +149,7 @@ export function TranslateSheet({
             </div>
           ) : error ? (
             <div className="translate-sheet__placeholder translate-sheet__placeholder--error">
-              {error}
+              <Text>{error}</Text>
             </div>
           ) : result ? (
             <div className="translate-sheet__card" onClick={() => onPick(result)}>
