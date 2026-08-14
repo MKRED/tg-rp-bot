@@ -1,4 +1,4 @@
-import { Spinner } from "@telegram-apps/telegram-ui";
+import { Caption, Spinner } from "@telegram-apps/telegram-ui";
 import { ChevronLeft, ChevronRight, Clapperboard, Globe, History, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { RpText } from "../../../shared/components/RpText";
@@ -130,12 +130,11 @@ export function StoryMessageItem({
           borderRadius: 12,
           background: "var(--tgui--secondary_bg_color)",
           color: "var(--tgui--hint_color)",
-          fontSize: 13,
           maxWidth: "85%",
         }}
       >
         <Clapperboard size={14} style={{ flexShrink: 0 }} />
-        <span>{displayText}</span>
+        <Caption level="1">{displayText}</Caption>
         {showTranslateButton && (
           <>
             <button
@@ -221,7 +220,7 @@ export function StoryMessageItem({
             </button>
           )}
           {canSwitch && showActions && (
-            <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13 }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <button
                 type="button"
                 disabled={disabled || prevSibling === undefined}
@@ -231,7 +230,9 @@ export function StoryMessageItem({
               >
                 <ChevronLeft size={16} />
               </button>
-              {message.siblingIndex + 1}/{message.siblingCount}
+              <Caption level="1" Component="span">
+                {message.siblingIndex + 1}/{message.siblingCount}
+              </Caption>
               <button
                 type="button"
                 disabled={disabled || nextSibling === undefined}

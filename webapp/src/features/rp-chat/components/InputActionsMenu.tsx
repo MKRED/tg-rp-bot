@@ -1,3 +1,4 @@
+import { Text } from "@telegram-apps/telegram-ui";
 import { Languages, Lightbulb, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -43,7 +44,7 @@ export function InputActionsMenu({ onImpersonate, onTranslate, disabled }: Input
             <span className="input-actions-menu__icon">
               <Lightbulb size={20} />
             </span>
-            <span>Ответ от вашего лица</span>
+            <Text>Ответ от вашего лица</Text>
           </button>
           <button
             className="input-actions-menu__item"
@@ -54,7 +55,7 @@ export function InputActionsMenu({ onImpersonate, onTranslate, disabled }: Input
             <span className="input-actions-menu__icon">
               <Languages size={20} />
             </span>
-            <span>Перевод</span>
+            <Text>Перевод</Text>
           </button>
         </div>
       )}

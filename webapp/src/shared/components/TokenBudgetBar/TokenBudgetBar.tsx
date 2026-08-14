@@ -1,3 +1,4 @@
+import { Caption } from "@telegram-apps/telegram-ui";
 import { tokenBudget } from "../../text/token-budget";
 import "./TokenBudgetBar.css";
 
@@ -21,8 +22,8 @@ export function TokenBudgetBar({ used, limit }: TokenBudgetBarProps) {
   return (
     <div className="token-budget">
       <div className="token-budget__caption">
-        <span>~{fmt(used)}</span>
-        <span>{unlimited ? "∞" : fmt(limit!)}</span>
+        <Caption level="1">~{fmt(used)}</Caption>
+        <Caption level="1">{unlimited ? "∞" : fmt(limit!)}</Caption>
       </div>
       {!unlimited && (
         <div className="token-budget__track">

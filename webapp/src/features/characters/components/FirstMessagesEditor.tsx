@@ -1,4 +1,4 @@
-import { Button } from "@telegram-apps/telegram-ui";
+import { Button, Caption } from "@telegram-apps/telegram-ui";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { ExpandableTextarea } from "../../../shared/components/ExpandableTextarea";
@@ -81,7 +81,7 @@ export function FirstMessagesEditor({ messages, onChange }: FirstMessagesEditorP
               onChange={(e) => updateAt(index, e.target.value)}
             />
             <div className="char-field__meta">
-              <span className="char-field__tokens">~{estimateTokens(msg)} токенов</span>
+              <Caption level="1" className="char-field__tokens">~{estimateTokens(msg)} токенов</Caption>
               {items.length > 1 && (
                 <button
                   type="button"

@@ -34,8 +34,6 @@
 }
 
 .translate-sheet__title {
-  font-size: 16px;
-  font-weight: 600;
   color: var(--tgui--text_color, #000);
 }
 
@@ -131,8 +129,6 @@
 }
 
 .translate-sheet__card-hint {
-  font-size: 12px;
-  font-weight: 500;
   color: var(--tgui--link_color, #2481cc);
 }
 

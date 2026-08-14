@@ -74,7 +74,7 @@ export function HomePage() {
               <Cell
                 before={<Users size={24} className="home__icon home__icon--muted" />}
                 subtitle="В разработке"
-                after={<span className="home__soon-badge">Скоро</span>}
+                after={<Caption level="2" weight="2" Component="span" className="home__soon-badge">Скоро</Caption>}
                 className="home__cell--soon"
               >
                 Группа персонажей

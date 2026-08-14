@@ -9,7 +9,6 @@
 .token-budget__caption {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
   color: var(--tgui--hint_color, #999);
 }
 

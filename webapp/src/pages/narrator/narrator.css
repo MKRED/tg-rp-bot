@@ -110,8 +110,6 @@
 .story-page__header-title {
   flex: 1;
   min-width: 0;
-  font-weight: 600;
-  font-size: 16px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

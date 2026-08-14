@@ -1,4 +1,4 @@
-import { List, Spinner } from "@telegram-apps/telegram-ui";
+import { List, Spinner, Text } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { ROUTES } from "../../app/routes";
@@ -61,7 +61,7 @@ export function TemplateEditPage() {
   if (error || (id !== undefined && !template)) {
     return (
       <PageTransition>
-        <div className="rpt-page__fullcenter">Шаблон не найден</div>
+        <Text Component="div" className="rpt-page__fullcenter">Шаблон не найден</Text>
       </PageTransition>
     );
   }

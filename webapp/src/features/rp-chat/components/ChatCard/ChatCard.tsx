@@ -1,4 +1,4 @@
-import { Cell } from "@telegram-apps/telegram-ui";
+import { Caption, Cell } from "@telegram-apps/telegram-ui";
 import { CharacterAvatar } from "../../../characters/components/CharacterAvatar";
 import type { ChatListItem } from "../../types/chat";
 import "./ChatCard.css";
@@ -42,10 +42,12 @@ export function ChatCard({ chat, onClick }: ChatCardProps) {
           size={48}
         />
       }
-      subtitle={<span className="chat-card__subtitle">{subtitle}</span>}
+      subtitle={subtitle}
       after={
         chat.lastMessageAt ? (
-          <span className="chat-card__time">{formatChatTime(chat.lastMessageAt)}</span>
+          <Caption level="2" Component="span" className="chat-card__time">
+            {formatChatTime(chat.lastMessageAt)}
+          </Caption>
         ) : null
       }
       onClick={onClick}

@@ -1,3 +1,4 @@
+import { Subheadline } from "@telegram-apps/telegram-ui";
 import { GitBranch, Settings } from "lucide-react";
 import { CharacterAvatar } from "../../characters/components/CharacterAvatar";
 
@@ -14,7 +15,7 @@ export function ChatHeader({ character, title, onSettingsClick, onGraphClick }: 
     <div className="chat-header">
       <div className="chat-header__info">
         <CharacterAvatar id={character.id} hasImage={character.hasImage} name={character.name} size={40} enlargeable />
-        <span className="chat-header__name">{title ?? character.name}</span>
+        <Subheadline level="1" weight="2" Component="span" className="chat-header__name">{title ?? character.name}</Subheadline>
       </div>
       <div className="chat-header__actions">
         <button

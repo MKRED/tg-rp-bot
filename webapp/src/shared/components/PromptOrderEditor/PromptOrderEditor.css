@@ -47,12 +47,10 @@
 }
 
 .prompt-order__source {
-  font-size: 12px;
   color: var(--tgui--hint_color, #7d8b99);
   margin-top: 2px;
 }
 
 .prompt-order__soon {
-  font-size: 13px;
   color: var(--tgui--hint_color, #7d8b99);
 }

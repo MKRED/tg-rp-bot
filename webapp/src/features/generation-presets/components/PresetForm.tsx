@@ -1,4 +1,4 @@
-import { Button } from "@telegram-apps/telegram-ui";
+import { Button, Text } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { BasicsSection } from "./BasicsSection";
 import { CollapsibleSection } from "./CollapsibleSection";
@@ -107,7 +107,7 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
         <SamplingSection state={sampling} onChange={updateSampling} />
       </CollapsibleSection>
 
-      <div className="preset-form__section-title">Рассуждение</div>
+      <Text weight="2" Component="div" className="preset-form__section-title">Рассуждение</Text>
       <ReasoningSection
         requestReasoning={requestReasoning}
         reasoningEffort={reasoningEffort}

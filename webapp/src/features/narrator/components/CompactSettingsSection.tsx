@@ -1,4 +1,4 @@
-import { Button, Cell, Section, Slider, Spinner, Switch } from "@telegram-apps/telegram-ui";
+import { Button, Caption, Cell, Section, Slider, Spinner, Switch, Text } from "@telegram-apps/telegram-ui";
 import { ChevronDown, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { FieldHint } from "../../../shared/components/FieldHint";
@@ -142,7 +142,7 @@ export function CompactSettingsSection({
         </Cell>
 
         {!available && stats.compactReason && (
-          <p className="section-note">{REASON_TEXT[stats.compactReason]}</p>
+          <Caption level="1" Component="p" className="section-note">{REASON_TEXT[stats.compactReason]}</Caption>
         )}
 
         {available && settings.compactEnabled && (
@@ -161,8 +161,8 @@ export function CompactSettingsSection({
 
             <div style={{ padding: "8px 22px 0" }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 500 }}>
-                <span>Сжимать до</span>
-                <span style={{ color: "var(--tgui--hint_color)" }}>{fmt(floor)} ток.</span>
+                <Text>Сжимать до</Text>
+                <Text style={{ color: "var(--tgui--hint_color)" }}>{fmt(floor)} ток.</Text>
               </div>
               <Slider
                 min={FLOOR_MIN}
@@ -181,8 +181,8 @@ export function CompactSettingsSection({
 
             <div style={{ padding: "8px 22px 0" }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 500 }}>
-                <span>Слов в пересказе</span>
-                <span style={{ color: "var(--tgui--hint_color)" }}>~{words}</span>
+                <Text>Слов в пересказе</Text>
+                <Text style={{ color: "var(--tgui--hint_color)" }}>~{words}</Text>
               </div>
               <Slider
                 min={WORDS_MIN}
@@ -210,7 +210,7 @@ export function CompactSettingsSection({
                 <Spinner size="s" />
               </div>
             ) : compactions.length === 0 ? (
-              <p className="section-note">Пересказов пока нет.</p>
+              <Caption level="1" Component="p" className="section-note">Пересказов пока нет.</Caption>
             ) : (
               compactions.map((c, i) => {
                 const isExpanded = expanded.has(c.id);
@@ -246,7 +246,7 @@ export function CompactSettingsSection({
                             flexShrink: 0,
                           }}
                         />
-                        <span style={{ fontWeight: 500 }}>Пересказ {i + 1}</span>
+                        <Text style={{ fontWeight: 500 }}>Пересказ {i + 1}</Text>
                       </span>
                       <button
                         type="button"
@@ -271,27 +271,25 @@ export function CompactSettingsSection({
                     </div>
                     {isExpanded && (
                       <>
-                        <p
+                        <Caption
+                          level="1"
+                          Component="p"
                           style={{
                             margin: "4px 0 0",
                             color: "var(--tgui--hint_color)",
-                            fontSize: 14,
-                            lineHeight: 1.4,
                             whiteSpace: "pre-wrap",
                           }}
                         >
                           {c.summary}
-                        </p>
-                        <p
-                          style={{
-                            margin: "4px 0 0",
-                            color: "var(--tgui--text_color)",
-                            fontSize: 12,
-                            fontWeight: 500,
-                          }}
+                        </Caption>
+                        <Caption
+                          level="2"
+                          weight="2"
+                          Component="p"
+                          style={{ margin: "4px 0 0", color: "var(--tgui--text_color)" }}
                         >
                           Сжато сообщений: {c.coveredCount}, токенов: {fmt(c.coveredTokens)}
-                        </p>
+                        </Caption>
                       </>
                     )}
                   </div>

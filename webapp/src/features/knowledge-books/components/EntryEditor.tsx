@@ -1,4 +1,4 @@
-import { Button, Section, Slider, Switch } from "@telegram-apps/telegram-ui";
+import { Button, Section, Slider, Switch, Text } from "@telegram-apps/telegram-ui";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
@@ -249,7 +249,7 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
       ) : null}
 
       <div style={{ padding: "8px 22px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span>Включена</span>
+        <Text>Включена</Text>
         <Switch checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
       </div>
 
@@ -285,8 +285,8 @@ export function EntryEditor({ bookId, initial, onSaved, onCancel }: EntryEditorP
             <KeywordsInput keywords={keywords} onChange={setKeywords} />
             <div style={{ padding: "8px 22px 0" }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 500 }}>
-                <span>Искать в последних сообщениях</span>
-                <span style={{ color: "var(--tgui--hint_color)" }}>{keywordDepth}</span>
+                <Text>Искать в последних сообщениях</Text>
+                <Text style={{ color: "var(--tgui--hint_color)" }}>{keywordDepth}</Text>
               </div>
               <Slider
                 min={MIN_KEYWORD_DEPTH}

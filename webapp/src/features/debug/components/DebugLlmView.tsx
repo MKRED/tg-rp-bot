@@ -1,4 +1,4 @@
-import { Button, Cell, List, Section, Spinner, Switch } from "@telegram-apps/telegram-ui";
+import { Button, Cell, List, Section, Spinner, Switch, Text } from "@telegram-apps/telegram-ui";
 import { RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { SectionWithFooter } from "../../../shared/components/SectionWithFooter";
@@ -79,7 +79,7 @@ export function DebugLlmView() {
               <Spinner size="m" />
             </div>
           ) : records.length === 0 ? (
-            <div className="debug-llm__empty">Пока нет запросов</div>
+            <Text Component="div" className="debug-llm__empty">Пока нет запросов</Text>
           ) : (
             records.map((rec) => (
               <DebugRecordItem

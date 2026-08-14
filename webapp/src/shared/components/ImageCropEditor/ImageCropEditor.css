@@ -1,5 +1,7 @@
-/* Редактор кропа рендерится через portal в body — ВНЕ <AppRoot>, поэтому CSS-переменные
-   темы tgui (--tgui--*) сюда не доезжают. Используем фиксированные цвета, не var(--tgui--…). */
+/* Редактор кропа рендерится через portal в body — ВНЕ корневого <AppRoot>, поэтому внутри свой
+   вложенный AppRoot (.crop-editor__root, см. коммент в .tsx) — на нём скоупятся --tgui--* для
+   типографики (Text/Caption). Цвета при этом остаются фиксированными (не var(--tgui--…)) —
+   редактор кропа намеренно тёмный независимо от темы приложения. */
 .crop-editor {
   position: fixed;
   inset: 0;
@@ -9,6 +11,13 @@
   background: #000;
   color: #fff;
   -webkit-tap-highlight-color: transparent;
+}
+
+.crop-editor__root {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .crop-editor__header {
@@ -24,15 +33,8 @@
   );
 }
 
-.crop-editor__title {
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 1.2;
-}
-
 .crop-editor__hint {
   margin-top: 4px;
-  font-size: 13px;
   color: rgba(255, 255, 255, 0.55);
 }
 

@@ -1,4 +1,4 @@
-import { Spinner } from "@telegram-apps/telegram-ui";
+import { Spinner, Text } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { ROUTES } from "../../app/routes";
@@ -94,7 +94,7 @@ export function PersonaEditPage() {
   if (error || (routeId !== undefined && !persona)) {
     return (
       <PageTransition>
-        <div className="personas-page__fullcenter">Персона не найдена</div>
+        <Text Component="div" className="personas-page__fullcenter">Персона не найдена</Text>
       </PageTransition>
     );
   }

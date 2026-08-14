@@ -1,13 +1,20 @@
+import { AppRoot, Caption, Text } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import { createPortal } from "react-dom";
 import type { CropArea } from "../../image";
+import { getPlatform } from "../../telegram/platform";
 import { pushBackInterceptor } from "../../telegram/backInterceptor";
+import { useTheme } from "../../theme";
 // CSS react-easy-crop НЕ инжектится сам (sideEffects:false) — импортируем явно, иначе кроппер
 // рендерится сломанным (контейнер/маска/contain не спозиционированы).
 import "react-easy-crop/react-easy-crop.css";
 import "./ImageCropEditor.css";
+
+// Платформа сессии не меняется — маппим в стиль telegram-ui один раз, как в PromptEditorOverlay.
+const rawPlatform = getPlatform();
+const platform: "ios" | "base" = rawPlatform === "ios" || rawPlatform === "macos" ? "ios" : "base";
 
 interface ImageCropEditorProps {
   /** Источник для редактирования (object URL выбранного файла). */
@@ -26,12 +33,16 @@ const MAX_ZOOM = 4;
  * Полноэкранный редактор кропа аватара: пользователь панорамирует/зумирует фото в круглой рамке,
  * выбирая, какой квадрат пойдёт в миниатюру. На react-easy-crop — обкатанные pinch/pan в webview.
  *
- * Рендерится через portal в body, поверх формы. Кнопки/слайдер — на собственном CSS, БЕЗ
- * tgui-компонентов: портал в body выходит из-под <AppRoot>, где живут CSS-переменные темы tgui,
- * поэтому tgui Button здесь отрисовался бы нестилизованным (как в ImageLightbox).
+ * Рендерится через portal в body, поверх формы — вне <AppRoot> приложения, поэтому CSS-переменные
+ * темы tgui сюда не доезжают. Как и PromptEditorOverlay, заворачиваем содержимое во ВЛОЖЕННЫЙ
+ * AppRoot с appearance/platform корневого — это даёт tgui-типографике (Text/Caption) рабочие
+ * --tgui--* переменные. Кнопки/слайдер остаются на собственном CSS — редактор кропа намеренно
+ * тёмный (как нативный фоторедактор) независимо от темы приложения, поэтому фиксированные
+ * белые/чёрные цвета здесь осознанный выбор, а не обход отсутствия темы.
  * Полное фото при этом не кадрируется (хранится отдельно), здесь выбирается только миниатюра.
  */
 export function ImageCropEditor({ src, busy = false, onConfirm, onCancel }: ImageCropEditorProps) {
+  const { appearance } = useTheme();
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   // croppedAreaPixels приходит из onCropComplete — это и есть область в пикселях исходника.
@@ -48,66 +59,72 @@ export function ImageCropEditor({ src, busy = false, onConfirm, onCancel }: Imag
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
     >
-      <div className="crop-editor__header">
-        <div className="crop-editor__title">Миниатюра</div>
-        <div className="crop-editor__hint">Перетащите и масштабируйте фото</div>
-      </div>
+      <AppRoot appearance={appearance} platform={platform} className="crop-editor__root">
+        <div className="crop-editor__header">
+          <Text weight="2" Component="div" className="crop-editor__title">
+            Миниатюра
+          </Text>
+          <Caption level="1" Component="div" className="crop-editor__hint">
+            Перетащите и масштабируйте фото
+          </Caption>
+        </div>
 
-      <div className="crop-editor__area">
-        <Cropper
-          image={src}
-          crop={crop}
-          zoom={zoom}
-          minZoom={MIN_ZOOM}
-          maxZoom={MAX_ZOOM}
-          aspect={1}
-          cropShape="round"
-          showGrid={false}
-          onCropChange={setCrop}
-          onZoomChange={setZoom}
-          onCropComplete={(_, areaPx) => setAreaPixels(areaPx)}
-        />
-      </div>
-
-      <div className="crop-editor__controls">
-        <div className="crop-editor__zoom-row">
-          {/* Иконки «маленькое/большое фото» по краям слайдера — подсказывают направление зума. */}
-          <span className="crop-editor__zoom-icon" aria-hidden>
-            <ImageGlyph size={14} />
-          </span>
-          <input
-            className="crop-editor__zoom"
-            type="range"
-            min={MIN_ZOOM}
-            max={MAX_ZOOM}
-            step={0.01}
-            value={zoom}
-            onChange={(e) => setZoom(Number(e.target.value))}
-            aria-label="Масштаб"
+        <div className="crop-editor__area">
+          <Cropper
+            image={src}
+            crop={crop}
+            zoom={zoom}
+            minZoom={MIN_ZOOM}
+            maxZoom={MAX_ZOOM}
+            aspect={1}
+            cropShape="round"
+            showGrid={false}
+            onCropChange={setCrop}
+            onZoomChange={setZoom}
+            onCropComplete={(_, areaPx) => setAreaPixels(areaPx)}
           />
-          <span className="crop-editor__zoom-icon" aria-hidden>
-            <ImageGlyph size={20} />
-          </span>
         </div>
-        <div className="crop-editor__actions">
-          <button
-            type="button"
-            className="crop-editor__btn crop-editor__btn--ghost"
-            disabled={busy}
-            onClick={onCancel}
-          >
-            Отмена
-          </button>
-          <button
-            type="button"
-            className="crop-editor__btn crop-editor__btn--primary"
-            disabled={busy || !areaPixels}
-            onClick={() => areaPixels && onConfirm(areaPixels)}
-          >
-            {busy ? "Обработка…" : "Готово"}
-          </button>
+
+        <div className="crop-editor__controls">
+          <div className="crop-editor__zoom-row">
+            {/* Иконки «маленькое/большое фото» по краям слайдера — подсказывают направление зума. */}
+            <span className="crop-editor__zoom-icon" aria-hidden>
+              <ImageGlyph size={14} />
+            </span>
+            <input
+              className="crop-editor__zoom"
+              type="range"
+              min={MIN_ZOOM}
+              max={MAX_ZOOM}
+              step={0.01}
+              value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              aria-label="Масштаб"
+            />
+            <span className="crop-editor__zoom-icon" aria-hidden>
+              <ImageGlyph size={20} />
+            </span>
+          </div>
+          <div className="crop-editor__actions">
+            <button
+              type="button"
+              className="crop-editor__btn crop-editor__btn--ghost"
+              disabled={busy}
+              onClick={onCancel}
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              className="crop-editor__btn crop-editor__btn--primary"
+              disabled={busy || !areaPixels}
+              onClick={() => areaPixels && onConfirm(areaPixels)}
+            >
+              {busy ? "Обработка…" : "Готово"}
+            </button>
+          </div>
         </div>
-      </div>
+      </AppRoot>
     </motion.div>,
     document.body,
   );

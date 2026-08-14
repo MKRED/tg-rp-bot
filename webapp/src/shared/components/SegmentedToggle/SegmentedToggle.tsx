@@ -1,3 +1,4 @@
+import { Subheadline } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import "./SegmentedToggle.css";
@@ -62,7 +63,13 @@ export function SegmentedToggle<T extends string>({
           className={`segmented-toggle__btn${value === o.value ? " is-active" : ""}`}
           onClick={() => onChange(o.value)}
         >
-          <span className="segmented-toggle__btn-label">{o.icon ?? o.label}</span>
+          <span className="segmented-toggle__btn-label">
+            {o.icon ?? (
+              <Subheadline level="2" weight="2" Component="span">
+                {o.label}
+              </Subheadline>
+            )}
+          </span>
         </button>
       ))}
     </div>

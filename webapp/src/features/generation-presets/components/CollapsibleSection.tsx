@@ -1,3 +1,4 @@
+import { Subheadline } from "@telegram-apps/telegram-ui";
 import { ChevronDown } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
@@ -20,7 +21,7 @@ export function CollapsibleSection({ title, defaultOpen = false, children }: Col
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >
-        <span className="preset-collapse__title">{title}</span>
+        <Subheadline level="1" weight="2" Component="span" className="preset-collapse__title">{title}</Subheadline>
         <ChevronDown
           size={18}
           className="preset-collapse__chevron"

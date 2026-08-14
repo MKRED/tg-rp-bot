@@ -1,4 +1,4 @@
-import { Button, Input } from "@telegram-apps/telegram-ui";
+import { Button, Caption, Input } from "@telegram-apps/telegram-ui";
 import { useMemo, useState } from "react";
 import { AvatarPicker, type AvatarValue } from "../../../shared/components/AvatarPicker";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
@@ -92,7 +92,7 @@ export function PersonaForm({ initial, submitting, onSubmit, onDelete }: Persona
       />
 
       <div className="persona-form__actions">
-        {isDirty && !submitting && <span className="persona-form__unsaved">Есть несохранённые изменения</span>}
+        {isDirty && !submitting && <Caption level="1" className="persona-form__unsaved">Есть несохранённые изменения</Caption>}
         <Button size="l" stretched disabled={!canSubmit} onClick={handleSubmit}>
           {submitting ? "Сохранение…" : "Сохранить"}
         </Button>

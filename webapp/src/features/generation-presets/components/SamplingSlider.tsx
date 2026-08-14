@@ -1,4 +1,4 @@
-import { Slider, Switch } from "@telegram-apps/telegram-ui";
+import { Slider, Switch, Text } from "@telegram-apps/telegram-ui";
 import { FieldHint } from "../../../shared/components/FieldHint";
 import type { SamplingSpec } from "../lib/param-specs";
 
@@ -26,10 +26,10 @@ export function SamplingSlider({ spec, value, enabled, onValue, onEnabled }: Sam
   return (
     <div className="preset-slider">
       <div className="preset-slider__head">
-        <span className="preset-slider__label">{spec.label}</span>
-        <span className="preset-slider__value">
+        <Text className="preset-slider__label">{spec.label}</Text>
+        <Text className="preset-slider__value">
           {enabled ? formatValue(value, spec.step) : "—"}
-        </span>
+        </Text>
         {/* Обёртка с flex-shrink:0 — чтобы Switch не сжимался рядом с подписью/значением. */}
         <span className="preset-switch">
           <Switch checked={enabled} onChange={(e) => onEnabled(e.target.checked)} />

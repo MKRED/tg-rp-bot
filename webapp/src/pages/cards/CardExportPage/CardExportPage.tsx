@@ -1,4 +1,4 @@
-import { Button, Cell, Checkbox, Input, List, Section, Spinner } from "@telegram-apps/telegram-ui";
+import { Button, Cell, Checkbox, Input, List, Section, Spinner, Text } from "@telegram-apps/telegram-ui";
 import { Smile, User } from "lucide-react";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
@@ -289,7 +289,7 @@ export function CardExportPage() {
   if (error || !card) {
     return (
       <PageTransition>
-        <div className="cards-page__fullcenter">Карточка не найдена</div>
+        <Text Component="div" className="cards-page__fullcenter">Карточка не найдена</Text>
       </PageTransition>
     );
   }

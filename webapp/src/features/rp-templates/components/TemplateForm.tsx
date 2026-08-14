@@ -1,4 +1,4 @@
-import { Button, Cell, Input, Section, Switch } from "@telegram-apps/telegram-ui";
+import { Button, Cell, Input, Section, Switch, Text } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
 import { PromptEditorField } from "../../../shared/components/PromptEditorField";
@@ -98,7 +98,7 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
         onChange={setTranslationSystemPrompt}
       />
       {/* Гуттер 22px — как у полей tgui внутри карточки (выравнивание заголовка с рядами ниже). */}
-      <div style={{ padding: "12px 22px 0", fontWeight: 600 }}>Порядок промптов</div>
+      <Text weight="2" Component="div" style={{ padding: "12px 22px 0" }}>Порядок промптов</Text>
       <PromptOrderEditor
         order={promptOrder}
         onChange={setPromptOrder}

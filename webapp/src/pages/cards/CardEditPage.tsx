@@ -1,4 +1,4 @@
-import { List, Spinner } from "@telegram-apps/telegram-ui";
+import { List, Spinner, Text } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { ROUTES, cardExportPath } from "../../app/routes";
@@ -138,7 +138,7 @@ export function CardEditPage() {
   if (error || (routeId !== undefined && !card)) {
     return (
       <PageTransition>
-        <div className="cards-page__fullcenter">Карточка не найдена</div>
+        <Text Component="div" className="cards-page__fullcenter">Карточка не найдена</Text>
       </PageTransition>
     );
   }

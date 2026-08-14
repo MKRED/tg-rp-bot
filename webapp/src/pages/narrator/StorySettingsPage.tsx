@@ -1,4 +1,4 @@
-import { Cell, List, Section, Spinner, Switch } from "@telegram-apps/telegram-ui";
+import { Cell, List, Section, Spinner, Switch, Text } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import { BookOpen, ChevronRight, Clapperboard, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -166,7 +166,7 @@ export function StorySettingsPage() {
   if (!story) {
     return (
       <PageTransition>
-        <div className="story-page__fullcenter">История не найдена</div>
+        <Text Component="div" className="story-page__fullcenter">История не найдена</Text>
       </PageTransition>
     );
   }
@@ -391,7 +391,7 @@ export function StorySettingsPage() {
                   transition={{ ...ITEM_T, delay: 0 }}
                 >
                   <Cell
-                    after={<span style={{ color: "var(--tgui--hint_color)" }}>{fmtTokens(stats.tokensTotal)}</span>}
+                    after={<Text style={{ color: "var(--tgui--hint_color)" }}>{fmtTokens(stats.tokensTotal)}</Text>}
                     subtitle="Токенов в сообщениях всех веток"
                   >
                     Вся история
@@ -404,7 +404,7 @@ export function StorySettingsPage() {
                   transition={{ ...ITEM_T, delay: 0.07 }}
                 >
                   <Cell
-                    after={<span style={{ color: "var(--tgui--hint_color)" }}>{fmtTokens(stats.tokensActiveBranch)}</span>}
+                    after={<Text style={{ color: "var(--tgui--hint_color)" }}>{fmtTokens(stats.tokensActiveBranch)}</Text>}
                     subtitle="Токенов в сообщениях текущей ветки"
                   >
                     Активная ветка

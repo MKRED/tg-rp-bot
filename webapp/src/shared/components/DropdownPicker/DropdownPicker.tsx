@@ -1,4 +1,4 @@
-import { Spinner } from "@telegram-apps/telegram-ui";
+import { Spinner, Subheadline } from "@telegram-apps/telegram-ui";
 import { Check, ChevronDown } from "lucide-react";
 import { useDropdownPosition } from "../../hooks/useDropdownPosition";
 import "./DropdownPicker.css";
@@ -31,12 +31,12 @@ interface DropdownPickerProps<T extends string> {
  * триггер оказался у нижнего края экрана. Компактный pill-вариант с другим anchor'ом — отдельный
  * LangPicker (штора перевода), сюда не сведён из-за другого визуального контракта.
  *
- * Типографика subhead/subtitle скопирована с tgui `Cell` (15px, цвета subtitle_text_color/hint_color),
- * а сам триггер оформлен как поле `Input`/`FormInput` на базовой платформе — без заливки, с постоянным
- * 2px ring через box-shadow (outline, на фокусе/открытом меню — link_color), дающим "пространство"
- * вокруг значения, как у настоящего инпута. В tgui нет готового select-варианта такого поля, поэтому
- * "самописный". Кликабелен только бокс-триггер; subhead/subtitle — обычный текст вокруг (лейбл сверху,
- * подсказка снизу), как header/hint у Input.
+ * Текст — типографика tgui (`Subheadline`), а сам триггер оформлен как поле `Input`/`FormInput`
+ * на базовой платформе — без заливки, с постоянным 2px ring через box-shadow (outline, на
+ * фокусе/открытом меню — link_color), дающим "пространство" вокруг значения, как у настоящего
+ * инпута. В tgui нет готового select-варианта такого поля, поэтому "самописный". Кликабелен
+ * только бокс-триггер; header/subtitle — обычный текст вокруг (лейбл сверху, подсказка снизу),
+ * как header/hint у Input.
  */
 export function DropdownPicker<T extends string>({
   value,
@@ -64,7 +64,11 @@ export function DropdownPicker<T extends string>({
 
   return (
     <div className={className ? `dropdown-picker ${className}` : "dropdown-picker"}>
-      {header && <div className="dropdown-picker__header">{header}</div>}
+      {header && (
+        <Subheadline level="1" Component="div" className="dropdown-picker__header">
+          {header}
+        </Subheadline>
+      )}
       <div className="dropdown-picker__anchor" ref={rootRef}>
         <button
           ref={triggerRef}
@@ -76,7 +80,9 @@ export function DropdownPicker<T extends string>({
           aria-label={ariaLabel}
           disabled={isDisabled}
         >
-          <span className="dropdown-picker__value">{current?.label ?? placeholder}</span>
+          <Subheadline level="1" Component="span" className="dropdown-picker__value">
+            {current?.label ?? placeholder}
+          </Subheadline>
           {pending ? (
             <Spinner size="s" className="dropdown-picker__spinner" />
           ) : (
@@ -94,7 +100,9 @@ export function DropdownPicker<T extends string>({
             style={{ maxHeight }}
           >
             {pending ? (
-              <li className="dropdown-picker__status">Загрузка…</li>
+              <Subheadline level="2" Component="li" className="dropdown-picker__status">
+                Загрузка…
+              </Subheadline>
             ) : (
               options.map((o) => (
                 <li key={o.value}>
@@ -108,7 +116,9 @@ export function DropdownPicker<T extends string>({
                       close();
                     }}
                   >
-                    <span>{o.label}</span>
+                    <Subheadline level="2" weight={o.value === value ? "2" : "3"} Component="span">
+                      {o.label}
+                    </Subheadline>
                     {o.value === value && <Check size={16} />}
                   </button>
                 </li>
@@ -117,7 +127,11 @@ export function DropdownPicker<T extends string>({
           </ul>
         )}
       </div>
-      {subtitle && <div className="dropdown-picker__subtitle">{subtitle}</div>}
+      {subtitle && (
+        <Subheadline level="2" Component="div" className="dropdown-picker__subtitle">
+          {subtitle}
+        </Subheadline>
+      )}
     </div>
   );
 }

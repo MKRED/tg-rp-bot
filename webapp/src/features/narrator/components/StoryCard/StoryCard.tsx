@@ -1,4 +1,4 @@
-import { Avatar, AvatarStack, Cell } from "@telegram-apps/telegram-ui";
+import { Avatar, AvatarStack, Caption, Cell } from "@telegram-apps/telegram-ui";
 import { Clapperboard } from "lucide-react";
 import { useAvatarBatch } from "../../../../shared/avatar/useAvatarBatch";
 import { nameInitials } from "../../../../shared/text/initials";
@@ -60,8 +60,14 @@ export function StoryCard({ story, onClick }: StoryCardProps) {
   return (
     <Cell
       after={after}
-      hint={time ? <span className="story-card__time">{formatStoryTime(time)}</span> : null}
-      subtitle={<span className="story-card__subtitle">{subtitle}</span>}
+      hint={
+        time ? (
+          <Caption level="2" Component="span" className="story-card__time">
+            {formatStoryTime(time)}
+          </Caption>
+        ) : null
+      }
+      subtitle={subtitle}
       onClick={onClick}
     >
       {displayName}

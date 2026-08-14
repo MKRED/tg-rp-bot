@@ -1,4 +1,4 @@
-import { Section, type SectionProps } from "@telegram-apps/telegram-ui";
+import { Caption, Section, type SectionProps } from "@telegram-apps/telegram-ui";
 import type { ReactNode } from "react";
 
 interface SectionWithFooterProps extends Omit<SectionProps, "footer"> {
@@ -13,7 +13,7 @@ export function SectionWithFooter({ footer, children, ...sectionProps }: Section
   return (
     <Section {...sectionProps}>
       {children}
-      <p className="section-note">{footer}</p>
+      <Caption level="1" Component="p" className="section-note">{footer}</Caption>
     </Section>
   );
 }

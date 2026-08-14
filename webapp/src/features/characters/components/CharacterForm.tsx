@@ -1,4 +1,4 @@
-import { Button, Input } from "@telegram-apps/telegram-ui";
+import { Button, Caption, Input, Text } from "@telegram-apps/telegram-ui";
 import { useMemo, useState } from "react";
 import { AvatarPicker, type AvatarValue } from "../../../shared/components/AvatarPicker";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
@@ -123,11 +123,11 @@ export function CharacterForm({ initial, submitting, onSubmit, onDelete }: Chara
         onChange={setScenario}
       />
 
-      <div className="char-form__section-title">Первое сообщение</div>
+      <Text weight="2" Component="div" className="char-form__section-title">Первое сообщение</Text>
       <FirstMessagesEditor messages={firstMessages} onChange={setFirstMessages} />
 
       <div className="char-form__actions">
-        {isDirty && !submitting && <span className="char-form__unsaved">Есть несохранённые изменения</span>}
+        {isDirty && !submitting && <Caption level="1" className="char-form__unsaved">Есть несохранённые изменения</Caption>}
         <Button size="l" stretched disabled={!canSubmit} onClick={handleSubmit}>
           {submitting ? "Сохранение…" : "Сохранить"}
         </Button>

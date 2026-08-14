@@ -1,4 +1,4 @@
-import { Spinner } from "@telegram-apps/telegram-ui";
+import { Spinner, Text } from "@telegram-apps/telegram-ui";
 import { Globe, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { confirmAction } from "../../../shared/telegram/confirm";
@@ -54,7 +54,7 @@ export function ImpersonateVariantCard({ chatId, text, targetLang, onPick, onDel
 
   return (
     <div className="impersonate-card" onClick={() => onPick(text)}>
-      <p className="impersonate-card__text"><RpText text={display} /></p>
+      <Text Component="p" className="impersonate-card__text"><RpText text={display} /></Text>
       <div className="impersonate-card__actions">
         <button
           className="impersonate-card__btn impersonate-card__btn--danger"

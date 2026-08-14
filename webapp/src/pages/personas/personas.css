@@ -115,7 +115,6 @@
    на уходе через useUnsavedChangesGuard, эта метка лишь сигнализирует). */
 .persona-form__unsaved {
   text-align: center;
-  font-size: 13px;
   color: var(--tgui--hint_color, #7d8b99);
 }
 

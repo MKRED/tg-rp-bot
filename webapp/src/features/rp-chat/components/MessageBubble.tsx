@@ -1,4 +1,4 @@
-import { Spinner } from "@telegram-apps/telegram-ui";
+import { Caption, Spinner, Text } from "@telegram-apps/telegram-ui";
 import { Check, ChevronLeft, ChevronRight, Copy, Globe, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { confirmAction } from "../../../shared/telegram/confirm";
@@ -134,7 +134,7 @@ export function MessageBubble({
   return (
     <div className={`message-bubble message-bubble--${message.role}`}>
       <div className="message-bubble__body">
-        <p className="message-bubble__text"><RpText text={displayText} /></p>
+        <Text Component="p" className="message-bubble__text"><RpText text={displayText} /></Text>
 
         {/* Единая строка: перевод, сиблинги (← N/M →) + остальные действия — как в Narrator
             (StoryMessageItem, где Globe идёт первой кнопкой). */}
@@ -170,9 +170,9 @@ export function MessageBubble({
               >
                 <ChevronLeft size={16} />
               </button>
-              <span className="message-bubble__sibling-count">
+              <Caption level="1" className="message-bubble__sibling-count">
                 {message.siblingIndex + 1}/{message.siblingCount}
-              </span>
+              </Caption>
               <button
                 className="message-bubble__action-btn"
                 onClick={() => nextSiblingId != null && onSwitchBranch(nextSiblingId)}

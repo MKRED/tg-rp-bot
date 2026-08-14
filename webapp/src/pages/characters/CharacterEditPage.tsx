@@ -1,4 +1,4 @@
-import { Spinner } from "@telegram-apps/telegram-ui";
+import { Spinner, Text } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { ROUTES } from "../../app/routes";
@@ -99,7 +99,7 @@ export function CharacterEditPage() {
   if (error || (routeId !== undefined && !character)) {
     return (
       <PageTransition>
-        <div className="characters-page__fullcenter">Персонаж не найден</div>
+        <Text Component="div" className="characters-page__fullcenter">Персонаж не найден</Text>
       </PageTransition>
     );
   }

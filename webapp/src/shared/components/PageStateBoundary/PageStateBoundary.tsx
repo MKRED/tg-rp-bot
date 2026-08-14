@@ -1,4 +1,4 @@
-import { Spinner } from "@telegram-apps/telegram-ui";
+import { Spinner, Text } from "@telegram-apps/telegram-ui";
 import type { ReactNode } from "react";
 import { PageTransition } from "../PageTransition";
 import "./PageStateBoundary.css";
@@ -45,7 +45,7 @@ export function PageStateBoundary({
   if (error) {
     return (
       <PageTransition phase="ready">
-        <div className="page-state__center">{errorText}</div>
+        <Text Component="div" className="page-state__center">{errorText}</Text>
       </PageTransition>
     );
   }

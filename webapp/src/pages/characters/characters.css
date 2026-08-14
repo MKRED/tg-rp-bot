@@ -112,7 +112,6 @@
 .char-form__section-title {
   margin-top: 8px;
   padding: 0 22px;
-  font-weight: 600;
   color: var(--tgui--text_color, #000);
 }
 
@@ -128,7 +127,6 @@
    на уходе через useUnsavedChangesGuard, эта метка лишь сигнализирует). */
 .char-form__unsaved {
   text-align: center;
-  font-size: 13px;
   color: var(--tgui--hint_color, #7d8b99);
 }
 
@@ -141,7 +139,6 @@
 }
 
 .char-field__tokens {
-  font-size: 13px;
   color: var(--tgui--hint_color, #7d8b99);
 }
 

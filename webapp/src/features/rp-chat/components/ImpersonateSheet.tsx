@@ -1,4 +1,4 @@
-import { Spinner } from "@telegram-apps/telegram-ui";
+import { Spinner, Subheadline, Text } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import { Sparkles, X } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -60,7 +60,7 @@ export function ImpersonateSheet({ chatId, targetLang, onPick, onClose }: Impers
         transition={SHEET_T}
       >
         <div className="impersonate-sheet__header">
-          <span className="impersonate-sheet__title">Ответ от вашего лица</span>
+          <Subheadline level="1" weight="2" Component="span" className="impersonate-sheet__title">Ответ от вашего лица</Subheadline>
           <button
             className="impersonate-sheet__close"
             onClick={onClose}
@@ -93,7 +93,7 @@ export function ImpersonateSheet({ chatId, targetLang, onPick, onClose }: Impers
           {generating && (
             <div className="impersonate-sheet__streaming">
               {streamingText ? (
-                <p className="impersonate-card__text"><RpText text={streamingText} /></p>
+                <Text Component="p" className="impersonate-card__text"><RpText text={streamingText} /></Text>
               ) : (
                 <Spinner size="s" />
               )}
@@ -101,7 +101,7 @@ export function ImpersonateSheet({ chatId, targetLang, onPick, onClose }: Impers
           )}
 
           {!loading && !generating && variants.length === 0 && (
-            <div className="impersonate-sheet__empty">Нет вариантов</div>
+            <Text Component="div" className="impersonate-sheet__empty">Нет вариантов</Text>
           )}
 
           <div ref={listEndRef} />

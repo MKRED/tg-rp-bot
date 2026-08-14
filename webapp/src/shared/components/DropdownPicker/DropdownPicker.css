@@ -5,14 +5,14 @@
    padding-block компонента. Меню (left:0; right:0) выравнивается по внутреннему краю padding-box
    родителя, каким бы он ни был.
 
-   Раскладка и шрифты скопированы с tgui `Cell` (subhead → title → subtitle — та же типографика,
-   subhead/subtitle 15px), но сам триггер оформлен как поле ввода tgui `Input`/`FormInput` на
-   базовой платформе: без заливки, постоянный 2px ring через box-shadow (var(--tgui--outline),
-   на фокусе/открытом меню — var(--tgui--link_color)), radius 14px, internal padding 12px 16px —
-   именно так `Input` даёт "пространство" вокруг текста через свой `<label>`-бокс (залитый фон и
-   radius 12px — это отдельная iOS-тема, у нас нигде не подключается). В tgui нет готового
-   select-варианта такого поля, поэтому "самописный". Кликабелен только бокс-триггер; subhead/
-   subtitle — обычный текст вокруг, как header/hint у Input. */
+   Текст рендерится компонентом tgui `Subheadline` (шрифты — за его счёт, здесь только цвет/раскладка),
+   а сам триггер оформлен как поле ввода tgui `Input`/`FormInput` на базовой платформе: без заливки,
+   постоянный 2px ring через box-shadow (var(--tgui--outline), на фокусе/открытом меню —
+   var(--tgui--link_color)), radius 14px, internal padding 12px 16px — именно так `Input` даёт
+   "пространство" вокруг текста через свой `<label>`-бокс (залитый фон и radius 12px — это отдельная
+   iOS-тема, у нас нигде не подключается). В tgui нет готового select-варианта такого поля, поэтому
+   "самописный". Кликабелен только бокс-триггер; header/subtitle — обычный текст вокруг, как header/hint
+   у Input. */
 .dropdown-picker {
   display: flex;
   flex-direction: column;
@@ -35,13 +35,7 @@
   );
 }
 
-/* Основной текст Cell (children), не subhead-подпись: tgui рендерит его через Subheadline level="1"
-   (16px/24px на базовой платформе, не iOS) с font-weight accent3 и обычным text_color — см.
-   useTypographyCellComponents/Cell.js. */
 .dropdown-picker__header {
-  font-size: var(--tgui--subheadline1--font_size, 16px);
-  line-height: var(--tgui--subheadline1--line_height, 24px);
-  font-weight: var(--tgui--font_weight--accent3, 400);
   color: var(--tgui--text_color, #000);
 }
 
@@ -62,8 +56,6 @@
   background: none;
   box-shadow: 0 0 0 2px var(--tgui--outline, rgba(0, 0, 0, 0.15));
   color: var(--tgui--text_color, #000);
-  font-size: 16px;
-  line-height: 24px;
   font-family: inherit;
   text-align: left;
   cursor: pointer;
@@ -113,8 +105,6 @@
 }
 
 .dropdown-picker__subtitle {
-  font-size: 15px;
-  line-height: 22px;
   color: var(--tgui--hint_color, #7d8b99);
 }
 
@@ -180,7 +170,6 @@
   border-radius: 10px;
   background: none;
   color: var(--tgui--text_color, #000);
-  font-size: 15px;
   font-family: inherit;
   text-align: left;
   cursor: pointer;
@@ -189,12 +178,10 @@
 .dropdown-picker__status {
   padding: 10px 12px;
   color: var(--tgui--hint_color, #7d8b99);
-  font-size: 15px;
 }
 
 .dropdown-picker__option.is-active {
   color: var(--tgui--link_color, #2481cc);
-  font-weight: 600;
 }
 
 .dropdown-picker__option:hover,

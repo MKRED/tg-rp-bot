@@ -1,4 +1,4 @@
-import { Spinner } from "@telegram-apps/telegram-ui";
+import { Caption, Spinner } from "@telegram-apps/telegram-ui";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
@@ -342,17 +342,19 @@ export function RpChatPage() {
         <div className="rp-chat-page__input">
           {editingMsg && (
             <div style={{
-              fontSize: 12, color: "var(--tgui--hint_color)", padding: "0 4px 6px",
+              color: "var(--tgui--hint_color)", padding: "0 4px 6px",
               display: "flex", gap: 8,
             }}>
-              <span>Редактирование</span>
-              <button
-                style={{ border: "none", background: "none", cursor: "pointer", color: "var(--tgui--link_color)", fontSize: 12, padding: 0 }}
+              <Caption level="2" Component="span">Редактирование</Caption>
+              <Caption
+                level="2"
+                Component="button"
+                style={{ border: "none", background: "none", cursor: "pointer", color: "var(--tgui--link_color)", padding: 0 }}
                 onClick={() => setEditingId(null)}
                 type="button"
               >
                 Отмена
-              </button>
+              </Caption>
             </div>
           )}
           <ChatInput

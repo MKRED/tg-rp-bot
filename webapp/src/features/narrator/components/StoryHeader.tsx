@@ -1,4 +1,4 @@
-import { Avatar, AvatarStack } from "@telegram-apps/telegram-ui";
+import { Avatar, AvatarStack, Subheadline } from "@telegram-apps/telegram-ui";
 import { GitBranch, Settings } from "lucide-react";
 import { useAvatarBatch } from "../../../shared/avatar/useAvatarBatch";
 import { nameInitials } from "../../../shared/text/initials";
@@ -36,7 +36,7 @@ export function StoryHeader({ title, avatars, onGraphClick, onSettingsClick }: S
           ))}
         </AvatarStack>
       )}
-      <span className="story-page__header-title">{title}</span>
+      <Subheadline level="1" weight="2" Component="span" className="story-page__header-title">{title}</Subheadline>
       <div className="story-page__header-actions">
         <button
           className="story-page__header-btn"

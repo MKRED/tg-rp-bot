@@ -1,4 +1,4 @@
-import { Spinner } from "@telegram-apps/telegram-ui";
+import { Spinner, Text } from "@telegram-apps/telegram-ui";
 import { useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { ROUTES } from "../../app/routes";
@@ -68,7 +68,7 @@ export function PresetEditPage() {
   if (error || (id !== undefined && !preset)) {
     return (
       <PageTransition>
-        <div className="presets-page__fullcenter">Пресет не найден</div>
+        <Text Component="div" className="presets-page__fullcenter">Пресет не найден</Text>
       </PageTransition>
     );
   }

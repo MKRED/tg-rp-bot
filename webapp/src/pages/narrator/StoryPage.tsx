@@ -1,4 +1,4 @@
-import { Spinner } from "@telegram-apps/telegram-ui";
+import { Spinner, Text } from "@telegram-apps/telegram-ui";
 import { AnimatePresence } from "framer-motion";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
@@ -223,7 +223,7 @@ export function StoryPage() {
   if (error || !story) {
     return (
       <PageTransition>
-        <div className="story-page__fullcenter">История не найдена</div>
+        <Text Component="div" className="story-page__fullcenter">История не найдена</Text>
       </PageTransition>
     );
   }
@@ -286,7 +286,7 @@ export function StoryPage() {
                 ) : (
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--tgui--hint_color)" }}>
                     <Spinner size="s" />
-                    {statusPhase === "compacting" && "Сжимаю историю…"}
+                    {statusPhase === "compacting" && <Text Component="span">Сжимаю историю…</Text>}
                   </span>
                 )}
               </div>

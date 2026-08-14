@@ -1,4 +1,4 @@
-import { Cell, List, Section, Spinner, Switch } from "@telegram-apps/telegram-ui";
+import { Cell, List, Section, Spinner, Switch, Text } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import { Bot, ChevronRight, Eraser, FileText, Trash2, User } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -330,7 +330,7 @@ export function RpChatSettingsPage() {
                   transition={{ ...ITEM_T, delay: 0 }}
                 >
                   <Cell
-                    after={<span style={{ color: "var(--tgui--hint_color)" }}>{fmtTokens(stats.tokensTotal)}</span>}
+                    after={<Text style={{ color: "var(--tgui--hint_color)" }}>{fmtTokens(stats.tokensTotal)}</Text>}
                     subtitle="Токенов в сообщениях всех веток"
                   >
                     Весь чат
@@ -343,7 +343,7 @@ export function RpChatSettingsPage() {
                   transition={{ ...ITEM_T, delay: 0.07 }}
                 >
                   <Cell
-                    after={<span style={{ color: "var(--tgui--hint_color)" }}>{fmtTokens(stats.tokensActiveBranch)}</span>}
+                    after={<Text style={{ color: "var(--tgui--hint_color)" }}>{fmtTokens(stats.tokensActiveBranch)}</Text>}
                     subtitle="Токенов в сообщениях текущей ветки"
                   >
                     Активная ветка
@@ -369,7 +369,7 @@ export function RpChatSettingsPage() {
                 >
                   <Cell
                     before={<Eraser size={20} style={{ color: "var(--tgui--hint_color)" }} />}
-                    after={<span style={{ color: "var(--tgui--hint_color)" }}>{stats.impersonationCount}</span>}
+                    after={<Text style={{ color: "var(--tgui--hint_color)" }}>{stats.impersonationCount}</Text>}
                     subtitle="Сгенерированные варианты реплик игрока"
                     onClick={handleClearVariants}
                     style={{

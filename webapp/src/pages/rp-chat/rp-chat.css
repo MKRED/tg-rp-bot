@@ -147,8 +147,6 @@
 }
 
 .chat-header__name {
-  font-weight: 600;
-  font-size: 16px;
   color: var(--tgui--text_color, #000);
   white-space: nowrap;
   overflow: hidden;
@@ -426,8 +424,6 @@
 }
 
 .impersonate-sheet__title {
-  font-size: 16px;
-  font-weight: 600;
   color: var(--tgui--text_color, #000);
 }
 

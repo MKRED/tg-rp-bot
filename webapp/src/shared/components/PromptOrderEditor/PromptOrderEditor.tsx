@@ -1,4 +1,4 @@
-import { Switch } from "@telegram-apps/telegram-ui";
+import { Caption, Switch, Text } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import "./PromptOrderEditor.css";
 
@@ -77,11 +77,13 @@ export function PromptOrderEditor<Id extends string>({
               </button>
             </div>
             <div className="prompt-order__text">
-              <span className="prompt-order__label">
+              <Text className="prompt-order__label">
                 {labels[item.id]}
-                {isUnimplemented && <span className="prompt-order__soon"> · скоро</span>}
-              </span>
-              <span className="prompt-order__source">{sources[item.id]}</span>
+                {isUnimplemented && <Caption level="1" className="prompt-order__soon"> · скоро</Caption>}
+              </Text>
+              <Caption level="2" Component="span" className="prompt-order__source">
+                {sources[item.id]}
+              </Caption>
             </div>
             <Switch
               checked={item.enabled}

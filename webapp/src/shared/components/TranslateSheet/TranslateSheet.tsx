@@ -1,4 +1,4 @@
-import { Spinner } from "@telegram-apps/telegram-ui";
+import { Caption, Spinner, Subheadline, Text } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import { Eraser, Languages, SendHorizontal, X } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
@@ -116,7 +116,7 @@ export function TranslateSheet({
         transition={SHEET_T}
       >
         <div className="translate-sheet__header">
-          <span className="translate-sheet__title">Перевод</span>
+          <Subheadline level="1" weight="2" Component="span" className="translate-sheet__title">Перевод</Subheadline>
           <button
             className="translate-sheet__close"
             onClick={onClose}
@@ -153,15 +153,17 @@ export function TranslateSheet({
             </div>
           ) : result ? (
             <div className="translate-sheet__card" onClick={() => onPick(result)}>
-              <p className="translate-sheet__card-text">
+              <Text Component="p" className="translate-sheet__card-text">
                 <RpText text={result} />
-              </p>
-              <span className="translate-sheet__card-hint">Нажмите, чтобы вставить в сообщение</span>
+              </Text>
+              <Caption level="2" weight="2" Component="span" className="translate-sheet__card-hint">
+                Нажмите, чтобы вставить в сообщение
+              </Caption>
             </div>
           ) : (
             <div className="translate-sheet__placeholder">
               <Languages size={28} strokeWidth={1.5} />
-              <span>Введите текст ниже и нажмите отправить</span>
+              <Text>Введите текст ниже и нажмите отправить</Text>
             </div>
           )}
         </div>
