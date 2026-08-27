@@ -1,8 +1,11 @@
 import type { CardCategory } from "../../../db/cards/index.js";
-import type { ChatMessage } from "../../../llm/types.js";
+import type { ChatMessage, ToolCallMessage, ToolResultMessage } from "../../../llm/types.js";
+import { ASK_USER_TOOL_NAME } from "./askUserTool.js";
+
+type PromptMessage = ChatMessage | ToolCallMessage | ToolResultMessage;
 
 export interface CardBlockPrompt {
-  messages: ChatMessage[];
+  messages: PromptMessage[];
   targetCategoryId: string;
 }
 
@@ -25,6 +28,14 @@ export interface CardBlockPrompt {
  * и всё, что после — не читаются, будто ещё не существуют. Без параметра — как раньше, целью
  * становится первая enabled-категория с пустым content.
  *
+ * askUserAnswers каждой категории (см. schema.types.ts) реплеится в её историю КАК НАСТОЯЩИЙ
+ * tool_call/tool_result (см. appendAskUserExchange) — синтетический assistant-ход с tool_calls
+ * (ask_user, вопросы как аргументы) сразу за user-сообщением, которым блок был запрошен, и tool-
+ * сообщение с ответами сразу после. Модель должна видеть, что это результат ЕЁ ЖЕ вызова
+ * инструмента, а не текст, будто пользователь сам где-то это сказал (сервер накопил только пары
+ * вопрос-ответ — см. applyCardCategoryAnswers, — не исходный tool_call модели, поэтому и id
+ * tool_call, и сама обёртка вызова здесь синтетические, восстановленные заново).
+ *
  * undefined — генерировать нечего: явная цель не найдена среди enabled-категорий, целевая позиция
  * не первая, но что-то ПЕРЕД ней ещё не заполнено (иначе в историю ушло бы пустое assistant-
  * сообщение — рассинхрон с реальной последовательностью), либо (без targetCategoryId) все
@@ -45,21 +56,24 @@ export function assembleCardBlockPrompt(
   if (enabled.slice(0, targetIndex).some((c) => c.content.trim() === "")) return undefined;
   const target = enabled[targetIndex]!;
 
-  const messages: ChatMessage[] = [{ role: "system", content: systemPrompt }];
+  const messages: PromptMessage[] = [{ role: "system", content: systemPrompt }];
 
   const mainUserContent = insertExampleBlock(prompt, buildExampleBlock(enabled));
   messages.push({
     role: "user",
     content: targetIndex === 0 ? `${mainUserContent}\n\n${blockRequest(target.title)}` : mainUserContent,
   });
+  appendAskUserExchange(messages, targetIndex === 0 ? target : enabled[0]!);
 
   if (targetIndex > 0) {
     messages.push({ role: "assistant", content: enabled[0]!.content });
     for (const cat of enabled.slice(1, targetIndex)) {
       messages.push({ role: "user", content: blockRequest(cat.title) });
+      appendAskUserExchange(messages, cat);
       messages.push({ role: "assistant", content: cat.content });
     }
     messages.push({ role: "user", content: blockRequest(target.title) });
+    appendAskUserExchange(messages, target);
   }
 
   return { messages, targetCategoryId: target.id };
@@ -68,6 +82,49 @@ export function assembleCardBlockPrompt(
 /** Короткий запрос на генерацию конкретного блока — на английском, формат ответа задаёт system. */
 function blockRequest(title: string): string {
   return `Generate the "${title}" block.`;
+}
+
+/**
+ * Дописывает в историю синтетическую пару assistant tool_calls(ask_user) + tool-result — реплей
+ * уже собранных askUserAnswers категории как настоящего вызова инструмента (см. докблок
+ * assembleCardBlockPrompt), а не текста в user-сообщении. id tool_call — стабильный синтетический
+ * (свой на category.id), а не реальный id исходного вызова модели: сервер его не хранит (см.
+ * applyCardCategoryAnswers), но провайдеру важно только совпадение id между tool_calls и
+ * tool_call_id, не его происхождение. Аргументы вызова восстанавливаются из вопросов (без options —
+ * они были нужны только для UI подсказок, для контекста генерации достаточно текста вопроса).
+ * Пусто — если ответов не было вовсе.
+ */
+function appendAskUserExchange(messages: PromptMessage[], category: CardCategory): void {
+  const answers = category.askUserAnswers;
+  if (!answers || answers.length === 0) return;
+  const toolCallId = `ask_user_${category.id}`;
+  messages.push({
+    role: "assistant",
+    content: null,
+    // DeepSeek thinking-режим требует reasoning_content на ЛЮБОМ assistant-сообщении с tool_calls в
+    // истории, даже синтетическом (без него — 400 "reasoning_content in the thinking mode must be
+    // passed back", подтверждено ручным запросом к DeepSeek) — реальных «мыслей» модели за этим
+    // вызовом сервер не хранит (см. докблок assembleCardBlockPrompt), поэтому здесь заглушка.
+    reasoning_content: "Deciding to ask the user a clarifying question before generating this block.",
+    tool_calls: [
+      {
+        id: toolCallId,
+        type: "function",
+        function: {
+          name: ASK_USER_TOOL_NAME,
+          arguments: JSON.stringify({ questions: answers.map((a) => ({ question: a.question })) }),
+        },
+      },
+    ],
+  });
+  messages.push({
+    role: "tool",
+    tool_call_id: toolCallId,
+    content: JSON.stringify({
+      answers: answers.map((a) => ({ question: a.question, answer: a.answer })),
+      note: "These have already been answered — don't call ask_user again for the same information.",
+    }),
+  });
 }
 
 /** <example>-блок из title+description enabled-категорий — образец формата для ИИ. */

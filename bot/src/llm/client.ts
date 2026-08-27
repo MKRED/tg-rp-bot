@@ -133,6 +133,7 @@ async function chatCompletionSingle(
         }
       : undefined,
     toolCalls: data.choices[0]?.message.tool_calls,
+    reasoningContent: data.choices[0]?.message.reasoning_content,
   };
 
   logger.info(

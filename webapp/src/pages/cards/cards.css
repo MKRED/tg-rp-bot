@@ -199,9 +199,15 @@
   padding: 8px 22px 16px;
 }
 
-/* --- Уточняющие вопросы (AskUserQuestionsModal) ---
-   Каждый вопрос: текст + опциональный ряд кнопок-подсказок + поле ответа, с отступом снизу перед
-   следующим вопросом. Divider между вопросами вставляет сам Section (top-level children). */
+/* --- Уточняющие вопросы (AskUserQuestionsCarousel) ---
+   Рендерится как top-level child той же <Section>, что и обычные блоки (см. GenerationSection) —
+   без собственной вложенной Section (задвоила бы фон/Divider-логику tgui). Заголовок + один вопрос
+   за раз (текст + опциональный ряд кнопок-подсказок + поле ответа) + строка навигации
+   («Назад»/«Далее») над кнопкой «Пропустить все вопросы». */
+.card-ask-user__title {
+  padding: 12px 12px 0;
+}
+
 .card-ask-user__question {
   display: flex;
   flex-direction: column;
@@ -213,4 +219,14 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.card-ask-user__actions {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-ask-user__nav {
+  display: flex;
+  gap: 8px;
 }

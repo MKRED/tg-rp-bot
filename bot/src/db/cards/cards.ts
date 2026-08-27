@@ -2,7 +2,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import logger from "../../logger.js";
 import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/index.js";
 import { db, schema } from "../index.js";
-import type { Card, CardCategory } from "../schema.js";
+import type { AskUserAnswer, AskUserQuestion, Card, CardCategory } from "../schema.js";
 import {
   DEFAULT_CARD_CATEGORIES,
   DEFAULT_CARD_PROMPT,
@@ -12,13 +12,22 @@ import type { CardInput, CardListItem } from "./types.js";
 
 export { ensureUser } from "../users.js";
 
-/** Шифрует текстовые поля категорий (title/description/content), id/enabled — как есть. */
+/** Шифрует текстовые поля категорий (title/description/content + ask_user question/answer/options),
+ * id/enabled — как есть. */
 function encryptCategories(categories: CardCategory[], key: Buffer): CardCategory[] {
   return categories.map((c) => ({
     ...c,
     title: encryptField(c.title, key),
     description: encryptField(c.description, key),
     content: encryptField(c.content, key),
+    pendingQuestions: c.pendingQuestions?.map((q) => ({
+      question: encryptField(q.question, key),
+      options: q.options?.map((o) => encryptField(o, key)),
+    })),
+    askUserAnswers: c.askUserAnswers?.map((a) => ({
+      question: encryptField(a.question, key),
+      answer: encryptField(a.answer, key),
+    })),
   }));
 }
 
@@ -29,6 +38,14 @@ function decryptCategories(categories: CardCategory[], key: Buffer): CardCategor
     title: decryptField(c.title, key),
     description: decryptField(c.description, key),
     content: decryptField(c.content, key),
+    pendingQuestions: c.pendingQuestions?.map((q) => ({
+      question: decryptField(q.question, key),
+      options: q.options?.map((o) => decryptField(o, key)),
+    })),
+    askUserAnswers: c.askUserAnswers?.map((a) => ({
+      question: decryptField(a.question, key),
+      answer: decryptField(a.answer, key),
+    })),
   }));
 }
 
@@ -117,15 +134,28 @@ export async function createCard(userId: number, input: CardInput): Promise<Card
   return decryptCardRow(created, userId);
 }
 
+/** Собирает CardInput из уже расшифрованной строки — для точечных операций ниже, которым нужно
+ * перезаписать карточку целиком (drizzle/jsonb не поддерживает патч одного поля вложенного элемента). */
+function cardToInput(card: Card): CardInput {
+  return {
+    name: card.name,
+    systemPrompt: card.systemPrompt,
+    prompt: card.prompt,
+    categories: card.categories,
+    presetId: card.presetId,
+    useWebSearch: card.useWebSearch,
+    useAskUser: card.useAskUser,
+  };
+}
+
 /**
- * Обновляет карточку (только свою). Возвращает обновлённую строку (расшифрованную) или undefined,
- * если карточки с таким id у пользователя нет.
+ * Пишет карточку как есть, без подмешивания состояния ask_user — вызывающий обязан сам передать уже
+ * корректный (актуальный) массив categories, включая pendingQuestions/askUserAnswers, если они должны
+ * сохраниться. Используется точечными операциями ниже, которые держат карточку в руках и меняют одно
+ * поле одной категории — updateCard (принимает вход из клиента, который эти поля не знает) строит
+ * безопасный массив сам и делегирует сюда.
  */
-export async function updateCard(
-  userId: number,
-  id: number,
-  input: CardInput,
-): Promise<Card | undefined> {
+async function persistCard(userId: number, id: number, input: CardInput): Promise<Card | undefined> {
   const t0 = Date.now();
   const key = getUserEncryptionKey(userId);
   // Тот же фоллбэк, что в createCard: пустой systemPrompt (например, из CardForm у карточки,
@@ -152,6 +182,31 @@ export async function updateCard(
   return updated ? decryptCardRow(updated, userId) : undefined;
 }
 
+/**
+ * Обновляет карточку из клиентского input (форма Mini App, только своя). Возвращает обновлённую
+ * строку (расшифрованную) или undefined, если карточки с таким id у пользователя нет.
+ *
+ * pendingQuestions/askUserAnswers — состояние ask_user (см. schema.types.ts) сервер-владеемое:
+ * клиент никогда не присылает их (parseCardInput их не читает), а полная перезапись input.categories
+ * без подмешивания стёрла бы их при любом обычном сохранении формы. Поэтому здесь всегда читаем
+ * текущую строку и переносим оба поля из неё по id категории, что бы ни пришло во входе.
+ */
+export async function updateCard(
+  userId: number,
+  id: number,
+  input: CardInput,
+): Promise<Card | undefined> {
+  const existing = await getCard(userId, id);
+  if (!existing) return undefined;
+  const existingById = new Map(existing.categories.map((c) => [c.id, c]));
+  const categories = input.categories.map((c) => ({
+    ...c,
+    pendingQuestions: existingById.get(c.id)?.pendingQuestions,
+    askUserAnswers: existingById.get(c.id)?.askUserAnswers,
+  }));
+  return persistCard(userId, id, { ...input, categories });
+}
+
 /** Удаляет карточку (только свою). true — если строка была удалена. */
 export async function deleteCard(userId: number, id: number): Promise<boolean> {
   const t0 = Date.now();
@@ -169,6 +224,11 @@ export async function deleteCard(userId: number, id: number): Promise<boolean> {
  * Возвращает обновлённую (расшифрованную) карточку или undefined, если карточка не найдена.
  * Точечная запись вместо полного updateCard — используется хендлером генерации блока, где
  * меняется только content одной категории, а не вся форма.
+ *
+ * pendingQuestions сбрасывается явно: content появляется, только когда генерация ЗАВЕРШЕНА (в т.ч.
+ * после ответа на ask_user — см. answerQuestions.ts), а без сброса случайно оставшиеся вопросы
+ * (клиент не увидел ответ на паузу — потерял сеть/вкладку, и следующий вызов уже прошёл без
+ * уточнения) навсегда перекрывали бы готовый блок каруселью в интерфейсе.
  */
 export async function setCardCategoryContent(
   userId: number,
@@ -178,14 +238,66 @@ export async function setCardCategoryContent(
 ): Promise<Card | undefined> {
   const card = await getCard(userId, id);
   if (!card) return undefined;
-  const categories = card.categories.map((c) => (c.id === categoryId ? { ...c, content } : c));
-  return updateCard(userId, id, {
-    name: card.name,
-    systemPrompt: card.systemPrompt,
-    prompt: card.prompt,
-    categories,
-    presetId: card.presetId,
-    useWebSearch: card.useWebSearch,
-    useAskUser: card.useAskUser,
-  });
+  const categories = card.categories.map((c) =>
+    c.id === categoryId ? { ...c, content, pendingQuestions: undefined } : c,
+  );
+  return persistCard(userId, id, { ...cardToInput(card), categories });
+}
+
+/**
+ * Записывает вопросы ask_user, ожидающие ответа для одной категории (генерация блока приостановлена
+ * до ответа пользователя — см. server/cards/generation/generateBlock.ts). Точечная запись, как
+ * setCardCategoryContent.
+ */
+export async function setCardCategoryPendingQuestions(
+  userId: number,
+  id: number,
+  categoryId: string,
+  questions: AskUserQuestion[],
+): Promise<Card | undefined> {
+  const card = await getCard(userId, id);
+  if (!card) return undefined;
+  const categories = card.categories.map((c) => (c.id === categoryId ? { ...c, pendingQuestions: questions } : c));
+  return persistCard(userId, id, { ...cardToInput(card), categories });
+}
+
+/**
+ * Сбрасывает накопленные askUserAnswers одной категории — используется явной «Перегенерировать»
+ * (см. server/cards/generation/generateBlock.ts, resetAskUserAnswers), а не резюмированием паузы
+ * ask_user: без сброса ответы, собранные для СТАРОГО (уже заменяемого) варианта блока, реплеились
+ * бы в промпт вечно при каждой последующей перегенерации этого же блока (см. promptAssembly.ts) —
+ * и так же вечно занимали бы бюджет ASK_USER_MAX_ANSWERED_QUESTIONS, который иначе никогда не
+ * освобождается. Явный ответ пользователя на паузу (answerQuestions.ts) сюда не заходит — там
+ * ответы, наоборот, должны накапливаться в рамках ОДНОЙ попытки генерации.
+ */
+export async function clearCardCategoryAskUserAnswers(
+  userId: number,
+  id: number,
+  categoryId: string,
+): Promise<Card | undefined> {
+  const card = await getCard(userId, id);
+  if (!card) return undefined;
+  const categories = card.categories.map((c) => (c.id === categoryId ? { ...c, askUserAnswers: undefined } : c));
+  return persistCard(userId, id, { ...cardToInput(card), categories });
+}
+
+/**
+ * Дописывает ответы (или отказ) на вопросы ask_user одной категории в её накопленную историю и
+ * снимает pendingQuestions — см. server/cards/generation/answerQuestions.ts, которая после этого
+ * заново запускает генерацию блока с уже известными ответами в контексте.
+ */
+export async function applyCardCategoryAnswers(
+  userId: number,
+  id: number,
+  categoryId: string,
+  answers: AskUserAnswer[],
+): Promise<Card | undefined> {
+  const card = await getCard(userId, id);
+  if (!card) return undefined;
+  const categories = card.categories.map((c) =>
+    c.id === categoryId
+      ? { ...c, pendingQuestions: undefined, askUserAnswers: [...(c.askUserAnswers ?? []), ...answers] }
+      : c,
+  );
+  return persistCard(userId, id, { ...cardToInput(card), categories });
 }

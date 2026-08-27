@@ -1,10 +1,17 @@
 import { chatCompletion } from "../../../llm/client.js";
-import type { ChatCompletionOptions, ToolCall } from "../../../llm/types.js";
+import type {
+  ChatCompletionOptions,
+  ChatMessage,
+  ToolCall,
+  ToolCallMessage,
+  ToolResultMessage,
+} from "../../../llm/types.js";
 import logger from "../../../logger.js";
 import { TavilyHttpError } from "../../../tavily/errors.js";
 import { tavilySearch, WEB_SEARCH_TOOL, WEB_SEARCH_TOOL_NAME } from "../../../tavily/webSearch.js";
 import { ASK_USER_TOOL, ASK_USER_TOOL_NAME, parseAskUserArguments, type AskUserQuestion } from "./askUserTool.js";
-import type { LoopMessage } from "./pendingGeneration.js";
+
+type LoopMessage = ChatMessage | ToolCallMessage | ToolResultMessage;
 
 /** Сколько раз модель может вызвать ask_user за одну генерацию блока (включая невалидные/повторные
  * вызовы) — защита от бесконечного диалога вопросов. В норме модель укладывает всё уточнение в
@@ -54,21 +61,9 @@ export interface ToolLoopParams {
   tavilyApiKey: string | null;
   maxSearchRounds: number;
   askUserEnabled: boolean;
-  /** Резюме после ask_user — бюджеты продолжаются с прежних значений, а не с нуля. */
-  searchesUsedStart?: number;
-  askUserRoundsUsedStart?: number;
 }
 
-export type ToolLoopOutcome =
-  | { done: true; content: string }
-  | {
-      done: false;
-      history: LoopMessage[];
-      toolCallId: string;
-      questions: AskUserQuestion[];
-      searchesUsed: number;
-      askUserRoundsUsed: number;
-    };
+export type ToolLoopOutcome = { done: true; content: string } | { done: false; questions: AskUserQuestion[] };
 
 /**
  * Генерация блока карточки с function calling (web_search + ask_user, DeepSeek thinking-режим
@@ -79,12 +74,22 @@ export type ToolLoopOutcome =
  * кап, не полагаемся только на инструкцию в промпте).
  *
  * ask_user не резолвится внутри цикла (в отличие от web_search) — эта функция возвращается с
- * done: false, а вызывающий (generateBlock/resumeBlock) сохраняет history в pendingGeneration и
- * ждёт ответа пользователя через HTTP. Гарантия завершения цикла: любой ход с tool_calls[] либо
- * приостанавливает выполнение (return), либо поднимает searchesUsed/askUserRoundsUsed минимум на 1
- * за каждый tool_call в нём (web_search и неизвестные инструменты — searchesUsed, ask_user —
- * askUserRoundsUsed, даже если аргументы битые/повторные) — значит хотя бы один из бюджетов
- * неизбежно исчерпается не позже чем через maxSearchRounds + ASK_USER_MAX_ROUNDS ходов.
+ * done: false и только вопросами. Вызывающий (generateBlock.ts/answerQuestions.ts) НЕ резюмирует
+ * этот же LLM-разговор: он сохраняет вопросы на самой категории (см. schema.types.ts) и, получив
+ * ответ, просто заново вызывает эту функцию с прогнанным через assembleCardBlockPrompt промптом,
+ * где ответы реплеятся заново синтетической парой assistant tool_calls(ask_user)/tool-result (см.
+ * promptAssembly.ts) — без хранения исходного tool_call/tool_result между HTTP-запросами (некому
+ * было бы гарантировать, что такая история останется валидной для протокола провайдера).
+ * Бюджет ask_user (askUserRoundsUsed/ASK_USER_MAX_ROUNDS) — только страховка ВНУТРИ одного такого
+ * вызова; сквозь несколько HTTP-раундов ответа сервер ограничивает число вопросов иначе, гейтя
+ * askUserEnabled по накопленному askUserAnswers.length категории (см. generateBlock.ts,
+ * ASK_USER_MAX_ANSWERED_QUESTIONS).
+ *
+ * Гарантия завершения цикла: любой ход с tool_calls[] либо приостанавливает выполнение (return),
+ * либо поднимает searchesUsed/askUserRoundsUsed минимум на 1 за каждый tool_call в нём (web_search
+ * и неизвестные инструменты — searchesUsed, ask_user — askUserRoundsUsed, даже если аргументы
+ * битые/повторные) — значит хотя бы один из бюджетов неизбежно исчерпается не позже чем через
+ * maxSearchRounds + ASK_USER_MAX_ROUNDS ходов.
  */
 export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise<ToolLoopOutcome> {
   const { baseOptions, tavilyApiKey, maxSearchRounds, askUserEnabled } = params;
@@ -92,8 +97,8 @@ export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise
   const t0 = Date.now();
 
   const history: LoopMessage[] = [...params.history];
-  let searchesUsed = params.searchesUsedStart ?? 0;
-  let askUserRoundsUsed = params.askUserRoundsUsedStart ?? 0;
+  let searchesUsed = 0;
+  let askUserRoundsUsed = 0;
   let llmCalls = 0;
 
   for (;;) {
@@ -116,9 +121,20 @@ export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise
       return { done: true, content: result.content };
     }
 
-    history.push({ role: "assistant", content: result.content || null, tool_calls: result.toolCalls });
+    // reasoning_content — обязателен для DeepSeek thinking-режима на КАЖДОМ следующем запросе, где
+    // это assistant-сообщение снова попадёт в историю (иначе 400, см. ToolCallMessage в llm/types.ts,
+    // подтверждено ручным запросом к DeepSeek). В живом thinking-ответе с tool_calls DeepSeek САМ
+    // возвращает reasoning_content (тоже подтверждено запросом) — result.reasoningContent должен
+    // быть заполнен; заглушка ниже — не рабочий путь, а страховка на случай, если конкретный ответ
+    // его всё же не вернёт (проверено, что лишнее поле безвредно и при отключённом thinking).
+    history.push({
+      role: "assistant",
+      content: result.content || null,
+      tool_calls: result.toolCalls,
+      reasoning_content: result.reasoningContent ?? "Calling a tool to complete this response.",
+    });
 
-    let pausedOn: { toolCallId: string; questions: AskUserQuestion[] } | undefined;
+    let pausedQuestions: AskUserQuestion[] | undefined;
     let authFailed = false;
 
     for (const call of result.toolCalls) {
@@ -126,7 +142,7 @@ export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise
         // Считаем сам факт вызова независимо от валидности аргументов/повторности — иначе битые
         // аргументы не расходовали бы бюджет и цикл не был бы гарантированно конечным.
         askUserRoundsUsed++;
-        if (pausedOn) {
+        if (pausedQuestions) {
           history.push({
             role: "tool",
             tool_call_id: call.id,
@@ -144,7 +160,7 @@ export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise
           });
           continue;
         }
-        pausedOn = { toolCallId: call.id, questions };
+        pausedQuestions = questions;
         continue;
       }
 
@@ -154,19 +170,12 @@ export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise
       if (outcome.authFailed) authFailed = true;
     }
 
-    if (pausedOn) {
+    if (pausedQuestions) {
       logger.info(
-        { userId, askUserRoundsUsed, questionsCount: pausedOn.questions.length, durationMs: Date.now() - t0 },
+        { userId, askUserRoundsUsed, questionsCount: pausedQuestions.length, durationMs: Date.now() - t0 },
         "Card generation tool loop: пауза на ask_user",
       );
-      return {
-        done: false,
-        history,
-        toolCallId: pausedOn.toolCallId,
-        questions: pausedOn.questions,
-        searchesUsed,
-        askUserRoundsUsed,
-      };
+      return { done: false, questions: pausedQuestions };
     }
 
     if (authFailed) searchesUsed = maxSearchRounds; // не ретраим дальше — следующий ход уйдёт без web_search

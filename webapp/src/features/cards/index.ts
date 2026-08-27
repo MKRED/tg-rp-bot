@@ -15,7 +15,7 @@ export {
   answerCardBlockQuestions,
 } from "./api/cards-api";
 export { assembleExportPrompt } from "./lib/assembleExportPrompt";
-export type { AskUserQuestion, Card, CardCategory, CardInput, CardListItem, CardPresetOption } from "./types/card";
+export type { Card, CardCategory, CardInput, CardListItem, CardPresetOption } from "./types/card";
 export {
   DEFAULT_CARD_CATEGORIES,
   DEFAULT_CARD_PROMPT,

@@ -6,8 +6,8 @@ import { SectionActions } from "../../../../shared/components/SectionActions";
 import { confirmAction } from "../../../../shared/telegram/confirm";
 import { useToast } from "../../../../shared/toast";
 import { answerCardBlockQuestions, generateCardBlock } from "../../api/cards-api";
-import type { AskUserQuestion, CardCategory } from "../../types/card";
-import { AskUserQuestionsModal } from "./AskUserQuestionsModal";
+import type { CardCategory } from "../../types/card";
+import { AskUserQuestionsCarousel } from "./AskUserQuestionsCarousel";
 
 const ERROR_MESSAGES: Record<string, string> = {
   preset_required: "Сначала выберите пресет ИИ для генерации",
@@ -33,7 +33,9 @@ interface GenerationSectionProps {
   formDirty: boolean;
   /** Сохраняет форму (тот же путь, что кнопка «Сохранить») — true при успехе. */
   onSaveBeforeGenerate: () => Promise<boolean>;
-  /** Ручная правка content — часть «грязного» состояния формы (требует «Сохранить»). */
+  /** Ручная правка content — часть «грязного» состояния формы (требует «Сохранить»). Используется
+   * и для локального обновления pendingQuestions категории (ask_user) — это НЕ грязная правка
+   * формы, normalizeCardDraft эти поля из сравнения исключает (см. lib/formDirty.ts). */
   onContentChange: (categories: CardCategory[]) => void;
   /** Результат генерации уже сохранён на сервере — родитель синхронизирует и стейт, и baseline. */
   onGenerated: (categoryId: string, content: string) => void;
@@ -47,6 +49,12 @@ interface GenerationSectionProps {
  * шаг очереди), у блоков ниже (очередь до них ещё не дошла) — кнопки нет. Перегенерация запрашивает
  * тот же блок явным categoryId — как если бы мы снова шли по очереди и дошли до него (контекст —
  * блоки строго до него, см. assembleCardBlockPrompt на сервере).
+ *
+ * Уточняющие вопросы (ask_user, см. askUserTool.ts на сервере) — если модель попросила уточнение
+ * перед генерацией блока, вместо его PromptEditorField+кнопки рендерится AskUserQuestionsCarousel:
+ * вопросы и ответы хранятся прямо на категории (category.pendingQuestions/askUserAnswers — приходят
+ * с сервера в самой карточке), а не в стейте этого компонента — ограничения по времени на ответ нет,
+ * состояние переживает reload/новую сессию так же, как обычный незаполненный блок.
  *
  * Несохранённые правки формы (formDirty) больше не прячут кнопки — вместо этого клик по любой
  * кнопке при formDirty сперва предупреждает, что карточка будет сохранена, и только после
@@ -63,17 +71,24 @@ export function GenerationSection({
 }: GenerationSectionProps) {
   const { showToast } = useToast();
   const [generatingId, setGeneratingId] = useState<string | null>(null);
-  // Вопросы ask_user, ожидающие ответа (см. AskUserQuestionsModal) — модель попросила уточнение
-  // ДО того, как выдать блок; null = модалка закрыта. generatingId НЕ сбрасывается, пока она
-  // открыта — с точки зрения кнопок блок всё ещё «генерируется».
-  const [pendingQuestions, setPendingQuestions] = useState<AskUserQuestion[] | null>(null);
   const [answering, setAnswering] = useState(false);
 
   const enabled = categories.filter((c) => c.enabled);
   const nextIndex = enabled.findIndex((c) => c.content.trim() === "");
+  // Пока хоть один блок ждёт ответа на ask_user, очередь генерации дальше не двигаем — это не
+  // сетевая активность (generatingId может быть null после reload), а самостоятельное состояние.
+  // Только по enabled: карусель рендерится ниже тоже внутри enabled.map — если категорию с
+  // зависшими pendingQuestions выключили в структуре, для неё карусель больше нигде не рисуется
+  // (недостижима), и проверка по ВСЕМ categories держала бы buttonsDisabled=true навсегда, блокируя
+  // все кнопки «Сгенерировать»/«Перегенерировать» без пути к восстановлению.
+  const hasPendingQuestions = enabled.some((c) => (c.pendingQuestions?.length ?? 0) > 0);
 
   const updateContent = (id: string, content: string) => {
     onContentChange(categories.map((c) => (c.id === id ? { ...c, content } : c)));
+  };
+
+  const setCategoryPendingQuestions = (categoryId: string, questions: CardCategory["pendingQuestions"]) => {
+    onContentChange(categories.map((c) => (c.id === categoryId ? { ...c, pendingQuestions: questions } : c)));
   };
 
   /**
@@ -89,8 +104,8 @@ export function GenerationSection({
     try {
       const result = await generateCardBlock(id, categoryId);
       if (result.status === "questions") {
-        setPendingQuestions(result.questions);
-        return; // generatingId остаётся — блок ждёт ответа в модалке, не финальной ошибки/успеха
+        setCategoryPendingQuestions(result.categoryId, result.questions);
+        return; // generatingId остаётся — блок ждёт ответа в карусели, не финальной ошибки/успеха
       }
       onGenerated(result.categoryId, result.content);
       setGeneratingId(null);
@@ -101,23 +116,28 @@ export function GenerationSection({
     }
   };
 
-  /** Общий хвост для «Ответить» и «Пропустить» модалки — резюмирует генерацию с того же места. */
-  const respondToQuestions = async (input: { skipped: true } | { skipped: false; answers: string[] }) => {
+  /** Общий хвост для «Ответить» и «Пропустить все вопросы» карусели — запускает генерацию блока
+   * заново с уже известными ответами в контексте (см. answerCardBlockQuestions на сервере). */
+  const respondToQuestions = async (
+    categoryId: string,
+    input: { skipped: true } | { skipped: false; answers: string[] },
+  ) => {
     if (cardId === undefined) return;
     setAnswering(true);
     try {
-      const result = await answerCardBlockQuestions(cardId, input);
+      const result = await answerCardBlockQuestions(cardId, categoryId, input);
       if (result.status === "questions") {
-        setPendingQuestions(result.questions); // модель уточняет ещё раз — редкий случай, но поддержан
+        setCategoryPendingQuestions(result.categoryId, result.questions); // новый раунд уточнений
         return;
       }
-      setPendingQuestions(null);
       onGenerated(result.categoryId, result.content);
       setGeneratingId(null);
     } catch (err) {
       const code = err instanceof ApiError ? err.message : "";
       showToast({ type: "error", message: ERROR_MESSAGES[code] ?? (code || "Не удалось сгенерировать блок") });
-      setPendingQuestions(null);
+      // Вопрос мог устареть (другая вкладка уже ответила/сгенерировала) — не оставляем карусель
+      // висеть в заведомо тупиковом состоянии, пользователь начнёт заново кнопкой «Сгенерировать».
+      setCategoryPendingQuestions(categoryId, undefined);
       setGeneratingId(null);
     } finally {
       setAnswering(false);
@@ -173,6 +193,7 @@ export function GenerationSection({
   // formDirty сюда сознательно не входит — кнопки остаются видимыми, предупреждение и сохранение
   // происходят внутри handleClick при самом клике (см. JSDoc компонента).
   const canAct = cardId !== undefined && presetId !== null;
+  const buttonsDisabled = generatingId !== null || hasPendingQuestions;
 
   return (
     <>
@@ -180,6 +201,21 @@ export function GenerationSection({
         {enabled.map((category, index) => {
           const isRegenerate = nextIndex === -1 || index < nextIndex;
           const isNext = index === nextIndex;
+          const pendingQuestions = category.pendingQuestions;
+
+          if (pendingQuestions && pendingQuestions.length > 0) {
+            return (
+              <AskUserQuestionsCarousel
+                key={category.id}
+                categoryTitle={category.title || "…"}
+                questions={pendingQuestions}
+                submitting={answering}
+                onSubmit={(answers) => void respondToQuestions(category.id, { skipped: false, answers })}
+                onSkipAll={() => void respondToQuestions(category.id, { skipped: true })}
+              />
+            );
+          }
+
           return (
             <div key={category.id}>
               <PromptEditorField
@@ -196,7 +232,7 @@ export function GenerationSection({
                       size="s"
                       mode="outline"
                       loading={generatingId === category.id}
-                      disabled={generatingId !== null}
+                      disabled={buttonsDisabled}
                       onClick={() => handleClick(category, true)}
                     >
                       Перегенерировать
@@ -206,7 +242,7 @@ export function GenerationSection({
                       size="l"
                       stretched
                       loading={generatingId === category.id}
-                      disabled={generatingId !== null}
+                      disabled={buttonsDisabled}
                       onClick={() => handleClick(category, false)}
                     >
                       {`Сгенерировать блок «${category.title || "…"}»`}
@@ -226,14 +262,6 @@ export function GenerationSection({
           </Caption>
         </SectionActions>
       )}
-
-      <AskUserQuestionsModal
-        open={pendingQuestions !== null}
-        questions={pendingQuestions ?? []}
-        submitting={answering}
-        onSubmit={(answers) => void respondToQuestions({ skipped: false, answers })}
-        onSkip={() => void respondToQuestions({ skipped: true })}
-      />
     </>
   );
 }

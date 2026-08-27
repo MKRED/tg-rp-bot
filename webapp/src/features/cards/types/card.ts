@@ -1,10 +1,31 @@
-/** Категория структуры карточки — редактируемый блок (заголовок + пример формата + сгенерированный текст). */
+/** Один уточняющий вопрос от модели (ask_user) — см. GenerationSection/AskUserQuestionsCarousel. */
+export interface AskUserQuestion {
+  question: string;
+  /** Варианты-подсказки от модели — пользователь всё равно может ввести свой текст. */
+  options?: string[];
+}
+
+/** Вопрос-ответ ask_user, уже отвеченный (или пропущенный) — см. AskUserQuestion. */
+export interface AskUserAnswer {
+  question: string;
+  answer: string;
+}
+
+/**
+ * Категория структуры карточки — редактируемый блок (заголовок + пример формата + сгенерированный
+ * текст). pendingQuestions/askUserAnswers — состояние ask_user хранится сервером на самой категории
+ * (см. bot/src/db/schema.types.ts), сюда попадает только для чтения/отображения (GET /cards,
+ * GET /cards/:id, ответы generate/generate-answer) — форма НИКОГДА не отправляет их обратно на
+ * сервер (см. normalizeCardDraft в lib/formDirty.ts, который явно их не копирует в CardInput).
+ */
 export interface CardCategory {
   id: string;
   title: string;
   description: string;
   content: string;
   enabled: boolean;
+  pendingQuestions?: AskUserQuestion[];
+  askUserAnswers?: AskUserAnswer[];
 }
 
 /** Полная карточка, как её отдаёт сервер (GET /cards/:id). */
@@ -37,13 +58,6 @@ export interface CardInput {
   presetId: number | null;
   useWebSearch: boolean;
   useAskUser: boolean;
-}
-
-/** Один уточняющий вопрос от модели (ask_user) — см. GenerationSection/AskUserQuestionsModal. */
-export interface AskUserQuestion {
-  question: string;
-  /** Варианты-подсказки от модели — пользователь всё равно может ввести свой текст. */
-  options?: string[];
 }
 
 /**

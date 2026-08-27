@@ -19,11 +19,19 @@ export interface ToolCall {
 /**
  * Ответ-инструмента (assistant с tool_calls) в истории диалога. content часто пустой/null —
  * модель просит вызвать инструмент(ы) вместо текстового ответа.
+ *
+ * reasoning_content — DeepSeek thinking-режим (`thinking: { type: "enabled" }`, см. providers.ts):
+ * если запрос идёт с включённым thinking, DeepSeek требует, чтобы у КАЖДОГО assistant-сообщения с
+ * tool_calls в истории было это поле (иначе 400 "reasoning_content in the thinking mode must be
+ * passed back"), даже когда сам tool_calls синтетический (см. promptAssembly.ts —
+ * appendAskUserExchange), а не реальный «мыслительный» вывод модели за этим вызовом. Опционально —
+ * не нужно, когда thinking выключен (обычный режим); проверено вручную прямым запросом к DeepSeek.
  */
 export interface ToolCallMessage {
   role: "assistant";
   content: string | null;
   tool_calls: ToolCall[];
+  reasoning_content?: string;
 }
 
 /** Результат выполнения одного tool_call — уходит в историю следующим сообщением. */
@@ -91,12 +99,18 @@ export interface ChatCompletionResult {
   };
   /** Заполнено, только если модель запросила инструмент(ы) вместо текстового ответа. */
   toolCalls?: ToolCall[];
+  /** DeepSeek thinking-режим: «мысли» модели за этим ответом. Нужно только чтобы эхом вернуть его
+   * в истории следующего запроса при tool_calls (см. ToolCallMessage.reasoning_content) — тексту
+   * ответа/UI не показываем. */
+  reasoningContent?: string;
 }
 
 /** Сырой ответ LLM (OpenAI-совместимый, только нужные нам поля). */
 export interface LlmResponse {
   model: string;
-  choices: Array<{ message: { role: string; content: string | null; tool_calls?: ToolCall[] } }>;
+  choices: Array<{
+    message: { role: string; content: string | null; tool_calls?: ToolCall[]; reasoning_content?: string };
+  }>;
   usage?: {
     prompt_tokens: number;
     completion_tokens: number;

@@ -165,9 +165,11 @@ export function CardForm({
   // Генерация блока уже сохранена на сервере (см. generateCardBlock) — синхронизируем и локальный
   // стейт, и baseline той же точечной правкой, иначе guard посчитал бы уже сохранённый текст
   // «несохранённым изменением». Мержим по categoryId (а не заменяем весь массив с сервера), чтобы
-  // не затереть параллельные несохранённые правки других категорий.
+  // не затереть параллельные несохранённые правки других категорий. pendingQuestions сбрасывается
+  // явно: content появляется, только когда сервер закончил (в т.ч. после ответа на ask_user) —
+  // без этого локальная карусель осталась бы висеть поверх уже готового блока до следующего reload.
   const handleGenerated = (categoryId: string, content: string) => {
-    const next = categories.map((c) => (c.id === categoryId ? { ...c, content } : c));
+    const next = categories.map((c) => (c.id === categoryId ? { ...c, content, pendingQuestions: undefined } : c));
     setCategories(next);
     setBaseline((b) => ({
       ...b,

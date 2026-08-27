@@ -1,4 +1,9 @@
+import type { AskUserAnswer, AskUserQuestion } from "../../../db/schema.js";
 import type { ToolDefinition } from "../../../llm/types.js";
+
+// Канонические типы — в db/schema.types.ts (там же CardCategory, который их хранит). Реэкспорт
+// сохраняет прежнюю точку импорта `from "./askUserTool.js"` для остальных файлов генерации.
+export type { AskUserAnswer, AskUserQuestion };
 
 export const ASK_USER_TOOL_NAME = "ask_user";
 
@@ -6,11 +11,18 @@ export const ASK_USER_TOOL_NAME = "ask_user";
  * должна батчить всё нужное в один вызов, а не звать инструмент по одному вопросу за раз). */
 export const ASK_USER_MAX_QUESTIONS = 4;
 
-export interface AskUserQuestion {
-  question: string;
-  /** Опциональные варианты-подсказки — пользователь всё равно может ввести свой текст. */
-  options?: string[];
-}
+/** Сколько вопрос-ответных пар может накопиться у ОДНОГО блока (askUserAnswers, через все HTTP-
+ * раунды ответа в рамках ОДНОЙ попытки генерации, а не за один вызов LLM — см. ASK_USER_MAX_ROUNDS
+ * в toolLoop.ts) прежде чем ask_user отключается для его генерации (generateBlock.ts) — иначе
+ * пользователя можно было бы затянуть в бесконечную цепочку уточнений одним и тем же блоком.
+ * Не лимит на всю жизнь блока: явная «Перегенерировать» сбрасывает askUserAnswers (см.
+ * clearCardCategoryAskUserAnswers в db/cards/cards.ts) — новая попытка получает свежий бюджет. */
+export const ASK_USER_MAX_ANSWERED_QUESTIONS = 8;
+
+/** Записывается вместо реального ответа при явном отказе пользователя отвечать (см.
+ * answerQuestions.ts) — модель видит, что вопрос был задан и отклонён, и не должна переспрашивать
+ * то же самое. */
+export const ASK_USER_DECLINED_ANSWER = "(user declined to answer)";
 
 /** Схема инструмента для tool_choice: "auto" — модель сама решает, когда нужно уточнение. */
 export const ASK_USER_TOOL: ToolDefinition = {

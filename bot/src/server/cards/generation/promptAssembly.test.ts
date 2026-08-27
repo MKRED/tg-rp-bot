@@ -150,6 +150,109 @@ describe("assembleCardBlockPrompt", () => {
     });
   });
 
+  describe("askUserAnswers — реплеятся как настоящий tool_call/tool_result", () => {
+    // Приводим messages[i] к any для доступа к tool_calls/tool_call_id — в остальных тестах файла
+    // сообщения плоские ChatMessage, здесь же явно проверяется синтетический протокол function calling.
+    it("первая генерация: assistant tool_calls(ask_user) + tool-result сразу после запроса блока", () => {
+      const categories = [
+        cat({
+          id: "base",
+          title: "Base",
+          description: "Name: ...",
+          askUserAnswers: [{ question: "Пол?", answer: "Женский" }],
+        }),
+      ];
+      const result = assembleCardBlockPrompt("System", "Prompt", categories);
+      const messages = result!.messages as any[];
+      expect(messages.map((m) => m.role)).toEqual(["system", "user", "assistant", "tool"]);
+      expect(messages[1].content).toContain('Generate the "Base" block.');
+      expect(messages[2].content).toBeNull();
+      expect(messages[2].tool_calls[0].function.name).toBe("ask_user");
+      expect(JSON.parse(messages[2].tool_calls[0].function.arguments)).toEqual({
+        questions: [{ question: "Пол?" }],
+      });
+      expect(messages[3].tool_call_id).toBe(messages[2].tool_calls[0].id);
+      expect(JSON.parse(messages[3].content).answers).toEqual([{ question: "Пол?", answer: "Женский" }]);
+    });
+
+    it("ответы уже сгенерированного первого блока — обмен вставлен перед его assistant-content", () => {
+      const categories = [
+        cat({
+          id: "base",
+          title: "Base",
+          content: "Текст Base",
+          askUserAnswers: [{ question: "Пол?", answer: "Женский" }],
+        }),
+        cat({ id: "body", title: "Body" }),
+      ];
+      const result = assembleCardBlockPrompt("System", "Prompt", categories);
+      const messages = result!.messages as any[];
+      expect(messages.map((m) => m.role)).toEqual(["system", "user", "assistant", "tool", "assistant", "user"]);
+      expect(messages[1].content).not.toContain("Generate the");
+      expect(messages[2].tool_calls[0].function.name).toBe("ask_user");
+      expect(JSON.parse(messages[3].content).answers).toEqual([{ question: "Пол?", answer: "Женский" }]);
+      expect(messages[4].content).toBe("Текст Base");
+      expect(messages[5].content).toBe('Generate the "Body" block.');
+    });
+
+    it("ответы промежуточной уже сгенерированной категории — обмен между её blockRequest и content", () => {
+      const categories = [
+        cat({ id: "base", title: "Base", content: "Текст Base" }),
+        cat({
+          id: "body",
+          title: "Body",
+          content: "Текст Body",
+          askUserAnswers: [{ question: "Раса?", answer: "Эльф" }],
+        }),
+        cat({ id: "outfit", title: "Outfit" }),
+      ];
+      const result = assembleCardBlockPrompt("System", "Prompt", categories);
+      const messages = result!.messages as any[];
+      expect(messages.map((m) => m.role)).toEqual([
+        "system",
+        "user",
+        "assistant",
+        "user",
+        "assistant",
+        "tool",
+        "assistant",
+        "user",
+      ]);
+      expect(messages[3].content).toBe('Generate the "Body" block.');
+      expect(messages[4].tool_calls[0].function.name).toBe("ask_user");
+      expect(JSON.parse(messages[4].tool_calls[0].function.arguments)).toEqual({
+        questions: [{ question: "Раса?" }],
+      });
+      expect(JSON.parse(messages[5].content).answers).toEqual([{ question: "Раса?", answer: "Эльф" }]);
+      expect(messages[6].content).toBe("Текст Body");
+      expect(messages[7].content).toBe('Generate the "Outfit" block.');
+    });
+
+    it("ответы самой цели — обмен сразу после финального blockRequest", () => {
+      const categories = [
+        cat({ id: "base", title: "Base", content: "Текст Base" }),
+        cat({
+          id: "body",
+          title: "Body",
+          askUserAnswers: [{ question: "Возраст?", answer: "25" }],
+        }),
+      ];
+      const result = assembleCardBlockPrompt("System", "Prompt", categories);
+      const messages = result!.messages as any[];
+      expect(messages.map((m) => m.role)).toEqual(["system", "user", "assistant", "user", "assistant", "tool"]);
+      expect(messages[3].content).toBe('Generate the "Body" block.');
+      expect(messages[4].tool_calls[0].function.name).toBe("ask_user");
+      expect(JSON.parse(messages[5].content).answers).toEqual([{ question: "Возраст?", answer: "25" }]);
+    });
+
+    it("без askUserAnswers — ни одного tool_calls/tool-сообщения в истории", () => {
+      const categories = [cat({ id: "base", title: "Base", description: "Name: ..." })];
+      const result = assembleCardBlockPrompt("System", "Prompt", categories);
+      const messages = result!.messages as any[];
+      expect(messages.every((m) => m.role !== "tool" && !("tool_calls" in m))).toBe(true);
+    });
+  });
+
   it("повторные вызовы независимы друг от друга (идемпотентность, без module-level состояния)", () => {
     const categories = [cat({ id: "base", title: "Base", description: "D" })];
     // Регрессионный тест: если бы insertExampleBlock когда-нибудь стал хранить regex в module-level

@@ -15,6 +15,8 @@ import type { CardCategory, PromptOrderItem, StoryPromptOrderItem } from "./sche
 // Типы компонентов промптов живут в schema.types.ts; реэкспорт сохраняет прежнюю точку
 // импорта `db/schema.js` для пресетов, narrator-шаблонов и билдеров промптов.
 export type {
+  AskUserAnswer,
+  AskUserQuestion,
   CardCategory,
   PromptComponentId,
   PromptOrderItem,
