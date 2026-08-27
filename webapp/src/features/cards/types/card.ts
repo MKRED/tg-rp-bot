@@ -5,10 +5,12 @@ export interface AskUserQuestion {
   options?: string[];
 }
 
-/** Вопрос-ответ ask_user, уже отвеченный (или пропущенный) — см. AskUserQuestion. */
+/** Вопрос-ответ ask_user, уже отвеченный (или пропущенный) — см. AskUserQuestion. options — те же
+ * варианты-подсказки, что были у исходного вопроса (сервер хранит их вместе с ответом). */
 export interface AskUserAnswer {
   question: string;
   answer: string;
+  options?: string[];
 }
 
 /**

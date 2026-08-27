@@ -56,6 +56,7 @@ export async function answerCardBlockQuestions(
     const answers: AskUserAnswer[] = pending.map((q, i) => ({
       question: q.question,
       answer: input.skipped ? ASK_USER_DECLINED_ANSWER : input.answers[i]!,
+      options: q.options,
     }));
     answeredCount = answers.length;
 

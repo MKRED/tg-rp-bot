@@ -90,8 +90,9 @@ function blockRequest(title: string): string {
  * assembleCardBlockPrompt), а не текста в user-сообщении. id tool_call — стабильный синтетический
  * (свой на category.id), а не реальный id исходного вызова модели: сервер его не хранит (см.
  * applyCardCategoryAnswers), но провайдеру важно только совпадение id между tool_calls и
- * tool_call_id, не его происхождение. Аргументы вызова восстанавливаются из вопросов (без options —
- * они были нужны только для UI подсказок, для контекста генерации достаточно текста вопроса).
+ * tool_call_id, не его происхождение. Аргументы вызова восстанавливаются из вопросов ВКЛЮЧАЯ options —
+ * их отбрасывание раньше показывало бы модели, что её же прошлые вызовы ask_user никогда не
+ * предлагали варианты, и она по шаблону переставала бы предлагать их дальше в этом же диалоге.
  * Пусто — если ответов не было вовсе.
  */
 function appendAskUserExchange(messages: PromptMessage[], category: CardCategory): void {
@@ -112,7 +113,9 @@ function appendAskUserExchange(messages: PromptMessage[], category: CardCategory
         type: "function",
         function: {
           name: ASK_USER_TOOL_NAME,
-          arguments: JSON.stringify({ questions: answers.map((a) => ({ question: a.question })) }),
+          arguments: JSON.stringify({
+            questions: answers.map((a) => ({ question: a.question, options: a.options })),
+          }),
         },
       },
     ],

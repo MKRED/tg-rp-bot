@@ -27,6 +27,7 @@ function encryptCategories(categories: CardCategory[], key: Buffer): CardCategor
     askUserAnswers: c.askUserAnswers?.map((a) => ({
       question: encryptField(a.question, key),
       answer: encryptField(a.answer, key),
+      options: a.options?.map((o) => encryptField(o, key)),
     })),
   }));
 }
@@ -45,6 +46,7 @@ function decryptCategories(categories: CardCategory[], key: Buffer): CardCategor
     askUserAnswers: c.askUserAnswers?.map((a) => ({
       question: decryptField(a.question, key),
       answer: decryptField(a.answer, key),
+      options: a.options?.map((o) => decryptField(o, key)),
     })),
   }));
 }

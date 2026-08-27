@@ -36,10 +36,15 @@ export type AskUserQuestion = {
   options?: string[];
 };
 
-/** Вопрос-ответ ask_user, уже отвеченный (или пропущенный — см. ASK_USER_DECLINED_ANSWER). */
+/** Вопрос-ответ ask_user, уже отвеченный (или пропущенный — см. ASK_USER_DECLINED_ANSWER).
+ * options — те же варианты-подсказки, что были у исходного AskUserQuestion: сохраняются вместе с
+ * ответом, чтобы реплей в promptAssembly.ts восстанавливал tool_call модели один в один, а не
+ * усечённым — иначе история показывала бы модели, что её же прошлые вызовы ask_user никогда не
+ * предлагали options, и она перестала бы предлагать их дальше по шаблону. */
 export type AskUserAnswer = {
   question: string;
   answer: string;
+  options?: string[];
 };
 
 /**

@@ -245,6 +245,21 @@ describe("assembleCardBlockPrompt", () => {
       expect(JSON.parse(messages[5].content).answers).toEqual([{ question: "Возраст?", answer: "25" }]);
     });
 
+    it("options сохранённого ответа реплеятся в tool_call — не теряются при ответе", () => {
+      const categories = [
+        cat({
+          id: "base",
+          title: "Base",
+          askUserAnswers: [{ question: "Пол?", answer: "Женский", options: ["Мужской", "Женский"] }],
+        }),
+      ];
+      const result = assembleCardBlockPrompt("System", "Prompt", categories);
+      const messages = result!.messages as any[];
+      expect(JSON.parse(messages[2].tool_calls[0].function.arguments)).toEqual({
+        questions: [{ question: "Пол?", options: ["Мужской", "Женский"] }],
+      });
+    });
+
     it("без askUserAnswers — ни одного tool_calls/tool-сообщения в истории", () => {
       const categories = [cat({ id: "base", title: "Base", description: "Name: ..." })];
       const result = assembleCardBlockPrompt("System", "Prompt", categories);
