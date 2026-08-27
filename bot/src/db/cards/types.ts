@@ -10,6 +10,7 @@ export type CardInput = {
   categories: CardCategory[];
   presetId: number | null;
   useWebSearch: boolean;
+  useAskUser: boolean;
 };
 
 /** Лёгкая проекция для списка: имя + дата обновления (для строки списка «Мастерской»). */

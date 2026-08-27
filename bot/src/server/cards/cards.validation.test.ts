@@ -24,6 +24,7 @@ describe("parseCardInput", () => {
         categories: [],
         presetId: null,
         useWebSearch: false,
+        useAskUser: false,
       },
     });
   });
@@ -82,6 +83,7 @@ describe("parseCardInput", () => {
         categories: [{ id: "base", title: "Base", description: "Name: ...", content: "", enabled: true }],
         presetId: 5,
         useWebSearch: false,
+        useAskUser: false,
       },
     });
   });
@@ -95,6 +97,11 @@ describe("parseCardInput", () => {
   it("принимает useWebSearch: true", () => {
     const result = parseCardInput({ name: "Артур", categories: [], useWebSearch: true });
     expect("input" in result && result.input.useWebSearch).toBe(true);
+  });
+
+  it("принимает useAskUser: true", () => {
+    const result = parseCardInput({ name: "Артур", categories: [], useAskUser: true });
+    expect("input" in result && result.input.useAskUser).toBe(true);
   });
 
   it("отклоняет дубликат id категорий", () => {
@@ -122,6 +129,7 @@ describe("parseCardInput", () => {
         categories: [{ id: "base", title: "Base", description: "Name: ...", content: "  raw  ", enabled: true }],
         presetId: null,
         useWebSearch: false,
+        useAskUser: false,
       },
     });
   });

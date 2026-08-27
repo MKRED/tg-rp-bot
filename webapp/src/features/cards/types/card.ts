@@ -16,6 +16,7 @@ export interface Card {
   categories: CardCategory[];
   presetId: number | null;
   useWebSearch: boolean;
+  useAskUser: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -35,6 +36,14 @@ export interface CardInput {
   categories: CardCategory[];
   presetId: number | null;
   useWebSearch: boolean;
+  useAskUser: boolean;
+}
+
+/** Один уточняющий вопрос от модели (ask_user) — см. GenerationSection/AskUserQuestionsModal. */
+export interface AskUserQuestion {
+  question: string;
+  /** Варианты-подсказки от модели — пользователь всё равно может ввести свой текст. */
+  options?: string[];
 }
 
 /**

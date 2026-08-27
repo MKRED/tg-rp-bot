@@ -5,8 +5,9 @@ import { PromptEditorField } from "../../../../shared/components/PromptEditorFie
 import { SectionActions } from "../../../../shared/components/SectionActions";
 import { confirmAction } from "../../../../shared/telegram/confirm";
 import { useToast } from "../../../../shared/toast";
-import { generateCardBlock } from "../../api/cards-api";
-import type { CardCategory } from "../../types/card";
+import { answerCardBlockQuestions, generateCardBlock } from "../../api/cards-api";
+import type { AskUserQuestion, CardCategory } from "../../types/card";
+import { AskUserQuestionsModal } from "./AskUserQuestionsModal";
 
 const ERROR_MESSAGES: Record<string, string> = {
   preset_required: "Сначала выберите пресет ИИ для генерации",
@@ -14,6 +15,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   target_not_found: "Этот блок больше не актуален — обновите карточку",
   busy: "Генерация уже идёт, подождите",
   not_found: "Карточка не найдена",
+  no_pending_question: "Вопрос уже неактуален — сгенерируйте блок заново",
+  answers_mismatch: "Не удалось отправить ответы — попробуйте сгенерировать блок заново",
 };
 
 interface GenerationSectionProps {
@@ -60,6 +63,11 @@ export function GenerationSection({
 }: GenerationSectionProps) {
   const { showToast } = useToast();
   const [generatingId, setGeneratingId] = useState<string | null>(null);
+  // Вопросы ask_user, ожидающие ответа (см. AskUserQuestionsModal) — модель попросила уточнение
+  // ДО того, как выдать блок; null = модалка закрыта. generatingId НЕ сбрасывается, пока она
+  // открыта — с точки зрения кнопок блок всё ещё «генерируется».
+  const [pendingQuestions, setPendingQuestions] = useState<AskUserQuestion[] | null>(null);
+  const [answering, setAnswering] = useState(false);
 
   const enabled = categories.filter((c) => c.enabled);
   const nextIndex = enabled.findIndex((c) => c.content.trim() === "");
@@ -80,12 +88,39 @@ export function GenerationSection({
   const runGenerate = async (id: number, categoryId?: string) => {
     try {
       const result = await generateCardBlock(id, categoryId);
+      if (result.status === "questions") {
+        setPendingQuestions(result.questions);
+        return; // generatingId остаётся — блок ждёт ответа в модалке, не финальной ошибки/успеха
+      }
       onGenerated(result.categoryId, result.content);
+      setGeneratingId(null);
     } catch (err) {
       const code = err instanceof ApiError ? err.message : "";
       showToast({ type: "error", message: ERROR_MESSAGES[code] ?? (code || "Не удалось сгенерировать блок") });
-    } finally {
       setGeneratingId(null);
+    }
+  };
+
+  /** Общий хвост для «Ответить» и «Пропустить» модалки — резюмирует генерацию с того же места. */
+  const respondToQuestions = async (input: { skipped: true } | { skipped: false; answers: string[] }) => {
+    if (cardId === undefined) return;
+    setAnswering(true);
+    try {
+      const result = await answerCardBlockQuestions(cardId, input);
+      if (result.status === "questions") {
+        setPendingQuestions(result.questions); // модель уточняет ещё раз — редкий случай, но поддержан
+        return;
+      }
+      setPendingQuestions(null);
+      onGenerated(result.categoryId, result.content);
+      setGeneratingId(null);
+    } catch (err) {
+      const code = err instanceof ApiError ? err.message : "";
+      showToast({ type: "error", message: ERROR_MESSAGES[code] ?? (code || "Не удалось сгенерировать блок") });
+      setPendingQuestions(null);
+      setGeneratingId(null);
+    } finally {
+      setAnswering(false);
     }
   };
 
@@ -191,6 +226,14 @@ export function GenerationSection({
           </Caption>
         </SectionActions>
       )}
+
+      <AskUserQuestionsModal
+        open={pendingQuestions !== null}
+        questions={pendingQuestions ?? []}
+        submitting={answering}
+        onSubmit={(answers) => void respondToQuestions({ skipped: false, answers })}
+        onSkip={() => void respondToQuestions({ skipped: true })}
+      />
     </>
   );
 }

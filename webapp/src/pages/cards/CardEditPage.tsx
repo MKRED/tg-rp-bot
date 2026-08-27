@@ -29,6 +29,7 @@ function toInput(c: Card): CardInput {
     categories: c.categories,
     presetId: c.presetId,
     useWebSearch: c.useWebSearch,
+    useAskUser: c.useAskUser,
   };
 }
 

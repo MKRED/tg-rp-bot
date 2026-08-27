@@ -74,6 +74,7 @@ export function CardForm({
   );
   const [presetId, setPresetId] = useState<number | null>(initial?.presetId ?? null);
   const [useWebSearch, setUseWebSearch] = useState(initial?.useWebSearch ?? false);
+  const [useAskUser, setUseAskUser] = useState(initial?.useAskUser ?? false);
 
   // Структура/порядок полей свёрнуты по умолчанию — редактируются реже основного промпта.
   const [structureOpen, setStructureOpen] = useState(false);
@@ -88,11 +89,16 @@ export function CardForm({
       categories: initial?.categories ?? DEFAULT_CARD_CATEGORIES,
       presetId: initial?.presetId ?? null,
       useWebSearch: initial?.useWebSearch ?? false,
+      useAskUser: initial?.useAskUser ?? false,
     }),
   );
   const isDirty = useMemo(
-    () => hasUnsavedChanges({ name, systemPrompt, prompt, categories, presetId, useWebSearch }, baseline),
-    [name, systemPrompt, prompt, categories, presetId, useWebSearch, baseline],
+    () =>
+      hasUnsavedChanges(
+        { name, systemPrompt, prompt, categories, presetId, useWebSearch, useAskUser },
+        baseline,
+      ),
+    [name, systemPrompt, prompt, categories, presetId, useWebSearch, useAskUser, baseline],
   );
   useUnsavedChangesGuard(isDirty);
 
@@ -115,7 +121,15 @@ export function CardForm({
   // чтобы вызывающий знал, продолжать ли (генерацию не запускаем поверх проваленного сохранения).
   const save = async (): Promise<boolean> => {
     if (!canSubmit) return false;
-    const payload = normalizeCardDraft({ name, systemPrompt, prompt, categories, presetId, useWebSearch });
+    const payload = normalizeCardDraft({
+      name,
+      systemPrompt,
+      prompt,
+      categories,
+      presetId,
+      useWebSearch,
+      useAskUser,
+    });
     try {
       await onSubmit(payload);
       setBaseline(payload);
@@ -143,7 +157,9 @@ export function CardForm({
   };
 
   const handleDuplicate = () => {
-    onDuplicate?.(normalizeCardDraft({ name, systemPrompt, prompt, categories, presetId, useWebSearch }));
+    onDuplicate?.(
+      normalizeCardDraft({ name, systemPrompt, prompt, categories, presetId, useWebSearch, useAskUser }),
+    );
   };
 
   // Генерация блока уже сохранена на сервере (см. generateCardBlock) — синхронизируем и локальный
@@ -211,6 +227,13 @@ export function CardForm({
           }
         >
           Использовать веб-поиск
+        </Cell>
+
+        <Cell
+          after={<Switch checked={useAskUser} onChange={(e) => setUseAskUser(e.target.checked)} />}
+          subtitle="Модель сможет задать уточняющий вопрос перед генерацией блока, если ей не хватает информации"
+        >
+          Уточняющие вопросы
         </Cell>
       </Section>
 

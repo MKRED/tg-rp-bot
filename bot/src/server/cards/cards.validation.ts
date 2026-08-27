@@ -69,6 +69,7 @@ export function parseCardInput(body: unknown): { input: CardInput } | { error: s
   }
 
   const useWebSearch = typeof b.useWebSearch === "boolean" ? b.useWebSearch : false;
+  const useAskUser = typeof b.useAskUser === "boolean" ? b.useAskUser : false;
 
-  return { input: { name, systemPrompt, prompt, categories, presetId, useWebSearch } };
+  return { input: { name, systemPrompt, prompt, categories, presetId, useWebSearch, useAskUser } };
 }

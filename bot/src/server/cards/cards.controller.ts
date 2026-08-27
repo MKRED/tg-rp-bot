@@ -16,6 +16,7 @@ import { tryLockCard, unlockCard } from "./cardLock.js";
 import { MAX_CARDS_PER_USER } from "./cards.constants.js";
 import { parseCardInput } from "./cards.validation.js";
 import { generateCardBlock } from "./generation/generateBlock.js";
+import { answerCardBlockQuestions, type AnswerCardBlockQuestionsInput } from "./generation/resumeBlock.js";
 
 /**
  * presetId опционален (null = пресет ещё не выбран), но если задан — обязан принадлежать
@@ -104,7 +105,8 @@ export function createCardRoutes(): Hono<{ Variables: AppVariables }> {
 
     // Тот же лок, что у generate (cardLock.ts): оба пути делают read-modify-write полной
     // строки, без него параллельные PUT и «Сгенерировать»/«Перегенерировать» могли бы затереть друг друга.
-    if (!tryLockCard(id)) return c.json({ error: "busy" }, 409);
+    const lockToken = tryLockCard(id);
+    if (lockToken === false) return c.json({ error: "busy" }, 409);
     try {
       const card = await updateCard(user.id, id, parsed.input);
       if (!card) return c.json({ error: "Not found" }, 404);
@@ -113,12 +115,13 @@ export function createCardRoutes(): Hono<{ Variables: AppVariables }> {
       logger.error({ err, userId: user.id, id }, "Failed to update card");
       return c.json({ error: "Internal error" }, 500);
     } finally {
-      unlockCard(id);
+      unlockCard(id, lockToken);
     }
   });
 
   // Генерация блока структуры карточки (см. generateCardBlock): без categoryId — следующий
-  // незаполненный, с categoryId — явная перегенерация уже заполненного блока.
+  // незаполненный, с categoryId — явная перегенерация уже заполненного блока. status: "questions" —
+  // модель попросила уточнение (ask_user), клиент отвечает через /:id/generate/answer ниже.
   api.post("/:id/generate", async (c) => {
     const user = c.get("tgUser");
     if (!user) return c.json({ error: "Auth required" }, 401);
@@ -132,9 +135,44 @@ export function createCardRoutes(): Hono<{ Variables: AppVariables }> {
     try {
       const result = await generateCardBlock(user.id, id, categoryId);
       if (!result.ok) return c.json({ error: result.reason }, result.status);
-      return c.json({ categoryId: result.categoryId, content: result.content });
+      if (result.status === "questions") return c.json({ status: "questions", questions: result.questions });
+      return c.json({ status: "done", categoryId: result.categoryId, content: result.content });
     } catch (err) {
       logger.error({ err, userId: user.id, id }, "Failed to generate card block");
+      return chatCompletionErrorResponse(c, err);
+    }
+  });
+
+  // Ответ на уточняющие вопросы (ask_user) из предыдущего /:id/generate — резюмирует генерацию
+  // блока с того же места (см. answerCardBlockQuestions). skipped: true — пользователь отказался
+  // отвечать, модель узнаёт об этом тем же путём и продолжает без ответа.
+  api.post("/:id/generate/answer", async (c) => {
+    const user = c.get("tgUser");
+    if (!user) return c.json({ error: "Auth required" }, 401);
+    const id = Number(c.req.param("id"));
+    if (!Number.isInteger(id)) return c.json({ error: "Invalid id" }, 400);
+
+    const body = await c.req.json().catch(() => null);
+    if (typeof body !== "object" || body === null) return c.json({ error: "Body must be an object" }, 400);
+    const b = body as Record<string, unknown>;
+
+    let input: AnswerCardBlockQuestionsInput;
+    if (b.skipped === true) {
+      input = { skipped: true };
+    } else {
+      if (!Array.isArray(b.answers) || !b.answers.every((a) => typeof a === "string")) {
+        return c.json({ error: "answers must be a string array" }, 400);
+      }
+      input = { skipped: false, answers: b.answers as string[] };
+    }
+
+    try {
+      const result = await answerCardBlockQuestions(user.id, id, input);
+      if (!result.ok) return c.json({ error: result.reason }, result.status);
+      if (result.status === "questions") return c.json({ status: "questions", questions: result.questions });
+      return c.json({ status: "done", categoryId: result.categoryId, content: result.content });
+    } catch (err) {
+      logger.error({ err, userId: user.id, id }, "Failed to answer card block questions");
       return chatCompletionErrorResponse(c, err);
     }
   });

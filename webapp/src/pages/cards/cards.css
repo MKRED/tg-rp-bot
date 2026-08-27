@@ -198,3 +198,19 @@
   display: flex;
   padding: 8px 22px 16px;
 }
+
+/* --- Уточняющие вопросы (AskUserQuestionsModal) ---
+   Каждый вопрос: текст + опциональный ряд кнопок-подсказок + поле ответа, с отступом снизу перед
+   следующим вопросом. Divider между вопросами вставляет сам Section (top-level children). */
+.card-ask-user__question {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.card-ask-user__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

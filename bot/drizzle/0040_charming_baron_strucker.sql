@@ -1,0 +1,1 @@
+ALTER TABLE "cards" ADD COLUMN "use_ask_user" boolean DEFAULT false NOT NULL;

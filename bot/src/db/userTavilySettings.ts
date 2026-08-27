@@ -43,7 +43,7 @@ export async function getDecryptedTavilyKey(userId: number): Promise<string | nu
   return decryptField(row.apiKey, getUserEncryptionKey(userId));
 }
 
-/** Лимит раундов веб-поиска — для цикла tool-calling (webSearchLoop.ts). Нет строки → дефолт. */
+/** Лимит раундов веб-поиска — для цикла tool-calling (toolLoop.ts). Нет строки → дефолт. */
 export async function getTavilyMaxSearchRounds(userId: number): Promise<number> {
   const rows = await db
     .select({ maxSearchRounds: schema.userSettings.tavilyMaxSearchRounds })

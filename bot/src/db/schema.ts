@@ -202,6 +202,11 @@ export const cards = pgTable("cards", {
   // Действует, только если у пользователя сохранён ключ Tavily (см. generateBlock.ts) — иначе
   // тихо генерирует без поиска, тумблер в форме мог остаться включённым после удаления ключа.
   useWebSearch: boolean("use_web_search").notNull().default(false),
+  // Уточняющие вопросы пользователю (ask_user, tool_choice: "auto") при генерации блоков этой
+  // карточки — модель сама решает, когда не хватает информации, которую знает только пользователь
+  // (см. server/cards/generation/askUserTool.ts). Независим от useWebSearch — оба инструмента
+  // могут быть включены одновременно.
+  useAskUser: boolean("use_ask_user").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()

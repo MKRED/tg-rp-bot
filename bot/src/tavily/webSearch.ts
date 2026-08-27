@@ -34,7 +34,7 @@ export interface WebSearchResult {
 }
 
 /**
- * Веб-поиск Tavily для генерации карточек (function calling, см. server/cards/generation/webSearchLoop.ts).
+ * Веб-поиск Tavily для генерации карточек (function calling, см. server/cards/generation/toolLoop.ts).
  * Авторизация — Bearer, как в getTavilyUsage (tavilyUsage.ts), а не api_key в теле — это форма,
  * проверенная в проде через тот же прокси.
  */
