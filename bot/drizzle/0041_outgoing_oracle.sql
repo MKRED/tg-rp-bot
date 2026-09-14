@@ -1,0 +1,1 @@
+ALTER TABLE "story_settings" ADD COLUMN "edit_enabled" boolean DEFAULT false NOT NULL;

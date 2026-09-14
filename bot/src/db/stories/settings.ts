@@ -14,6 +14,7 @@ const DEFAULT_SETTINGS: StorySettingsRow = {
   compactFloorTokens: 0,
   compactWords: 200,
   quickRollbackEnabled: false,
+  editEnabled: false,
 };
 
 /** Читает настройки истории; если строки нет — возвращает дефолт. Зеркало getChatSettings. */
@@ -40,6 +41,7 @@ export async function getStorySettings(storyChatId: number): Promise<StorySettin
     compactFloorTokens: r.compactFloorTokens,
     compactWords: r.compactWords,
     quickRollbackEnabled: r.quickRollbackEnabled,
+    editEnabled: r.editEnabled,
   };
 }
 

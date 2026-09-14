@@ -10,7 +10,6 @@ import {
   getStoryTree,
   listStories,
   renameStory,
-  updateStoryOpeningBeat,
   updateStoryPremise,
   upsertStorySettings,
 } from "../../db/stories/index.js";
@@ -24,15 +23,18 @@ import {
   handleListCompactions,
 } from "./compact.handler.js";
 import { handleStoryStats } from "./stats.handler.js";
+import { handleAdvanceStory } from "./advance.handler.js";
 import {
-  handleAdvanceStory,
   handleDeleteStoryMessage,
-  handleDeleteStoryTranslation,
+  handleEditStoryBeat,
   handleRegenerateStoryBeat,
+  handleSwitchStoryBranch,
+} from "./messages.handler.js";
+import {
+  handleDeleteStoryTranslation,
   handleStoryTranslateMessage,
   handleStoryTranslateText,
-  handleSwitchStoryBranch,
-} from "./story.handlers.js";
+} from "./translate.handler.js";
 
 /** Границы compactWords (зеркало слайдера webapp). */
 const COMPACT_WORDS_MIN = 50;
@@ -123,39 +125,31 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
     const user = c.get("tgUser");
     if (!user) return c.json({ error: "Auth required" }, 401);
     const storyId = Number(c.req.param("id"));
-    // Webapp шлёт title/premise/openingBeat отдельными PATCH-запросами (сохранение по blur/save
-    // каждого поля), поэтому принимаем любой из них; 400 — только если не передано ни одного.
+    // Webapp шлёт title/premise отдельными PATCH-запросами (сохранение по blur/save каждого поля),
+    // поэтому принимаем любой из них; 400 — только если не передано ни одного. Правка первого бита
+    // (openingBeat) теперь идёт через общий POST /:id/messages/:msgId/edit (карандаш в ленте) —
+    // отдельного пути для неё больше нет.
     const body = (await c.req.json().catch(() => ({}))) as {
       title?: unknown;
       premise?: unknown;
-      openingBeat?: unknown;
     };
     const hasTitle = typeof body.title === "string";
     const hasPremise = typeof body.premise === "string";
-    const hasOpeningBeat = typeof body.openingBeat === "string";
-    if (!hasTitle && !hasPremise && !hasOpeningBeat) {
-      return c.json({ error: "title, premise or openingBeat must be a string" }, 400);
+    if (!hasTitle && !hasPremise) {
+      return c.json({ error: "title or premise must be a string" }, 400);
     }
-    const op = hasTitle ? "rename" : hasPremise ? "premise" : "openingBeat";
+    const op = hasTitle ? "rename" : "premise";
     try {
       if (hasTitle) {
         const result = await renameStory(user.id, storyId, (body.title as string).slice(0, 100));
         if (!result) return c.json({ error: "Story not found" }, 404);
         return c.json({ title: result.title });
       }
-      if (hasPremise) {
-        // Премизу не обрезаем (в отличие от title): это вводная-сценарий, может быть длинной;
-        // Postgres text без лимита, шифрование AES-GCM размер не ограничивает.
-        const result = await updateStoryPremise(user.id, storyId, body.premise as string);
-        if (!result) return c.json({ error: "Story not found" }, 404);
-        return c.json({ premise: result.premise });
-      }
-      // openingBeat — авторский дословный первый бит, не может стать пустым (в отличие от premise).
-      const openingBeat = (body.openingBeat as string).trim();
-      if (!openingBeat) return c.json({ error: "openingBeat cannot be empty" }, 400);
-      const result = await updateStoryOpeningBeat(user.id, storyId, openingBeat);
+      // Премизу не обрезаем (в отличие от title): это вводная-сценарий, может быть длинной;
+      // Postgres text без лимита, шифрование AES-GCM размер не ограничивает.
+      const result = await updateStoryPremise(user.id, storyId, body.premise as string);
       if (!result) return c.json({ error: "Story not found" }, 404);
-      return c.json({ content: result.content });
+      return c.json({ premise: result.premise });
     } catch (err) {
       logger.error({ err, userId: user.id, storyId, op }, "Failed to update story");
       return c.json({ error: "Internal error" }, 500);
@@ -209,6 +203,7 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
       compactFloorTokens?: unknown;
       compactWords?: unknown;
       quickRollbackEnabled?: unknown;
+      editEnabled?: unknown;
     };
 
     const patch: Record<string, unknown> = {};
@@ -226,6 +221,7 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
     if (typeof body.compactEnabled === "boolean") patch.compactEnabled = body.compactEnabled;
     if (typeof body.compactAutoEnabled === "boolean") patch.compactAutoEnabled = body.compactAutoEnabled;
     if (typeof body.quickRollbackEnabled === "boolean") patch.quickRollbackEnabled = body.quickRollbackEnabled;
+    if (typeof body.editEnabled === "boolean") patch.editEnabled = body.editEnabled;
     if (typeof body.compactWords === "number" && Number.isFinite(body.compactWords)) {
       patch.compactWords = clamp(Math.round(body.compactWords), COMPACT_WORDS_MIN, COMPACT_WORDS_MAX);
     }
@@ -285,6 +281,7 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
   // ─── Ведение истории ──────────────────────────────────────────────────────
   app.post("/:id/advance", handleAdvanceStory);
   app.post("/:id/messages/:msgId/regenerate", handleRegenerateStoryBeat);
+  app.post("/:id/messages/:msgId/edit", handleEditStoryBeat);
   app.post("/:id/messages/:msgId/branch", handleSwitchStoryBranch);
   app.post("/:id/messages/:msgId/translate", handleStoryTranslateMessage);
   app.delete("/:id/messages/:msgId/translate", handleDeleteStoryTranslation);

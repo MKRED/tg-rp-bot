@@ -17,6 +17,7 @@ import {
   composeStoryTranslate,
   deleteStoryMessage,
   deleteStoryTranslation,
+  editStoryBeat,
   regenerateBeat,
   switchBranch,
   translateStoryMessage,
@@ -199,6 +200,30 @@ export function StoryPage() {
     reload();
   };
 
+  // Правит текст бита на месте (без перегенерации, без нового сиблинга). Перевод намеренно не
+  // перезапускаем — сервер сбросил кэш, пользователь дёрнет кнопку Globe заново сам при желании.
+  // Бросает при неудаче — StoryMessageItem оставляет редактор открытым, чтобы правка не терялась.
+  const handleEditBeat = async (msgId: number, content: string) => {
+    if (sending) return;
+    const trimmed = content.trim();
+    if (!trimmed) {
+      showToast({ type: "error", message: "Текст бита не может быть пустым" });
+      throw new Error("Story beat content cannot be empty");
+    }
+    try {
+      const updated = await editStoryBeat(id, msgId, trimmed);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === msgId ? { ...m, content: updated.content, translations: updated.translations } : m,
+        ),
+      );
+    } catch (err) {
+      console.error("Failed to edit story beat", err);
+      showToast({ type: "error", message: "Не удалось сохранить текст" });
+      throw err;
+    }
+  };
+
   // Быстрый откат из ленты — тот же переход курсора истории, что и клик по узлу в графе веток.
   const handleQuickRollback = async (msgId: number) => {
     if (sending) return;
@@ -271,6 +296,8 @@ export function StoryPage() {
                   onSwitchSibling={handleSwitch}
                   quickRollbackEnabled={settings.quickRollbackEnabled}
                   onQuickRollback={handleQuickRollback}
+                  editEnabled={settings.editEnabled}
+                  onEdit={handleEditBeat}
                 />
               </Fragment>
             );

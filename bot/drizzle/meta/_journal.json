@@ -288,6 +288,13 @@
       "when": 1787731329081,
       "tag": "0040_charming_baron_strucker",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1789351525631,
+      "tag": "0041_outgoing_oracle",
+      "breakpoints": true
     }
   ]
 }

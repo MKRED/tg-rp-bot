@@ -649,6 +649,9 @@ export const storySettings = pgTable("story_settings", {
   // Быстрый откат: кнопка в тулбаре под каждым битом (кроме последнего), переносящая курсор
   // истории на этот бит — короткий путь к тому же, что делает клик по узлу в графе веток.
   quickRollbackEnabled: boolean("quick_rollback_enabled").notNull().default(false),
+  // Кнопка редактирования текста бита в тулбаре сообщения — правка на месте (без перегенерации
+  // и без нового сиблинга в дереве), см. updateStoryBeatContent.
+  editEnabled: boolean("edit_enabled").notNull().default(false),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow()

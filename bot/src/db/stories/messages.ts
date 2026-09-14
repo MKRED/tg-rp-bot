@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import logger from "../../logger.js";
 import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/index.js";
 import { db, schema } from "../index.js";
@@ -43,34 +43,31 @@ export async function insertStoryMessage(
 }
 
 /**
- * Правит контент корневого сообщения истории (openingBeat) — единственный разрешённый способ
- * изменить контент сообщения напрямую (не через regenerate/новый ход). Владение storyChatId
- * проверяем здесь же, а не полагаемся на вызывающий код — запись пишет сразу content без выборки.
+ * Правит текст бита на месте (любого, включая openingBeat) — без перегенерации и без нового
+ * сиблинга в дереве, поэтому не трогает ни позицию курсора, ни граф веток. Сбрасывает кэш
+ * перевода: он относился к старому тексту, показывать его после правки было бы враньём —
+ * пользователь при необходимости переведёт заново кнопкой Globe. Владение storyChatId проверяет
+ * вызывающий хендлер (getStory(userId, storyId)) — здесь только скоуп по storyChatId в WHERE.
  */
-export async function updateStoryOpeningBeat(
+export async function updateStoryBeatContent(
   userId: number,
   storyChatId: number,
+  messageId: number,
   content: string,
 ): Promise<StoryMessage | undefined> {
   const t0 = Date.now();
-  const owned = await db
-    .select({ id: schema.storyChats.id })
-    .from(schema.storyChats)
-    .where(and(eq(schema.storyChats.id, storyChatId), eq(schema.storyChats.userId, userId)));
-  if (owned.length === 0) return undefined;
-
   const key = getUserEncryptionKey(userId);
   const rows = await db
     .update(schema.storyMessages)
-    .set({ content: encryptField(content, key) })
-    .where(and(eq(schema.storyMessages.storyChatId, storyChatId), isNull(schema.storyMessages.parentId)))
+    .set({ content: encryptField(content, key), translations: null })
+    .where(and(eq(schema.storyMessages.id, messageId), eq(schema.storyMessages.storyChatId, storyChatId)))
     .returning();
-  const root = rows[0];
+  const updated = rows[0];
   logger.info(
-    { durationMs: Date.now() - t0, userId, storyChatId, found: root != null },
-    "Story opening beat update attempted",
+    { durationMs: Date.now() - t0, userId, storyChatId, messageId, found: updated != null },
+    "Story beat content edited",
   );
-  return root ? decryptRow(root, userId) : undefined;
+  return updated ? decryptRow(updated, userId) : undefined;
 }
 
 /** Читает одно сообщение по id (без проверки владельца — storyChatId уже прошёл авторизацию выше). */

@@ -1,6 +1,8 @@
 import { Caption, Spinner } from "@telegram-apps/telegram-ui";
-import { ChevronLeft, ChevronRight, Clapperboard, Globe, History, RefreshCw, Trash2 } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
+import { ChevronLeft, ChevronRight, Clapperboard, Globe, History, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { PromptEditorOverlay } from "../../../shared/components/PromptEditorOverlay";
 import { RpText } from "../../../shared/components/RpText";
 import { TranslateActionModal } from "../../../shared/components/TranslateActionModal";
 import { useLongPress } from "../../../shared/hooks/useLongPress";
@@ -35,6 +37,10 @@ interface StoryMessageItemProps {
   /** Настройка «быстрый откат» включена в чате — показывать кнопку отката на не-последних битах. */
   quickRollbackEnabled: boolean;
   onQuickRollback: (messageId: number) => Promise<void>;
+  /** Настройка «редактирование» включена в чате — показывать карандаш на всех битах. */
+  editEnabled: boolean;
+  /** Правит текст бита на месте (без перегенерации, без нового сиблинга). */
+  onEdit: (messageId: number, content: string) => Promise<void>;
 }
 
 /**
@@ -58,6 +64,8 @@ export function StoryMessageItem({
   onSwitchSibling,
   quickRollbackEnabled,
   onQuickRollback,
+  editEnabled,
+  onEdit,
 }: StoryMessageItemProps) {
   // Хук вызываем до ранних return (правила хуков); для continue он просто простаивает.
   const { displayText, showTranslation, translating, toggle } = useTranslatable(
@@ -73,6 +81,10 @@ export function StoryMessageItem({
   const [translateActionPending, setTranslateActionPending] = useState(false);
   // Пендинг быстрого отката — крутим спиннер на кнопке History, пока курсор истории переносится.
   const [rollbackPending, setRollbackPending] = useState(false);
+  // Полноэкранный редактор текста бита (PromptEditorOverlay) открыт по тапу на карандаш.
+  const [editorOpen, setEditorOpen] = useState(false);
+  // Пендинг сохранения правки — крутим спиннер на карандаше, пока запрос в полёте.
+  const [editSaving, setEditSaving] = useState(false);
   const longPress = useLongPress(() => {
     if (isTranslateActionsPopupAvailable()) {
       showTranslateActionsPopup()
@@ -170,6 +182,26 @@ export function StoryMessageItem({
   const showActions = isLast && !isOpening;
   // Быстрый откат — на всех битах, кроме последнего (на нём мы уже и так стоим).
   const showQuickRollback = quickRollbackEnabled && !isLast;
+  // Редактирование — на любом бите (включая openingBeat), независимо от позиции в дереве:
+  // правка на месте не трогает курсор истории и граф веток.
+  const showEdit = editEnabled;
+
+  // Оверлей закрываем ТОЛЬКО по успеху: PromptEditorOverlay обещает, что случайно текст не потеряется
+  // (см. его confirmAction на «Отмену»/свайп) — молчаливое закрытие при ошибке сети/сервера свело бы
+  // эту гарантию на нет. onEdit при неудаче бросает (после своего toast) — редактор остаётся открытым,
+  // набранный текст никуда не девается.
+  const handleEditSave = async (content: string) => {
+    if (editSaving) return;
+    setEditSaving(true);
+    try {
+      await onEdit(message.id, content);
+      setEditorOpen(false);
+    } catch {
+      // onEdit уже показал toast с причиной — здесь достаточно оставить редактор открытым.
+    } finally {
+      setEditSaving(false);
+    }
+  };
 
   return (
     <div style={{ margin: "8px 0" }}>
@@ -184,7 +216,7 @@ export function StoryMessageItem({
         <RpText text={displayText} />
       </div>
 
-      {(showTranslateButton || showActions || showQuickRollback) && (
+      {(showTranslateButton || showActions || showQuickRollback || showEdit) && (
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6, color: "var(--tgui--hint_color)" }}>
           {showTranslateButton && (
             <>
@@ -217,6 +249,18 @@ export function StoryMessageItem({
               aria-label="Откатиться к этому сообщению"
             >
               {rollbackPending ? <Spinner size="s" /> : <History size={16} />}
+            </button>
+          )}
+          {showEdit && (
+            <button
+              type="button"
+              disabled={disabled || editSaving}
+              onClick={() => setEditorOpen(true)}
+              className="story-edit-btn"
+              style={iconBtn}
+              aria-label="Редактировать текст"
+            >
+              {editSaving ? <Spinner size="s" /> : <Pencil size={16} />}
             </button>
           )}
           {canSwitch && showActions && (
@@ -256,6 +300,17 @@ export function StoryMessageItem({
           )}
         </div>
       )}
+
+      <AnimatePresence>
+        {editorOpen && (
+          <PromptEditorOverlay
+            title="Редактирование бита"
+            value={message.content}
+            onSave={handleEditSave}
+            onCancel={() => setEditorOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

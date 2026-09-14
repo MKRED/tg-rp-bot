@@ -39,14 +39,6 @@ export function updateStoryPremise(id: number, premise: string): Promise<{ premi
   });
 }
 
-/** Правит дословный текст первого бита (openingBeat) — только корневое сообщение, без перегенерации. */
-export function updateStoryOpeningBeat(id: number, content: string): Promise<{ content: string }> {
-  return apiFetch<{ content: string }>(`/stories/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify({ openingBeat: content }),
-  });
-}
-
 export function removeStory(id: number): Promise<{ ok: true }> {
   return apiFetch<{ ok: true }>(`/stories/${id}`, { method: "DELETE" });
 }
@@ -133,6 +125,21 @@ export async function deleteStoryTranslation(
 
 export function deleteStoryMessage(storyId: number, msgId: number): Promise<void> {
   return apiFetch(`/stories/${storyId}/messages/${msgId}`, { method: "DELETE" });
+}
+
+/**
+ * Правит текст бита на месте (любого, включая openingBeat) — без перегенерации и без нового
+ * сиблинга. Сервер сбрасывает кэш перевода этого сообщения (он относился к старому тексту).
+ */
+export function editStoryBeat(
+  storyId: number,
+  msgId: number,
+  content: string,
+): Promise<{ content: string; translations: Record<string, string> | null }> {
+  return apiFetch(`/stories/${storyId}/messages/${msgId}/edit`, {
+    method: "POST",
+    body: JSON.stringify({ content }),
+  });
 }
 
 /**

@@ -12,7 +12,7 @@ export {
   updateActiveStoryMessage,
   setActiveStoryMessage,
   deleteStoryMessage,
-  updateStoryOpeningBeat,
+  updateStoryBeatContent,
 } from "./messages.js";
 
 export { findNewestStoryChild, queryStoryActivePathIds } from "./queries.js";
