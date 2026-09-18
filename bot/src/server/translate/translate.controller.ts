@@ -6,35 +6,18 @@ import logger from "../../logger.js";
 import { retry } from "../../utils/index.js";
 import type { AppVariables } from "../middleware/initData.types.js";
 import { chatCompletionErrorResponse } from "../shared/apiError.js";
+import { runWithConcurrency } from "../shared/concurrency.js";
 import {
   DEFAULT_TRANSLATION_TEMPLATE,
   MAX_BLOCKS_PER_REQUEST,
   MAX_CHARS_PER_CALL,
   TRANSLATE_BLOCK_CONCURRENCY,
 } from "../shared/translate.constants.js";
-import { chunkText, joinChunks } from "../shared/translateChunking.js";
+import { translateChunked } from "../shared/translateChunking.js";
 import { aiTranslate, englishLangName, googleTranslate, resolveTranslationReasoning } from "../shared/translate.js";
 
 type Ctx = Context<{ Variables: AppVariables }>;
 type TranslateMode = "google" | "ai";
-
-/** Пул с ограниченной конкурентностью — не бомбим неофициальный Google-эндпоинт/личный ключ DeepSeek. */
-async function runWithConcurrency<T, R>(
-  items: T[],
-  concurrency: number,
-  worker: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const results: R[] = new Array(items.length);
-  let cursor = 0;
-  async function runOne(): Promise<void> {
-    while (cursor < items.length) {
-      const index = cursor++;
-      results[index] = await worker(items[index] as T);
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => runOne()));
-  return results;
-}
 
 /**
  * POST /translate/text — безэнтитный батч-перевод абзацев для режима перевода в PromptEditorOverlay
@@ -101,15 +84,8 @@ async function handleTranslateBlocks(c: Ctx) {
     );
   };
 
-  const translateBlock = async (text: string): Promise<string> => {
-    // Пустые/whitespace-блоки — без сетевого вызова (клиент их уже отфильтровал, страхуемся здесь же).
-    if (text.trim() === "") return text;
-    if (text.length <= MAX_CHARS_PER_CALL) return translateChunk(text);
-    const chunks = chunkText(text, MAX_CHARS_PER_CALL);
-    const translatedChunks: string[] = [];
-    for (const chunk of chunks) translatedChunks.push(await translateChunk(chunk));
-    return joinChunks(translatedChunks);
-  };
+  const translateBlock = (text: string): Promise<string> =>
+    translateChunked(text, MAX_CHARS_PER_CALL, translateChunk);
 
   try {
     const translations = await runWithConcurrency(blocks, TRANSLATE_BLOCK_CONCURRENCY, translateBlock);

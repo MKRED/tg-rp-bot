@@ -543,6 +543,12 @@ export const narratorTemplates = pgTable("narrator_templates", {
   // Рассуждение для ИИ-перевода, независимо от пресета: "off" = отключено; иначе — уровень effort
   // (minimal|low|medium|high|xhigh). Обязательное поле, дефолт "medium" — см. resolveTranslationReasoning.
   translationReasoningEffort: text("translation_reasoning_effort").notNull().default("medium"),
+  // Перевод по абзацам: делит текст на абзацы (2+ переноса строки) и переводит каждый отдельным
+  // запросом к LLM параллельно (см. translateParagraphs.ts) — при включённом мышлении (thinking)
+  // модель иначе думает непропорционально долго на большом тексте целиком, а мышление отключать
+  // не хотим (без него перевод менее осознанный). Работает только для ИИ-режима перевода — Google
+  // Translate не страдает от долгого мышления и всегда переводит текст целиком.
+  translatePerParagraph: boolean("translate_per_paragraph").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()

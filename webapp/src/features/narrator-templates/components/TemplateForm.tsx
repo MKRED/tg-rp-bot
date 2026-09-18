@@ -61,6 +61,9 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
     initial?.translationReasoningEffort ?? DEFAULT_TRANSLATION_REASONING_EFFORT,
   );
   const [reasoningSelectOpen, setReasoningSelectOpen] = useState(false);
+  const [translatePerParagraph, setTranslatePerParagraph] = useState(
+    initial?.translatePerParagraph ?? false,
+  );
 
   const valid =
     name.trim().length > 0 && continueMarker.trim().length > 0 && leadingUserMarker.trim().length > 0;
@@ -113,6 +116,17 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
         open={reasoningSelectOpen}
         onToggle={() => setReasoningSelectOpen((v) => !v)}
       />
+      <Cell
+        after={
+          <Switch
+            checked={translatePerParagraph}
+            onChange={(e) => setTranslatePerParagraph(e.target.checked)}
+          />
+        }
+        subtitle="При ИИ-переводе текст сперва делится на абзацы, каждый переводится отдельным запросом параллельно — быстрее на большом тексте с включённым мышлением, само мышление при этом не отключается."
+      >
+        Переводить по абзацам
+      </Cell>
       <PromptEditorField
         header="Промпт сжатия истории"
         hint="Инструкция для сжатия старых сообщений в краткий пересказ (compact). Плейсхолдер {{words}} — рекомендованное число слов из настроек истории. Работает, только если в порядке промптов включён «Краткое содержание». Пусто → встроенный дефолт."
@@ -169,6 +183,7 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
               promptOrder: promptOrder,
               mergeSystemPrompts: mergeSystemPrompts,
               translationReasoningEffort: translationReasoningEffort,
+              translatePerParagraph: translatePerParagraph,
             })
           }
         >

@@ -8,12 +8,8 @@ import {
 import { getNarratorTemplate } from "../../db/narratorTemplates/index.js";
 import logger from "../../logger.js";
 import { chatCompletionErrorResponse } from "../shared/apiError.js";
-import {
-  aiTranslate,
-  englishLangName,
-  googleTranslate,
-  resolveTranslationReasoning,
-} from "../shared/translate.js";
+import { englishLangName, googleTranslate, resolveTranslationReasoning } from "../shared/translate.js";
+import { aiTranslateStoryText } from "./translateStoryText.js";
 import type { Ctx } from "./stories.types.js";
 
 /**
@@ -55,13 +51,12 @@ export async function handleStoryTranslateMessage(c: Ctx) {
       // resolveTranslationReasoning.
       const template = story.template ? await getNarratorTemplate(userId, story.template.id) : null;
       const reasoning = resolveTranslationReasoning(template?.translationReasoningEffort);
-      translation = await aiTranslate(
-        template?.translationSystemPrompt ?? "",
+      translation = await aiTranslateStoryText(
         msg.content,
         englishLangName(targetLang),
         userId,
-        reasoning.requestReasoning,
-        reasoning.reasoningEffort,
+        template ?? null,
+        reasoning,
       );
     } else {
       translation = await googleTranslate(msg.content, targetLang);
@@ -139,13 +134,12 @@ export async function handleStoryTranslateText(c: Ctx) {
       // не из пресета, см. resolveTranslationReasoning.
       const template = story.template ? await getNarratorTemplate(userId, story.template.id) : null;
       const reasoning = resolveTranslationReasoning(template?.translationReasoningEffort);
-      translation = await aiTranslate(
-        template?.translationSystemPrompt ?? "",
+      translation = await aiTranslateStoryText(
         text,
         englishLangName(targetLang),
         userId,
-        reasoning.requestReasoning,
-        reasoning.reasoningEffort,
+        template ?? null,
+        reasoning,
       );
     } else {
       translation = await googleTranslate(text, targetLang);

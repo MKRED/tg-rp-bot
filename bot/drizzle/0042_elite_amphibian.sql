@@ -1,0 +1,1 @@
+ALTER TABLE "narrator_templates" ADD COLUMN "translate_per_paragraph" boolean DEFAULT false NOT NULL;

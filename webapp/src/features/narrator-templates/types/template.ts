@@ -102,6 +102,8 @@ export type NarratorTemplate = {
   promptOrder: StoryPromptOrderItem[];
   mergeSystemPrompts: boolean;
   translationReasoningEffort: TranslationReasoningLevel;
+  /** Переводить ИИ-режимом по абзацам параллельно, а не текст целиком (см. bot/src/db/schema.ts). */
+  translatePerParagraph: boolean;
 };
 
 export type NarratorTemplateInput = {
@@ -116,6 +118,7 @@ export type NarratorTemplateInput = {
   promptOrder: StoryPromptOrderItem[];
   mergeSystemPrompts: boolean;
   translationReasoningEffort: TranslationReasoningLevel;
+  translatePerParagraph: boolean;
 };
 
 /** Дефолты маркеров — зеркало bot/src/server/prompt/storyPromptBuilder.constants.ts, для новой формы. */

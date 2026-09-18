@@ -53,6 +53,7 @@ export function parseNarratorTemplateInput(
       promptOrder,
       mergeSystemPrompts: b.mergeSystemPrompts === true,
       translationReasoningEffort,
+      translatePerParagraph: b.translatePerParagraph === true,
     },
   };
 }

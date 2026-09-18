@@ -17,6 +17,8 @@ export type NarratorTemplateInput = {
   mergeSystemPrompts: boolean;
   /** "off" = рассуждение для перевода выключено; иначе — уровень effort. Обязательное поле. */
   translationReasoningEffort: string;
+  /** Переводить ИИ-режимом по абзацам параллельно, а не текст целиком (см. schema.ts). */
+  translatePerParagraph: boolean;
 };
 
 /** Лёгкая строка списка шаблонов, как отдаётся клиенту (без текста промптов). */
