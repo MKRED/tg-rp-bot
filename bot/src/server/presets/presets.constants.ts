@@ -3,8 +3,9 @@ import type { SamplingKey } from "./presets.types.js";
 // Мягкий лимит (дублируется в webapp для блокировки UI — здесь последняя линия защиты).
 export const MAX_PRESETS_PER_USER = 50;
 
-// Допустимые уровни рассуждения OpenRouter (по возрастанию бюджета).
-export const REASONING_EFFORTS = ["minimal", "low", "medium", "high", "xhigh"] as const;
+// Допустимые уровни рассуждения (по возрастанию бюджета). Провайдеро-независимый набор —
+// каждый провайдер схлопывает его в свои значения (DeepSeek — см. mapEffort в llm/providers.ts).
+export const REASONING_EFFORTS = ["minimal", "low", "medium", "high", "xhigh", "max", "ultra"] as const;
 
 /**
  * Диапазоны параметров сэмплинга (официальные значения OpenRouter). topK без верхней границы

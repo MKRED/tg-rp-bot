@@ -1,11 +1,17 @@
-/** Уровни рассуждения OpenRouter (по возрастанию бюджета). */
-export type ReasoningEffort = "minimal" | "low" | "medium" | "high" | "xhigh";
+/**
+ * Уровни рассуждения (по возрастанию бюджета) — провайдеро-независимый набор, зеркало серверного
+ * REASONING_EFFORTS (bot/src/server/presets/presets.constants.ts). Провайдер схлопывает его в свои
+ * значения (DeepSeek: minimal/low → low, medium/high/xhigh → high, max/ultra → max).
+ */
+export type ReasoningEffort = "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | "ultra";
 export const REASONING_EFFORTS: ReasoningEffort[] = [
   "minimal",
   "low",
   "medium",
   "high",
   "xhigh",
+  "max",
+  "ultra",
 ];
 
 /** Человекочитаемые подписи уровней рассуждения. */
@@ -14,7 +20,9 @@ export const REASONING_EFFORT_LABELS: Record<ReasoningEffort, string> = {
   low: "Низкое",
   medium: "Среднее",
   high: "Высокое",
-  xhigh: "Максимальное",
+  xhigh: "Очень высокое",
+  max: "Максимальное",
+  ultra: "Ультра",
 };
 
 /**

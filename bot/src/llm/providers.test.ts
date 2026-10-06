@@ -2,24 +2,28 @@ import { describe, expect, it } from "vitest";
 import { buildDeepSeekProvider, buildOpenRouterProvider, mapEffort } from "./providers.js";
 
 describe("mapEffort", () => {
-  it("xhigh → max", () => {
-    expect(mapEffort("xhigh")).toBe("max");
+  it("minimal/low → low", () => {
+    for (const e of ["minimal", "low"]) expect(mapEffort(e)).toBe("low");
   });
 
-  it("остальные уровни и пустое значение → high", () => {
-    for (const e of ["minimal", "low", "medium", "high", undefined, null]) {
+  it("medium/high/xhigh и пустое значение → high (как compat-маппинг DeepSeek)", () => {
+    for (const e of ["medium", "high", "xhigh", undefined, null]) {
       expect(mapEffort(e)).toBe("high");
     }
+  });
+
+  it("max/ultra → max", () => {
+    for (const e of ["max", "ultra"]) expect(mapEffort(e)).toBe("max");
   });
 });
 
 describe("buildDeepSeekProvider", () => {
   it("base URL, ключ/модель из аргументов, без app-заголовков", () => {
-    const p = buildDeepSeekProvider("ds-key", "deepseek-v4-flash");
+    const p = buildDeepSeekProvider("ds-key", "deepseek-flash");
     expect(p.name).toBe("deepseek");
     expect(p.baseUrl).toBe("https://api.deepseek.com");
     expect(p.apiKey).toBe("ds-key");
-    expect(p.defaultModel).toBe("deepseek-v4-flash");
+    expect(p.defaultModel).toBe("deepseek-flash");
     expect(p.appHeaders).toBeUndefined();
   });
 
@@ -37,7 +41,7 @@ describe("buildDeepSeekProvider", () => {
       messages: [],
       userId: 1,
       requestReasoning: true,
-      reasoningEffort: "xhigh",
+      reasoningEffort: "ultra",
     });
     expect(body).toEqual({ thinking: { type: "enabled" }, reasoning_effort: "max" });
   });

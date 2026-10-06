@@ -6,7 +6,15 @@
  * синхроне. Аналог TranslationReasoningLevel у narrator-templates, но не переиспользуем импортом
  * между фичами — по конвенции проекта фичи самодостаточны.
  */
-export type PromptTranslateReasoningEffort = "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
+export type PromptTranslateReasoningEffort =
+  | "off"
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh"
+  | "max"
+  | "ultra";
 
 export const PROMPT_TRANSLATE_REASONING_LEVELS: PromptTranslateReasoningEffort[] = [
   "off",
@@ -15,6 +23,8 @@ export const PROMPT_TRANSLATE_REASONING_LEVELS: PromptTranslateReasoningEffort[]
   "medium",
   "high",
   "xhigh",
+  "max",
+  "ultra",
 ];
 
 export const PROMPT_TRANSLATE_REASONING_LABELS: Record<PromptTranslateReasoningEffort, string> = {
@@ -23,7 +33,9 @@ export const PROMPT_TRANSLATE_REASONING_LABELS: Record<PromptTranslateReasoningE
   low: "Низкое",
   medium: "Среднее",
   high: "Высокое",
-  xhigh: "Максимальное",
+  xhigh: "Очень высокое",
+  max: "Максимальное",
+  ultra: "Ультра",
 };
 
 export interface TranslateSettings {

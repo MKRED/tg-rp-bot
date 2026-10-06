@@ -4,7 +4,7 @@ import { buildDeepSeekProvider } from "./providers.js";
 import type { LlmProvider } from "./providers.types.js";
 
 /** Модель по умолчанию, если ключ уже задан, а модель пользователь ещё не выбрал в настройках. */
-export const DEFAULT_DEEPSEEK_MODEL = "deepseek-v4-flash";
+export const DEFAULT_DEEPSEEK_MODEL = "deepseek-flash";
 
 /**
  * Резолвит провайдера для конкретного пользователя (BYOK — общего ключа из env больше нет).

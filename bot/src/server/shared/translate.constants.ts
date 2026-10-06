@@ -1,3 +1,5 @@
+import { REASONING_EFFORTS } from "../presets/presets.constants.js";
+
 /**
  * Полные английские названия языков по коду (значения LANG_OPTIONS из webapp). Нужны для
  * подстановки в плейсхолдер {{target_lang}} ИИ-промпта — он всегда получает английское название,
@@ -29,7 +31,7 @@ export const DEFAULT_TRANSLATION_REASONING_EFFORT = "medium";
 export const DEFAULT_PROMPT_TRANSLATE_REASONING_EFFORT = "off";
 
 /** Допустимые уровни reasoning для user_settings.prompt_translate_reasoning_effort. */
-export const PROMPT_TRANSLATE_REASONING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh"] as const;
+export const PROMPT_TRANSLATE_REASONING_LEVELS = ["off", ...REASONING_EFFORTS] as const;
 
 /** Максимум абзацев в одном запросе POST /api/translate/text. */
 export const MAX_BLOCKS_PER_REQUEST = 500;

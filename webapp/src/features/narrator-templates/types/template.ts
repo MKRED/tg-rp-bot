@@ -65,7 +65,15 @@ export const DEFAULT_NARRATOR_PROMPT_ORDER: StoryPromptOrderItem[] = [
  * Обязательное поле шаблона, дефолт `"medium"`. Дублирует серверный `TRANSLATION_REASONING_LEVELS`
  * (narratorTemplates.constants.ts) — держать в синхроне.
  */
-export type TranslationReasoningLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
+export type TranslationReasoningLevel =
+  | "off"
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh"
+  | "max"
+  | "ultra";
 
 export const TRANSLATION_REASONING_LEVELS: TranslationReasoningLevel[] = [
   "off",
@@ -74,6 +82,8 @@ export const TRANSLATION_REASONING_LEVELS: TranslationReasoningLevel[] = [
   "medium",
   "high",
   "xhigh",
+  "max",
+  "ultra",
 ];
 
 /** Подписи уровней рассуждения перевода. */
@@ -83,7 +93,9 @@ export const TRANSLATION_REASONING_LABELS: Record<TranslationReasoningLevel, str
   low: "Низкое",
   medium: "Среднее",
   high: "Высокое",
-  xhigh: "Максимальное",
+  xhigh: "Очень высокое",
+  max: "Максимальное",
+  ultra: "Ультра",
 };
 
 /** Дефолт для новых шаблонов — зеркало bot/src/server/shared/translate.constants.ts. */

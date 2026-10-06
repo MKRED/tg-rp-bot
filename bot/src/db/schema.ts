@@ -252,7 +252,7 @@ export const generationPresets = pgTable("generation_presets", {
   minP: real("min_p"),
   topA: real("top_a"),
 
-  // Рассуждение (reasoning). effort: minimal | low | medium | high | xhigh (или null).
+  // Рассуждение (reasoning). effort: minimal | low | medium | high | xhigh | max | ultra (или null).
   requestReasoning: boolean("request_reasoning").notNull().default(false),
   reasoningEffort: text("reasoning_effort"),
 
@@ -541,7 +541,7 @@ export const narratorTemplates = pgTable("narrator_templates", {
   // system-сообщение, обернув каждый блок в <componentId>…</componentId> — см. storyPromptBuilder.
   mergeSystemPrompts: boolean("merge_system_prompts").notNull().default(false),
   // Рассуждение для ИИ-перевода, независимо от пресета: "off" = отключено; иначе — уровень effort
-  // (minimal|low|medium|high|xhigh). Обязательное поле, дефолт "medium" — см. resolveTranslationReasoning.
+  // (minimal|low|medium|high|xhigh|max|ultra). Обязательное поле, дефолт "medium" — см. resolveTranslationReasoning.
   translationReasoningEffort: text("translation_reasoning_effort").notNull().default("medium"),
   // Перевод по абзацам: делит текст на абзацы (2+ переноса строки) и переводит каждый отдельным
   // запросом к LLM параллельно (см. translateParagraphs.ts) — при включённом мышлении (thinking)
