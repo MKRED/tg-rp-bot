@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { chatGraphPath, chatSettingsPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
+import { InfiniteSentinel } from "../../shared/components/InfiniteSentinel";
 import { PageTransition } from "../../shared/components/PageTransition";
+import { useRenderWindow } from "../../shared/hooks/useRenderWindow";
 import { useToast } from "../../shared/toast";
 import { useChat, useChatSettings, useSendMessage } from "../../features/rp-chat";
 import {
@@ -31,6 +33,7 @@ export function RpChatPage() {
   const chatId = Number(id);
   const navigate = useTransitionNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<ChatInputHandle>(null);
   // Первый скролл к низу при загрузке чата — мгновенный (без видимой долгой прокрутки),
   // далее новые сообщения/стриминг скроллим плавно.
@@ -255,6 +258,8 @@ export function RpChatPage() {
   // (с потолком), чтобы новые пузыри появлялись быстро независимо от длины истории.
   const messages = chat?.messages ?? [];
   const firstNewIdx = messages.findIndex((m) => !animatedIds.current.has(m.id));
+  // В DOM — только хвост ленты; ранние сообщения дорисовываются при скролле к верху.
+  const renderWindow = useRenderWindow(messagesRef, messages.length, chatId);
 
   return (
     <PageTransition>
@@ -268,7 +273,7 @@ export function RpChatPage() {
           />
         )}
 
-        <div className="rp-chat-page__messages">
+        <div ref={messagesRef} className="rp-chat-page__messages">
           {loading && (
             <div className="rp-chat-loading">
               <Spinner size="m" />
@@ -285,7 +290,10 @@ export function RpChatPage() {
             </div>
           )}
 
-          {messages.map((msg: MessageInPath, i: number) => {
+          <InfiniteSentinel hasMore={renderWindow.hasMore} loading={false} onLoadMore={renderWindow.loadMore} />
+
+          {messages.slice(renderWindow.start).map((msg: MessageInPath, offset: number) => {
+            const i = renderWindow.start + offset;
             const showTranslateButton =
               settings.translateEnabled &&
               (settings.translateScope === "all" || settings.translateScope === msg.role);

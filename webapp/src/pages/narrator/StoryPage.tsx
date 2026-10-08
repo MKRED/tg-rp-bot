@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { storyGraphPath, storySettingsPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
+import { InfiniteSentinel } from "../../shared/components/InfiniteSentinel";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { RpText } from "../../shared/components/RpText";
 import { TranslateSheet } from "../../shared/components/TranslateSheet";
@@ -26,6 +27,7 @@ import {
   useStorySettings,
 } from "../../features/narrator";
 import { confirmAction } from "../../shared/telegram/confirm";
+import { useRenderWindow } from "../../shared/hooks/useRenderWindow";
 import { useToast } from "../../shared/toast";
 import type { StoryInputHandle, StoryMessage } from "../../features/narrator";
 import "./narrator.css";
@@ -46,6 +48,7 @@ export function StoryPage() {
   const [translateOpen, setTranslateOpen] = useState(false);
   const storyInputRef = useRef<StoryInputHandle>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const feedRef = useRef<HTMLDivElement>(null);
   // Первый скролл к низу при открытии истории — мгновенный (без видимой долгой прокрутки
   // от верха), далее новые биты/стриминг скроллим плавно.
   const didInitialScroll = useRef(false);
@@ -121,6 +124,10 @@ export function StoryPage() {
   const { suppressNextRun, autoTranslatingIds } = useStoryAutoTranslate(messages, settings, handleTranslate);
 
   const lastBeatId = [...messages].reverse().find((m) => m.role === "assistant")?.id;
+
+  // В DOM — только хвост ленты; ранние биты дорисовываются при скролле к верху. Хук — до ранних
+  // return'ов (loading/error) ниже, иначе нарушился бы порядок хуков.
+  const renderWindow = useRenderWindow(feedRef, messages.length, id);
 
   const advance = (directive: string) => {
     if (sending) return;
@@ -263,8 +270,14 @@ export function StoryPage() {
           onSettingsClick={() => navigate(storySettingsPath(id))}
         />
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "8px 16px", display: "flex", flexDirection: "column" }}>
-          {messages.map((m, i) => {
+        <div
+          ref={feedRef}
+          style={{ flex: 1, overflowY: "auto", padding: "8px 16px", display: "flex", flexDirection: "column" }}
+        >
+          <InfiniteSentinel hasMore={renderWindow.hasMore} loading={false} onLoadMore={renderWindow.loadMore} />
+
+          {messages.slice(renderWindow.start).map((m, offset) => {
+            const i = renderWindow.start + offset;
             // Кнопку перевода показываем на бите/директиве согласно scope (assistant=бит, user=директива).
             const showTranslateButton =
               m.kind !== "continue" &&
