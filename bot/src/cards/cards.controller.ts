@@ -1,10 +1,10 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Post, Put } from "@nestjs/common";
 import { CurrentUser } from "../auth/current-user.decorator.js";
-import { CardGenerationService } from "./card-generation.service.js";
 import { CardsService } from "./cards.service.js";
 import { AnswerCardQuestionsDto } from "./dto/answer-card-questions.dto.js";
 import { CardInputDto } from "./dto/card-input.dto.js";
 import { GenerateCardBlockDto } from "./dto/generate-card-block.dto.js";
+import { CardGenerationService } from "./generation/card-generation.service.js";
 
 /**
  * /api/cards — карточки «Мастерской» текущего пользователя: CRUD и поблочная генерация. Форма
@@ -51,7 +51,8 @@ export class CardsController {
   @Post(":id/generate")
   @HttpCode(200)
   generate(@CurrentUser() userId: number, @Param("id", ParseIntPipe) id: number, @Body() body: GenerateCardBlockDto) {
-    return this.generation.generate(userId, id, body.categoryId);
+    // Явный categoryId — всегда клик «Перегенерировать»: сбрасываем накопленные ответы ask_user блока.
+    return this.generation.generate(userId, id, body.categoryId, body.categoryId !== undefined);
   }
 
   /** Ответ (или отказ — skipped) на вопросы ask_user категории; вопросы хранятся на карточке, без таймаута. */

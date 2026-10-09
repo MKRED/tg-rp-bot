@@ -1,5 +1,6 @@
 import { apiFetch } from "../../../shared/api/client";
-import type { AskUserQuestion, Card, CardInput, CardListItem } from "../types/card";
+import type { AnswerCardQuestionsInput, CardGenerationStep } from "@tg-rp-bot/shared";
+import type { Card, CardInput, CardListItem } from "../types/card";
 
 export function listCards(): Promise<{ cards: CardListItem[] }> {
   return apiFetch<{ cards: CardListItem[] }>("/cards");
@@ -28,22 +29,11 @@ export function removeCard(id: number): Promise<{ ok: true }> {
 }
 
 /**
- * Результат шага генерации блока: "done" — блок готов (уже сохранён на сервере, клиент мержит
- * точечно по categoryId — НЕ всю карточку, чтобы не затереть параллельные несохранённые правки
- * других категорий в форме); "questions" — модель попросила уточнение (ask_user) до того, как
- * сгенерировать блок; вопросы уже сохранены сервером на этой категории (см. answerCardBlockQuestions
- * ниже) — ограничения по времени на ответ нет.
- */
-export type GenerateCardBlockResponse =
-  | { status: "done"; categoryId: string; content: string }
-  | { status: "questions"; categoryId: string; questions: AskUserQuestion[] };
-
-/**
  * Генерирует блок карточки: без categoryId — следующий незаполненный enabled-блок, с categoryId —
- * явная перегенерация уже заполненного (см. generateCardBlock на сервере).
+ * явная перегенерация уже заполненного (см. CardGenerationService.generate на сервере).
  */
-export function generateCardBlock(id: number, categoryId?: string): Promise<GenerateCardBlockResponse> {
-  return apiFetch<GenerateCardBlockResponse>(`/cards/${id}/generate`, {
+export function generateCardBlock(id: number, categoryId?: string): Promise<CardGenerationStep> {
+  return apiFetch<CardGenerationStep>(`/cards/${id}/generate`, {
     method: "POST",
     body: JSON.stringify({ categoryId }),
   });
@@ -51,15 +41,15 @@ export function generateCardBlock(id: number, categoryId?: string): Promise<Gene
 
 /**
  * Отвечает на уточняющие вопросы (ask_user) заданной категории и запускает генерацию этого блока
- * заново с уже известными ответами в контексте — см. answerCardBlockQuestions на сервере. skipped:
+ * заново с уже известными ответами в контексте — см. CardGenerationService.answer на сервере. skipped:
  * true — пользователь отказался отвечать, модель узнаёт об этом тем же путём и не переспрашивает.
  */
 export function answerCardBlockQuestions(
   id: number,
   categoryId: string,
-  input: { skipped: true } | { skipped: false; answers: string[] },
-): Promise<GenerateCardBlockResponse> {
-  return apiFetch<GenerateCardBlockResponse>(`/cards/${id}/generate/answer`, {
+  input: AnswerCardQuestionsInput,
+): Promise<CardGenerationStep> {
+  return apiFetch<CardGenerationStep>(`/cards/${id}/generate/answer`, {
     method: "POST",
     body: JSON.stringify({ categoryId, ...input }),
   });

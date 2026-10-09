@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseAskUserArguments } from "./askUserTool.js";
+import { parseAskUserArguments } from "./ask-user-tool.js";
 
 describe("parseAskUserArguments", () => {
   it("разбирает один вопрос без options", () => {

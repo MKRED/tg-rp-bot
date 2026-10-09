@@ -99,10 +99,10 @@ Nest поднимается на том же порту, текущее Hono-п�
 - **Блок F ✅** — narrator-templates: контракт, дефолтный порядок narrator-промптов и уровни
   рассуждения перевода — в shared; порядок по-прежнему нормализуется (без 400).
 - **Блок G ✅** — cards, CRUD: контракт (форма, категории и ask_user, лимиты, дефолты новой карточки) —
-  в shared; весь `/api/cards` в Nest, ручки генерации пока делегируют в legacy `server/cards/generation/`
-  через тот же лок карточки.
-- **Блок H** — генерация карточек: перенос `server/cards/generation/` в Nest-сервис (DI вместо мостов
-  `db/cards`, `db/presets`).
+  в shared; весь `/api/cards` в Nest.
+- **Блок H ✅** — генерация карточек: `CardGenerationService` (DI репозиториев карточек и пресетов,
+  отказы — HttpException с кодом причины), сборка промпта и tool-loop — в `cards/generation/`;
+  контракт шага генерации и кодов отказа — в shared.
 - **Дальше** — остальные домены по одному (… chats/stories с SSE
   последними), затем бот grammY как provider и удаление Hono.
 

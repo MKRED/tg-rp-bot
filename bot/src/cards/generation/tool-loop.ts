@@ -1,15 +1,16 @@
-import { chatCompletion } from "../../../llm/client.js";
+import type { AskUserQuestion } from "@tg-rp-bot/shared";
+import { chatCompletion } from "../../llm/client.js";
 import type {
   ChatCompletionOptions,
   ChatMessage,
   ToolCall,
   ToolCallMessage,
   ToolResultMessage,
-} from "../../../llm/types.js";
-import logger from "../../../logger.js";
-import { TavilyHttpError } from "../../../tavily/errors.js";
-import { tavilySearch, WEB_SEARCH_TOOL, WEB_SEARCH_TOOL_NAME } from "../../../tavily/webSearch.js";
-import { ASK_USER_TOOL, ASK_USER_TOOL_NAME, parseAskUserArguments, type AskUserQuestion } from "./askUserTool.js";
+} from "../../llm/types.js";
+import logger from "../../logger.js";
+import { TavilyHttpError } from "../../tavily/errors.js";
+import { tavilySearch, WEB_SEARCH_TOOL, WEB_SEARCH_TOOL_NAME } from "../../tavily/webSearch.js";
+import { ASK_USER_TOOL, ASK_USER_TOOL_NAME, parseAskUserArguments } from "./ask-user-tool.js";
 
 type LoopMessage = ChatMessage | ToolCallMessage | ToolResultMessage;
 
@@ -74,15 +75,16 @@ export type ToolLoopOutcome = { done: true; content: string } | { done: false; q
  * кап, не полагаемся только на инструкцию в промпте).
  *
  * ask_user не резолвится внутри цикла (в отличие от web_search) — эта функция возвращается с
- * done: false и только вопросами. Вызывающий (generateBlock.ts/answerQuestions.ts) НЕ резюмирует
+ * done: false и только вопросами. Вызывающий (card-generation.service.ts) НЕ резюмирует
  * этот же LLM-разговор: он сохраняет вопросы на самой категории (см. CardCategory в
- * @tg-rp-bot/shared) и, получив ответ, просто заново вызывает эту функцию с прогнанным через assembleCardBlockPrompt промптом,
- * где ответы реплеятся заново синтетической парой assistant tool_calls(ask_user)/tool-result (см.
- * promptAssembly.ts) — без хранения исходного tool_call/tool_result между HTTP-запросами (некому
+ * @tg-rp-bot/shared) и, получив ответ, просто заново вызывает эту функцию с прогнанным через
+ * assembleCardBlockPrompt промптом, где ответы реплеятся заново синтетической парой assistant
+ * tool_calls(ask_user)/tool-result (см.
+ * prompt-assembly.ts) — без хранения исходного tool_call/tool_result между HTTP-запросами (некому
  * было бы гарантировать, что такая история останется валидной для протокола провайдера).
  * Бюджет ask_user (askUserRoundsUsed/ASK_USER_MAX_ROUNDS) — только страховка ВНУТРИ одного такого
  * вызова; сквозь несколько HTTP-раундов ответа сервер ограничивает число вопросов иначе, гейтя
- * askUserEnabled по накопленному askUserAnswers.length категории (см. generateBlock.ts,
+ * askUserEnabled по накопленному askUserAnswers.length категории (см. card-generation.service.ts,
  * ASK_USER_MAX_ANSWERED_QUESTIONS).
  *
  * Гарантия завершения цикла: любой ход с tool_calls[] либо приостанавливает выполнение (return),

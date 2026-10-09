@@ -103,3 +103,26 @@ export const DEFAULT_CARD_CATEGORIES: CardCategory[] = [
   { id: "dislikes", title: "Dislikes", description: "То, что персонаж не любит или чего избегает.", content: "", enabled: true },
   { id: "background", title: "Background", description: "История персонажа, прошлое, ключевые события.", content: "", enabled: true },
 ];
+
+/**
+ * Ответ обеих ручек генерации (POST /cards/:id/generate и /generate/answer). "done" — блок готов и уже
+ * сохранён (клиент мержит точечно по categoryId, не всю карточку — не затирая несохранённые правки
+ * других категорий); "questions" — модель попросила уточнение (ask_user), вопросы уже сохранены на
+ * категории, ограничения по времени на ответ нет.
+ */
+export type CardGenerationStep =
+  | { status: "done"; categoryId: string; content: string }
+  | { status: "questions"; categoryId: string; questions: AskUserQuestion[] };
+
+/** Ответ на вопросы ask_user (тело /generate/answer без categoryId): ответы по порядку вопросов или отказ. */
+export type AnswerCardQuestionsInput = { skipped: true } | { skipped: false; answers: string[] };
+
+/** Коды отказа генерации в `{ error }` — webapp переводит их в понятный текст. */
+export type CardGenerationError =
+  | "not_found"
+  | "busy"
+  | "preset_required"
+  | "target_not_found"
+  | "nothing_to_generate"
+  | "no_pending_question"
+  | "answers_mismatch";

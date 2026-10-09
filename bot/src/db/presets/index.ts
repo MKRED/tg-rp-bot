@@ -2,7 +2,7 @@ import { DatabaseService } from "../../database/database.service.js";
 import { PresetsRepository } from "../../presets/presets.repository.js";
 
 /**
- * ВРЕМЕННЫЙ мост для legacy Hono-кода (cards, chats, stories), которому ещё нужен пресет: тот же
+ * ВРЕМЕННЫЙ мост для legacy Hono-кода (chats, stories), которому ещё нужен пресет: тот же
  * PresetsRepository, что в Nest. Удаляется, когда эти домены переедут на Nest и получат
  * репозиторий через DI (PresetsModule его экспортирует).
  */

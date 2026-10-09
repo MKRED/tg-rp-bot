@@ -202,12 +202,12 @@ export const cards = pgTable("cards", {
   presetId: bigint("preset_id", { mode: "number" }).references(() => generationPresets.id),
   // Веб-поиск (Tavily, BYOK) при генерации блоков этой карточки: модель сама решает,
   // когда звать web_search (tool_choice: "auto"), в пределах user_settings.tavilyMaxSearchRounds.
-  // Действует, только если у пользователя сохранён ключ Tavily (см. generateBlock.ts) — иначе
+  // Действует, только если у пользователя сохранён ключ Tavily (см. card-generation.service.ts) — иначе
   // тихо генерирует без поиска, тумблер в форме мог остаться включённым после удаления ключа.
   useWebSearch: boolean("use_web_search").notNull().default(false),
   // Уточняющие вопросы пользователю (ask_user, tool_choice: "auto") при генерации блоков этой
   // карточки — модель сама решает, когда не хватает информации, которую знает только пользователь
-  // (см. server/cards/generation/askUserTool.ts). Независим от useWebSearch — оба инструмента
+  // (см. cards/generation/ask-user-tool.ts). Независим от useWebSearch — оба инструмента
   // могут быть включены одновременно.
   useAskUser: boolean("use_ask_user").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

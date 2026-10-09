@@ -1,4 +1,5 @@
 import { Button, Caption, Cell, Section } from "@telegram-apps/telegram-ui";
+import type { AnswerCardQuestionsInput, CardGenerationError } from "@tg-rp-bot/shared";
 import { useState } from "react";
 import { ApiError } from "../../../../shared/api/client";
 import { PromptEditorField } from "../../../../shared/components/PromptEditorField";
@@ -9,6 +10,7 @@ import { answerCardBlockQuestions, generateCardBlock } from "../../api/cards-api
 import type { CardCategory } from "../../types/card";
 import { AskUserQuestionsCarousel } from "./AskUserQuestionsCarousel";
 
+// satisfies — каждый код отказа сервера обязан иметь текст (контракт в @tg-rp-bot/shared).
 const ERROR_MESSAGES: Record<string, string> = {
   preset_required: "Сначала выберите пресет ИИ для генерации",
   nothing_to_generate: "Все включённые блоки уже сгенерированы",
@@ -17,7 +19,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   not_found: "Карточка не найдена",
   no_pending_question: "Вопрос уже неактуален — сгенерируйте блок заново",
   answers_mismatch: "Не удалось отправить ответы — попробуйте сгенерировать блок заново",
-};
+} satisfies Record<CardGenerationError, string>;
 
 interface GenerationSectionProps {
   /** undefined — карточка ещё не сохранена (генерация недоступна, роут требует существующий id). */
@@ -50,7 +52,7 @@ interface GenerationSectionProps {
  * тот же блок явным categoryId — как если бы мы снова шли по очереди и дошли до него (контекст —
  * блоки строго до него, см. assembleCardBlockPrompt на сервере).
  *
- * Уточняющие вопросы (ask_user, см. askUserTool.ts на сервере) — если модель попросила уточнение
+ * Уточняющие вопросы (ask_user, см. ask-user-tool.ts на сервере) — если модель попросила уточнение
  * перед генерацией блока, вместо его PromptEditorField+кнопки рендерится AskUserQuestionsCarousel:
  * вопросы и ответы хранятся прямо на категории (category.pendingQuestions/askUserAnswers — приходят
  * с сервера в самой карточке), а не в стейте этого компонента — ограничения по времени на ответ нет,
@@ -117,10 +119,10 @@ export function GenerationSection({
   };
 
   /** Общий хвост для «Ответить» и «Пропустить все вопросы» карусели — запускает генерацию блока
-   * заново с уже известными ответами в контексте (см. answerCardBlockQuestions на сервере). */
+   * заново с уже известными ответами в контексте (см. CardGenerationService.answer на сервере). */
   const respondToQuestions = async (
     categoryId: string,
-    input: { skipped: true } | { skipped: false; answers: string[] },
+    input: AnswerCardQuestionsInput,
   ) => {
     if (cardId === undefined) return;
     setAnswering(true);

@@ -1,9 +1,5 @@
-import type { AskUserAnswer, AskUserQuestion } from "@tg-rp-bot/shared";
-import type { ToolDefinition } from "../../../llm/types.js";
-
-// Канонические типы — в @tg-rp-bot/shared (там же CardCategory, который их хранит). Реэкспорт
-// сохраняет прежнюю точку импорта `from "./askUserTool.js"` для остальных файлов генерации.
-export type { AskUserAnswer, AskUserQuestion };
+import type { AskUserQuestion } from "@tg-rp-bot/shared";
+import type { ToolDefinition } from "../../llm/types.js";
 
 export const ASK_USER_TOOL_NAME = "ask_user";
 
@@ -13,14 +9,14 @@ export const ASK_USER_MAX_QUESTIONS = 4;
 
 /** Сколько вопрос-ответных пар может накопиться у ОДНОГО блока (askUserAnswers, через все HTTP-
  * раунды ответа в рамках ОДНОЙ попытки генерации, а не за один вызов LLM — см. ASK_USER_MAX_ROUNDS
- * в toolLoop.ts) прежде чем ask_user отключается для его генерации (generateBlock.ts) — иначе
+ * в tool-loop.ts) прежде чем ask_user отключается для его генерации (card-generation.service.ts) — иначе
  * пользователя можно было бы затянуть в бесконечную цепочку уточнений одним и тем же блоком.
  * Не лимит на всю жизнь блока: явная «Перегенерировать» сбрасывает askUserAnswers (см.
  * clearCategoryAskUserAnswers в cards/cards.repository.ts) — новая попытка получает свежий бюджет. */
 export const ASK_USER_MAX_ANSWERED_QUESTIONS = 8;
 
 /** Записывается вместо реального ответа при явном отказе пользователя отвечать (см.
- * answerQuestions.ts) — модель видит, что вопрос был задан и отклонён, и не должна переспрашивать
+ * card-generation.service.ts) — модель видит, что вопрос был задан и отклонён, и не должна переспрашивать
  * то же самое. */
 export const ASK_USER_DECLINED_ANSWER = "(user declined to answer)";
 

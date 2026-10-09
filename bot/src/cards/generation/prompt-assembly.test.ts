@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CardCategory } from "@tg-rp-bot/shared";
-import { assembleCardBlockPrompt } from "./promptAssembly.js";
+import { assembleCardBlockPrompt } from "./prompt-assembly.js";
 
 function cat(overrides: Partial<CardCategory> & Pick<CardCategory, "id" | "title">): CardCategory {
   return { description: "", content: "", enabled: true, ...overrides };

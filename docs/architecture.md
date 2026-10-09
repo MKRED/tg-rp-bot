@@ -22,8 +22,9 @@ bot/src/
   common/       — ApiExceptionFilter (ошибки → { error }), createValidationPipe, found() (undefined → 404),
                   decorators/ (IsDataImageUrl — поле-картинка data URL с лимитом; IsOptionalNote — сноска, пусто → null)
   characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ — доменные модули Nest: controller / service / repository (бывший DAO) / dto/;
-                  у cards/ ещё card-lock.ts (лок карточки, общий для PUT и генерации) и card-generation.service.ts —
-                  пока тонкая обёртка над legacy-генерацией блоков в server/cards/generation/
+                  у cards/ ещё card-lock.ts (лок карточки, общий для PUT и генерации) и generation/ — поблочная
+                  генерация: card-generation.service (Nest-сервис) + prompt-assembly / tool-loop (web_search +
+                  ask_user) / ask-user-tool
   bot.ts        — grammY bot instance (+ прокси для Telegram через baseFetchConfig)
   bot.constants.ts
   config.ts     — env vars (requireEnv для обязательных, process.env для опциональных)
@@ -31,11 +32,10 @@ bot/src/
   proxy.ts      — HttpsProxyAgent (https-proxy-agent) для Telegram; тот же TELEGRAM_PROXY_URL
                   переиспользуется для Tavily, но через отдельный undici ProxyAgent (см. tavily/)
   db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + клиент +
-                  DAO-папки по таблицам: characters/ personas/ cards/ presets/ rpTemplates/ narratorTemplates/
-                  impersonations/ (characters/ personas/ cards/ presets/ rpTemplates/ narratorTemplates/ —
-                  временные мосты getCharacter/getPersona/getCard (+ точечные записи категорий)/getPreset/
-                  getRpTemplate/getNarratorTemplate на репозитории Nest для ещё не перенесённых
-                  books/chats/stories и генерации карточек)
+                  DAO-папки по таблицам: characters/ personas/ presets/ rpTemplates/ narratorTemplates/
+                  impersonations/ (characters/ personas/ presets/ rpTemplates/ narratorTemplates/ —
+                  временные мосты getCharacter/getPersona/getPreset/getRpTemplate/getNarratorTemplate
+                  на репозитории Nest для ещё не перенесённых books/chats/stories)
                   avatars/ (батч-резолв аватаров для AvatarStack —
                   getAvatarsBatch) (у каждой DAO-файл + types.ts/constants.ts при наличии + barrel index.ts;
                   типы контракта API перенесённых в Nest доменов — из @tg-rp-bot/shared),
@@ -57,7 +57,7 @@ bot/src/
                   legacyBridge.ts — express-middleware, отдающий в Hono всё вне NEST_ROUTE_PREFIXES;
                   index=createLegacyApp,
                   routes.ts — карта эндпоинтов (монтаж контроллеров), middleware/ (initData — валидация
-                  подписи), доменные папки me/ cards/ (только generation/ — поблочная генерация) books/
+                  подписи), доменные папки me/ books/
                   chats/ stories/ debug/ avatars/ (POST /batch — батч-резолв аватаров для
                   AvatarStack, см. ниже) settings/ (settings.controller.ts — per-user ключ/модель
                   DeepSeek + tavily.controller.ts — per-user ключ/квота Tavily, оба BYOK) — у каждого
