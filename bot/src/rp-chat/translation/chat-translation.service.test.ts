@@ -17,9 +17,11 @@ type Args = ConstructorParameters<typeof ChatTranslationService>;
 const CHAT = { id: 5, activeMessageId: 1, templateId: 3, presetId: 4 };
 
 function setup(method: "google" | "ai" = "google", translations: Record<string, string> | null = null) {
-  const access = { requireRow: vi.fn().mockResolvedValue(CHAT) };
-  const messages = {
+  const access = {
+    requireRow: vi.fn().mockResolvedValue(CHAT),
     requireMessage: vi.fn().mockResolvedValue({ chat: CHAT, msg: { id: 9, chatId: 5, content: "Текст", translations } }),
+  };
+  const messages = {
     saveTranslation: vi.fn(),
     deleteTranslation: vi.fn(),
   };

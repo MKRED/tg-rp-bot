@@ -24,7 +24,8 @@ bot/src/
                   image-limits (лимиты полей-картинок data URL), fk-violation (FK 23503 → 409 in_use),
                   llm-http-error (ошибка не-стримингового LLM-вызова → 400 no_api_key / 500),
                   decorators/ (IsDataImageUrl — поле-картинка data URL с лимитом; IsOptionalNote — сноска, пусто → null),
-                  stream-completion (streamCompletion/writeGenerationError — LLM-генерация в SSE-события
+                  sse-observable (async-функция → Observable для Nest @Sse; отписка клиента генерацию не
+                  прерывает), stream-completion (streamCompletion/writeGenerationError — LLM-генерация в SSE-события
                   token/reset/error через интерфейс SseSink: годится и для Hono, и для Nest @Sse)
   characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ — доменные модули Nest: controller / service / repository (бывший DAO) / dto/;
                   у cards/ ещё card-lock.ts (лок карточки, общий для PUT и генерации) и generation/ — поблочная
@@ -51,17 +52,19 @@ bot/src/
                   пресета, чат с активным путём, переименование, граф веток), messages/ (ветка, удаление
                   поддерева), translation/ (перевод сообщения с кэшем, эфемерный перевод текста),
                   settings/ (настройки перевода, снисходительный PUT), stats/ (токены, лимит контекста),
-                  impersonations/ (сохранённые варианты реплик игрока); у каждой controller/service/
+                  impersonations/ (сохранённые варианты реплик игрока), generation/ (SSE через @Sse на POST:
+                  ответ ИИ на отправку/правку/перегенерацию с управлением курсором, вариант impersonate;
+                  rp-completion — сборка запроса к LLM из контекста чата); у каждой controller/service/
                   repository/dto/; chat-context.service (чат + персонаж/персона/шаблон/пресет с проверкой
-                  владельца), chat-path.repository (активный путь и листья дерева), message-crypto.
-                  Стриминговая генерация (send/edit/regenerate/impersonate) пока в server/chats
+                  владельца, сообщение этого чата), chat-path.repository (активный путь и листья дерева),
+                  message-crypto
   me/           — /api/me: профиль из initData, фото профиля (GET /photo) и фото из лайтбокса себе в
                   чат (POST /send-photo) — controller / service / dto/; media/ — profilePhoto (Bot API +
                   кэш на час) и photoToChat (sendPhoto с web_app-кнопкой deep link и «Закрыть»)
   translate/    — POST /api/translate/text: безэнтитный батч-перевод абзацев (режим перевода
                   PromptEditorOverlay) — controller / service / dto/; engine/ — движок перевода без Nest
                   (googleTranslate, aiTranslate, resolveTranslationReasoning, чанкинг блока, разбивка на
-                  абзацы, константы), общий с legacy-переводом в server/chats и server/stories
+                  абзацы, константы), общий с переводом в rp-chat/ и legacy server/stories
   prompt/       — сборка промптов без Nest: promptBuilder (RP-чат, impersonate, сэмплинг пресета) +
                   storyPromptBuilder (narrator) + общий budget, compactionPlan, keywordMatch,
                   storyPromptOrder, templateTokenWeight (у каждого constants/types/test рядом)
@@ -72,14 +75,11 @@ bot/src/
   proxy.ts      — HttpsProxyAgent (https-proxy-agent) для Telegram; тот же TELEGRAM_PROXY_URL
                   переиспользуется для Tavily, но через отдельный undici ProxyAgent (см. tavily/)
   db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + клиент +
-                  DAO-папки по таблицам: characters/ personas/ presets/ rpTemplates/ narratorTemplates/
-                  (characters/ personas/ presets/ rpTemplates/ narratorTemplates/ —
-                  временные мосты getCharacter/getPersona/getPreset/getRpTemplate/getNarratorTemplate
-                  на репозитории Nest для ещё не перенесённых chats/stories), settings/ (мост
+                  DAO-папки по таблицам: presets/ narratorTemplates/ (временные мосты getPreset/
+                  getNarratorTemplate на репозитории Nest для ещё не перенесённых stories), settings/ (мост
                   getDecryptedDeepSeekCredentials для resolveProvider) (у каждой DAO-файл + types.ts/constants.ts при наличии + barrel index.ts;
                   типы контракта API перенесённых в Nest доменов — из @tg-rp-bot/shared),
-                  chats/ impersonations/ (мосты на репозитории rp-chat/ для стриминговых хендлеров
-                  server/chats), stories/ (+ storyAvatars.ts — LATERAL-фрагмент топ-N аватаров книги знаний
+                  stories/ (+ storyAvatars.ts — LATERAL-фрагмент топ-N аватаров книги знаний
                   для карточки истории) knowledge/ (мост getBook/getActiveEntriesForPrompt на репозитории
                   knowledge-books/ для stories), users.ts
   llm/          — LLM client (client/request/errors/types/constants/completionGuard/providers/
@@ -95,13 +95,13 @@ bot/src/
                   photoActions.ts — callback «Закрыть» под фото из лайтбокса)
   server/       — legacy Hono HTTP API (переезжает на Nest по доменам — docs/plan/roadmap.md):
                   legacyBridge.ts — express-middleware, отдающий в Hono всё вне NEST_ROUTE_PREFIXES
-                  (+ LEGACY_ROUTES — временные исключения внутри перенесённых префиксов, метод + путь);
+                  (+ LEGACY_ROUTES — временные исключения внутри перенесённых префиксов по методу и пути,
+                  для переезда домена по частям; сейчас пусто);
                   index=createLegacyApp,
                   routes.ts — карта эндпоинтов (монтаж контроллеров), middleware/ (initData — валидация
-                  подписи), доменные папки chats/ stories/ — у каждого
+                  подписи), доменная папка stories/ —
                   <домен>.controller.ts (Hono-роуты) + validation/
-                  constants/types рядом + barrel index.ts; chats/ — только стриминговая генерация
-                  (messages.handlers: send/edit/regenerate, impersonate.handlers); stories/ — story.handlers (SSE-генерация RP/narrator);
+                  constants/types рядом + barrel index.ts; stories/ — story.handlers (SSE-генерация RP/narrator);
                   shared/ — apiError (переиспользуемое между доменами)
                   + раздача собранной статики Mini App из ./public (SPA-fallback) — один процесс
   scripts/      — разовые скрипты (backfill-message-encryption)

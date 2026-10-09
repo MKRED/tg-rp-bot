@@ -1,6 +1,6 @@
 /**
  * Движок перевода — чистые функции без Nest: ими пользуются TranslateService (POST /translate/text)
- * и пока ещё legacy-эндпоинты перевода в чатах/историях (server/chats, server/stories).
+ * перевод в RP-чате (rp-chat/translation) и пока ещё legacy-перевод в историях (server/stories).
  */
 export {
   DEFAULT_TRANSLATION_TEMPLATE,

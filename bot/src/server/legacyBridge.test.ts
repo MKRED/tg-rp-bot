@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
 
-const { isNestRoute, LEGACY_ROUTES } = await import("./legacyBridge.js");
+const { isNestRoute } = await import("./legacyBridge.js");
 
 describe("isNestRoute", () => {
   const prefixes = ["/api/characters"];
@@ -22,20 +22,12 @@ describe("isNestRoute", () => {
     expect(isNestRoute("GET", "/", [], [])).toBe(false);
   });
 
-  it("стриминговые POST чата остаются в Hono, остальное /api/chats — Nest", () => {
-    const chats = ["/api/chats"];
-    const legacy = (method: string, path: string) => !isNestRoute(method, path, chats, LEGACY_ROUTES);
+  it("LEGACY_ROUTES: совпадение метода и пути оставляет запрос в Hono, остальное префикса — Nest", () => {
+    const legacyRoutes = [{ method: "POST", path: /^\/api\/chats\/[^/]+\/messages$/ }];
+    const legacy = (method: string, path: string) => !isNestRoute(method, path, ["/api/chats"], legacyRoutes);
     expect(legacy("POST", "/api/chats/5/messages")).toBe(true);
-    expect(legacy("POST", "/api/chats/5/messages/9/edit")).toBe(true);
-    expect(legacy("POST", "/api/chats/5/messages/9/regenerate")).toBe(true);
-    expect(legacy("POST", "/api/chats/5/impersonate")).toBe(true);
-
-    expect(legacy("GET", "/api/chats/5/impersonate")).toBe(false);
-    expect(legacy("DELETE", "/api/chats/5/impersonate")).toBe(false);
+    expect(legacy("GET", "/api/chats/5/messages")).toBe(false);
     expect(legacy("POST", "/api/chats/5/messages/9/branch")).toBe(false);
-    expect(legacy("POST", "/api/chats/5/messages/9/translate")).toBe(false);
-    expect(legacy("DELETE", "/api/chats/5/messages/9")).toBe(false);
     expect(legacy("POST", "/api/chats")).toBe(false);
-    expect(legacy("POST", "/api/chats/5/translate-text")).toBe(false);
   });
 });

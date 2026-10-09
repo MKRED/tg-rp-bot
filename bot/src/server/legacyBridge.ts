@@ -27,15 +27,10 @@ export const NEST_ROUTE_PREFIXES: readonly string[] = [
 export type LegacyRoute = { method: string; path: RegExp };
 
 /**
- * ВРЕМЕННЫЕ исключения внутри перенесённых префиксов: маршруты, которые ещё обслуживает Hono.
- * Нужны, когда домен переезжает по частям — сейчас это стриминговая генерация RP-чата (SSE),
- * которая переезжает на Nest @Sse следующим шагом; тогда список опустеет.
+ * ВРЕМЕННЫЕ исключения внутри перенесённых префиксов: маршруты, которые ещё обслуживает Hono, пока
+ * домен переезжает по частям (так переезжали chats: стриминговые POST — последним шагом). Сейчас пусто.
  */
-export const LEGACY_ROUTES: readonly LegacyRoute[] = [
-  { method: "POST", path: /^\/api\/chats\/[^/]+\/messages$/ },
-  { method: "POST", path: /^\/api\/chats\/[^/]+\/messages\/[^/]+\/(edit|regenerate)$/ },
-  { method: "POST", path: /^\/api\/chats\/[^/]+\/impersonate$/ },
-];
+export const LEGACY_ROUTES: readonly LegacyRoute[] = [];
 
 /**
  * Обслуживает ли запрос Nest: путь совпадает с префиксом или вложен в него и не попадает в

@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { createChatRoutes } from "./chats/index.js";
 import { type AppVariables } from "./middleware/initData.types.js";
 import { requireInitData } from "./middleware/initData.js";
 import { createStoryRoutes } from "./stories/index.js";
@@ -19,11 +18,8 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
   api.use("*", requireInitData);
 
   // Персонажи, персоны, пресеты, RP- и narrator-шаблоны, карточки, настройки, отладку, безэнтитный
-  // перевод (/translate), батч-аватары (/avatars), текущего пользователя (/me) и книги знаний
+  // перевод (/translate), батч-аватары (/avatars), текущего пользователя (/me), книги знаний
   // (/books) и RP-чаты (/chats) обслуживает Nest (см. legacyBridge.ts).
-
-  // RP-чаты: только стриминговая генерация (SSE) — временно, до переезда на Nest @Sse.
-  api.route("/chats", createChatRoutes());
 
   // Narrator-режим («Режиссёр истории»): истории (книги знаний и шаблоны — в Nest).
   api.route("/stories", createStoryRoutes());

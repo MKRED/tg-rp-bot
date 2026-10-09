@@ -119,10 +119,11 @@ Nest поднимается на том же порту, текущее Hono-п�
 - **Блок N ✅** — knowledge-books (`/api/books` и записи книги): контракт, лимиты и диапазон глубины
   поиска триггеров — в shared; правила смысла записи — валидаторы DTO; персонажи и персоны — через
   DI; `db/knowledge` — мост для stories.
-- **Блок O (chats, в работе)** — по шагам: O1 ✅ подготовка (`prompt/` из `server/`, `streamCompletion`
+- **Блок O ✅** — chats, по шагам: O1 ✅ подготовка (`prompt/` из `server/`, `streamCompletion`
   без привязки к Hono); O2 ✅ контракт RP-чата и имена SSE-событий — в shared; O3 ✅ модуль `rp-chat/`
-  с не-стриминговыми маршрутами (стриминговые POST временно остаются в Hono — `LEGACY_ROUTES` в мосту); O4 — стриминг через
-  `@Sse` и удаление `server/chats`.
+  с не-стриминговыми маршрутами (стриминговые POST временно остаются в Hono — `LEGACY_ROUTES` в мосту); O4 ✅ стриминг через
+  `@Sse` на POST (`common/sse-observable`), `server/chats` и мосты `db/chats`, `db/impersonations`,
+  `db/characters`, `db/personas`, `db/rpTemplates` удалены.
 - **Дальше** — stories (SSE), затем бот grammY как provider и удаление Hono.
 
 ### Контракт ответов не меняется

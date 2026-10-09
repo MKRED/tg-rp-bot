@@ -33,7 +33,7 @@ export class ChatTranslationService {
    */
   async translateMessage(userId: number, chatId: number, msgId: number, req: TranslateMessageRequest): Promise<string> {
     const { targetLang, force } = req;
-    const { chat, msg } = await this.messages.requireMessage(userId, chatId, msgId);
+    const { chat, msg } = await this.access.requireMessage(userId, chatId, msgId);
     const cached = msg.translations?.[targetLang];
     if (cached && !force) return cached;
 
@@ -52,7 +52,7 @@ export class ChatTranslationService {
   }
 
   async deleteTranslation(userId: number, chatId: number, msgId: number, lang: string): Promise<void> {
-    await this.messages.requireMessage(userId, chatId, msgId);
+    await this.access.requireMessage(userId, chatId, msgId);
     await this.messages.deleteTranslation(msgId, lang);
   }
 

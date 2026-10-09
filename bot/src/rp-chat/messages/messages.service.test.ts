@@ -1,4 +1,4 @@
-import { HttpException } from "@nestjs/common";
+import { HttpException, NotFoundException } from "@nestjs/common";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
@@ -16,15 +16,16 @@ const asArg = <T>(v: unknown) => v as T;
 const ROW = { id: 5, activeMessageId: 12, templateId: 3, presetId: 4 };
 
 describe("MessagesService", () => {
-  function setup(msg: unknown = { id: 9, chatId: 5 }) {
-    const messages = { findOne: vi.fn().mockResolvedValue(msg), setCursor: vi.fn(), removeSubtree: vi.fn().mockResolvedValue(true) };
-    const access = { requireRow: vi.fn().mockResolvedValue(ROW) };
+  function setup() {
+    const messages = { setCursor: vi.fn(), removeSubtree: vi.fn().mockResolvedValue(true) };
+    const access = { requireRow: vi.fn().mockResolvedValue(ROW), requireMessage: vi.fn().mockResolvedValue({ chat: ROW }) };
     type A = ConstructorParameters<typeof MessagesService>;
     return { service: new MessagesService(asArg<A[0]>(messages), asArg<A[1]>(access)), messages, access };
   }
 
-  it("сообщение другого чата — 404 Message not found, курсор не трогаем", async () => {
-    const { service, messages } = setup({ id: 9, chatId: 6 });
+  it("сообщение не этого чата — ошибка доступа, курсор не трогаем", async () => {
+    const { service, messages, access } = setup();
+    access.requireMessage.mockRejectedValueOnce(new NotFoundException("Message not found"));
     expect(await httpError(service.switchBranch(1, 5, 9))).toEqual({ status: 404, message: "Message not found" });
     expect(messages.setCursor).not.toHaveBeenCalled();
   });

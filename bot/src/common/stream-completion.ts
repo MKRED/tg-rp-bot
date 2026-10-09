@@ -50,3 +50,8 @@ export async function writeGenerationError(sink: SseSink, err: unknown): Promise
   const data: SseErrorData = { message };
   await sink.writeSSE({ event: SSE_EVENTS.error, data: JSON.stringify(data) });
 }
+
+/** Пишет событие с JSON-данными (сообщение, вариант) — общая форма done/userMessage. */
+export function writeEvent(sink: SseSink, event: string, payload: unknown): Promise<unknown> {
+  return sink.writeSSE({ event, data: JSON.stringify(payload) });
+}

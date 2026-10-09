@@ -8,6 +8,9 @@ import { ChatPathRepository } from "./chat-path.repository.js";
 import { ChatsController } from "./chats/chats.controller.js";
 import { ChatsRepository } from "./chats/chats.repository.js";
 import { ChatsService } from "./chats/chats.service.js";
+import { ChatGenerationController } from "./generation/chat-generation.controller.js";
+import { ChatGenerationService } from "./generation/chat-generation.service.js";
+import { ImpersonateGenerationService } from "./generation/impersonate-generation.service.js";
 import { ImpersonationsController } from "./impersonations/impersonations.controller.js";
 import { ImpersonationsRepository } from "./impersonations/impersonations.repository.js";
 import { ImpersonationsService } from "./impersonations/impersonations.service.js";
@@ -24,7 +27,8 @@ import { ChatTranslationController } from "./translation/chat-translation.contro
 import { ChatTranslationService } from "./translation/chat-translation.service.js";
 
 /**
- * /api/chats — RP-чаты: чаты, сообщения дерева, перевод, настройки, статистика, варианты impersonate.
+ * /api/chats — RP-чаты: чаты, сообщения дерева, стриминговая генерация (SSE), перевод, настройки,
+ * статистика, варианты impersonate.
  * Персонаж, персона, RP-шаблон и пресет чата — репозитории соседних модулей через DI.
  */
 @Module({
@@ -32,6 +36,7 @@ import { ChatTranslationService } from "./translation/chat-translation.service.j
   controllers: [
     ChatsController,
     MessagesController,
+    ChatGenerationController,
     ChatTranslationController,
     ChatSettingsController,
     ChatStatsController,
@@ -44,6 +49,8 @@ import { ChatTranslationService } from "./translation/chat-translation.service.j
     ChatsRepository,
     MessagesService,
     MessagesRepository,
+    ChatGenerationService,
+    ImpersonateGenerationService,
     ChatTranslationService,
     ChatSettingsService,
     ChatSettingsRepository,

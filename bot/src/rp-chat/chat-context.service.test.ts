@@ -21,6 +21,7 @@ describe("ChatContextService", () => {
       findRow: vi.fn().mockResolvedValue(ROW),
       findDetail: vi.fn().mockResolvedValue({ character: { id: 1 }, persona: null, template: { id: 3 }, preset: null }),
     };
+    const messages = { findOne: vi.fn().mockResolvedValue({ id: 9, chatId: 5 }) };
     const characters = { findOne: vi.fn().mockResolvedValue({ id: 1 }) };
     const personas = { findOne: vi.fn() };
     const templates = { findOne: vi.fn().mockResolvedValue({ id: 3 }) };
@@ -28,12 +29,13 @@ describe("ChatContextService", () => {
     type A = ConstructorParameters<typeof ChatContextService>;
     const service = new ChatContextService(
       asArg<A[0]>(chats),
-      asArg<A[1]>(characters),
-      asArg<A[2]>(personas),
-      asArg<A[3]>(templates),
-      asArg<A[4]>(presets),
+      asArg<A[1]>(messages),
+      asArg<A[2]>(characters),
+      asArg<A[3]>(personas),
+      asArg<A[4]>(templates),
+      asArg<A[5]>(presets),
     );
-    return { service, chats, characters, personas };
+    return { service, chats, messages, characters, personas };
   }
 
   it("нет чата или его персонажа — 404 Chat not found", async () => {
@@ -42,6 +44,17 @@ describe("ChatContextService", () => {
     expect(await httpError(service.requireRow(1, 5))).toEqual({ status: 404, message: "Chat not found" });
     characters.findOne.mockResolvedValueOnce(undefined);
     expect(await httpError(service.requireContext(1, 5))).toEqual({ status: 404, message: "Chat not found" });
+  });
+
+  it("сообщение другого чата или несуществующее — 404 Message not found; чужой чат — Chat not found", async () => {
+    const { service, chats, messages } = setup();
+    messages.findOne.mockResolvedValueOnce({ id: 9, chatId: 6 });
+    expect(await httpError(service.requireMessage(1, 5, 9))).toEqual({ status: 404, message: "Message not found" });
+    messages.findOne.mockResolvedValueOnce(undefined);
+    expect((await httpError(service.requireMessage(1, 5, 9))).message).toBe("Message not found");
+    chats.findRow.mockResolvedValueOnce(undefined);
+    expect((await httpError(service.requireMessage(1, 5, 9))).message).toBe("Chat not found");
+    await expect(service.requireMessage(1, 5, 9)).resolves.toMatchObject({ chat: ROW, msg: { id: 9 } });
   });
 
   it("отсутствующие персона/пресет — null, без запроса к репозиторию", async () => {

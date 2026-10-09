@@ -108,7 +108,7 @@ Full tree, webapp layout rules, router/deep-link details — [docs/architecture.
   `D:\GitProject\dnd-online` (`apps/server`).
 - **Migrating a domain:** add its prefix to `NEST_ROUTE_PREFIXES` (`server/legacyBridge.ts`) and delete it
   from `server/` + `server/routes.ts` in the same change. Legacy callers of a moved DAO go through a
-  temporary shim in `db/<domain>/index.ts` (see `db/characters`), removed when they migrate.
+  temporary shim in `db/<domain>/index.ts` (see `db/presets`), removed when they migrate.
 - **Auth:** global `TelegramAuthGuard` (`auth/`) — every controller is protected; read the user with
   `@CurrentUser() userId: number` (internal id), never the Telegram profile. Only endpoints that are
   Telegram by nature (`me/`: initData profile, Bot API calls needing the Telegram id) use

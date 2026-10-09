@@ -24,7 +24,7 @@ ssh -p 2222 aoshi@home.aoshiloli.ru 'docker logs --since 1h kvach_tg_rp_bot 2>&1
 Логи — pino-JSON: поля `level`, `time` (ms), `msg`, `err`, плюс контекст (`durationMs`, `userId`, `chatId`…). Соотноси `msg` и контекст с местом в коде, которое этот лог пишет.
 
 ## Опорные места проекта
-- RP-генерация (SSE): `bot/src/server/chats/messages.handlers.ts`, `chats/impersonate.handlers.ts`, `common/stream-completion.ts`, `prompt/promptBuilder/promptBuilder.ts`.
+- RP-генерация (SSE): `bot/src/rp-chat/generation/` (chat-generation.service, impersonate-generation.service, rp-completion), `common/stream-completion.ts`, `common/sse-observable.ts`, `prompt/promptBuilder/promptBuilder.ts`.
 - LLM: `bot/src/llm/client.ts` (стриминг, ретраи пустых/отказных ответов), `bot/src/llm/resolveProvider.ts` (резолв активного провайдера per-user — актуальный см. CLAUDE.md → «External APIs» или в коде, не полагайся на память).
 - Граница webapp↔API: `webapp/src/shared/api/client.ts`, `bot/src/server/middleware/initData.ts` (валидация подписи; в проде без подписи → 401).
 - БД: `bot/src/db/` (DAO по таблицам).
