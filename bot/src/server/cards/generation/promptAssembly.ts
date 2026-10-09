@@ -1,4 +1,4 @@
-import type { CardCategory } from "../../../db/cards/index.js";
+import type { CardCategory } from "@tg-rp-bot/shared";
 import type { ChatMessage, ToolCallMessage, ToolResultMessage } from "../../../llm/types.js";
 import { ASK_USER_TOOL_NAME } from "./askUserTool.js";
 
@@ -28,7 +28,7 @@ export interface CardBlockPrompt {
  * и всё, что после — не читаются, будто ещё не существуют. Без параметра — как раньше, целью
  * становится первая enabled-категория с пустым content.
  *
- * askUserAnswers каждой категории (см. schema.types.ts) реплеится в её историю КАК НАСТОЯЩИЙ
+ * askUserAnswers каждой категории (см. CardCategory в @tg-rp-bot/shared) реплеится в её историю КАК НАСТОЯЩИЙ
  * tool_call/tool_result (см. appendAskUserExchange) — синтетический assistant-ход с tool_calls
  * (ask_user, вопросы как аргументы) сразу за user-сообщением, которым блок был запрошен, и tool-
  * сообщение с ответами сразу после. Модель должна видеть, что это результат ЕЁ ЖЕ вызова

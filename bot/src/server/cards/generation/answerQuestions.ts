@@ -1,6 +1,6 @@
 import { applyCardCategoryAnswers, getCard } from "../../../db/cards/index.js";
 import logger from "../../../logger.js";
-import { tryLockCard, unlockCard } from "../cardLock.js";
+import { tryLockCard, unlockCard } from "../../../cards/card-lock.js";
 import { ASK_USER_DECLINED_ANSWER, type AskUserAnswer } from "./askUserTool.js";
 import { generateCardBlock, type GenerateCardBlockResult } from "./generateBlock.js";
 
@@ -13,13 +13,13 @@ export type AnswerCardBlockQuestionsInput = { skipped: true } | { skipped: false
  * из card.categories[].askUserAnswers как синтетический tool_call/tool_result, см.
  * promptAssembly.ts). Это НЕ резюме того же LLM-разговора: сервер не хранит исходный tool_call
  * модели (id, порядок раундов) — только пары вопрос-ответ живут в самой карточке (см.
- * schema.types.ts), а не в состоянии процесса, поэтому у пользователя нет ограничения по времени
- * на ответ, а cardLock не держится, пока он думает (см. cardLock.ts).
+ * CardCategory в @tg-rp-bot/shared), а не в состоянии процесса, поэтому у пользователя нет ограничения по времени
+ * на ответ, а cardLock не держится, пока он думает (см. cards/card-lock.ts).
  *
  * cardLock здесь держится ТОЛЬКО вокруг чтения+записи ответов (getCard/applyCardCategoryAnswers —
  * тот же read-modify-write полной строки, что и у updateCard/setCardCategoryContent, иначе
  * конкурентный PUT /:id в это окно тихо потерял бы одну из записей) и снимается ДО вызова
- * generateCardBlock — лок не реентерабелен (обычный Set, см. cardLock.ts), а generateCardBlock
+ * generateCardBlock — лок не реентерабелен (обычный Set, см. cards/card-lock.ts), а generateCardBlock
  * берёт его сам на время генерации; удержание здесь же привело бы к гарантированному "busy" на
  * каждый ответ на вопрос.
  */

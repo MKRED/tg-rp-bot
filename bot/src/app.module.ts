@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { APP_FILTER, APP_PIPE } from "@nestjs/core";
 import { LoggerModule } from "nestjs-pino";
 import { AuthModule } from "./auth/auth.module.js";
+import { CardsModule } from "./cards/cards.module.js";
 import { CharactersModule } from "./characters/characters.module.js";
 import { ApiExceptionFilter } from "./common/api-exception.filter.js";
 import { createValidationPipe } from "./common/validation-pipe.js";
@@ -25,6 +26,7 @@ import { RpTemplatesModule } from "./rp-templates/rp-templates.module.js";
     PresetsModule,
     RpTemplatesModule,
     NarratorTemplatesModule,
+    CardsModule,
   ],
   providers: [
     { provide: APP_PIPE, useFactory: createValidationPipe },

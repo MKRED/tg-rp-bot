@@ -1,7 +1,7 @@
-import type { AskUserAnswer, AskUserQuestion } from "../../../db/schema.js";
+import type { AskUserAnswer, AskUserQuestion } from "@tg-rp-bot/shared";
 import type { ToolDefinition } from "../../../llm/types.js";
 
-// Канонические типы — в db/schema.types.ts (там же CardCategory, который их хранит). Реэкспорт
+// Канонические типы — в @tg-rp-bot/shared (там же CardCategory, который их хранит). Реэкспорт
 // сохраняет прежнюю точку импорта `from "./askUserTool.js"` для остальных файлов генерации.
 export type { AskUserAnswer, AskUserQuestion };
 
@@ -16,7 +16,7 @@ export const ASK_USER_MAX_QUESTIONS = 4;
  * в toolLoop.ts) прежде чем ask_user отключается для его генерации (generateBlock.ts) — иначе
  * пользователя можно было бы затянуть в бесконечную цепочку уточнений одним и тем же блоком.
  * Не лимит на всю жизнь блока: явная «Перегенерировать» сбрасывает askUserAnswers (см.
- * clearCardCategoryAskUserAnswers в db/cards/cards.ts) — новая попытка получает свежий бюджет. */
+ * clearCategoryAskUserAnswers в cards/cards.repository.ts) — новая попытка получает свежий бюджет. */
 export const ASK_USER_MAX_ANSWERED_QUESTIONS = 8;
 
 /** Записывается вместо реального ответа при явном отказе пользователя отвечать (см.

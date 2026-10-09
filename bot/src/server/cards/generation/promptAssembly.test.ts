@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CardCategory } from "../../../db/cards/index.js";
+import type { CardCategory } from "@tg-rp-bot/shared";
 import { assembleCardBlockPrompt } from "./promptAssembly.js";
 
 function cat(overrides: Partial<CardCategory> & Pick<CardCategory, "id" | "title">): CardCategory {

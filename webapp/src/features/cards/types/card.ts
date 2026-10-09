@@ -1,34 +1,17 @@
-/** Один уточняющий вопрос от модели (ask_user) — см. GenerationSection/AskUserQuestionsCarousel. */
-export interface AskUserQuestion {
-  question: string;
-  /** Варианты-подсказки от модели — пользователь всё равно может ввести свой текст. */
-  options?: string[];
-}
+import type { CardCategory } from "@tg-rp-bot/shared";
 
-/** Вопрос-ответ ask_user, уже отвеченный (или пропущенный) — см. AskUserQuestion. options — те же
- * варианты-подсказки, что были у исходного вопроса (сервер хранит их вместе с ответом). */
-export interface AskUserAnswer {
-  question: string;
-  answer: string;
-  options?: string[];
-}
-
-/**
- * Категория структуры карточки — редактируемый блок (заголовок + пример формата + сгенерированный
- * текст). pendingQuestions/askUserAnswers — состояние ask_user хранится сервером на самой категории
- * (см. bot/src/db/schema.types.ts), сюда попадает только для чтения/отображения (GET /cards,
- * GET /cards/:id, ответы generate/generate-answer) — форма НИКОГДА не отправляет их обратно на
- * сервер (см. normalizeCardDraft в lib/formDirty.ts, который явно их не копирует в CardInput).
- */
-export interface CardCategory {
-  id: string;
-  title: string;
-  description: string;
-  content: string;
-  enabled: boolean;
-  pendingQuestions?: AskUserQuestion[];
-  askUserAnswers?: AskUserAnswer[];
-}
+// Контракт API карточек (форма, строка списка, категории и ask_user, лимиты, дефолты новой
+// карточки) — общий с сервером, живёт в @tg-rp-bot/shared. Реэкспорт сохраняет barrel фичи.
+// ask_user-состояние категорий форма только показывает: normalizeCardDraft (lib/formDirty.ts)
+// не копирует его в CardInput, а сервер отбросил бы его во входе.
+export type { AskUserAnswer, AskUserQuestion, CardCategory, CardInput, CardListItem } from "@tg-rp-bot/shared";
+export {
+  DEFAULT_CARD_CATEGORIES,
+  DEFAULT_CARD_PROMPT,
+  DEFAULT_CARD_SYSTEM_PROMPT,
+  MAX_CARD_CATEGORIES,
+  MAX_CARDS_PER_USER,
+} from "@tg-rp-bot/shared";
 
 /** Полная карточка, как её отдаёт сервер (GET /cards/:id). */
 export interface Card {
@@ -44,24 +27,6 @@ export interface Card {
   updatedAt: string;
 }
 
-/** Строка списка (GET /cards) — имя + дата обновления для «Мастерской». */
-export interface CardListItem {
-  id: number;
-  name: string;
-  updatedAt: string;
-}
-
-/** Тело формы создания/редактирования (POST/PUT). */
-export interface CardInput {
-  name: string;
-  systemPrompt: string;
-  prompt: string;
-  categories: CardCategory[];
-  presetId: number | null;
-  useWebSearch: boolean;
-  useAskUser: boolean;
-}
-
 /**
  * Минимальная проекция пресета для пикера внутри CardForm — только то, что нужно для отображения
  * выбора. Фича cards самодостаточна и не импортирует features/generation-presets напрямую (граница
@@ -73,45 +38,3 @@ export interface CardPresetOption {
   name: string;
   summary: string;
 }
-
-/** Мягкий лимит — дублирует серверный (bot/src/server/cards/cards.constants.ts), блокирует UI заранее. */
-export const MAX_CARDS_PER_USER = 50;
-
-/** Максимум категорий структуры — дублирует MAX_CARD_CATEGORIES (bot/src/server/cards/cards.constants.ts). */
-export const MAX_CARD_CATEGORIES = 30;
-
-/**
- * Дефолтные системные инструкции новой карточки — дублирует DEFAULT_CARD_SYSTEM_PROMPT
- * (bot/src/db/cards/cards.constants.ts). См. DEFAULT_CARD_PROMPT — тот же повод для дублирования.
- */
-export const DEFAULT_CARD_SYSTEM_PROMPT =
-  "You are generating a character card block by block. The user's first message contains a " +
-  "character brief and an <example> block showing the title and expected format of every block " +
-  "in the card — treat <example> only as a structural reference, never copy its placeholder text. " +
-  "Each user request names exactly one block to generate; reply with that block's content only — " +
-  "plain text, no title, no markdown wrapping, no explanations. Stay consistent with any blocks " +
-  "you already generated earlier in this conversation.";
-
-/**
- * Дефолтный основной промпт новой карточки — дублирует DEFAULT_CARD_PROMPT
- * (bot/src/db/cards/cards.constants.ts). Показывается сразу в форме создания, ещё до первого
- * сохранения (сервер применил бы тот же дефолт только на вставке, но тогда пользователь не увидел
- * бы структуру до первого клика «Сохранить»).
- */
-export const DEFAULT_CARD_PROMPT = "Create a highly detailed AI character card";
-
-/**
- * Дефолтная структура карточки — дублирует DEFAULT_CARD_CATEGORIES
- * (bot/src/db/cards/cards.constants.ts). См. DEFAULT_CARD_PROMPT — тот же повод для дублирования.
- */
-export const DEFAULT_CARD_CATEGORIES: CardCategory[] = [
-  { id: "base", title: "Base", description: "Name: ...\nRace: ...\nSex: ...\nAge: ...\nHeight: ...", content: "", enabled: true },
-  { id: "body", title: "Body", description: "Подробное описание телосложения, черт лица, особых примет.", content: "", enabled: true },
-  { id: "outfit", title: "Outfit", description: "Повседневный наряд персонажа, аксессуары.", content: "", enabled: true },
-  { id: "personality", title: "Personality", description: "Черты характера, ценности, страхи, мотивация.", content: "", enabled: true },
-  { id: "speechStyle", title: "Speech Style", description: "Манера речи, характерные фразы, тон.", content: "", enabled: true },
-  { id: "behaviours", title: "Behaviours", description: "Типичные привычки и реакции в разных ситуациях.", content: "", enabled: true },
-  { id: "hobbiesLikes", title: "Hobbies / Likes", description: "Увлечения и то, что персонажу нравится.", content: "", enabled: true },
-  { id: "dislikes", title: "Dislikes", description: "То, что персонаж не любит или чего избегает.", content: "", enabled: true },
-  { id: "background", title: "Background", description: "История персонажа, прошлое, ключевые события.", content: "", enabled: true },
-];

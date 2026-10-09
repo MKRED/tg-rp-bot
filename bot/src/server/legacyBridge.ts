@@ -14,6 +14,7 @@ export const NEST_ROUTE_PREFIXES: readonly string[] = [
   "/api/presets",
   "/api/rp-templates",
   "/api/narrator-templates",
+  "/api/cards",
 ];
 
 /** Обслуживает ли путь Nest: точное совпадение с префиксом или вложенный путь под ним. */

@@ -75,8 +75,8 @@ export type ToolLoopOutcome = { done: true; content: string } | { done: false; q
  *
  * ask_user не резолвится внутри цикла (в отличие от web_search) — эта функция возвращается с
  * done: false и только вопросами. Вызывающий (generateBlock.ts/answerQuestions.ts) НЕ резюмирует
- * этот же LLM-разговор: он сохраняет вопросы на самой категории (см. schema.types.ts) и, получив
- * ответ, просто заново вызывает эту функцию с прогнанным через assembleCardBlockPrompt промптом,
+ * этот же LLM-разговор: он сохраняет вопросы на самой категории (см. CardCategory в
+ * @tg-rp-bot/shared) и, получив ответ, просто заново вызывает эту функцию с прогнанным через assembleCardBlockPrompt промптом,
  * где ответы реплеятся заново синтетической парой assistant tool_calls(ask_user)/tool-result (см.
  * promptAssembly.ts) — без хранения исходного tool_call/tool_result между HTTP-запросами (некому
  * было бы гарантировать, что такая история останется валидной для протокола провайдера).

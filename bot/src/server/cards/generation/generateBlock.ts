@@ -8,7 +8,7 @@ import { getPreset } from "../../../db/presets/index.js";
 import { getDecryptedTavilyKey, getTavilyMaxSearchRounds } from "../../../db/userTavilySettings.js";
 import logger from "../../../logger.js";
 import { presetToCompletionOptions } from "../../prompt/promptBuilder/index.js";
-import { tryLockCard, unlockCard } from "../cardLock.js";
+import { tryLockCard, unlockCard } from "../../../cards/card-lock.js";
 import { ASK_USER_MAX_ANSWERED_QUESTIONS, type AskUserQuestion } from "./askUserTool.js";
 import { assembleCardBlockPrompt } from "./promptAssembly.js";
 import { runCardGenerationToolLoop } from "./toolLoop.js";
@@ -36,11 +36,11 @@ export type GenerateCardBlockResult =
  *
  * Держит cardLock на всё время вызова — не только против повторного клика «Сгенерировать»/
  * «Перегенерировать» на той же карточке, но и против параллельного PUT /:id (сохранение формы):
- * оба пути заканчиваются read-modify-write полной строки (см. cardLock.ts). При паузе на ask_user
+ * оба пути заканчиваются read-modify-write полной строки (см. cards/card-lock.ts). При паузе на ask_user
  * (status: "questions") лок СНИМАЕТСЯ сразу — ждать ответа пользователя нечем: вопросы уже
  * персистентны на категории, а не в состоянии этого вызова.
  *
- * resetAskUserAnswers — true только у явного «Перегенерировать» (см. cards.controller.ts,
+ * resetAskUserAnswers — true только у явного «Перегенерировать» (см. cards/card-generation.service.ts,
  * POST /:id/generate): сбрасывает askUserAnswers ЦЕЛЕВОЙ категории перед генерацией, чтобы ответы,
  * собранные для заменяемого варианта блока, не реплеились в промпт (см. promptAssembly.ts) и не
  * занимали ASK_USER_MAX_ANSWERED_QUESTIONS вечно при каждой следующей перегенерации того же блока.
