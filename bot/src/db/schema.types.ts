@@ -3,18 +3,8 @@
  * Используются как `.$type<…>()` колонок prompt_order и валидацией/билдерами промптов.
  */
 
-/** Компонент запроса к нейросети, чей порядок и включённость настраиваются в пресете. */
-export type PromptComponentId =
-  | "system"
-  | "characterDescription"
-  | "characterScenario"
-  | "userDescription"
-  | "auxiliary"
-  | "history"
-  | "postHistory";
-
-/** Элемент порядка промптов: какой компонент и включён ли он в запрос. */
-export type PromptOrderItem = { id: PromptComponentId; enabled: boolean };
+// Компоненты RP-запроса — часть контракта API, живут в @tg-rp-bot/shared.
+export type { PromptComponentId, PromptOrderItem } from "@tg-rp-bot/shared";
 
 /** Компонент narrator-запроса, чей порядок и включённость настраиваются в шаблоне. */
 export type StoryPromptComponentId =

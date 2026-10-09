@@ -9,6 +9,7 @@ import { DatabaseModule } from "./database/database.module.js";
 import logger from "./logger.js";
 import { PersonasModule } from "./personas/personas.module.js";
 import { PresetsModule } from "./presets/presets.module.js";
+import { RpTemplatesModule } from "./rp-templates/rp-templates.module.js";
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { PresetsModule } from "./presets/presets.module.js";
     CharactersModule,
     PersonasModule,
     PresetsModule,
+    RpTemplatesModule,
   ],
   providers: [
     { provide: APP_PIPE, useFactory: createValidationPipe },
