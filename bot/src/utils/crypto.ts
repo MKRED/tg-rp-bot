@@ -104,3 +104,20 @@ export function getUserEncryptionKey(userId: number): Buffer {
     hkdfSync("sha256", masterKey, Buffer.alloc(0), `tg-rp-bot-user-${userId}`, 32),
   );
 }
+
+/**
+ * Расшифровывает значения кэша переводов сообщения RP-чата или истории (ключи — коды языков —
+ * остаются открытыми).
+ * null → null. Legacy-plaintext значения возвращаются как есть (см. decryptField).
+ */
+export function decryptTranslations(
+  translations: Record<string, string> | null,
+  key: Buffer,
+): Record<string, string> | null {
+  if (!translations) return null;
+  const out: Record<string, string> = {};
+  for (const [lang, text] of Object.entries(translations)) {
+    out[lang] = decryptField(text, key);
+  }
+  return out;
+}

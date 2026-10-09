@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import type { MessageRole } from "@tg-rp-bot/shared";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { DatabaseService } from "../../database/database.service.js";
 import { schema } from "../../db/index.js";
 import type { Message } from "../../db/schema.js";
@@ -31,11 +31,14 @@ export class MessagesRepository {
   }
 
   /**
-   * Одно сообщение по id, расшифрованное. Без проверки владельца — вызывающий сравнивает
-   * message.chatId с уже проверенным чатом.
+   * Сообщение этого чата, расшифрованное (чат уже проверен вызывающим). chatId — в WHERE, а не
+   * сравнением после: строку чужого чата расшифровать ключом пользователя нельзя (500 вместо 404).
    */
-  async findOne(userId: number, messageId: number): Promise<Message | undefined> {
-    const rows = await this.database.db.select().from(schema.messages).where(eq(schema.messages.id, messageId));
+  async findOne(userId: number, chatId: number, messageId: number): Promise<Message | undefined> {
+    const rows = await this.database.db
+      .select()
+      .from(schema.messages)
+      .where(and(eq(schema.messages.id, messageId), eq(schema.messages.chatId, chatId)));
     return rows[0] ? decryptMessageRow(rows[0], userId) : undefined;
   }
 
@@ -60,8 +63,8 @@ export class MessagesRepository {
    */
   async removeSubtree(userId: number, chatId: number, messageId: number): Promise<boolean> {
     const t0 = Date.now();
-    const msg = await this.findOne(userId, messageId);
-    if (!msg || msg.chatId !== chatId) return false;
+    const msg = await this.findOne(userId, chatId, messageId);
+    if (!msg) return false;
 
     const chatRows = await this.database.db
       .select({ activeMessageId: schema.chats.activeMessageId })

@@ -1,9 +1,9 @@
 import { Body, Controller, Delete, HttpCode, Param, ParseIntPipe, Post, Query } from "@nestjs/common";
 import { CurrentUser } from "../../auth/current-user.decorator.js";
 import { ChatTranslationService } from "./chat-translation.service.js";
-import { ChatTranslateTextDto } from "./dto/chat-translate-text.dto.js";
-import { DeleteTranslationQueryDto } from "./dto/delete-translation-query.dto.js";
-import { TranslateMessageDto } from "./dto/translate-message.dto.js";
+import { DeleteTranslationQueryDto } from "../../translate/dto/delete-translation-query.dto.js";
+import { MessageTranslateTextDto } from "../../translate/dto/message-translate-text.dto.js";
+import { TranslateMessageDto } from "../../translate/dto/translate-message.dto.js";
 
 /** Перевод в RP-чате: сообщение (с кэшем), удаление кэша для языка, эфемерный перевод текста. */
 @Controller("chats/:id")
@@ -34,7 +34,7 @@ export class ChatTranslationController {
 
   @Post("translate-text")
   @HttpCode(200)
-  async translateText(@CurrentUser() userId: number, @Param("id", ParseIntPipe) chatId: number, @Body() dto: ChatTranslateTextDto) {
+  async translateText(@CurrentUser() userId: number, @Param("id", ParseIntPipe) chatId: number, @Body() dto: MessageTranslateTextDto) {
     return { translation: await this.translation.translateText(userId, chatId, dto) };
   }
 }

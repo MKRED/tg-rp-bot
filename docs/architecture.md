@@ -22,7 +22,8 @@ bot/src/
   users/        — UsersService.ensureTelegramUser (upsert строки users, кэш на процесс)
   common/       — ApiExceptionFilter (ошибки → { error }), createValidationPipe, found() (undefined → 404),
                   image-limits (лимиты полей-картинок data URL), fk-violation (FK 23503 → 409 in_use),
-                  llm-http-error (ошибка не-стримингового LLM-вызова → 400 no_api_key / 500),
+                  llm-http-error (ошибка не-стримингового LLM-вызова → 400 no_api_key / 500), query-int
+                  (число из query: повтор → первое, нечисло → дефолт),
                   decorators/ (IsDataImageUrl — поле-картинка data URL с лимитом; IsOptionalNote — сноска, пусто → null),
                   sse-observable (async-функция → Observable для Nest @Sse; отписка клиента генерацию не
                   прерывает), stream-completion (streamCompletion/writeGenerationError — LLM-генерация в SSE-события
@@ -58,13 +59,25 @@ bot/src/
                   repository/dto/; chat-context.service (чат + персонаж/персона/шаблон/пресет с проверкой
                   владельца, сообщение этого чата), chat-path.repository (активный путь и листья дерева),
                   message-crypto
+  narrator/     — /api/stories: истории narrator — stories/ (список, создание из своих книги/шаблона/
+                  пресета, история с активным путём, правка названия/премизы, граф; story-avatars — LATERAL
+                  топ-N аватаров книги), messages/ (ветка, правка бита на месте, удаление поддерева с
+                  прунингом осиротевших ходов), translation/ (перевод бита/директивы с кэшем, эфемерный
+                  перевод; ai-translate-story-text — ИИ-перевод по абзацам), settings/ (перевод, сжатие,
+                  тулбар; пол сжатия клампится по пресету), stats/ (токены, доступность сжатия),
+                  compaction/ (пересказы: список/удаление каскадом; compact-gate, live-tail, compacted-ids —
+                  чистые функции), generation/story-completion (сборка запроса к LLM из контекста истории);
+                  story-context.service (история + шаблон/пресет/настройки/записи книги/пересказы с
+                  проверкой владельца), story-path.repository. Стриминговые advance/регенерация и ручное
+                  сжатие пока в legacy server/stories
   me/           — /api/me: профиль из initData, фото профиля (GET /photo) и фото из лайтбокса себе в
                   чат (POST /send-photo) — controller / service / dto/; media/ — profilePhoto (Bot API +
                   кэш на час) и photoToChat (sendPhoto с web_app-кнопкой deep link и «Закрыть»)
   translate/    — POST /api/translate/text: безэнтитный батч-перевод абзацев (режим перевода
-                  PromptEditorOverlay) — controller / service / dto/; engine/ — движок перевода без Nest
+                  PromptEditorOverlay) — controller / service / dto/ (+ DTO перевода сообщений, общие для rp-chat/ и
+                  narrator/); engine/ — движок перевода без Nest
                   (googleTranslate, aiTranslate, resolveTranslationReasoning, чанкинг блока, разбивка на
-                  абзацы, константы), общий с переводом в rp-chat/ и legacy server/stories
+                  абзацы, константы), общий с переводом в rp-chat/ и narrator/
   prompt/       — сборка промптов без Nest: promptBuilder (RP-чат, impersonate, сэмплинг пресета) +
                   storyPromptBuilder (narrator) + общий budget, compactionPlan, keywordMatch,
                   storyPromptOrder, templateTokenWeight (у каждого constants/types/test рядом)
@@ -75,13 +88,11 @@ bot/src/
   proxy.ts      — HttpsProxyAgent (https-proxy-agent) для Telegram; тот же TELEGRAM_PROXY_URL
                   переиспользуется для Tavily, но через отдельный undici ProxyAgent (см. tavily/)
   db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + клиент +
-                  DAO-папки по таблицам: presets/ narratorTemplates/ (временные мосты getPreset/
-                  getNarratorTemplate на репозитории Nest для ещё не перенесённых stories), settings/ (мост
+                  DAO-папки по таблицам: presets/ narratorTemplates/ stories/ (временные мосты на
+                  репозитории Nest для legacy advance/регенерации/сжатия историй), settings/ (мост
                   getDecryptedDeepSeekCredentials для resolveProvider) (у каждой DAO-файл + types.ts/constants.ts при наличии + barrel index.ts;
                   типы контракта API перенесённых в Nest доменов — из @tg-rp-bot/shared),
-                  stories/ (+ storyAvatars.ts — LATERAL-фрагмент топ-N аватаров книги знаний
-                  для карточки истории) knowledge/ (мост getBook/getActiveEntriesForPrompt на репозитории
-                  knowledge-books/ для stories), users.ts
+                  users.ts
   llm/          — LLM client (client/request/errors/types/constants/completionGuard/providers/
                   resolveProvider/deepseekModels) — серверно; единственный активный провайдер —
                   DeepSeek, ключ/модель резолвятся per-user через resolveProvider(userId) из
@@ -96,16 +107,15 @@ bot/src/
   server/       — legacy Hono HTTP API (переезжает на Nest по доменам — docs/plan/roadmap.md):
                   legacyBridge.ts — express-middleware, отдающий в Hono всё вне NEST_ROUTE_PREFIXES
                   (+ LEGACY_ROUTES — временные исключения внутри перенесённых префиксов по методу и пути,
-                  для переезда домена по частям; сейчас пусто);
+                  для переезда домена по частям; сейчас — advance, регенерация и сжатие историй);
                   index=createLegacyApp,
                   routes.ts — карта эндпоинтов (монтаж контроллеров), middleware/ (initData — валидация
-                  подписи), доменная папка stories/ —
-                  <домен>.controller.ts (Hono-роуты) + validation/
-                  constants/types рядом + barrel index.ts; stories/ — story.handlers (SSE-генерация RP/narrator);
+                  подписи), доменная папка stories/ — advance (SSE), регенерация бита (SSE) и ручное
+                  сжатие; storyContext — сборка входа через narrator/ (story-completion);
                   shared/ — apiError (переиспользуемое между доменами)
                   + раздача собранной статики Mini App из ./public (SPA-fallback) — один процесс
   scripts/      — разовые скрипты (backfill-message-encryption)
-  utils/        — retry, crypto (per-user шифрование сообщений), concurrency (runWithConcurrency —
+  utils/        — retry, crypto (per-user шифрование сообщений и кэша переводов), concurrency (runWithConcurrency —
                   пул с ограниченной конкурентностью)
 ```
 

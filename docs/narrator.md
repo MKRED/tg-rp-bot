@@ -25,13 +25,11 @@ RP-чата), переиспользуя только реально переи�
   зашифрован per-user, как у `messages`) + `story_settings` (перевод истории + сжатие `compactEnabled`/
   `compactAutoEnabled`/`compactFloorTokens`/`compactWords`, зеркало `chat_settings`) +
   `story_compactions` (пересказы сжатых сообщений — см. раздел compact ниже).
-- **Сервер:** Nest-модуль `narrator-templates/` (CRUD шаблонов; `db/narratorTemplates/` — временный
-  мост `getNarratorTemplate` для stories), Nest-модуль `knowledge-books/` (книги и записи; `db/knowledge/` —
-  временный мост `getBook`/`getActiveEntriesForPrompt` для stories), `db/stories/` (зеркало репозиториев `rp-chat/`,
-  вкл. `settings.ts` и `crypto.ts` — расшифровка кэша переводов); `prompt/storyPromptBuilder/`
-  (+тест), `server/stories/story.handlers.ts` (вкл. перевод бита/директивы через `googleTranslate`) +
-  контроллер `server/stories/stories.controller.ts`, домен-роут `stories/`
-  (у `stories` — `settings` GET/PUT + `messages/:id/translate`).
+- **Сервер:** Nest-модули `narrator-templates/` (CRUD шаблонов), `knowledge-books/` (книги и записи) и
+  `narrator/` (`/api/stories`: истории, сообщения, перевод, настройки, статистика, пересказы — зеркало
+  `rp-chat/`; сборка запроса к LLM — `narrator/generation/story-completion.ts`, тест рядом);
+  `prompt/storyPromptBuilder/` (+тест). Стриминговые advance/регенерация и ручное сжатие пока в legacy
+  `server/stories/` (через мосты `db/stories`, `db/presets`, `db/narratorTemplates`).
 - **Webapp:** фичи `narrator`/`knowledge-books`/`narrator-templates`, страницы `pages/narrator/*`,
   `pages/knowledge-books/*`, `pages/narrator-templates/*`; кнопки на главной (Режим игры + Библиотека).
   Перевод истории — раздел в `StorySettingsPage` + кнопка-Globe на битах/директивах в ленте
@@ -83,8 +81,8 @@ postHistory`, где `postHistory` выключен. Фолбэк (истори�
 там своего поля перевода для рассуждения нет).
 
 **`translatePerParagraph`** (булево поле шаблона, дефолт `false`; тумблер в `TemplateForm` под селектором
-рассуждения для перевода): при включении ИИ-перевод бита/директивы (`translateStoryText.ts`,
-`handleStoryTranslateMessage`/`handleStoryTranslateText`) делит текст на абзацы (`translateParagraphs.ts`,
+рассуждения для перевода): при включении ИИ-перевод бита/директивы (`narrator/translation/ai-translate-story-text.ts`,
+`StoryTranslationService`) делит текст на абзацы (`translateParagraphs.ts`,
 разделитель — 2+ переноса строки, lossless split/join) и переводит каждый отдельным параллельным запросом
 к LLM (`runWithConcurrency`, ограниченная конкурентность `TRANSLATE_BLOCK_CONCURRENCY`), вместо одного
 запроса на весь текст. Каждый запрос ретраится отдельно (до 3 попыток, кроме `MissingApiKeyError`) — сбой
@@ -100,15 +98,15 @@ postHistory`, где `postHistory` выключен. Фолбэк (истори�
 Старые сообщения активной ветки сжимаются LLM в краткий пересказ, который идёт в запрос **отдельным
 системным блоком** (компонент `compact`), а не в ленту `history`. Освобождает контекст, сохраняя суть.
 
-- **Таблица `story_compactions`** (`db/stories/compactions.ts`): пересказ диапазона активного пути,
+- **Таблица `story_compactions`** (`narrator/compaction/compactions.repository.ts`): пересказ диапазона активного пути,
   привязан к id сообщений-якорей `fromAnchorId`(эксклюзивно/`null`=корень)/`toAnchorId`(инклюзивно, всегда
   **бит**). Якоря **НЕ FK** (зеркало `activeMessageId`). `summary` шифруется per-user. Пересказы сцеплены в
   **префикс по seq**; применяются к ветке, только если оба якоря на её активном пути — иначе игнорируются
   (ветка сожмётся заново). Выбор валидной цепочки — чистая `selectValidChain` (filter-then-walk, тест).
 - **Двойной гейт (создание И применение):** работает, только когда включены **оба** — компонент `compact`
   в `promptOrder` шаблона **и** `compactEnabled` чата. Выключение неразрушающе (пересказы остаются в БД,
-  возвращаются при включении). Применение в `storyContext.buildStoryCompletionInput`; гейт+доступность —
-  `compact.gate.ts` (`compactAvailable`: есть лимит и `>= MIN_COMPACT_CONTEXT` 4000).
+  возвращаются при включении). Применение в `narrator/generation/story-completion.ts`; гейт+доступность —
+  `narrator/compaction/compact-gate.ts` (`compactAvailable`: есть лимит и `>= MIN_COMPACT_CONTEXT` 4000).
 - **Операция** (`compact.handler.ts` `compactStory`): сегментирует живой хвост по ~`contextSize−floor`
   токенов (чистая `planCompactionSegments`, тест), каждый сегмент → отдельный LLM-вызов (`debugLabel:
   "compact"`, прошлые пересказы как «story so far»), пока вход не упадёт ≤ floor. Текущий лист не сжимаем.

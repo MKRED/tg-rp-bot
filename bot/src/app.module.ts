@@ -15,6 +15,7 @@ import { MeModule } from "./me/me.module.js";
 import { NarratorTemplatesModule } from "./narrator-templates/narrator-templates.module.js";
 import { PersonasModule } from "./personas/personas.module.js";
 import { PresetsModule } from "./presets/presets.module.js";
+import { NarratorModule } from "./narrator/narrator.module.js";
 import { RpChatModule } from "./rp-chat/rp-chat.module.js";
 import { RpTemplatesModule } from "./rp-templates/rp-templates.module.js";
 import { SettingsModule } from "./settings/settings.module.js";
@@ -41,6 +42,7 @@ import { TranslateModule } from "./translate/translate.module.js";
     MeModule,
     KnowledgeBooksModule,
     RpChatModule,
+    NarratorModule,
   ],
   providers: [
     { provide: APP_PIPE, useFactory: createValidationPipe },

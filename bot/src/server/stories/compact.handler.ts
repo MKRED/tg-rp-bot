@@ -1,14 +1,13 @@
 import { getNarratorTemplate } from "../../db/narratorTemplates/index.js";
 import { getPreset } from "../../db/presets/index.js";
 import {
-  deleteCompactionCascade,
   getStory,
   getStorySettings,
   insertCompaction,
+  listActiveCompactions,
   listCompactions,
   nextCompactionSeq,
 } from "../../db/stories/index.js";
-import type { StoryCompactionRow } from "../../db/stories/index.js";
 import { chatCompletion } from "../../llm/client.js";
 import type { ChatMessage } from "../../llm/types.js";
 import logger from "../../logger.js";
@@ -23,7 +22,7 @@ import {
 } from "../../prompt/storyPromptBuilder/index.js";
 import { normalizeStoryPromptOrder } from "../../prompt/storyPromptOrder.js";
 import { chatCompletionErrorResponse } from "../shared/apiError.js";
-import { compactAvailable, resolveCompactFloor } from "./compact.gate.js";
+import { compactAvailable, resolveCompactFloor } from "../../narrator/compaction/compact-gate.js";
 import type { Ctx } from "./stories.types.js";
 import { buildStoryCompletionInput } from "./storyContext.js";
 
@@ -193,27 +192,6 @@ export async function shouldAutoCompact(userId: number, storyId: number): Promis
   return total >= contextSize;
 }
 
-/** Лёгкая проекция пересказа для webapp (без anchor-id — они внутренние). */
-type CompactionView = {
-  id: number;
-  seq: number;
-  summary: string;
-  coveredCount: number;
-  coveredTokens: number;
-};
-
-function toView(c: StoryCompactionRow): CompactionView {
-  return { id: c.id, seq: c.seq, summary: c.summary, coveredCount: c.coveredCount, coveredTokens: c.coveredTokens };
-}
-
-/** Валидная цепочка пересказов активной ветки (для списка в настройках). [] если истории нет. */
-async function activeBranchCompactions(userId: number, storyId: number): Promise<StoryCompactionRow[]> {
-  const story = await getStory(userId, storyId);
-  if (!story || story.activeMessageId == null) return [];
-  const pathIds = new Set(story.messages.map((m) => m.id));
-  return selectValidChain(await listCompactions(userId, storyId), pathIds);
-}
-
 /** POST /:id/compact — ручное сжатие (один проход). Возвращает число созданных + обновлённый список. */
 export async function handleCompactStory(c: Ctx) {
   const user = c.get("tgUser");
@@ -223,47 +201,10 @@ export async function handleCompactStory(c: Ctx) {
   try {
     const result = await compactStory(userId, storyId);
     if (!result.ok) return c.json({ error: result.reason }, result.status);
-    const compactions = (await activeBranchCompactions(userId, storyId)).map(toView);
+    const compactions = await listActiveCompactions(userId, storyId);
     return c.json({ created: result.created, compactions });
   } catch (err) {
     logger.error({ err, userId, storyId }, "Failed to compact story");
     return chatCompletionErrorResponse(c, err);
-  }
-}
-
-/** GET /:id/compactions — пересказы активной ветки (текстом, для настроек). */
-export async function handleListCompactions(c: Ctx) {
-  const user = c.get("tgUser");
-  if (!user) return c.json({ error: "Auth required" }, 401);
-  const userId = user.id;
-  const storyId = Number(c.req.param("id"));
-  try {
-    const story = await getStory(userId, storyId);
-    if (!story) return c.json({ error: "Story not found" }, 404);
-    const compactions = (await activeBranchCompactions(userId, storyId)).map(toView);
-    return c.json({ compactions });
-  } catch (err) {
-    logger.error({ err, userId, storyId }, "Failed to list compactions");
-    return c.json({ error: "Internal error" }, 500);
-  }
-}
-
-/** DELETE /:id/compactions/:cid — удалить пересказ каскадом вперёд. Возвращает обновлённый список. */
-export async function handleDeleteCompaction(c: Ctx) {
-  const user = c.get("tgUser");
-  if (!user) return c.json({ error: "Auth required" }, 401);
-  const userId = user.id;
-  const storyId = Number(c.req.param("id"));
-  const compactionId = Number(c.req.param("cid"));
-  try {
-    const story = await getStory(userId, storyId);
-    if (!story) return c.json({ error: "Story not found" }, 404);
-    const deleted = await deleteCompactionCascade(storyId, compactionId);
-    if (!deleted) return c.json({ error: "Compaction not found" }, 404);
-    const compactions = (await activeBranchCompactions(userId, storyId)).map(toView);
-    return c.json({ compactions });
-  } catch (err) {
-    logger.error({ err, userId, storyId, compactionId }, "Failed to delete compaction");
-    return c.json({ error: "Internal error" }, 500);
   }
 }

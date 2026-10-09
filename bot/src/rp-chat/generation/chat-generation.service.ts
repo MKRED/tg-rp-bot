@@ -86,7 +86,7 @@ export class ChatGenerationService {
       original.role === "user"
         ? original
         : original.parentId
-          ? await this.messages.findOne(userId, original.parentId)
+          ? await this.messages.findOne(userId, chatId, original.parentId)
           : undefined;
     if (!userMsg) throw new NotFoundException("Parent user message not found");
 

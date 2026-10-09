@@ -5,9 +5,8 @@ import { DatabaseService } from "../../database/database.service.js";
 import { schema } from "../../db/index.js";
 import type { Chat } from "../../db/schema.js";
 import logger from "../../logger.js";
-import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/index.js";
+import { decryptField, decryptTranslations, encryptField, getUserEncryptionKey } from "../../utils/index.js";
 import { ChatPathRepository } from "../chat-path.repository.js";
-import { decryptTranslations } from "../message-crypto.js";
 
 /** Сущности, выбранные при создании чата (выбранное приветствие передаётся отдельно, уже текстом). */
 export type ChatRefs = { characterId: number; personaId: number; templateId: number; presetId: number };

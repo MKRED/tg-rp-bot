@@ -17,7 +17,7 @@ import { EntriesService } from "./entries/entries.service.js";
   imports: [CharactersModule, PersonasModule],
   controllers: [BooksController, EntriesController],
   providers: [BooksService, BooksRepository, EntriesService, EntriesRepository, EntriesPromptRepository],
-  // Книга истории и её записи для промпта — stories (сейчас через мост db/knowledge).
+  // Книга истории и её записи для промпта — NarratorModule.
   exports: [BooksRepository, EntriesPromptRepository],
 })
 export class KnowledgeBooksModule {}

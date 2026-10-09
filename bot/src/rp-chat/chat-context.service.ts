@@ -51,8 +51,8 @@ export class ChatContextService {
    */
   async requireMessage(userId: number, chatId: number, messageId: number): Promise<{ chat: ChatRow; msg: Message }> {
     const chat = await this.requireRow(userId, chatId);
-    const msg = await this.messages.findOne(userId, messageId);
-    if (!msg || msg.chatId !== chatId) throw new NotFoundException(MESSAGE_NOT_FOUND);
+    const msg = await this.messages.findOne(userId, chatId, messageId);
+    if (!msg) throw new NotFoundException(MESSAGE_NOT_FOUND);
     return { chat, msg };
   }
 

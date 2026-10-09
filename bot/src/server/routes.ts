@@ -17,11 +17,9 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
   // Все /api/* требуют валидный Telegram initData (проверка подписи, см. middleware/initData.ts)
   api.use("*", requireInitData);
 
-  // Персонажи, персоны, пресеты, RP- и narrator-шаблоны, карточки, настройки, отладку, безэнтитный
-  // перевод (/translate), батч-аватары (/avatars), текущего пользователя (/me), книги знаний
-  // (/books) и RP-чаты (/chats) обслуживает Nest (см. legacyBridge.ts).
+  // Всё API, кроме перечисленного ниже, обслуживает Nest (см. legacyBridge.ts).
 
-  // Narrator-режим («Режиссёр истории»): истории (книги знаний и шаблоны — в Nest).
+  // Истории narrator: только стриминговые advance/регенерация и ручное сжатие (LEGACY_ROUTES моста).
   api.route("/stories", createStoryRoutes());
 
   return api;

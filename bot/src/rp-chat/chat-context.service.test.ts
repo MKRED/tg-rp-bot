@@ -48,10 +48,10 @@ describe("ChatContextService", () => {
 
   it("сообщение другого чата или несуществующее — 404 Message not found; чужой чат — Chat not found", async () => {
     const { service, chats, messages } = setup();
-    messages.findOne.mockResolvedValueOnce({ id: 9, chatId: 6 });
-    expect(await httpError(service.requireMessage(1, 5, 9))).toEqual({ status: 404, message: "Message not found" });
+    // Репозиторий ищет в пределах чата (чужую строку не расшифровывает) — нет в этом чате = undefined.
     messages.findOne.mockResolvedValueOnce(undefined);
-    expect((await httpError(service.requireMessage(1, 5, 9))).message).toBe("Message not found");
+    expect(await httpError(service.requireMessage(1, 5, 9))).toEqual({ status: 404, message: "Message not found" });
+    expect(messages.findOne).toHaveBeenLastCalledWith(1, 5, 9);
     chats.findRow.mockResolvedValueOnce(undefined);
     expect((await httpError(service.requireMessage(1, 5, 9))).message).toBe("Chat not found");
     await expect(service.requireMessage(1, 5, 9)).resolves.toMatchObject({ chat: ROW, msg: { id: 9 } });

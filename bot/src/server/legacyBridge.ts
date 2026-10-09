@@ -22,15 +22,22 @@ export const NEST_ROUTE_PREFIXES: readonly string[] = [
   "/api/me",
   "/api/books",
   "/api/chats",
+  "/api/stories",
 ];
 
 export type LegacyRoute = { method: string; path: RegExp };
 
 /**
  * ВРЕМЕННЫЕ исключения внутри перенесённых префиксов: маршруты, которые ещё обслуживает Hono, пока
- * домен переезжает по частям (так переезжали chats: стриминговые POST — последним шагом). Сейчас пусто.
+ * домен переезжает по частям (так переезжали chats: стриминговые POST — последним шагом). Сейчас —
+ * stories: стриминговые advance и регенерация, и ручное сжатие — его блокировка общая с авто-сжатием
+ * внутри advance, делить её между Hono и Nest нельзя.
  */
-export const LEGACY_ROUTES: readonly LegacyRoute[] = [];
+export const LEGACY_ROUTES: readonly LegacyRoute[] = [
+  { method: "POST", path: /^\/api\/stories\/[^/]+\/advance$/ },
+  { method: "POST", path: /^\/api\/stories\/[^/]+\/messages\/[^/]+\/regenerate$/ },
+  { method: "POST", path: /^\/api\/stories\/[^/]+\/compact$/ },
+];
 
 /**
  * Обслуживает ли запрос Nest: путь совпадает с префиксом или вложен в него и не попадает в
