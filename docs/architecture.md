@@ -19,8 +19,9 @@ bot/src/
                   initData.ts — проверка initData, общая с Hono-middleware
   database/     — DatabaseModule (@Global) + DatabaseService поверх drizzle-клиента из db/index.ts
   users/        — UsersService.ensureTelegramUser (upsert строки users, кэш на процесс)
-  common/       — ApiExceptionFilter (ошибки → { error }), createValidationPipe
-  characters/   — доменный модуль Nest: controller / service / repository (бывший DAO) / dto/
+  common/       — ApiExceptionFilter (ошибки → { error }), createValidationPipe, found() (undefined → 404),
+                  decorators/ (IsDataImageUrl — поле-картинка data URL с лимитом)
+  characters/ personas/ — доменные модули Nest: controller / service / repository (бывший DAO) / dto/
   bot.ts        — grammY bot instance (+ прокси для Telegram через baseFetchConfig)
   bot.constants.ts
   config.ts     — env vars (requireEnv для обязательных, process.env для опциональных)
@@ -29,8 +30,8 @@ bot/src/
                   переиспользуется для Tavily, но через отдельный undici ProxyAgent (см. tavily/)
   db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + клиент +
                   DAO-папки по таблицам: characters/ personas/ cards/ (черновики «Мастерской»)
-                  presets/ (только сэмплинг) impersonations/ (characters/ — временный мост getCharacter
-                  на CharactersRepository для ещё не перенесённых books/chats)
+                  presets/ (только сэмплинг) impersonations/ (characters/ и personas/ — временные мосты
+                  getCharacter/getPersona на репозитории Nest для ещё не перенесённых books/chats)
                   narratorTemplates/ rpTemplates/ avatars/ (батч-резолв аватаров для AvatarStack —
                   getAvatarsBatch) (у каждой DAO-файл + types.ts/constants.ts при наличии + barrel index.ts;
                   типы контракта API characters/personas — из @tg-rp-bot/shared),
@@ -52,7 +53,7 @@ bot/src/
                   legacyBridge.ts — express-middleware, отдающий в Hono всё вне NEST_ROUTE_PREFIXES;
                   index=createLegacyApp,
                   routes.ts — карта эндпоинтов (монтаж контроллеров), middleware/ (initData — валидация
-                  подписи), доменные папки me/ personas/ cards/ presets/ books/ narrator-templates/
+                  подписи), доменные папки me/ cards/ presets/ books/ narrator-templates/
                   rp-templates/ chats/ stories/ debug/ avatars/ (POST /batch — батч-резолв аватаров для
                   AvatarStack, см. ниже) settings/ (settings.controller.ts — per-user ключ/модель
                   DeepSeek + tavily.controller.ts — per-user ключ/квота Tavily, оба BYOK) — у каждого

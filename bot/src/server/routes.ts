@@ -8,7 +8,6 @@ import { createMeRoutes } from "./me/index.js";
 import { type AppVariables } from "./middleware/initData.types.js";
 import { requireInitData } from "./middleware/initData.js";
 import { createNarratorTemplateRoutes } from "./narrator-templates/index.js";
-import { createPersonaRoutes } from "./personas/index.js";
 import { createPresetRoutes } from "./presets/index.js";
 import { createRpTemplateRoutes } from "./rp-templates/index.js";
 import { createSettingsRoutes } from "./settings/index.js";
@@ -32,8 +31,7 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
   // Текущий пользователь: профиль, фото профиля, отправка фото из лайтбокса в чат.
   api.route("/me", createMeRoutes());
 
-  // CRUD персон / пресетов / RP-шаблонов (sub-app наследует requireInitData выше; персонажи — в Nest).
-  api.route("/personas", createPersonaRoutes());
+  // CRUD пресетов / RP-шаблонов (sub-app наследует requireInitData выше; персонажи и персоны — в Nest).
   api.route("/presets", createPresetRoutes());
   api.route("/rp-templates", createRpTemplateRoutes());
 

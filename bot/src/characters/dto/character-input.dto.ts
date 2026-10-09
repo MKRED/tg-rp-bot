@@ -1,9 +1,8 @@
 import { type CharacterInput, MAX_FIRST_MESSAGES } from "@tg-rp-bot/shared";
 import { Transform } from "class-transformer";
-import { ArrayMaxSize, IsArray, IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from "class-validator";
+import { ArrayMaxSize, IsArray, IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsDataImageUrl } from "../../common/decorators/is-data-image-url.decorator.js";
 import { MAX_IMAGE_CHARS, MAX_IMAGE_FULL_CHARS } from "../../server/shared/imageValidation.constants.js";
-
-const DATA_IMAGE_URL = /^data:image\//;
 
 /** Пустое примечание храним как null — так же, как отсутствующее. */
 const emptyToNull = ({ value }: { value: unknown }) => (value === "" ? null : value);
@@ -41,15 +40,9 @@ export class CharacterInputDto implements CharacterInput {
   @ArrayMaxSize(MAX_FIRST_MESSAGES, { message: `Too many first messages (max ${MAX_FIRST_MESSAGES})` })
   firstMessages!: string[];
 
-  @IsOptional()
-  @IsString({ message: "Image must be a data:image/* URL" })
-  @Matches(DATA_IMAGE_URL, { message: "Image must be a data:image/* URL" })
-  @MaxLength(MAX_IMAGE_CHARS, { message: "Image too large" })
+  @IsDataImageUrl("Image", MAX_IMAGE_CHARS)
   image: string | null = null;
 
-  @IsOptional()
-  @IsString({ message: "Full image must be a data:image/* URL" })
-  @Matches(DATA_IMAGE_URL, { message: "Full image must be a data:image/* URL" })
-  @MaxLength(MAX_IMAGE_FULL_CHARS, { message: "Full image too large" })
+  @IsDataImageUrl("Full image", MAX_IMAGE_FULL_CHARS)
   imageFull: string | null = null;
 }

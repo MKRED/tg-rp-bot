@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { type CharacterInput, type CharacterListItem, MAX_CHARACTERS_PER_USER } from "@tg-rp-bot/shared";
 import type { Character } from "../db/schema.js";
 import { isFkViolation } from "../server/shared/fkViolation.js";
+import { found } from "../common/found.js";
 import { CharactersRepository } from "./characters.repository.js";
 
 /** Персонажи пользователя: правила домена (лимит, «не найден», «используется») поверх репозитория. */
@@ -49,10 +50,4 @@ export class CharactersService {
     }
     if (!deleted) throw new NotFoundException("Not found");
   }
-}
-
-/** undefined от репозитория — «нет такого у пользователя» (чужой id неотличим от несуществующего). */
-function found<T>(value: T | undefined): T {
-  if (value === undefined) throw new NotFoundException("Not found");
-  return value;
 }

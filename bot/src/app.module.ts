@@ -7,6 +7,7 @@ import { ApiExceptionFilter } from "./common/api-exception.filter.js";
 import { createValidationPipe } from "./common/validation-pipe.js";
 import { DatabaseModule } from "./database/database.module.js";
 import logger from "./logger.js";
+import { PersonasModule } from "./personas/personas.module.js";
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import logger from "./logger.js";
     DatabaseModule,
     AuthModule,
     CharactersModule,
+    PersonasModule,
   ],
   providers: [
     { provide: APP_PIPE, useFactory: createValidationPipe },

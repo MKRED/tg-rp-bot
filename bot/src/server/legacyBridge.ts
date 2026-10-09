@@ -8,7 +8,7 @@ import logger from "../logger.js";
  * Mini App) уходит в legacy Hono. Домен добавляется сюда в том же коммите, где его маршруты
  * появляются в Nest и удаляются из server/routes.ts.
  */
-export const NEST_ROUTE_PREFIXES: readonly string[] = ["/api/characters"];
+export const NEST_ROUTE_PREFIXES: readonly string[] = ["/api/characters", "/api/personas"];
 
 /** Обслуживает ли путь Nest: точное совпадение с префиксом или вложенный путь под ним. */
 export function isNestRoute(path: string, prefixes: readonly string[] = NEST_ROUTE_PREFIXES): boolean {

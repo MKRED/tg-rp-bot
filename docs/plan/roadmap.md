@@ -90,7 +90,9 @@ Nest поднимается на том же порту, текущее Hono-п�
 - **Блок A ✅** — каркас: Nest + мост в Hono, поведение не меняется.
 - **Блок B ✅** — characters (модуль/контроллер/сервис/репозиторий/DTO) + общие auth/ database/ users/
   common/. Проверено: тесты, браузер (создание/правка/удаление с фото ~1 МБ), Docker-образ.
-- **Дальше** — остальные домены по одному (personas, presets, rp-templates, cards, … chats/stories с SSE
+- **Блок C ✅** — personas по тому же шаблону; общий декоратор поля-картинки `IsDataImageUrl` и
+  `found()` вынесены в `common/`.
+- **Дальше** — остальные домены по одному (presets, rp-templates, cards, … chats/stories с SSE
   последними), затем бот grammY как provider и удаление Hono.
 
 ### Контракт ответов не меняется
