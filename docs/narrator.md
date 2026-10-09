@@ -25,10 +25,11 @@ RP-чата), переиспользуя только реально переи�
   зашифрован per-user, как у `messages`) + `story_settings` (перевод истории + сжатие `compactEnabled`/
   `compactAutoEnabled`/`compactFloorTokens`/`compactWords`, зеркало `chat_settings`) +
   `story_compactions` (пересказы сжатых сообщений — см. раздел compact ниже).
-- **Сервер:** `db/knowledge/`, `db/narratorTemplates/`, `db/stories/` (зеркало `db/chats/`,
+- **Сервер:** Nest-модуль `narrator-templates/` (CRUD шаблонов; `db/narratorTemplates/` — временный
+  мост `getNarratorTemplate` для stories), `db/knowledge/`, `db/stories/` (зеркало `db/chats/`,
   вкл. `settings.ts` и `crypto.ts` — расшифровка кэша переводов); `server/prompt/storyPromptBuilder/`
   (+тест), `server/stories/story.handlers.ts` (вкл. перевод бита/директивы через `googleTranslate`) +
-  контроллер `server/stories/stories.controller.ts`, домены-роуты `books/`/`narrator-templates/`/`stories/`
+  контроллер `server/stories/stories.controller.ts`, домены-роуты `books/`/`stories/`
   (у `stories` — `settings` GET/PUT + `messages/:id/translate`).
 - **Webapp:** фичи `narrator`/`knowledge-books`/`narrator-templates`, страницы `pages/narrator/*`,
   `pages/knowledge-books/*`, `pages/narrator-templates/*`; кнопки на главной (Режим игры + Библиотека).
@@ -59,7 +60,7 @@ reasoner DeepSeek. Книга знаний: `always_on`-записи идут в
 leading-user + нейтрализованный путь. Leading-user и нейтрализация — свойства **блока history**, поэтому
 позиция в порядке их не ломает. `resolveHistory` (бюджет обрезки) суммирует **все включённые non-history**
 компоненты и зовётся, только если `history` включён. Дефолт порядка (`DEFAULT_NARRATOR_PROMPT_ORDER` в
-`storyPromptBuilder.ts`, зеркалится в webapp): `system, lorebook, auxiliary, premise, compact, history,
+`@tg-rp-bot/shared`, общий для сервера и формы webapp): `system, lorebook, auxiliary, premise, compact, history,
 postHistory`, где `postHistory` выключен. Фолбэк (история без шаблона) — этот же дефолт +
 `DEFAULT_NARRATOR_TEMPLATE`. Старые 6-элементные `promptOrder` нормализуются на чтении
 (`normalizeStoryPromptOrder` — дописывает недостающие компоненты на дефолтную позицию), без data-миграции.

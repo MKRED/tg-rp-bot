@@ -7,6 +7,7 @@ import { ApiExceptionFilter } from "./common/api-exception.filter.js";
 import { createValidationPipe } from "./common/validation-pipe.js";
 import { DatabaseModule } from "./database/database.module.js";
 import logger from "./logger.js";
+import { NarratorTemplatesModule } from "./narrator-templates/narrator-templates.module.js";
 import { PersonasModule } from "./personas/personas.module.js";
 import { PresetsModule } from "./presets/presets.module.js";
 import { RpTemplatesModule } from "./rp-templates/rp-templates.module.js";
@@ -23,6 +24,7 @@ import { RpTemplatesModule } from "./rp-templates/rp-templates.module.js";
     PersonasModule,
     PresetsModule,
     RpTemplatesModule,
+    NarratorTemplatesModule,
   ],
   providers: [
     { provide: APP_PIPE, useFactory: createValidationPipe },

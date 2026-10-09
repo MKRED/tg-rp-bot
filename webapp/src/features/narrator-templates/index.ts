@@ -15,4 +15,4 @@ export type {
   NarratorTemplateInput,
   NarratorTemplateListItem,
 } from "./types/template";
-export { MAX_TEMPLATES_PER_USER } from "./types/template";
+export { MAX_NARRATOR_TEMPLATES_PER_USER } from "./types/template";

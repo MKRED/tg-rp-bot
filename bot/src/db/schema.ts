@@ -10,7 +10,7 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
-import type { ReasoningEffort } from "@tg-rp-bot/shared";
+import type { ReasoningEffort, TranslationReasoningLevel } from "@tg-rp-bot/shared";
 import type { CardCategory, PromptOrderItem, StoryPromptOrderItem } from "./schema.types.js";
 
 // Типы компонентов промптов живут в schema.types.ts; реэкспорт сохраняет прежнюю точку
@@ -543,7 +543,7 @@ export const narratorTemplates = pgTable("narrator_templates", {
   mergeSystemPrompts: boolean("merge_system_prompts").notNull().default(false),
   // Рассуждение для ИИ-перевода, независимо от пресета: "off" = отключено; иначе — уровень effort
   // (minimal|low|medium|high|xhigh|max|ultra). Обязательное поле, дефолт "medium" — см. resolveTranslationReasoning.
-  translationReasoningEffort: text("translation_reasoning_effort").notNull().default("medium"),
+  translationReasoningEffort: text("translation_reasoning_effort").$type<TranslationReasoningLevel>().notNull().default("medium"),
   // Перевод по абзацам: делит текст на абзацы (2+ переноса строки) и переводит каждый отдельным
   // запросом к LLM параллельно (см. translateParagraphs.ts) — при включённом мышлении (thinking)
   // модель иначе думает непропорционально долго на большом тексте целиком, а мышление отключать

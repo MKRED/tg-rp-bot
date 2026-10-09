@@ -1,5 +1,3 @@
-import type { StoryPromptOrderItem } from "../../../db/schema.js";
-
 /**
  * Маркер-триггер «продолжай»: им же нейтрализуются ОТЫГРАННЫЕ user-ходы (директивы/continue) при
  * сборке контекста — их последствие уже живёт в тексте последующего бита, повторно инструктировать
@@ -42,18 +40,5 @@ export const COMPACTION_CONTEXT_HEADER =
  */
 export const DEFAULT_COMPACTION_PROMPT = `You are condensing part of a collaborative story into a compact recap that will be shown to the narrator as background ("story so far"). Summarize the key events, character developments, relationships, locations and unresolved threads. Keep concrete facts (names, decisions, state changes); drop moment-to-moment prose. Write one cohesive recap of about {{words}} words, in past tense, third person. Invent nothing beyond what is given.`;
 
-/**
- * Дефолтный порядок narrator-компонентов. Используется как дефолт колонки prompt_order в БД,
- * инициализация формы нового шаблона (webapp), серверный фолбэк при отсутствии поля в запросе и
- * фолбэк storyHandlers для истории без шаблона. premise идёт после auxiliary; compact — перед
- * history; postHistory выключен.
- */
-export const DEFAULT_NARRATOR_PROMPT_ORDER: StoryPromptOrderItem[] = [
-  { id: "system", enabled: true },
-  { id: "lorebook", enabled: true },
-  { id: "auxiliary", enabled: true },
-  { id: "premise", enabled: true },
-  { id: "compact", enabled: true },
-  { id: "history", enabled: true },
-  { id: "postHistory", enabled: false },
-];
+// Дефолтный порядок narrator-компонентов — общий с webapp (форма нового шаблона), живёт в shared.
+export { DEFAULT_NARRATOR_PROMPT_ORDER } from "@tg-rp-bot/shared";

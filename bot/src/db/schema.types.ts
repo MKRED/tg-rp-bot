@@ -3,21 +3,13 @@
  * Используются как `.$type<…>()` колонок prompt_order и валидацией/билдерами промптов.
  */
 
-// Компоненты RP-запроса — часть контракта API, живут в @tg-rp-bot/shared.
-export type { PromptComponentId, PromptOrderItem } from "@tg-rp-bot/shared";
-
-/** Компонент narrator-запроса, чей порядок и включённость настраиваются в шаблоне. */
-export type StoryPromptComponentId =
-  | "system"
-  | "premise"
-  | "lorebook"
-  | "auxiliary"
-  | "compact"
-  | "history"
-  | "postHistory";
-
-/** Элемент порядка narrator-промптов: какой компонент и включён ли он в запрос. */
-export type StoryPromptOrderItem = { id: StoryPromptComponentId; enabled: boolean };
+// Компоненты RP- и narrator-запроса — часть контракта API, живут в @tg-rp-bot/shared.
+export type {
+  PromptComponentId,
+  PromptOrderItem,
+  StoryPromptComponentId,
+  StoryPromptOrderItem,
+} from "@tg-rp-bot/shared";
 
 /** Один уточняющий вопрос от модели (ask_user) — см. server/cards/generation/askUserTool.ts. */
 export type AskUserQuestion = {

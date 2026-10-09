@@ -1,30 +1,22 @@
 /** Типы фичи «narrator-шаблоны» — источник промптов и порядка сборки narrator-режима. */
 
-export type NarratorTemplateListItem = {
-  id: number;
-  name: string;
-  updatedAt: string;
-  /** Вес трёх template-полей (system/auxiliary/postHistory) в токенах, точный подсчёт с сервера. */
-  templateTokens: number;
-};
+// Контракт формы/списка, компоненты, дефолтный порядок, уровни рассуждения перевода и лимит —
+// общие с сервером, живут в пакете @tg-rp-bot/shared.
+import type { StoryPromptComponentId, StoryPromptOrderItem, TranslationReasoningLevel } from "@tg-rp-bot/shared";
 
-/**
- * Компонент narrator-запроса, чей порядок и включённость настраиваются в шаблоне.
- * Дублирует серверный `StoryPromptComponentId` (bot/src/db/schema.ts) — держать в синхроне.
- */
-export type StoryPromptComponentId =
-  | "system"
-  | "premise"
-  | "lorebook"
-  | "auxiliary"
-  | "compact"
-  | "history"
-  | "postHistory";
-
-export interface StoryPromptOrderItem {
-  id: StoryPromptComponentId;
-  enabled: boolean;
-}
+export type {
+  NarratorTemplateInput,
+  NarratorTemplateListItem,
+  StoryPromptComponentId,
+  StoryPromptOrderItem,
+  TranslationReasoningLevel,
+} from "@tg-rp-bot/shared";
+export {
+  DEFAULT_NARRATOR_PROMPT_ORDER,
+  DEFAULT_TRANSLATION_REASONING_EFFORT,
+  MAX_NARRATOR_TEMPLATES_PER_USER,
+  TRANSLATION_REASONING_LEVELS,
+} from "@tg-rp-bot/shared";
 
 /** Подписи компонентов для блока «Порядок промптов». */
 export const NARRATOR_PROMPT_COMPONENT_LABELS: Record<StoryPromptComponentId, string> = {
@@ -48,44 +40,6 @@ export const NARRATOR_PROMPT_COMPONENT_SOURCES: Record<StoryPromptComponentId, s
   postHistory: "из этого шаблона",
 };
 
-/** Дефолтный порядок: premise после auxiliary; compact перед history; postHistory выключен. */
-export const DEFAULT_NARRATOR_PROMPT_ORDER: StoryPromptOrderItem[] = [
-  { id: "system", enabled: true },
-  { id: "lorebook", enabled: true },
-  { id: "auxiliary", enabled: true },
-  { id: "premise", enabled: true },
-  { id: "compact", enabled: true },
-  { id: "history", enabled: true },
-  { id: "postHistory", enabled: false },
-];
-
-/**
- * Уровень рассуждения ИИ-перевода, независимо от пресета. `"off"` — рассуждение для перевода
- * отключено; иначе — конкретный уровень, форсированный вне зависимости от настроек ответа ИИ.
- * Обязательное поле шаблона, дефолт `"medium"`. Дублирует серверный `TRANSLATION_REASONING_LEVELS`
- * (narratorTemplates.constants.ts) — держать в синхроне.
- */
-export type TranslationReasoningLevel =
-  | "off"
-  | "minimal"
-  | "low"
-  | "medium"
-  | "high"
-  | "xhigh"
-  | "max"
-  | "ultra";
-
-export const TRANSLATION_REASONING_LEVELS: TranslationReasoningLevel[] = [
-  "off",
-  "minimal",
-  "low",
-  "medium",
-  "high",
-  "xhigh",
-  "max",
-  "ultra",
-];
-
 /** Подписи уровней рассуждения перевода. */
 export const TRANSLATION_REASONING_LABELS: Record<TranslationReasoningLevel, string> = {
   off: "Отключено",
@@ -97,9 +51,6 @@ export const TRANSLATION_REASONING_LABELS: Record<TranslationReasoningLevel, str
   max: "Максимальное",
   ultra: "Ультра",
 };
-
-/** Дефолт для новых шаблонов — зеркало bot/src/server/shared/translate.constants.ts. */
-export const DEFAULT_TRANSLATION_REASONING_EFFORT: TranslationReasoningLevel = "medium";
 
 export type NarratorTemplate = {
   id: number;
@@ -118,23 +69,6 @@ export type NarratorTemplate = {
   translatePerParagraph: boolean;
 };
 
-export type NarratorTemplateInput = {
-  name: string;
-  systemPrompt: string;
-  auxiliarySystemPrompt: string;
-  postHistoryInstruction: string;
-  translationSystemPrompt: string;
-  compactionPrompt: string;
-  continueMarker: string;
-  leadingUserMarker: string;
-  promptOrder: StoryPromptOrderItem[];
-  mergeSystemPrompts: boolean;
-  translationReasoningEffort: TranslationReasoningLevel;
-  translatePerParagraph: boolean;
-};
-
 /** Дефолты маркеров — зеркало bot/src/server/prompt/storyPromptBuilder.constants.ts, для новой формы. */
 export const DEFAULT_CONTINUE_MARKER = "Continue the story.";
 export const DEFAULT_LEADING_USER_MARKER = "Begin the story.";
-
-export const MAX_TEMPLATES_PER_USER = 50;

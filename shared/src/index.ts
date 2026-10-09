@@ -3,3 +3,4 @@ export * from "./characters.js";
 export * from "./personas.js";
 export * from "./presets.js";
 export * from "./rp-templates.js";
+export * from "./narrator-templates.js";

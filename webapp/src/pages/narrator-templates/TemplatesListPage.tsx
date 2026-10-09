@@ -5,7 +5,7 @@ import { ROUTES, narratorTemplateEditPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { formatRelativeDate } from "../../shared/text/formatRelativeDate";
-import { MAX_TEMPLATES_PER_USER, useTemplates } from "../../features/narrator-templates";
+import { MAX_NARRATOR_TEMPLATES_PER_USER, useTemplates } from "../../features/narrator-templates";
 import "./narrator-templates.css";
 
 /**
@@ -16,7 +16,7 @@ import "./narrator-templates.css";
 export function TemplatesListPage() {
   const navigate = useTransitionNavigate();
   const { items, loading, error } = useTemplates();
-  const atLimit = items.length >= MAX_TEMPLATES_PER_USER;
+  const atLimit = items.length >= MAX_NARRATOR_TEMPLATES_PER_USER;
 
   return (
     <PageTransition>
