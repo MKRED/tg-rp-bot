@@ -1,7 +1,8 @@
 import type { PersonaInput } from "@tg-rp-bot/shared";
 import { Transform } from "class-transformer";
-import { IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsNotEmpty, IsString } from "class-validator";
 import { IsDataImageUrl } from "../../common/decorators/is-data-image-url.decorator.js";
+import { IsOptionalNote } from "../../common/decorators/is-optional-note.decorator.js";
 import { MAX_IMAGE_CHARS, MAX_IMAGE_FULL_CHARS } from "../../server/shared/imageValidation.constants.js";
 
 /**
@@ -19,9 +20,7 @@ export class PersonaInputDto implements PersonaInput {
   @IsString()
   prompt = "";
 
-  // В отличие от персонажа, пустая строка сохраняется как есть (так было в Hono-версии).
-  @IsOptional()
-  @IsString({ message: "Footnote must be a string" })
+  @IsOptionalNote("Footnote")
   footnote: string | null = null;
 
   @IsDataImageUrl("Image", MAX_IMAGE_CHARS)

@@ -1,11 +1,9 @@
 import { type CharacterInput, MAX_FIRST_MESSAGES } from "@tg-rp-bot/shared";
 import { Transform } from "class-transformer";
-import { ArrayMaxSize, IsArray, IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { ArrayMaxSize, IsArray, IsNotEmpty, IsString } from "class-validator";
 import { IsDataImageUrl } from "../../common/decorators/is-data-image-url.decorator.js";
+import { IsOptionalNote } from "../../common/decorators/is-optional-note.decorator.js";
 import { MAX_IMAGE_CHARS, MAX_IMAGE_FULL_CHARS } from "../../server/shared/imageValidation.constants.js";
-
-/** Пустое примечание храним как null — так же, как отсутствующее. */
-const emptyToNull = ({ value }: { value: unknown }) => (value === "" ? null : value);
 
 /**
  * Тело POST/PUT /api/characters. Поля и их смысл — контракт CharacterInput из @tg-rp-bot/shared;
@@ -21,9 +19,7 @@ export class CharacterInputDto implements CharacterInput {
   @IsString({ each: true, message: "Tags must be an array of strings" })
   tags!: string[];
 
-  @Transform(emptyToNull)
-  @IsOptional()
-  @IsString({ message: "Footnote must be a string" })
+  @IsOptionalNote("Footnote")
   footnote: string | null = null;
 
   // Промпт и сценарий необязательны: не-строка (или отсутствие) — пустая строка, не ошибка.

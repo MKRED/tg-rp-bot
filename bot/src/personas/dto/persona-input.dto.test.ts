@@ -23,7 +23,8 @@ async function viaDto(body: unknown): Promise<Parsed> {
 const image = "data:image/jpeg;base64,AAAA";
 const defaults = { prompt: "", footnote: null, image: null, imageFull: null };
 
-// Характеризация: ожидания сняты с прежнего ручного парсера Hono-версии (parsePersonaInput).
+// Характеризация: ожидания сняты с прежнего ручного парсера Hono-версии (parsePersonaInput);
+// единственное намеренное отличие — пустая сноска теперь null, как у персонажа.
 const cases: { title: string; body: unknown; expected: Record<string, unknown> | string }[] = [
   { title: "минимальное тело — дефолты", body: { name: "Я" }, expected: { name: "Я", ...defaults } },
   { title: "имя обрезается", body: { name: "  Боб  " }, expected: { name: "Боб" } },
@@ -32,8 +33,8 @@ const cases: { title: string; body: unknown; expected: Record<string, unknown> |
   { title: "имя не строка", body: { name: 5 }, expected: "Name is required" },
   { title: "prompt не строка → пусто", body: { name: "A", prompt: 1 }, expected: { prompt: "" } },
   { title: "prompt строка", body: { name: "A", prompt: "p" }, expected: { prompt: "p" } },
-  // в отличие от персонажа, пустое примечание не превращается в null
-  { title: "footnote пустая остаётся пустой", body: { name: "A", footnote: "" }, expected: { footnote: "" } },
+  { title: "footnote пустая → null", body: { name: "A", footnote: "" }, expected: { footnote: null } },
+  { title: "footnote строка", body: { name: "A", footnote: "x" }, expected: { footnote: "x" } },
   { title: "footnote null", body: { name: "A", footnote: null }, expected: { footnote: null } },
   { title: "footnote не строка", body: { name: "A", footnote: 1 }, expected: "Footnote must be a string" },
   { title: "картинки data URL", body: { name: "A", image, imageFull: image }, expected: { image, imageFull: image } },
