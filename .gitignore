@@ -25,3 +25,6 @@ coverage/
 
 # Claude — версионируем агентов/настройки команды, кроме локальных
 .claude/settings.local.json
+
+# Скриншоты/снапшоты Playwright MCP (браузер Claude)
+.playwright-mcp/
