@@ -8,6 +8,7 @@ import { createValidationPipe } from "./common/validation-pipe.js";
 import { DatabaseModule } from "./database/database.module.js";
 import logger from "./logger.js";
 import { PersonasModule } from "./personas/personas.module.js";
+import { PresetsModule } from "./presets/presets.module.js";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { PersonasModule } from "./personas/personas.module.js";
     AuthModule,
     CharactersModule,
     PersonasModule,
+    PresetsModule,
   ],
   providers: [
     { provide: APP_PIPE, useFactory: createValidationPipe },

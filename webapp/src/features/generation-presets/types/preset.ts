@@ -1,18 +1,8 @@
-/**
- * Уровни рассуждения (по возрастанию бюджета) — провайдеро-независимый набор, зеркало серверного
- * REASONING_EFFORTS (bot/src/server/presets/presets.constants.ts). Провайдер схлопывает его в свои
- * значения (DeepSeek: minimal/low → low, medium/high/xhigh → high, max/ultra → max).
- */
-export type ReasoningEffort = "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | "ultra";
-export const REASONING_EFFORTS: ReasoningEffort[] = [
-  "minimal",
-  "low",
-  "medium",
-  "high",
-  "xhigh",
-  "max",
-  "ultra",
-];
+// Контракт формы/списка, уровни рассуждения и лимит — общие с сервером, живут в пакете @tg-rp-bot/shared.
+import type { PresetInput, ReasoningEffort } from "@tg-rp-bot/shared";
+
+export type { PresetInput, PresetListItem, ReasoningEffort } from "@tg-rp-bot/shared";
+export { MAX_PRESETS_PER_USER, REASONING_EFFORTS } from "@tg-rp-bot/shared";
 
 /** Человекочитаемые подписи уровней рассуждения. */
 export const REASONING_EFFORT_LABELS: Record<ReasoningEffort, string> = {
@@ -25,49 +15,9 @@ export const REASONING_EFFORT_LABELS: Record<ReasoningEffort, string> = {
   ultra: "Ультра",
 };
 
-/**
- * Тело формы создания/правки (POST/PUT). Параметры сэмплинга — `number | null`,
- * где null = «не передавать значение». Имена совпадают с колонками БД и телом OpenRouter.
- * Промпты RP-чата живут отдельно — в фиче rp-templates (пресет режимо-независим, общий
- * для RP-чата и Narrator).
- */
-export interface PresetInput {
-  name: string;
-  contextUnlimited: boolean;
-  contextSize: number | null;
-  maxTokens: number | null;
-  streaming: boolean;
-  temperature: number | null;
-  topP: number | null;
-  topK: number | null;
-  frequencyPenalty: number | null;
-  presencePenalty: number | null;
-  repetitionPenalty: number | null;
-  minP: number | null;
-  topA: number | null;
-  requestReasoning: boolean;
-  reasoningEffort: ReasoningEffort | null;
-}
-
 /** Полный пресет, как его отдаёт сервер (GET /presets/:id). */
 export interface Preset extends PresetInput {
   id: number;
   createdAt: string;
   updatedAt: string;
 }
-
-/** Лёгкая строка списка (GET /presets): id, название + поля для сводки под названием. */
-export interface PresetListItem {
-  id: number;
-  name: string;
-  temperature: number | null;
-  contextUnlimited: boolean;
-  contextSize: number | null;
-  maxTokens: number | null;
-  streaming: boolean;
-  requestReasoning: boolean;
-  reasoningEffort: ReasoningEffort | null;
-}
-
-/** Мягкий лимит — дублирует серверный (bot/src/server/presets/presets.constants.ts), блокирует UI заранее. */
-export const MAX_PRESETS_PER_USER = 50;

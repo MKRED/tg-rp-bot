@@ -20,8 +20,8 @@ bot/src/
   database/     — DatabaseModule (@Global) + DatabaseService поверх drizzle-клиента из db/index.ts
   users/        — UsersService.ensureTelegramUser (upsert строки users, кэш на процесс)
   common/       — ApiExceptionFilter (ошибки → { error }), createValidationPipe, found() (undefined → 404),
-                  decorators/ (IsDataImageUrl — поле-картинка data URL с лимитом)
-  characters/ personas/ — доменные модули Nest: controller / service / repository (бывший DAO) / dto/
+                  decorators/ (IsDataImageUrl — поле-картинка data URL с лимитом; IsOptionalNote — сноска, пусто → null)
+  characters/ personas/ presets/ — доменные модули Nest: controller / service / repository (бывший DAO) / dto/
   bot.ts        — grammY bot instance (+ прокси для Telegram через baseFetchConfig)
   bot.constants.ts
   config.ts     — env vars (requireEnv для обязательных, process.env для опциональных)
@@ -30,11 +30,12 @@ bot/src/
                   переиспользуется для Tavily, но через отдельный undici ProxyAgent (см. tavily/)
   db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + клиент +
                   DAO-папки по таблицам: characters/ personas/ cards/ (черновики «Мастерской»)
-                  presets/ (только сэмплинг) impersonations/ (characters/ и personas/ — временные мосты
-                  getCharacter/getPersona на репозитории Nest для ещё не перенесённых books/chats)
+                  presets/ impersonations/ (characters/ personas/ presets/ — временные мосты
+                  getCharacter/getPersona/getPreset на репозитории Nest для ещё не перенесённых
+                  books/chats/cards/stories)
                   narratorTemplates/ rpTemplates/ avatars/ (батч-резолв аватаров для AvatarStack —
                   getAvatarsBatch) (у каждой DAO-файл + types.ts/constants.ts при наличии + barrel index.ts;
-                  типы контракта API characters/personas — из @tg-rp-bot/shared),
+                  типы контракта API characters/personas/presets — из @tg-rp-bot/shared),
                   chats/ stories/ (+ storyAvatars.ts — LATERAL-фрагмент топ-N аватаров книги знаний
                   для карточки истории) knowledge/ (деревья/лорбук), users.ts, userSettings.ts,
                   userLlmSettings.ts (per-user ключ/модель DeepSeek, BYOK, шифруется ENCRYPTION_KEY),
@@ -75,6 +76,7 @@ shared/src/
   index.ts      — публичная поверхность пакета (реэкспорт доменных файлов)
   characters.ts — CharacterInput, CharacterListItem, MAX_CHARACTERS_PER_USER, MAX_FIRST_MESSAGES
   personas.ts   — PersonaInput, PersonaListItem, MAX_PERSONAS_PER_USER
+  presets.ts    — PresetInput, PresetListItem, SamplingKey, REASONING_EFFORTS, MAX_PRESETS_PER_USER
 ```
 Контракт API (то, что ходит JSON'ом) и общие константы bot ↔ webapp. Собирается `tsc` (`nodenext`)
 в `shared/dist` (`.js` + `.d.ts`), оба пакета подключают его как зависимость workspace и читают

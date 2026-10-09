@@ -1,4 +1,4 @@
-import { REASONING_EFFORTS } from "../presets/presets.constants.js";
+import { REASONING_EFFORTS } from "@tg-rp-bot/shared";
 
 /**
  * Полные английские названия языков по коду (значения LANG_OPTIONS из webapp). Нужны для

@@ -10,6 +10,7 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
+import type { ReasoningEffort } from "@tg-rp-bot/shared";
 import type { CardCategory, PromptOrderItem, StoryPromptOrderItem } from "./schema.types.js";
 
 // Типы компонентов промптов живут в schema.types.ts; реэкспорт сохраняет прежнюю точку
@@ -254,7 +255,7 @@ export const generationPresets = pgTable("generation_presets", {
 
   // Рассуждение (reasoning). effort: minimal | low | medium | high | xhigh | max | ultra (или null).
   requestReasoning: boolean("request_reasoning").notNull().default(false),
-  reasoningEffort: text("reasoning_effort"),
+  reasoningEffort: text("reasoning_effort").$type<ReasoningEffort>(),
 
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
