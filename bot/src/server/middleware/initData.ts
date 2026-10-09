@@ -1,48 +1,27 @@
-import { parse, validate } from "@tma.js/init-data-node";
 import type { MiddlewareHandler } from "hono";
+import { authenticateInitData } from "../../auth/initData.js";
 import { config } from "../../config.js";
 import logger from "../../logger.js";
-import type { AppVariables, TgUser } from "./initData.types.js";
-
-/** Фейковый пользователь для dev-обхода — минимум полей, требуемых типом TgUser. */
-function makeDevUser(id: number): TgUser {
-  return { id, first_name: "Dev" };
-}
+import type { AppVariables } from "./initData.types.js";
 
 /**
- * Валидация Telegram Mini App initData.
- *
- * Mini App шлёт подписанную строку initData в заголовке `Authorization: tma <initData>`.
- * Проверяем её HMAC-SHA256 по BOT_TOKEN (@tma.js/init-data-node) и только тогда доверяем
- * переданному пользователю, кладя его в контекст (`c.get("tgUser")`).
- *
- * Без подписи: если задан config.devUserId (dev-обход для браузера без Telegram) —
- * подставляем фейкового пользователя с этим id, иначе 401.
+ * Валидация Telegram Mini App initData для legacy Hono-маршрутов. Сама проверка (подпись,
+ * dev-обход) — в auth/initData.ts, общая с guard'ом Nest; здесь только ответ Hono и контекст
+ * (`c.get("tgUser")`).
  */
 export const requireInitData: MiddlewareHandler<{ Variables: AppVariables }> = async (c, next) => {
-  const header = c.req.header("Authorization");
-  const initDataRaw = header?.replace(/^tma\s+/i, "");
+  const result = authenticateInitData(c.req.header("Authorization"), {
+    botToken: config.botToken,
+    devUserId: config.devUserId,
+  });
 
-  if (!initDataRaw) {
-    if (config.devUserId !== undefined) {
-      logger.warn({ devUserId: config.devUserId }, "Dev auth: initData bypassed");
-      c.set("tgUser", makeDevUser(config.devUserId));
-      await next();
-      return;
-    }
-    return c.json({ error: "Missing Telegram init data" }, 401);
-  }
-
-  try {
-    // Бросает при неверной подписи или просроченных данных (по умолчанию expiresIn = 1 день).
-    validate(initDataRaw, config.botToken);
-  } catch (err) {
+  if (!result.ok) {
     // Клиентская ошибка (подделка/просрочка) — пишем в лог как warn, не error, и отклоняем.
-    logger.warn({ err }, "Invalid Telegram initData rejected");
-    return c.json({ error: "Invalid Telegram init data" }, 401);
+    if (result.cause) logger.warn({ err: result.cause }, "Invalid Telegram initData rejected");
+    return c.json({ error: result.error }, 401);
   }
+  if (result.devBypass) logger.warn({ devUserId: result.user.id }, "Dev auth: initData bypassed");
 
-  // Подпись валидна — кладём распарсенного юзера в контекст для нижестоящих хендлеров.
-  c.set("tgUser", parse(initDataRaw).user);
+  c.set("tgUser", result.user);
   await next();
 };

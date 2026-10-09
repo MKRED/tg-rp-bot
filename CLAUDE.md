@@ -7,7 +7,8 @@
 
 ## Project
 Yarn-workspaces monorepo:
-- **`bot/`** — Telegram bot (grammY) + HTTP API for the Mini App (Hono). Node 24, native ESM.
+- **`bot/`** — Telegram bot (grammY) + HTTP API for the Mini App (**NestJS**; not-yet-migrated routes are
+  still served by legacy Hono behind a bridge — plan in [docs/plan/roadmap.md](docs/plan/roadmap.md)). Node 24, native ESM.
 - **`webapp/`** — Telegram Mini App (React + Vite).
 - **`shared/`** — `@tg-rp-bot/shared`: API contract types + constants used by both bot and webapp
   (built by `tsc` into `shared/dist`; both packages consume the built output).
@@ -39,9 +40,9 @@ Run from the monorepo root. Dev environment is **Windows** (Bash tool = Git Bash
 unix-only commands (`pkill`, `lsof`, `kill $(...)`).
 
 ```
-yarn dev           # build shared, start bot — run in background
+yarn dev           # build shared, start bot (nest start --watch) — run in background
 yarn dev:web       # build shared, start Mini App (Vite dev server)
-yarn dev:all       # shared tsc --watch + bot + Vite via concurrently; bot WITHOUT watch (tsx watch hangs under concurrently on Windows)
+yarn dev:all       # shared tsc --watch + bot (nest start --watch) + Vite via concurrently
 yarn build:shared  # rebuild shared/dist (root test/build/dev do it first automatically)
 Stop-Process -Name "node"                # stop bot (PowerShell)
 yarn workspace bot drizzle-kit generate  # migration from schema changes
@@ -49,21 +50,24 @@ yarn workspace bot drizzle-kit migrate   # apply migrations (→ PROD DB!)
 yarn test          # bot + webapp unit tests (vitest run)
 yarn test:watch    # bot tests in watch mode
 cd bot && yarn vitest run src/path/file.test.ts   # single file (webapp: cd webapp); needs built shared/dist
-yarn build         # build bot + webapp
+yarn build         # build bot (nest build) + webapp
 ```
 
 - **Always yarn, never npm.**
 - **Root scripts must not call `yarn` recursively** (`yarn build:shared && …`): the owner's Windows profile
   path is Cyrillic and a nested yarn under cmd.exe fails with garbled `Cannot find module …yarn.js`. Call
   the tool directly (`cd shared && tsc && …`).
+- **Don't run `yarn build` / `nest build` while `yarn dev`/`dev:all` is running:** `nest build` wipes
+  `bot/dist` (`deleteOutDir`) and the running watcher dies with `Cannot find module …dist\main`.
 - **Env:** `bot/.env` (template `bot/.env.example`); `BOT_TOKEN` + `DATABASE_URL` are required — without
   them `config.ts` (`requireEnv`) throws.
 
 ## Architecture
 ```
-bot/src/    — index (thin entry) · bot.ts (grammY) · config · logger · proxy · db/ (drizzle DAO per
-              table) · llm/ (LLM client, per-user provider) · tavily/ (web search, quota) ·
-              handlers/ · server/ (Hono API + Mini App static) · utils/ (retry, crypto)
+bot/src/    — main (Nest bootstrap + bot start) · app.module · bot.ts (grammY) · config · logger · proxy ·
+              Nest modules: auth/ database/ users/ common/ <domain>/ (characters, …) ·
+              db/ (schema + legacy DAO per table) · llm/ (LLM client, per-user provider) · tavily/ ·
+              handlers/ · server/ (legacy Hono API + Mini App static, behind legacyBridge) · utils/
 webapp/src/ — main/init (Telegram SDK) · app/ (shell, HashRouter) · pages/ (one screen per route) ·
               features/ (domain modules) · shared/ (cross-cutting)
 shared/src/ — @tg-rp-bot/shared: API contract types (JSON over the wire) + constants, one file per domain
@@ -92,6 +96,28 @@ Full tree, webapp layout rules, router/deep-link details — [docs/architecture.
 - **Consumed from `shared/dist`** (package `exports`), so after editing `shared/src` rebuild it — `yarn
   dev:all` watches it; otherwise `yarn build:shared`. Dockerfile builds it first and copies
   `shared/package.json` + `shared/dist` into the runtime stage (the workspace symlink points there).
+
+### bot — NestJS backend (mandatory)
+- **Target is idiomatic Nest structure, not just ported routes.** Rewriting existing backend code to fit
+  it is approved — one domain per block, with tests, prod working between blocks.
+- **Domain module = `bot/src/<domain>/`**: `<domain>.module.ts`, `.controller.ts` (HTTP only),
+  `.service.ts` (domain rules, throws Nest `HttpException`s), `.repository.ts` (drizzle via injected
+  `DatabaseService`; the old `db/<domain>/` DAO moves here), `dto/` (class-validator, `implements` the
+  `@tg-rp-bot/shared` contract type), tests beside. Reference project with the same stack:
+  `D:\GitProject\dnd-online` (`apps/server`).
+- **Migrating a domain:** add its prefix to `NEST_ROUTE_PREFIXES` (`server/legacyBridge.ts`) and delete it
+  from `server/` + `server/routes.ts` in the same change. Legacy callers of a moved DAO go through a
+  temporary shim in `db/<domain>/index.ts` (see `db/characters`), removed when they migrate.
+- **Auth:** global `TelegramAuthGuard` (`auth/`) — every controller is protected; read the user with
+  `@CurrentUser() userId: number` (internal id), never the Telegram profile. The guard also ensures the
+  `users` row, so controllers don't call `ensureUser`.
+- **Response contract is the webapp's:** keep Hono-era codes and bodies (`201 {character}`,
+  `200 {ok:true}`, never `204` — `apiFetch` parses every OK body as JSON). Errors go through the global
+  `ApiExceptionFilter` → `{ error: string }`; custom bodies (`{ error: "no_api_key", message }`) pass through.
+- **Decorator metadata:** DI needs `emitDecoratorMetadata` → build/dev via Nest CLI (tsc), never `tsx`
+  for the server. Injected classes are value imports, not `import type`.
+- **JSON body limit** is set explicitly in `main.ts` (images travel as data URLs; Express default is 100 KB).
+- **No `helmet` with defaults** — its `X-Frame-Options`/`frame-ancestors` break the Mini App in Telegram Web.
 
 ### webapp — mandatory
 - **tgui first.** Any new or edited UI uses `@telegram-apps/telegram-ui` components (`Text`/`Subheadline`/
@@ -182,8 +208,9 @@ migration (`generate` → edit SQL → `migrate`). Breaking prod changes only vi
 ### Testing
 vitest in both packages, pool `forks`. Details and "why" — [docs/testing.md](docs/testing.md).
 - Co-locate tests: `foo.ts` → `foo.test.ts`. **Adding pure logic? Add a test beside it.**
-- Test pure functions only (transformers, formatters, parsers, retry/decision logic). DAOs, workers,
-  Telegram/LLM handlers are not unit-tested.
+- Test pure functions only (transformers, formatters, parsers, retry/decision logic). DAOs/repositories,
+  workers, Telegram/LLM handlers are not unit-tested. Nest: test services with a mocked repository
+  (construct directly, no `@nestjs/testing`) and DTOs through `createValidationPipe()` (`common/`).
 - bot tests also need `.js` in relative imports; webapp tests — no extensions, isolate logic from the Telegram SDK.
 - Code importing `logger.js` drags in `config.ts` (throws without `.env`) — mock it:
   `vi.mock("../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() } }))`.

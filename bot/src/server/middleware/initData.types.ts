@@ -1,7 +1,6 @@
-import { parse } from "@tma.js/init-data-node";
+import type { TgUser } from "../../auth/auth.types.js";
 
-/** Распарсенный пользователь Telegram из проверенного initData. */
-export type TgUser = ReturnType<typeof parse>["user"];
+export type { TgUser };
 
 /** Переменные контекста Hono, которые проставляет middleware requireInitData. */
 export type AppVariables = {

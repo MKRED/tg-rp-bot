@@ -1,12 +1,12 @@
 # syntax=docker/dockerfile:1
 
 # ============================================================================
-# tg-rp-bot — единый образ: Telegram-бот (grammY) + HTTP API (Hono),
+# tg-rp-bot — единый образ: Telegram-бот (grammY) + HTTP API (NestJS, с legacy Hono за мостом),
 # который ТАКЖЕ раздаёт собранную статику Mini App (webapp). Node 24, native ESM.
 # Сборка из КОРНЯ монорепо: context=. , dockerfile=Dockerfile (лежит в корне).
 # ============================================================================
 
-# ---- build: ставим зависимости монорепо, собираем shared и bot (tsc), webapp (vite) ----
+# ---- build: ставим зависимости монорепо, собираем shared и bot (nest build), webapp (vite) ----
 FROM node:24-slim AS build
 WORKDIR /app
 
@@ -17,7 +17,7 @@ COPY shared/package.json shared/package.json
 COPY bot/package.json bot/package.json
 COPY webapp/package.json webapp/package.json
 
-# Полный install (с dev-зависимостями): нужны tsc/vite для сборки и drizzle-kit для миграций.
+# Полный install (с dev-зависимостями): нужны tsc/nest/vite для сборки и drizzle-kit для миграций.
 # yarn 1.22 поставляется в составе образа node:24.
 RUN yarn install --frozen-lockfile
 
@@ -28,6 +28,7 @@ COPY shared/src shared/src
 # Исходники бота (только нужное для сборки — НИКОГДА не `COPY bot/` целиком,
 # иначе локальный bot/.env с секретами попал бы в слой образа).
 COPY bot/tsconfig.json bot/tsconfig.json
+COPY bot/nest-cli.json bot/nest-cli.json
 COPY bot/drizzle.config.ts bot/drizzle.config.ts
 COPY bot/drizzle bot/drizzle
 COPY bot/src bot/src
@@ -68,4 +69,4 @@ WORKDIR /app/bot
 EXPOSE 3000
 
 # Переменные окружения приходят из env_file в docker-compose — .env в образе нет.
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/main.js"]

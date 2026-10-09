@@ -12,7 +12,15 @@ Mini App API). CLAUDE.md держит только верхнеуровневу�
 
 ```
 bot/src/
-  index.ts      — entry point (thin: register handlers + start server + start bot)
+  main.ts       — entry point: bootstrap Nest (мост в legacy Hono, лимит JSON-тела) + старт бота
+  app.module.ts — корневой модуль Nest: LoggerModule (nestjs-pino поверх logger.ts), глобальные
+                  ValidationPipe (common/validation-pipe) и ApiExceptionFilter (common/), модули ниже
+  auth/         — TelegramAuthGuard (глобальный APP_GUARD) + @CurrentUser() (внутренний userId) +
+                  initData.ts — проверка initData, общая с Hono-middleware
+  database/     — DatabaseModule (@Global) + DatabaseService поверх drizzle-клиента из db/index.ts
+  users/        — UsersService.ensureTelegramUser (upsert строки users, кэш на процесс)
+  common/       — ApiExceptionFilter (ошибки → { error }), createValidationPipe
+  characters/   — доменный модуль Nest: controller / service / repository (бывший DAO) / dto/
   bot.ts        — grammY bot instance (+ прокси для Telegram через baseFetchConfig)
   bot.constants.ts
   config.ts     — env vars (requireEnv для обязательных, process.env для опциональных)
@@ -21,7 +29,8 @@ bot/src/
                   переиспользуется для Tavily, но через отдельный undici ProxyAgent (см. tavily/)
   db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + клиент +
                   DAO-папки по таблицам: characters/ personas/ cards/ (черновики «Мастерской»)
-                  presets/ (только сэмплинг) impersonations/
+                  presets/ (только сэмплинг) impersonations/ (characters/ — временный мост getCharacter
+                  на CharactersRepository для ещё не перенесённых books/chats)
                   narratorTemplates/ rpTemplates/ avatars/ (батч-резолв аватаров для AvatarStack —
                   getAvatarsBatch) (у каждой DAO-файл + types.ts/constants.ts при наличии + barrel index.ts;
                   типы контракта API characters/personas — из @tg-rp-bot/shared),
@@ -39,9 +48,11 @@ bot/src/
                   через fetch/ProxyAgent из пакета undici, TELEGRAM_PROXY_URL), errors.ts (TavilyHttpError)
   handlers/     — обработчики команд/кнопок бота (index = registerHandlers, start.ts,
                   photoActions.ts — callback «Закрыть» под фото из лайтбокса)
-  server/       — Hono HTTP API, разложен по доменным папкам (зеркало webapp): index=startServer,
+  server/       — legacy Hono HTTP API (переезжает на Nest по доменам — docs/plan/roadmap.md):
+                  legacyBridge.ts — express-middleware, отдающий в Hono всё вне NEST_ROUTE_PREFIXES;
+                  index=createLegacyApp,
                   routes.ts — карта эндпоинтов (монтаж контроллеров), middleware/ (initData — валидация
-                  подписи), доменные папки me/ characters/ personas/ cards/ presets/ books/ narrator-templates/
+                  подписи), доменные папки me/ personas/ cards/ presets/ books/ narrator-templates/
                   rp-templates/ chats/ stories/ debug/ avatars/ (POST /batch — батч-резолв аватаров для
                   AvatarStack, см. ниже) settings/ (settings.controller.ts — per-user ключ/модель
                   DeepSeek + tavily.controller.ts — per-user ключ/квота Tavily, оба BYOK) — у каждого
@@ -150,9 +161,10 @@ Tavily-клиент (`bot/src/tavily/tavilyUsage.ts`) устроен иначе:
 
 Запросы webapp → `/api/*` несут подписанный Telegram `initData` в заголовке
 `Authorization: tma <initData>` (webapp: `shared/api/client.ts`). Сервер
-(`server/middleware/initData.ts`) **проверяет HMAC-подпись** по `BOT_TOKEN` через
+(`auth/initData.ts` — общая функция для guard'а Nest `auth/telegram-auth.guard.ts` и Hono-middleware
+`server/middleware/initData.ts`) **проверяет HMAC-подпись** по `BOT_TOKEN` через
 **`@tma.js/init-data-node`** (`validate` бросает при подделке/просрочке, `parse` достаёт юзера в
-`c.get("tgUser")`). Без подписи: в проде → 401, в dev → пропускаем (отладка webapp из браузера).
+`c.get("tgUser")` у Hono, в `request.userId` → `@CurrentUser()` у Nest). Без подписи: в проде → 401, в dev → пропускаем (отладка webapp из браузера).
 
 ⚠️ Серверный пакет — **`@tma.js/init-data-node`**, НЕ `@telegram-apps/init-data-node` (последний
 deprecated). Это противоположно выбору org для **webapp** (там `@telegram-apps/*` — см. README/стек):
@@ -160,7 +172,7 @@ deprecated). Это противоположно выбору org для **webap
 (`expiresIn` = 86400) — учесть для долгих сессий webview (дадут 401).
 
 Картинки отдаются по двум разным паттернам: поштучно (`GET /characters/:id/image`,
-`characters.controller.ts`) — для форм редактирования, где нужна ровно одна карточка; батчем
+`characters/characters.controller.ts`, Nest) — для форм редактирования, где нужна ровно одна карточка; батчем
 (`POST /avatars/batch`, `server/avatars/`) — для AvatarStack (стек аватаров в списке историй / шапке
 чата), где на экране сразу N дескрипторов {type, id} и поштучные запросы дали бы N round-trip'ов.
 Батч отдаёт только найденные картинки (чужие/несуществующие/пустые id молча выпадают), результат

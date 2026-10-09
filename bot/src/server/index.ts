@@ -1,7 +1,5 @@
-import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
-import { config } from "../config.js";
 import { listAllLlmDebugSettings } from "../db/userSettings.js";
 import { primeDebugSettings } from "../llm/debugCapture.js";
 import logger from "../logger.js";
@@ -12,8 +10,11 @@ import { createApiRoutes } from "./routes.js";
 // в разработке webapp поднимается отдельным vite-сервером.
 const WEBAPP_DIR = "./public";
 
-/** Поднимает HTTP-сервер: API Mini App + раздача собранной статики webapp одним процессом. */
-export function startServer(): void {
+/**
+ * Legacy Hono-приложение: ещё не перенесённое на Nest API Mini App + раздача собранной статики
+ * webapp. Слушает не само — Nest передаёт сюда запросы через мост (legacyBridge.ts).
+ */
+export function createLegacyApp(): Hono {
   const app = new Hono();
 
   // Health-check для мониторинга/доступности
@@ -27,13 +28,17 @@ export function startServer(): void {
   // …а на всё, что не нашлось как файл, — index.html (SPA-роутинг React)
   app.get("/*", serveStatic({ path: `${WEBAPP_DIR}/index.html` }));
 
-  serve({ fetch: app.fetch, port: config.port }, (info) => {
-    logger.info({ port: info.port }, "HTTP server (Mini App API + webapp) started");
-  });
+  return app;
+}
 
-  // Прайм in-memory кэша настроек отладки из БД: перехват уважает сохранённый тумблер/N
-  // ещё до первого открытия экрана. Fire-and-forget — на сбое перехват просто стартует с дефолтами.
+/**
+ * Прайм in-memory кэша настроек отладки из БД: перехват уважает сохранённый тумблер/N
+ * ещё до первого открытия экрана. Fire-and-forget — на сбое перехват просто стартует с дефолтами.
+ */
+export function primeLlmDebugSettings(): void {
   listAllLlmDebugSettings()
     .then((rows) => primeDebugSettings(rows))
     .catch((err) => logger.warn({ err }, "Failed to prime LLM debug settings cache"));
 }
+
+export { createLegacyBridge } from "./legacyBridge.js";

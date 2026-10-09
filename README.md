@@ -8,7 +8,7 @@ Telegram-бот для ролевой игры (RP) с упором на **Teleg
 |---|---|
 | Монорепо | Yarn workspaces (`shared`, `bot`, `webapp`) |
 | Бот | Node 24 (native ESM, TypeScript), [grammY](https://grammy.dev) |
-| HTTP API | [Hono](https://hono.dev) + `@hono/node-server` |
+| HTTP API | [NestJS](https://nestjs.com) (Express, class-validator, nestjs-pino); ещё не перенесённые маршруты — legacy [Hono](https://hono.dev) за мостом `getRequestListener` |
 | БД | Postgres + [drizzle-orm](https://orm.drizzle.team) / drizzle-kit |
 | LLM | DeepSeek (OpenAI-совместимый API); ключ/модель — персональные (BYOK), задаются пользователем в Mini App |
 | Веб-поиск | Tavily (квота ключа); ключ — персональный (BYOK), задаётся пользователем в Mini App |
@@ -30,7 +30,10 @@ tg-rp-bot/
 │  └─ src/             #   (собирается tsc в shared/dist; корневые скрипты собирают его первым)
 ├─ bot/                # Telegram-бот + HTTP API для Mini App
 │  ├─ src/
-│  │  ├─ index.ts      # точка входа: регистрация хендлеров, старт сервера и бота
+│  │  ├─ main.ts       # точка входа: bootstrap Nest (+ мост в legacy Hono), старт бота
+│  │  ├─ app.module.ts # корневой модуль Nest (глобальные guard/pipe/filter)
+│  │  ├─ auth/ database/ users/ common/  # общие модули Nest: initData-guard + @CurrentUser, БД, …
+│  │  ├─ characters/   # доменный модуль Nest: module/controller/service/repository/dto
 │  │  ├─ bot.ts        # инстанс grammY (+ прокси для Telegram)
 │  │  ├─ config.ts     # переменные окружения
 │  │  ├─ logger.ts     # pino
@@ -40,7 +43,7 @@ tg-rp-bot/
 │  │  ├─ llm/          # клиент LLM (DeepSeek, ключ per-user BYOK через resolveProvider)
 │  │  ├─ tavily/       # клиент Tavily (квота ключа, GET /usage), ключ per-user BYOK
 │  │  ├─ handlers/     # обработчики команд бота (/start …)
-│  │  ├─ server/       # Hono HTTP API (/health, /api), доменные папки (зеркало webapp): routes —
+│  │  ├─ server/       # legacy Hono HTTP API (/health, /api; переезжает на Nest по доменам), routes —
 │  │  │                #   карта эндпоинтов, у каждого домена *.controller.ts + validation/constants/
 │  │  │                #   types; chats/ stories/ — SSE-генерация; prompt/ media/ shared/ + статика
 │  │  ├─ scripts/      # разовые скрипты (backfill шифрования сообщений)
