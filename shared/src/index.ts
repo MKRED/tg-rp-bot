@@ -13,3 +13,4 @@ export * from "./me.js";
 export * from "./knowledge-books.js";
 export * from "./rp-chat.js";
 export * from "./sse.js";
+export * from "./narrator.js";

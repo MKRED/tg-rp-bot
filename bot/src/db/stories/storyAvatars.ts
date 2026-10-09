@@ -1,12 +1,7 @@
+import type { StoryAvatarRef } from "@tg-rp-bot/shared";
 import { sql } from "drizzle-orm";
 
-/** Дескриптор аватара в стеке истории — источник записи книги знаний (персонаж или персона). */
-export type StoryAvatarRef = {
-  type: "character" | "persona";
-  id: number;
-  name: string;
-  hasImage: boolean;
-};
+export type { StoryAvatarRef } from "@tg-rp-bot/shared";
 
 /**
  * LATERAL-фрагмент: топ-`limit` дескрипторов аватаров книги (алиас `b`, ожидается в объемлющем

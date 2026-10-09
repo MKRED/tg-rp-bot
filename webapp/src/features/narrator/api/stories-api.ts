@@ -1,6 +1,18 @@
+import {
+  type AdvanceStoryRequest,
+  type ChatTranslateTextRequest,
+  type EditStoryBeatRequest,
+  type EditStoryBeatResponse,
+  SSE_EVENTS,
+  type StoryCreated,
+  type StoryListResponse,
+  type TranslateMessageRequest,
+  type TranslationResponse,
+  type UpdateStoryRequest,
+} from "@tg-rp-bot/shared";
 import { apiFetch } from "../../../shared/api/client";
 import type { TranslateMode } from "../../../shared/components/TranslateSheet";
-import type { StoryCreateInput, StoryDetail, StoryListItem, StoryMessage } from "../types/story";
+import type { StoryCreateInput, StoryDetail, StoryMessage } from "../types/story";
 import { readStorySSE } from "./sse";
 
 /** CRUD-обёртки и стриминговое ведение narrator-историй. Граница webapp → /api/stories. */
@@ -8,8 +20,8 @@ import { readStorySSE } from "./sse";
 export function listStories(
   page = 1,
   pageSize = 50,
-): Promise<{ items: StoryListItem[]; total: number }> {
-  return apiFetch<{ items: StoryListItem[]; total: number }>(
+): Promise<StoryListResponse> {
+  return apiFetch<StoryListResponse>(
     `/stories?page=${page}&pageSize=${pageSize}`,
   );
 }
@@ -18,8 +30,8 @@ export function getStory(id: number): Promise<{ story: StoryDetail }> {
   return apiFetch<{ story: StoryDetail }>(`/stories/${id}`);
 }
 
-export function createStory(input: StoryCreateInput): Promise<{ story: { id: number } }> {
-  return apiFetch<{ story: { id: number } }>("/stories", {
+export function createStory(input: StoryCreateInput): Promise<{ story: StoryCreated }> {
+  return apiFetch<{ story: StoryCreated }>("/stories", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -28,14 +40,14 @@ export function createStory(input: StoryCreateInput): Promise<{ story: { id: num
 export function renameStory(id: number, title: string): Promise<{ title: string | null }> {
   return apiFetch<{ title: string | null }>(`/stories/${id}`, {
     method: "PATCH",
-    body: JSON.stringify({ title }),
+    body: JSON.stringify({ title } satisfies UpdateStoryRequest),
   });
 }
 
 export function updateStoryPremise(id: number, premise: string): Promise<{ premise: string }> {
   return apiFetch<{ premise: string }>(`/stories/${id}`, {
     method: "PATCH",
-    body: JSON.stringify({ premise }),
+    body: JSON.stringify({ premise } satisfies UpdateStoryRequest),
   });
 }
 
@@ -54,12 +66,12 @@ export type StoryStreamEvents = {
 };
 
 function dispatch(events: StoryStreamEvents, event: string, data: Record<string, unknown>): void {
-  if (event === "userMessage") events.onUserMessage?.(data as unknown as StoryMessage);
-  else if (event === "token") events.onToken?.(data.text as string);
-  else if (event === "reset") events.onReset?.();
-  else if (event === "status") events.onStatus?.(data.phase as string);
-  else if (event === "done") events.onDone?.(data as unknown as StoryMessage);
-  else if (event === "error") events.onError?.(data.message as string);
+  if (event === SSE_EVENTS.userMessage) events.onUserMessage?.(data as unknown as StoryMessage);
+  else if (event === SSE_EVENTS.token) events.onToken?.(data.text as string);
+  else if (event === SSE_EVENTS.reset) events.onReset?.();
+  else if (event === SSE_EVENTS.status) events.onStatus?.(data.phase as string);
+  else if (event === SSE_EVENTS.done) events.onDone?.(data as unknown as StoryMessage);
+  else if (event === SSE_EVENTS.error) events.onError?.(data.message as string);
 }
 
 /** Двигает историю вперёд: пустая директива = «Дальше» (continue), непустая = режиссёрская директива. */
@@ -70,7 +82,7 @@ export async function advanceStory(
 ): Promise<void> {
   await readStorySSE(
     `/stories/${storyId}/advance`,
-    { directive },
+    { directive } satisfies AdvanceStoryRequest,
     (e, d) => dispatch(events, e, d),
     (m) => events.onError?.(m),
   );
@@ -104,9 +116,10 @@ export async function translateStoryMessage(
   targetLang: string,
   opts?: { force?: boolean },
 ): Promise<string> {
-  const res = await apiFetch<{ translation: string }>(
+  const body: TranslateMessageRequest = { targetLang, force: opts?.force ?? false };
+  const res = await apiFetch<TranslationResponse>(
     `/stories/${storyId}/messages/${msgId}/translate`,
-    { method: "POST", body: JSON.stringify({ targetLang, force: opts?.force ?? false }) },
+    { method: "POST", body: JSON.stringify(body) },
   );
   return res.translation;
 }
@@ -135,10 +148,10 @@ export function editStoryBeat(
   storyId: number,
   msgId: number,
   content: string,
-): Promise<{ content: string; translations: Record<string, string> | null }> {
-  return apiFetch(`/stories/${storyId}/messages/${msgId}/edit`, {
+): Promise<EditStoryBeatResponse> {
+  return apiFetch<EditStoryBeatResponse>(`/stories/${storyId}/messages/${msgId}/edit`, {
     method: "POST",
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ content } satisfies EditStoryBeatRequest),
   });
 }
 
@@ -150,9 +163,10 @@ export async function composeStoryTranslate(
   storyId: number,
   params: { text: string; targetLang: string; mode: TranslateMode },
 ): Promise<string> {
-  const res = await apiFetch<{ translation: string }>(`/stories/${storyId}/translate-text`, {
+  const body: ChatTranslateTextRequest = params;
+  const res = await apiFetch<TranslationResponse>(`/stories/${storyId}/translate-text`, {
     method: "POST",
-    body: JSON.stringify(params),
+    body: JSON.stringify(body),
   });
   return res.translation;
 }

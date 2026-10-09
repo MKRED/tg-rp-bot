@@ -1,3 +1,4 @@
+import { COMPACT_FLOOR_MAX_SHARE, COMPACT_FLOOR_MIN, COMPACT_WORDS_MAX, COMPACT_WORDS_MIN } from "@tg-rp-bot/shared";
 import { Hono } from "hono";
 import { getBook } from "../../db/knowledge/index.js";
 import { getNarratorTemplate } from "../../db/narratorTemplates/index.js";
@@ -16,7 +17,6 @@ import {
 import { ensureUser } from "../../db/users.js";
 import logger from "../../logger.js";
 import type { AppVariables } from "../middleware/initData.types.js";
-import { COMPACT_FLOOR_MIN } from "./compact.gate.js";
 import {
   handleCompactStory,
   handleDeleteCompaction,
@@ -36,9 +36,6 @@ import {
   handleStoryTranslateText,
 } from "./translate.handler.js";
 
-/** Границы compactWords (зеркало слайдера webapp). */
-const COMPACT_WORDS_MIN = 50;
-const COMPACT_WORDS_MAX = 800;
 const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(v, hi));
 
 /** CRUD narrator-историй + ведение (advance/regenerate/branch/delete) под /api/stories. */
@@ -237,7 +234,7 @@ export function createStoryRoutes(): Hono<{ Variables: AppVariables }> {
         const raw = Math.round(body.compactFloorTokens);
         patch.compactFloorTokens =
           contextSize != null
-            ? clamp(raw, COMPACT_FLOOR_MIN, Math.round(contextSize * 0.9))
+            ? clamp(raw, COMPACT_FLOOR_MIN, Math.round(contextSize * COMPACT_FLOOR_MAX_SHARE))
             : Math.max(0, raw);
       }
       // Пустой патч (ни одного валидного поля) → upsert дал бы `SET {}` и SQL-ошибку при конфликте;

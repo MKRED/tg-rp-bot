@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { StoryMessageInPath } from "../../db/stories/index.js";
+import type { StoryMessage } from "@tg-rp-bot/shared";
 import { countTokens } from "../../utils/index.js";
 import { PER_MESSAGE_OVERHEAD } from "../budget.js";
 import {
@@ -17,7 +17,7 @@ function msg(
   role: "user" | "assistant",
   kind: "beat" | "continue" | "directive",
   content: string,
-): StoryMessageInPath {
+): StoryMessage {
   const id = nextId++;
   return {
     id,
@@ -48,7 +48,7 @@ function baseOpts(overrides: Partial<StoryPromptOptions> = {}): StoryPromptOptio
 }
 
 // Типичный активный путь: открытие + чередование steer/beat, последний узел — живой триггер.
-function sampleHistory(): StoryMessageInPath[] {
+function sampleHistory(): StoryMessage[] {
   nextId = 1;
   return [
     msg("assistant", "beat", "Once upon a time the friends drove through a forest."),

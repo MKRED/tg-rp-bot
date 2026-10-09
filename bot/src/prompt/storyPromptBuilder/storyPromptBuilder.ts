@@ -1,5 +1,5 @@
+import type { StoryMessage } from "@tg-rp-bot/shared";
 import type { StoryPromptComponentId, StoryPromptOrderItem } from "../../db/schema.js";
-import type { StoryMessageInPath } from "../../db/stories/index.js";
 import type { ChatMessage } from "../../llm/types.js";
 import { countTokens } from "../../utils/index.js";
 import { DEFAULT_OUTPUT_RESERVE, PER_MESSAGE_OVERHEAD, trimHistoryToBudget } from "../budget.js";
@@ -48,7 +48,7 @@ function componentText(
 }
 
 /** Урезает активный путь под лимит контекста (оставляя самые свежие узлы, включая живой триггер). */
-function resolveHistory(opts: StoryPromptOptions, fixedSystemTokens: number): StoryMessageInPath[] {
+function resolveHistory(opts: StoryPromptOptions, fixedSystemTokens: number): StoryMessage[] {
   if (opts.contextUnlimited || opts.contextSize == null) return opts.history;
 
   const reserve = opts.maxTokens ?? DEFAULT_OUTPUT_RESERVE;

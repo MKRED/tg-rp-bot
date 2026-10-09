@@ -1,5 +1,5 @@
+import type { StoryMessage } from "@tg-rp-bot/shared";
 import type { StoryPromptOrderItem } from "../../db/schema.js";
-import type { StoryMessageInPath } from "../../db/stories/index.js";
 import type { TrimInfo } from "../budget.js";
 
 export type StoryPromptOptions = {
@@ -16,7 +16,7 @@ export type StoryPromptOptions = {
   /** Готовые пересказы сжатых сообщений активной ветки (compact), по порядку. Пусто/нет = нет сжатия. */
   compactSummaries?: string[];
   /** Активный путь истории; последний узел — живой триггер (user-ход текущей генерации). */
-  history: StoryMessageInPath[];
+  history: StoryMessage[];
   /** Порядок и включённость компонентов запроса (из шаблона или DEFAULT_NARRATOR_PROMPT_ORDER). */
   promptOrder: StoryPromptOrderItem[];
   /**

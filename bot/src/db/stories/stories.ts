@@ -11,7 +11,7 @@ import type {
   StoryDetail,
   StoryInput,
   StoryListItem,
-  StoryMessageInPath,
+  StoryMessage,
   StoryTreeNode,
 } from "./types.js";
 
@@ -19,8 +19,8 @@ import type {
 const LIST_AVATAR_LIMIT = 3;
 const HEADER_AVATAR_LIMIT = 5;
 
-/** Маппит сырую строку пути в StoryMessageInPath, расшифровывая content и translations. */
-function mapPathRow(r: Record<string, unknown>, key: Buffer): StoryMessageInPath {
+/** Маппит сырую строку пути в StoryMessage, расшифровывая content и translations. */
+function mapPathRow(r: Record<string, unknown>, key: Buffer): StoryMessage {
   return {
     id: Number(r.id),
     parentId: r.parent_id != null ? Number(r.parent_id) : null,
@@ -118,7 +118,7 @@ export async function getStory(userId: number, storyId: number): Promise<StoryDe
   const key = getUserEncryptionKey(userId);
   let activeMessageId =
     storyRow.active_message_id != null ? Number(storyRow.active_message_id) : null;
-  let messages: StoryMessageInPath[] = [];
+  let messages: StoryMessage[] = [];
 
   if (activeMessageId) {
     let pathRows = await queryStoryActivePath(storyId, activeMessageId);

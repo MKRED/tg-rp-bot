@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
 import logger from "../../logger.js";
 import { db, schema } from "../index.js";
-import type { StorySettingsRow } from "./types.js";
+import type { StorySettings } from "./types.js";
 
-const DEFAULT_SETTINGS: StorySettingsRow = {
+const DEFAULT_SETTINGS: StorySettings = {
   translateEnabled: false,
   translateTargetLang: "ru",
   translateScope: "assistant",
@@ -18,7 +18,7 @@ const DEFAULT_SETTINGS: StorySettingsRow = {
 };
 
 /** Читает настройки истории; если строки нет — возвращает дефолт. Зеркало getChatSettings. */
-export async function getStorySettings(storyChatId: number): Promise<StorySettingsRow> {
+export async function getStorySettings(storyChatId: number): Promise<StorySettings> {
   const t0 = Date.now();
   const rows = await db
     .select()
@@ -48,8 +48,8 @@ export async function getStorySettings(storyChatId: number): Promise<StorySettin
 /** Создаёт или обновляет настройки истории (upsert). */
 export async function upsertStorySettings(
   storyChatId: number,
-  patch: Partial<StorySettingsRow>,
-): Promise<StorySettingsRow> {
+  patch: Partial<StorySettings>,
+): Promise<StorySettings> {
   const t0 = Date.now();
   await db
     .insert(schema.storySettings)

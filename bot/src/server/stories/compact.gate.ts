@@ -1,12 +1,11 @@
+import { COMPACT_FLOOR_MIN, type CompactUnavailableReason as StoryCompactReason } from "@tg-rp-bot/shared";
 import { DEFAULT_OUTPUT_RESERVE } from "../../prompt/budget.js";
 
 /** Минимальный размер контекста, при котором сжатие имеет смысл (ниже — фича недоступна). */
 export const MIN_COMPACT_CONTEXT = 4000;
-/** Нижняя граница «пола» — должна совпадать с min слайдера в webapp. */
-export const COMPACT_FLOOR_MIN = 1000;
 
-/** Причина недоступности фичи (для UI/ответа сервера). null = доступна. */
-export type CompactUnavailableReason = "unlimited" | "too_small" | null;
+/** Причина недоступности по пресету (template_off решает шаблон, не пресет). null = доступна. */
+export type CompactUnavailableReason = Exclude<StoryCompactReason, "template_off"> | null;
 
 type PresetLike = { contextUnlimited: boolean; contextSize: number | null } | null | undefined;
 

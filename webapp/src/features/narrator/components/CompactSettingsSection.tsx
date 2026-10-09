@@ -1,4 +1,10 @@
 import { Button, Caption, Cell, Section, Slider, Spinner, Switch, Text } from "@telegram-apps/telegram-ui";
+import {
+  COMPACT_FLOOR_MAX_SHARE,
+  COMPACT_FLOOR_MIN as FLOOR_MIN,
+  COMPACT_WORDS_MAX as WORDS_MAX,
+  COMPACT_WORDS_MIN as WORDS_MIN,
+} from "@tg-rp-bot/shared";
 import { ChevronDown, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { FieldHint } from "../../../shared/components/FieldHint";
@@ -7,10 +13,7 @@ import { useToast } from "../../../shared/toast";
 import { useCompactions } from "../hooks/useCompactions";
 import type { StorySettings, StoryStats } from "../types/story";
 
-const FLOOR_MIN = 1000;
 const FLOOR_STEP = 500;
-const WORDS_MIN = 50;
-const WORDS_MAX = 800;
 const WORDS_STEP = 50;
 
 /** Текст причины недоступности фичи под гейтом. */
@@ -58,7 +61,7 @@ export function CompactSettingsSection({
 
   const available = stats.compactAvailable;
   const limit = stats.contextLimit ?? 0;
-  const floorMax = Math.max(FLOOR_MIN, Math.round(limit * 0.9));
+  const floorMax = Math.max(FLOOR_MIN, Math.round(limit * COMPACT_FLOOR_MAX_SHARE));
   const defaultFloor = Math.round(limit * 0.7);
 
   // Локальные значения слайдеров + debounce-коммит.

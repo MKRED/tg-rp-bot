@@ -1,3 +1,4 @@
+import type { CompactStoryResponse } from "@tg-rp-bot/shared";
 import { apiFetch } from "../../../shared/api/client";
 import type { StoryCompaction } from "../types/story";
 
@@ -6,8 +7,8 @@ import type { StoryCompaction } from "../types/story";
 /** Ручное сжатие (один проход). Возвращает число созданных пересказов + обновлённый список. */
 export async function compactStory(
   storyId: number,
-): Promise<{ created: number; compactions: StoryCompaction[] }> {
-  return apiFetch<{ created: number; compactions: StoryCompaction[] }>(
+): Promise<CompactStoryResponse> {
+  return apiFetch<CompactStoryResponse>(
     `/stories/${storyId}/compact`,
     { method: "POST" },
   );
