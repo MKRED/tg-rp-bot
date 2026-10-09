@@ -9,6 +9,8 @@
 Yarn-workspaces monorepo:
 - **`bot/`** — Telegram bot (grammY) + HTTP API for the Mini App (Hono). Node 24, native ESM.
 - **`webapp/`** — Telegram Mini App (React + Vite).
+- **`shared/`** — `@tg-rp-bot/shared`: API contract types + constants used by both bot and webapp
+  (built by `tsc` into `shared/dist`; both packages consume the built output).
 
 Root `package.json` only manages workspaces + cross-package scripts. Production is one Docker container
 serving both the API and the Mini App static files ([docs/deploy.md](docs/deploy.md)).
@@ -37,19 +39,23 @@ Run from the monorepo root. Dev environment is **Windows** (Bash tool = Git Bash
 unix-only commands (`pkill`, `lsof`, `kill $(...)`).
 
 ```
-yarn dev           # start bot (= yarn workspace bot dev) — run in background
-yarn dev:web       # start Mini App (Vite dev server)
-yarn dev:all       # both via concurrently; bot WITHOUT watch (tsx watch hangs under concurrently on Windows)
+yarn dev           # build shared, start bot — run in background
+yarn dev:web       # build shared, start Mini App (Vite dev server)
+yarn dev:all       # shared tsc --watch + bot + Vite via concurrently; bot WITHOUT watch (tsx watch hangs under concurrently on Windows)
+yarn build:shared  # rebuild shared/dist (root test/build/dev do it first automatically)
 Stop-Process -Name "node"                # stop bot (PowerShell)
 yarn workspace bot drizzle-kit generate  # migration from schema changes
 yarn workspace bot drizzle-kit migrate   # apply migrations (→ PROD DB!)
 yarn test          # bot + webapp unit tests (vitest run)
 yarn test:watch    # bot tests in watch mode
-cd bot && yarn vitest run src/path/file.test.ts   # single file (webapp: cd webapp)
+cd bot && yarn vitest run src/path/file.test.ts   # single file (webapp: cd webapp); needs built shared/dist
 yarn build         # build bot + webapp
 ```
 
 - **Always yarn, never npm.**
+- **Root scripts must not call `yarn` recursively** (`yarn build:shared && …`): the owner's Windows profile
+  path is Cyrillic and a nested yarn under cmd.exe fails with garbled `Cannot find module …yarn.js`. Call
+  the tool directly (`cd shared && tsc && …`).
 - **Env:** `bot/.env` (template `bot/.env.example`); `BOT_TOKEN` + `DATABASE_URL` are required — without
   them `config.ts` (`requireEnv`) throws.
 
@@ -60,6 +66,7 @@ bot/src/    — index (thin entry) · bot.ts (grammY) · config · logger · pro
               handlers/ · server/ (Hono API + Mini App static) · utils/ (retry, crypto)
 webapp/src/ — main/init (Telegram SDK) · app/ (shell, HashRouter) · pages/ (one screen per route) ·
               features/ (domain modules) · shared/ (cross-cutting)
+shared/src/ — @tg-rp-bot/shared: API contract types (JSON over the wire) + constants, one file per domain
 ```
 bot and webapp domains mirror each other: characters, personas, cards, generation-presets, rp-templates,
 rp-chat, narrator, knowledge-books, narrator-templates, debug.
@@ -73,6 +80,18 @@ Full tree, webapp layout rules, router/deep-link details — [docs/architecture.
   `.ts` (`import { config } from "../config.js"`). Directory imports don't work — point at the barrel:
   `"../utils/index.js"`. Bare package imports stay extensionless.
 - **`webapp/`** (`moduleResolution: bundler`): imports WITHOUT extensions (`./App`).
+- **`shared/`** (`nodenext`, like bot): relative imports end in `.js`. Consumers import the package
+  name `@tg-rp-bot/shared`, never a relative path into `shared/`.
+
+### shared package
+- **Holds the API contract** — what travels as JSON (request bodies, list items, limits both sides
+  enforce). Not DB rows/DAO return types (`Date` vs `string`), not React or Node-specific code.
+- **A type/constant duplicated between bot and webapp belongs here.** Move it, don't copy it; the old
+  location imports/re-exports from `@tg-rp-bot/shared` (webapp feature `types/*.ts` re-export so feature
+  barrels stay unchanged).
+- **Consumed from `shared/dist`** (package `exports`), so after editing `shared/src` rebuild it — `yarn
+  dev:all` watches it; otherwise `yarn build:shared`. Dockerfile builds it first and copies
+  `shared/package.json` + `shared/dist` into the runtime stage (the workspace symlink points there).
 
 ### webapp — mandatory
 - **tgui first.** Any new or edited UI uses `@telegram-apps/telegram-ui` components (`Text`/`Subheadline`/

@@ -1,7 +1,7 @@
+import { MAX_FIRST_MESSAGES } from "@tg-rp-bot/shared";
 import type { CharacterInput } from "../../db/characters/index.js";
 import { MAX_IMAGE_CHARS, MAX_IMAGE_FULL_CHARS } from "../shared/imageValidation.constants.js";
 import { parseImageField } from "../shared/imageValidation.js";
-import { MAX_FIRST_MESSAGES } from "./characters.constants.js";
 
 /**
  * Разбирает тело запроса в CharacterInput с ручной валидацией (без отдельной зависимости).

@@ -1,3 +1,7 @@
+// Контракт списка/формы и лимит — общие с сервером, живут в пакете @tg-rp-bot/shared.
+export type { PersonaInput, PersonaListItem } from "@tg-rp-bot/shared";
+export { MAX_PERSONAS_PER_USER } from "@tg-rp-bot/shared";
+
 /** Полная персона из GET /api/personas/:id */
 export interface Persona {
   id: number;
@@ -9,22 +13,3 @@ export interface Persona {
   createdAt: string;
   updatedAt: string;
 }
-
-/** Лёгкая проекция для списка (без image). */
-export interface PersonaListItem {
-  id: number;
-  name: string;
-  footnote: string | null;
-  hasImage: boolean;
-}
-
-/** Данные формы для создания/обновления. */
-export interface PersonaInput {
-  name: string;
-  prompt: string;
-  footnote: string | null;
-  image: string | null;
-  imageFull: string | null;
-}
-
-export const MAX_PERSONAS_PER_USER = 50;

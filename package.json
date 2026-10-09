@@ -4,16 +4,18 @@
   "private": true,
   "type": "module",
   "workspaces": [
+    "shared",
     "bot",
     "webapp"
   ],
   "scripts": {
-    "dev": "cd bot && tsx watch src/index.ts",
-    "dev:web": "cd webapp && vite",
-    "dev:all": "concurrently -n bot,web -c blue,green \"cd bot && tsx src/index.ts\" \"cd webapp && vite\"",
-    "build": "cd bot && tsc && cd ../webapp && tsc --noEmit && vite build",
-    "test": "cd bot && vitest run && cd ../webapp && vitest run",
-    "test:watch": "cd bot && vitest"
+    "build:shared": "cd shared && tsc",
+    "dev": "cd shared && tsc && cd ../bot && tsx watch src/index.ts",
+    "dev:web": "cd shared && tsc && cd ../webapp && vite",
+    "dev:all": "cd shared && tsc && cd .. && concurrently -n shared,bot,web -c gray,blue,green \"cd shared && tsc --watch --preserveWatchOutput\" \"cd bot && tsx src/index.ts\" \"cd webapp && vite\"",
+    "build": "cd shared && tsc && cd ../bot && tsc && cd ../webapp && tsc --noEmit && vite build",
+    "test": "cd shared && tsc && cd ../bot && vitest run && cd ../webapp && vitest run",
+    "test:watch": "cd shared && tsc && cd ../bot && vitest"
   },
   "engines": {
     "node": ">=24"

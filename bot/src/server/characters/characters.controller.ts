@@ -1,3 +1,4 @@
+import { MAX_CHARACTERS_PER_USER } from "@tg-rp-bot/shared";
 import { Hono } from "hono";
 import {
   countCharacters,
@@ -13,7 +14,6 @@ import {
 import logger from "../../logger.js";
 import type { AppVariables } from "../middleware/initData.types.js";
 import { isFkViolation } from "../shared/fkViolation.js";
-import { MAX_CHARACTERS_PER_USER } from "./characters.constants.js";
 import { parseCharacterInput } from "./characters.validation.js";
 
 /**

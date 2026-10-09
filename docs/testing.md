@@ -4,8 +4,9 @@
 
 ## Устройство
 - **vitest** в **обоих** workspace (`bot/` и `webapp/`), у каждого свой `vitest.config.ts` (pool `forks`).
-  Корневой `yarn test` гоняет оба пакета по очереди; `yarn test:watch` — только bot.
-- Один файл: `cd bot && yarn vitest run src/path/file.test.ts` (webapp — `cd webapp`).
+  Корневой `yarn test` сначала собирает `shared/`, потом гоняет оба пакета по очереди; `yarn test:watch` — только bot.
+- Один файл: `cd bot && yarn vitest run src/path/file.test.ts` (webapp — `cd webapp`). Пакеты читают
+  `@tg-rp-bot/shared` из собранного `shared/dist` — на свежем клоне сначала `yarn build:shared`.
 - Тесты лежат рядом с кодом: `transform.ts` → `transform.test.ts`, раннер ищет `src/**/*.test.ts`.
 - В `bot/` `tsc` (`yarn build`) исключает тесты через `**/*.test.ts` в `tsconfig.json` — в `dist/` они
   не попадают. В `webapp/` сборка `noEmit` (vite бандлит только импортируемое), исключать не нужно.

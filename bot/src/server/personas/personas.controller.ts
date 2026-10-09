@@ -1,3 +1,4 @@
+import { MAX_PERSONAS_PER_USER } from "@tg-rp-bot/shared";
 import { Hono } from "hono";
 import {
   countPersonas,
@@ -13,7 +14,6 @@ import {
 import logger from "../../logger.js";
 import type { AppVariables } from "../middleware/initData.types.js";
 import { isFkViolation } from "../shared/fkViolation.js";
-import { MAX_PERSONAS_PER_USER } from "./personas.constants.js";
 import { parsePersonaInput } from "./personas.validation.js";
 
 /**

@@ -23,7 +23,8 @@ bot/src/
                   DAO-папки по таблицам: characters/ personas/ cards/ (черновики «Мастерской»)
                   presets/ (только сэмплинг) impersonations/
                   narratorTemplates/ rpTemplates/ avatars/ (батч-резолв аватаров для AvatarStack —
-                  getAvatarsBatch) (у каждой DAO-файл + types.ts/constants.ts + barrel index.ts),
+                  getAvatarsBatch) (у каждой DAO-файл + types.ts/constants.ts при наличии + barrel index.ts;
+                  типы контракта API characters/personas — из @tg-rp-bot/shared),
                   chats/ stories/ (+ storyAvatars.ts — LATERAL-фрагмент топ-N аватаров книги знаний
                   для карточки истории) knowledge/ (деревья/лорбук), users.ts, userSettings.ts,
                   userLlmSettings.ts (per-user ключ/модель DeepSeek, BYOK, шифруется ENCRYPTION_KEY),
@@ -54,6 +55,20 @@ bot/src/
   scripts/      — разовые скрипты (backfill-message-encryption)
   utils/        — retry, crypto (per-user шифрование сообщений)
 ```
+
+## Пакет `shared/` (`@tg-rp-bot/shared`)
+
+```
+shared/src/
+  index.ts      — публичная поверхность пакета (реэкспорт доменных файлов)
+  characters.ts — CharacterInput, CharacterListItem, MAX_CHARACTERS_PER_USER, MAX_FIRST_MESSAGES
+  personas.ts   — PersonaInput, PersonaListItem, MAX_PERSONAS_PER_USER
+```
+Контракт API (то, что ходит JSON'ом) и общие константы bot ↔ webapp. Собирается `tsc` (`nodenext`)
+в `shared/dist` (`.js` + `.d.ts`), оба пакета подключают его как зависимость workspace и читают
+собранный `dist` через `exports` — отдельной настройки резолва в Vite/vitest/tsx не нужно. Почему не
+исходники напрямую: при импорте `.ts` из-за пределов `bot/src` tsc бота упирается в `rootDir`, а прод
+(`node dist/index.js`) не умеет исполнять `.ts` с `.js`-импортами.
 
 ## Дерево `webapp/`
 

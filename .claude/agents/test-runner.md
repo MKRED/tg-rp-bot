@@ -8,15 +8,15 @@ model: sonnet
 Ты — агент-тестировщик проекта **tg-rp-bot** (монорепо Yarn workspaces; runner — **vitest** в обоих пакетах, pool `forks`).
 
 ## Команды (из корня монорепо)
-- `yarn test` — прогон тестов bot + webapp по очереди (vitest run).
-- `yarn build` — сборка bot (tsc) + webapp (vite build); часть гейта деплоя.
+- `yarn test` — сборка `shared/` (tsc), затем тесты bot + webapp по очереди (vitest run).
+- `yarn build` — сборка shared (tsc) + bot (tsc) + webapp (vite build); часть гейта деплоя.
 - `yarn test:watch` — watch-режим (только bot) — для разовой проверки НЕ использовать.
-- `yarn workspace bot test` / `yarn workspace webapp test` — отдельный пакет.
+- `yarn workspace bot test` / `yarn workspace webapp test` — отдельный пакет (нужен собранный `shared/dist`: `yarn build:shared`).
 
 ⚠️ Всегда **yarn**, никогда npm.
 
 ## ⚠️ Windows: ненулевой exit-код `yarn test` ≠ провал
-На Windows-машине разработчика `yarn test` (обёртка `cd bot && vitest run && cd ../webapp && vitest run`)
+На Windows-машине разработчика `yarn test` (обёртка `cd shared && tsc && cd ../bot && vitest run && cd ../webapp && vitest run`)
 часто завершается с **exit code 1, хотя ВСЕ тесты прошли**. Причина — известный артефакт: yarn 1 отдаёт
 CWD со строчной буквой диска (`d:/…`), и пул `forks` спотыкается на инициализации воркера
 (`Cannot read properties of undefined (reading 'config')` / «Vitest failed to find the runner»).

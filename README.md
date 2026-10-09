@@ -6,7 +6,7 @@ Telegram-бот для ролевой игры (RP) с упором на **Teleg
 
 | Слой | Технологии |
 |---|---|
-| Монорепо | Yarn workspaces (`bot`, `webapp`) |
+| Монорепо | Yarn workspaces (`shared`, `bot`, `webapp`) |
 | Бот | Node 24 (native ESM, TypeScript), [grammY](https://grammy.dev) |
 | HTTP API | [Hono](https://hono.dev) + `@hono/node-server` |
 | БД | Postgres + [drizzle-orm](https://orm.drizzle.team) / drizzle-kit |
@@ -26,6 +26,8 @@ tg-rp-bot/
 ├─ Dockerfile          # единый образ: бот + API + статика Mini App (контекст сборки — корень)
 ├─ docker-compose.yml  # запуск контейнера на сервере (справочная копия; рабочая лежит на сервере)
 ├─ .github/workflows/  # deploy.yml — автодеплой по пушу в ветку deploy
+├─ shared/             # @tg-rp-bot/shared — общие типы контракта API и константы bot ↔ webapp
+│  └─ src/             #   (собирается tsc в shared/dist; корневые скрипты собирают его первым)
 ├─ bot/                # Telegram-бот + HTTP API для Mini App
 │  ├─ src/
 │  │  ├─ index.ts      # точка входа: регистрация хендлеров, старт сервера и бота
@@ -34,7 +36,7 @@ tg-rp-bot/
 │  │  ├─ logger.ts     # pino
 │  │  ├─ proxy.ts      # HttpsProxyAgent (https-proxy-agent) для Telegram; тот же прокси — и для Tavily
 │  │  ├─ db/           # drizzle: schema + клиент + DAO-папки по таблицам (characters/ personas/ cards/
-│  │  │                #   presets/ chats/ stories/ knowledge/ … — у каждой DAO + types/constants + barrel)
+│  │  │                #   presets/ chats/ stories/ knowledge/ … — у каждой DAO + barrel, types/constants по надобности)
 │  │  ├─ llm/          # клиент LLM (DeepSeek, ключ per-user BYOK через resolveProvider)
 │  │  ├─ tavily/       # клиент Tavily (квота ключа, GET /usage), ключ per-user BYOK
 │  │  ├─ handlers/     # обработчики команд бота (/start …)
@@ -76,15 +78,15 @@ cp bot/.env.example bot/.env      # заполни BOT_TOKEN, DATABASE_URL, пр
 
 yarn workspace bot drizzle-kit migrate   # применить миграции БД
 
-yarn dev          # старт бота (= yarn workspace bot dev)
+yarn dev          # старт бота (сначала собирает shared)
 yarn dev:web      # старт Mini App (Vite dev server)
-yarn dev:all      # оба сразу в одном терминале (concurrently) — Ctrl+C останавливает оба
+yarn dev:all      # shared в watch + бот + Mini App в одном терминале (concurrently) — Ctrl+C останавливает всё
 ```
 
 ### Полезные команды
 
 ```bash
-yarn build                                  # сборка bot + webapp
+yarn build                                  # сборка shared + bot + webapp
 yarn test                                   # юнит-тесты bot + webapp (vitest)
 yarn workspace bot drizzle-kit generate     # сгенерировать миграцию из изменений схемы
 yarn workspace bot drizzle-kit migrate      # применить миграции
@@ -108,7 +110,7 @@ Mini App → `/settings` → «Веб-поиск (Tavily)».
 сервера и проксирует поддомен в контейнер.
 
 - **Образ** собирается из [`Dockerfile`](Dockerfile) в корне (multi-stage: ставит зависимости монорепо,
-  собирает `bot` через `tsc` и `webapp` через `vite`, кладёт статику в `bot/public`).
+  собирает `shared` и `bot` через `tsc`, `webapp` через `vite`, кладёт статику в `bot/public`).
 - **CI/CD:** пуш в ветку **`deploy`** запускает GitHub Action ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)),
   который собирает образ **на демоне сервера** через docker context (SSH, без реестра) и перезапускает
   контейнер по серверному `docker-compose.yml`.

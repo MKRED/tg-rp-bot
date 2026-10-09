@@ -1,9 +1,9 @@
+import type { PersonaInput, PersonaListItem } from "@tg-rp-bot/shared";
 import { and, desc, eq, sql } from "drizzle-orm";
 import logger from "../../logger.js";
 import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/index.js";
 import { db, schema } from "../index.js";
 import type { Persona } from "../schema.js";
-import type { PersonaInput, PersonaListItem } from "./types.js";
 
 export { ensureUser } from "../users.js";
 

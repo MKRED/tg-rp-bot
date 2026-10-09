@@ -6,19 +6,24 @@
 # Сборка из КОРНЯ монорепо: context=. , dockerfile=Dockerfile (лежит в корне).
 # ============================================================================
 
-# ---- build: ставим зависимости монорепо, собираем bot (tsc) и webapp (vite) ----
+# ---- build: ставим зависимости монорепо, собираем shared и bot (tsc), webapp (vite) ----
 FROM node:24-slim AS build
 WORKDIR /app
 
 # Манифесты всех workspace'ов нужны ДО install: yarn workspaces читает корневой
 # package.json и требует, чтобы каждый объявленный workspace существовал на диске.
 COPY package.json yarn.lock ./
+COPY shared/package.json shared/package.json
 COPY bot/package.json bot/package.json
 COPY webapp/package.json webapp/package.json
 
 # Полный install (с dev-зависимостями): нужны tsc/vite для сборки и drizzle-kit для миграций.
 # yarn 1.22 поставляется в составе образа node:24.
 RUN yarn install --frozen-lockfile
+
+# Общий пакет типов/констант bot ↔ webapp (@tg-rp-bot/shared) — собирается первым.
+COPY shared/tsconfig.json shared/tsconfig.json
+COPY shared/src shared/src
 
 # Исходники бота (только нужное для сборки — НИКОГДА не `COPY bot/` целиком,
 # иначе локальный bot/.env с секретами попал бы в слой образа).
@@ -33,8 +38,8 @@ COPY webapp/vite.config.ts webapp/vite.config.ts
 COPY webapp/index.html webapp/index.html
 COPY webapp/src webapp/src
 
-# bot -> bot/dist ; webapp -> webapp/dist (статика)
-RUN yarn workspace bot build && yarn workspace webapp build
+# shared -> shared/dist ; bot -> bot/dist ; webapp -> webapp/dist (статика)
+RUN yarn workspace @tg-rp-bot/shared build && yarn workspace bot build && yarn workspace webapp build
 
 # ---- runtime: один процесс Node отдаёт API и статику --------------------------
 FROM node:24-slim AS runtime
@@ -47,6 +52,10 @@ WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/yarn.lock ./yarn.lock
+# node_modules/@tg-rp-bot/shared — симлинк на /app/shared: без этих файлов он повиснет,
+# и бот упадёт на первом импорте общего пакета.
+COPY --from=build /app/shared/package.json ./shared/package.json
+COPY --from=build /app/shared/dist ./shared/dist
 # В /app/bot к этому моменту только собранный dist + drizzle + конфиги (без .env).
 COPY --from=build /app/bot ./bot
 # Статику Mini App кладём туда, откуда её ждёт Hono (cwd процесса = /app/bot, root = ./public).

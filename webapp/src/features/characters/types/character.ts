@@ -1,3 +1,7 @@
+// Контракт списка/формы и лимиты — общие с сервером, живут в пакете @tg-rp-bot/shared.
+export type { CharacterInput, CharacterListItem } from "@tg-rp-bot/shared";
+export { MAX_CHARACTERS_PER_USER, MAX_FIRST_MESSAGES } from "@tg-rp-bot/shared";
+
 /** Полный персонаж, как его отдаёт сервер (GET /characters/:id). */
 export interface Character {
   id: number;
@@ -14,38 +18,3 @@ export interface Character {
   createdAt: string;
   updatedAt: string;
 }
-
-/**
- * Лёгкая строка списка (GET /characters) — без самого image и текстов. Вместо аватара только
- * флаг hasImage: картинку строка списка догружает отдельным запросом (useCharacterImage).
- */
-export interface CharacterListItem {
-  id: number;
-  name: string;
-  tags: string[];
-  /** Примечание «для себя» (расшифровано сервером); заполненное показывается в строке списка. */
-  footnote: string | null;
-  firstMessageCount: number;
-  hasImage: boolean;
-}
-
-/**
- * Тело формы создания/редактирования (POST/PUT).
- * image — квадратная миниатюра (data URL или null); imageFull — то же фото целиком (без кропа).
- */
-export interface CharacterInput {
-  name: string;
-  tags: string[];
-  /** Примечание «для себя» — не уходит в LLM. */
-  footnote: string | null;
-  prompt: string;
-  /** Сценарий — промпт, направляющий ИИ по ходу RP. */
-  scenario: string;
-  firstMessages: string[];
-  image: string | null;
-  imageFull: string | null;
-}
-
-/** Мягкие лимиты — дублируют серверные (bot/src/server/characters/characters.constants.ts), блокируют UI заранее. */
-export const MAX_CHARACTERS_PER_USER = 50;
-export const MAX_FIRST_MESSAGES = 10;

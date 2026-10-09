@@ -1,9 +1,9 @@
+import type { CharacterInput, CharacterListItem } from "@tg-rp-bot/shared";
 import { and, desc, eq, sql } from "drizzle-orm";
 import logger from "../../logger.js";
 import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/index.js";
 import { db, schema } from "../index.js";
 import type { Character } from "../schema.js";
-import type { CharacterInput, CharacterListItem } from "./types.js";
 
 // ensureUser вынесен в общий db/users.ts (нужен и пресетам) — реэкспорт сохраняет
 // единую точку импорта `../db/characters/index.js` для серверного контроллера.
