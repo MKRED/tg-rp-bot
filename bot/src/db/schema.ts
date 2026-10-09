@@ -10,7 +10,13 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
-import type { ReasoningEffort, TranslationReasoningLevel } from "@tg-rp-bot/shared";
+import type {
+  AutoTranslateScope,
+  PromptTranslateEngine,
+  ReasoningEffort,
+  TranslateScope,
+  TranslationReasoningLevel,
+} from "@tg-rp-bot/shared";
 import type { CardCategory, PromptOrderItem, StoryPromptOrderItem } from "./schema.types.js";
 
 // Типы компонентов промптов живут в schema.types.ts; реэкспорт сохраняет прежнюю точку
@@ -81,7 +87,7 @@ export const userSettings = pgTable("user_settings", {
   // персонажи/персоны/карточки/пресеты/шаблоны). НЕ путать с template-scoped
   // rpTemplates/narratorTemplates.translationSystemPrompt — та фича отдельная (Globe-кнопка
   // RP-чата), префикс promptTranslate* здесь маркирует другой, безэнтитный контекст.
-  promptTranslateEngine: text("prompt_translate_engine").$type<"google" | "ai">().notNull().default("google"),
+  promptTranslateEngine: text("prompt_translate_engine").$type<PromptTranslateEngine>().notNull().default("google"),
   promptTranslateTargetLang: text("prompt_translate_target_lang").notNull().default("en"),
   // Свой системный промпт ИИ-перевода (плейсхолдер {{target_lang}}). NULL/пусто → DEFAULT_TRANSLATION_TEMPLATE.
   promptTranslateSystemPrompt: text("prompt_translate_system_prompt"),
@@ -385,16 +391,16 @@ export const chatSettings = pgTable("chat_settings", {
   translateEnabled: boolean("translate_enabled").notNull().default(false),
   translateTargetLang: text("translate_target_lang").notNull().default("ru"),
   translateScope: text("translate_scope")
-    .$type<"all" | "assistant" | "user">()
+    .$type<TranslateScope>()
     .notNull()
     .default("assistant"),
   autoTranslateScope: text("auto_translate_scope")
-    .$type<"none" | "all" | "assistant" | "user">()
+    .$type<AutoTranslateScope>()
     .notNull()
     .default("none"),
   // Метод перевода закэшированных сообщений (кнопка Globe): "google" — Google Translate,
   // "ai" — LLM с промптом перевода из RP-шаблона (translationSystemPrompt).
-  translateMethod: text("translate_method").$type<"google" | "ai">().notNull().default("google"),
+  translateMethod: text("translate_method").$type<PromptTranslateEngine>().notNull().default("google"),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow()
@@ -636,15 +642,15 @@ export const storySettings = pgTable("story_settings", {
   translateEnabled: boolean("translate_enabled").notNull().default(false),
   translateTargetLang: text("translate_target_lang").notNull().default("ru"),
   translateScope: text("translate_scope")
-    .$type<"all" | "assistant" | "user">()
+    .$type<TranslateScope>()
     .notNull()
     .default("assistant"),
   autoTranslateScope: text("auto_translate_scope")
-    .$type<"none" | "all" | "assistant" | "user">()
+    .$type<AutoTranslateScope>()
     .notNull()
     .default("none"),
   // Метод перевода закэшированных сообщений — зеркало chatSettings.translateMethod.
-  translateMethod: text("translate_method").$type<"google" | "ai">().notNull().default("google"),
+  translateMethod: text("translate_method").$type<PromptTranslateEngine>().notNull().default("google"),
   // Сжатие истории (compact). compactEnabled — мастер-тумблер чата (вместе с компонентом compact
   // шаблона гейтит и создание, и применение пересказов). compactAutoEnabled — авто-триггер по лимиту.
   // compactFloorTokens — целевой «пол» в токенах (0 = не задано → round(contextSize*0.7) на использовании).

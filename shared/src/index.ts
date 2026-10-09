@@ -11,3 +11,5 @@ export * from "./translate.js";
 export * from "./avatars.js";
 export * from "./me.js";
 export * from "./knowledge-books.js";
+export * from "./rp-chat.js";
+export * from "./sse.js";

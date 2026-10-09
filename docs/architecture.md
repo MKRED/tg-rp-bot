@@ -111,6 +111,13 @@ shared/src/
   narrator-templates.ts — NarratorTemplateInput, NarratorTemplateListItem, StoryPromptComponentId/
                   StoryPromptOrderItem, DEFAULT_NARRATOR_PROMPT_ORDER, TRANSLATION_REASONING_LEVELS,
                   DEFAULT_TRANSLATION_REASONING_EFFORT, MAX_NARRATOR_TEMPLATES_PER_USER
+  …            — по файлу на каждый перенесённый домен (cards, settings, debug, translate, avatars, me,
+                  knowledge-books)
+  rp-chat.ts    — RP-чат: ChatListItem/ChatDetail/MessageInPath/TreeNode, ChatSettings (TRANSLATE_SCOPES,
+                  AUTO_TRANSLATE_SCOPES), ChatStats, ImpersonationVariant, тела запросов; лимиты
+                  (страница списка, длина названия, MAX_IMPERSONATION_VARIANTS)
+  sse.ts        — SSE_EVENTS (token/reset/userMessage/status/done/error) + данные token/error —
+                  общие для стримов RP-чата и narrator
 ```
 Контракт API (то, что ходит JSON'ом) и общие константы bot ↔ webapp. Собирается `tsc` (`nodenext`)
 в `shared/dist` (`.js` + `.d.ts`), оба пакета подключают его как зависимость workspace и читают

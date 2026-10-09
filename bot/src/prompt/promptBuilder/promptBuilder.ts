@@ -1,5 +1,5 @@
+import type { MessageInPath } from "@tg-rp-bot/shared";
 import type { GenerationPreset, PromptComponentId } from "../../db/schema.js";
-import type { MessageInPath } from "../../db/chats/index.js";
 import type { ChatMessage } from "../../llm/types.js";
 import { countTokens } from "../../utils/index.js";
 import { DEFAULT_OUTPUT_RESERVE, PER_MESSAGE_OVERHEAD, trimHistoryToBudget } from "../budget.js";

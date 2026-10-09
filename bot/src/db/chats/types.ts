@@ -1,57 +1,15 @@
-// Публичные типы домена чатов (раскладка db/chats/ по обязанностям).
+// Публичные типы домена чатов (раскладка db/chats/ по обязанностям). То, что уходит в webapp по
+// сети, — контракт API из @tg-rp-bot/shared.
+import type { ChatSettings } from "@tg-rp-bot/shared";
 
+export type { ChatDetail, ChatListItem, MessageInPath, TreeNode } from "@tg-rp-bot/shared";
+
+/** Аргумент DAO createChat (выбранное приветствие передаётся отдельно, уже текстом). */
 export type ChatInput = {
   characterId: number;
   personaId: number;
   templateId: number;
   presetId: number;
-};
-
-/**
- * Одно сообщение активного пути с информацией о сиблингах.
- * siblings — упорядоченные ID сиблингов (created_at ASC), нужны стрелкам ← → в UI.
- */
-export type MessageInPath = {
-  id: number;
-  parentId: number | null;
-  role: "user" | "assistant";
-  content: string;
-  translations: Record<string, string> | null;
-  createdAt: string;
-  siblingIndex: number;
-  siblingCount: number;
-  siblings: number[];
-};
-
-export type ChatDetail = {
-  id: number;
-  title: string | null;
-  character: { id: number; name: string; hasImage: boolean };
-  persona: { id: number; name: string; hasImage: boolean } | null;
-  template: { id: number; name: string } | null;
-  preset: { id: number; name: string } | null;
-  activeMessageId: number | null;
-  messages: MessageInPath[];
-};
-
-export type ChatListItem = {
-  id: number;
-  title: string | null;
-  character: { id: number; name: string; hasImage: boolean };
-  persona: { id: number; name: string } | null;
-  lastMessage: string | null;
-  lastMessageAt: string | null;
-  messageCount: number;
-  createdAt: string;
-};
-
-export type TreeNode = {
-  id: number;
-  parentId: number | null;
-  role: "user" | "assistant";
-  content: string;
-  isOnActivePath: boolean;
-  createdAt: string;
 };
 
 /** Оценка объёма чата в токенах: весь чат (все ветки) и текущая активная ветка. */
@@ -60,10 +18,4 @@ export type ChatTokenStats = {
   tokensActiveBranch: number;
 };
 
-export type ChatSettingsRow = {
-  translateEnabled: boolean;
-  translateTargetLang: string;
-  translateScope: "all" | "assistant" | "user";
-  autoTranslateScope: "none" | "all" | "assistant" | "user";
-  translateMethod: "google" | "ai";
-};
+export type ChatSettingsRow = ChatSettings;

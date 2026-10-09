@@ -1,3 +1,10 @@
+import {
+  type ChatTranslateTextRequest,
+  SSE_EVENTS,
+  type SseErrorData,
+  type SseTokenData,
+  type TranslationResponse,
+} from "@tg-rp-bot/shared";
 import { apiFetch } from "../../../shared/api/client";
 import type { ImpersonationVariant } from "../types/chat";
 import { readSSE } from "./sse";
@@ -27,9 +34,9 @@ export async function translateText(
   text: string,
   targetLang: string,
 ): Promise<string> {
-  const res = await apiFetch<{ translation: string }>(`/chats/${chatId}/translate-text`, {
+  const res = await apiFetch<TranslationResponse>(`/chats/${chatId}/translate-text`, {
     method: "POST",
-    body: JSON.stringify({ text, targetLang }),
+    body: JSON.stringify({ text, targetLang } satisfies ChatTranslateTextRequest),
   });
   return res.translation;
 }
@@ -54,14 +61,14 @@ export async function streamImpersonate(
     `/chats/${chatId}/impersonate`,
     {},
     (event, data) => {
-      if (event === "token") {
-        events.onToken?.(data.text as string);
-      } else if (event === "reset") {
+      if (event === SSE_EVENTS.token) {
+        events.onToken?.((data as unknown as SseTokenData).text);
+      } else if (event === SSE_EVENTS.reset) {
         events.onReset?.();
-      } else if (event === "done") {
+      } else if (event === SSE_EVENTS.done) {
         events.onDone?.(data.variant as unknown as ImpersonationVariant);
-      } else if (event === "error") {
-        events.onError?.(data.message as string);
+      } else if (event === SSE_EVENTS.error) {
+        events.onError?.((data as unknown as SseErrorData).message);
       }
     },
     (message) => events.onError?.(message),

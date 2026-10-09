@@ -1,4 +1,5 @@
 import { Caption, Spinner, Subheadline, Text } from "@telegram-apps/telegram-ui";
+import type { PromptTranslateEngine } from "@tg-rp-bot/shared";
 import { motion } from "framer-motion";
 import { Eraser, Languages, SendHorizontal, X } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
@@ -9,7 +10,7 @@ import { useComposeTranslate, type ComposeTranslateParams } from "../../hooks/us
 import "./TranslateSheet.css";
 
 /** Режим перевода черновика: обычный Google Translate либо запрос к нейросети. */
-export type TranslateMode = "google" | "ai";
+export type TranslateMode = PromptTranslateEngine;
 
 interface TranslateSheetProps {
   /** Функция перевода черновика (RP → /chats/:id, narrator → /stories/:id). */

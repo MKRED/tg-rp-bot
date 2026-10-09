@@ -1,13 +1,14 @@
+import type { ChatListResponse, RenameChatRequest } from "@tg-rp-bot/shared";
 import { apiFetch } from "../../../shared/api/client";
-import type { ChatCreated, ChatDetail, ChatInput, ChatListItem } from "../types/chat";
+import type { ChatCreated, ChatDetail, ChatInput } from "../types/chat";
 
 // ─── Список чатов ──────────────────────────────────────────────────────────────
 
 export function listChats(
   page: number,
   pageSize: number,
-): Promise<{ items: ChatListItem[]; total: number }> {
-  return apiFetch<{ items: ChatListItem[]; total: number }>(
+): Promise<ChatListResponse> {
+  return apiFetch<ChatListResponse>(
     `/chats?page=${page}&pageSize=${pageSize}`,
   );
 }
@@ -30,12 +31,12 @@ export async function getChat(id: number): Promise<ChatDetail> {
 
 /**
  * Переименовать чат. Пустая строка очищает название (UI вернётся к имени персонажа).
- * Сервер обрезает title до 100 символов; возвращает применённое значение.
+ * Сервер обрезает title до MAX_CHAT_TITLE_LENGTH символов; возвращает применённое значение.
  */
 export async function renameChat(id: number, title: string): Promise<string | null> {
   const res = await apiFetch<{ title: string | null }>(`/chats/${id}`, {
     method: "PATCH",
-    body: JSON.stringify({ title }),
+    body: JSON.stringify({ title } satisfies RenameChatRequest),
   });
   return res.title;
 }

@@ -1,3 +1,4 @@
+import type { ChatTranslateTextRequest, TranslationResponse } from "@tg-rp-bot/shared";
 import { apiFetch } from "../../../shared/api/client";
 import type { TranslateMode } from "../../../shared/components/TranslateSheet";
 
@@ -9,9 +10,9 @@ export async function composeTranslate(
   chatId: number,
   params: { text: string; targetLang: string; mode: TranslateMode },
 ): Promise<string> {
-  const res = await apiFetch<{ translation: string }>(`/chats/${chatId}/translate-text`, {
+  const res = await apiFetch<TranslationResponse>(`/chats/${chatId}/translate-text`, {
     method: "POST",
-    body: JSON.stringify(params),
+    body: JSON.stringify(params satisfies ChatTranslateTextRequest),
   });
   return res.translation;
 }

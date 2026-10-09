@@ -1,3 +1,11 @@
+import {
+  SSE_EVENTS,
+  type SendMessageRequest,
+  type SseErrorData,
+  type SseTokenData,
+  type TranslateMessageRequest,
+  type TranslationResponse,
+} from "@tg-rp-bot/shared";
 import { apiFetch } from "../../../shared/api/client";
 import type { MessageInPath } from "../types/chat";
 import { readSSE } from "./sse";
@@ -17,16 +25,16 @@ function dispatchSendEvent(
   event: string,
   data: Record<string, unknown>,
 ): void {
-  if (event === "userMessage") {
+  if (event === SSE_EVENTS.userMessage) {
     events.onUserMessage?.(data as unknown as MessageInPath);
-  } else if (event === "token") {
-    events.onToken?.(data.text as string);
-  } else if (event === "reset") {
+  } else if (event === SSE_EVENTS.token) {
+    events.onToken?.((data as unknown as SseTokenData).text);
+  } else if (event === SSE_EVENTS.reset) {
     events.onReset?.();
-  } else if (event === "done") {
+  } else if (event === SSE_EVENTS.done) {
     events.onDone?.(data as unknown as MessageInPath);
-  } else if (event === "error") {
-    events.onError?.(data.message as string);
+  } else if (event === SSE_EVENTS.error) {
+    events.onError?.((data as unknown as SseErrorData).message);
   }
 }
 
@@ -41,7 +49,7 @@ export async function sendMessage(
 ): Promise<void> {
   await readSSE(
     `/chats/${chatId}/messages`,
-    { content },
+    { content } satisfies SendMessageRequest,
     (event, data) => dispatchSendEvent(events, event, data),
     (message) => events.onError?.(message),
   );
@@ -55,7 +63,7 @@ export async function editMessage(
 ): Promise<void> {
   await readSSE(
     `/chats/${chatId}/messages/${messageId}/edit`,
-    { content },
+    { content } satisfies SendMessageRequest,
     (event, data) => dispatchSendEvent(events, event, data),
     (message) => events.onError?.(message),
   );
@@ -94,9 +102,10 @@ export async function translateMessage(
   targetLang: string,
   opts?: { force?: boolean },
 ): Promise<string> {
-  const res = await apiFetch<{ translation: string }>(
+  const body: TranslateMessageRequest = { targetLang, force: opts?.force ?? false };
+  const res = await apiFetch<TranslationResponse>(
     `/chats/${chatId}/messages/${messageId}/translate`,
-    { method: "POST", body: JSON.stringify({ targetLang, force: opts?.force ?? false }) },
+    { method: "POST", body: JSON.stringify(body) },
   );
   return res.translation;
 }

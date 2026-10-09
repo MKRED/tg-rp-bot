@@ -1,4 +1,4 @@
-import type { MessageInPath } from "../../db/chats/index.js";
+import type { MessageInPath } from "@tg-rp-bot/shared";
 import type { PromptOrderItem } from "../../db/schema.js";
 import type { TrimInfo } from "../budget.js";
 

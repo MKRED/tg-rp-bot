@@ -1,3 +1,11 @@
+import {
+  AUTO_TRANSLATE_SCOPES,
+  DEFAULT_CHATS_PAGE_SIZE,
+  MAX_CHAT_TITLE_LENGTH,
+  MAX_CHATS_PAGE_SIZE,
+  PROMPT_TRANSLATE_ENGINES,
+  TRANSLATE_SCOPES,
+} from "@tg-rp-bot/shared";
 import { Hono } from "hono";
 import {
   createChat,
@@ -41,7 +49,10 @@ export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
   app.get("/", async (c) => {
     const userId = c.get("tgUser")!.id;
     const page = Math.max(1, Number(c.req.query("page") ?? 1));
-    const pageSize = Math.min(50, Math.max(1, Number(c.req.query("pageSize") ?? 20)));
+    const pageSize = Math.min(
+      MAX_CHATS_PAGE_SIZE,
+      Math.max(1, Number(c.req.query("pageSize") ?? DEFAULT_CHATS_PAGE_SIZE)),
+    );
     const { items, total } = await listChats(userId, page, pageSize);
     return c.json({ items, total, page, pageSize });
   });
@@ -110,7 +121,7 @@ export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
       return c.json({ error: "title must be a string" }, 400);
     }
     // Ограничиваем длину названия, чтобы не раздувать список/шапку
-    const title = body.title.slice(0, 100);
+    const title = body.title.slice(0, MAX_CHAT_TITLE_LENGTH);
 
     const result = await renameChat(userId, chatId, title);
     if (!result) return c.json({ error: "Chat not found" }, 404);
@@ -173,13 +184,13 @@ export function createChatRoutes(): Hono<{ Variables: AppVariables }> {
     const patch: Record<string, unknown> = {};
     if (typeof body.translateEnabled === "boolean") patch.translateEnabled = body.translateEnabled;
     if (typeof body.translateTargetLang === "string") patch.translateTargetLang = body.translateTargetLang;
-    if (["all", "assistant", "user"].includes(body.translateScope as string)) {
+    if ((TRANSLATE_SCOPES as readonly unknown[]).includes(body.translateScope)) {
       patch.translateScope = body.translateScope;
     }
-    if (["none", "all", "assistant", "user"].includes(body.autoTranslateScope as string)) {
+    if ((AUTO_TRANSLATE_SCOPES as readonly unknown[]).includes(body.autoTranslateScope)) {
       patch.autoTranslateScope = body.autoTranslateScope;
     }
-    if (["google", "ai"].includes(body.translateMethod as string)) {
+    if ((PROMPT_TRANSLATE_ENGINES as readonly unknown[]).includes(body.translateMethod)) {
       patch.translateMethod = body.translateMethod;
     }
 

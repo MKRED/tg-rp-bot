@@ -1,9 +1,9 @@
 import { and, desc, eq, isNull, notInArray, sql, type SQL } from "drizzle-orm";
+import { MAX_IMPERSONATION_VARIANTS } from "@tg-rp-bot/shared";
 import logger from "../../logger.js";
 import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/index.js";
 import { db, schema } from "../index.js";
 import type { ImpersonationVariant } from "../schema.js";
-import { MAX_VARIANTS_PER_MOMENT } from "./impersonations.constants.js";
 
 /**
  * Фильтр «момента» = (chatId, parentMessageId). parentMessageId === null требует isNull,
@@ -16,7 +16,7 @@ function momentFilter(chatId: number, parentMessageId: number | null): SQL {
     : and(eq(v.chatId, chatId), eq(v.parentMessageId, parentMessageId))!;
 }
 
-/** Варианты момента, свежие сверху (не более MAX_VARIANTS_PER_MOMENT). content расшифрован per-user. */
+/** Варианты момента, свежие сверху (не более MAX_IMPERSONATION_VARIANTS). content расшифрован per-user. */
 export async function listVariants(
   userId: number,
   chatId: number,
@@ -28,7 +28,7 @@ export async function listVariants(
     .from(v)
     .where(momentFilter(chatId, parentMessageId))
     .orderBy(desc(v.createdAt))
-    .limit(MAX_VARIANTS_PER_MOMENT);
+    .limit(MAX_IMPERSONATION_VARIANTS);
   const key = getUserEncryptionKey(userId);
   return rows.map((r) => ({ ...r, content: decryptField(r.content, key) }));
 }
@@ -60,7 +60,7 @@ export async function insertVariant(
     .from(v)
     .where(momentFilter(chatId, parentMessageId))
     .orderBy(desc(v.createdAt))
-    .limit(MAX_VARIANTS_PER_MOMENT);
+    .limit(MAX_IMPERSONATION_VARIANTS);
   const deleted = await db
     .delete(v)
     .where(and(momentFilter(chatId, parentMessageId), notInArray(v.id, keep.map((r) => r.id))))

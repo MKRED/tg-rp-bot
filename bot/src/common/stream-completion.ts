@@ -1,3 +1,4 @@
+import { SSE_EVENTS, type SseErrorData, type SseTokenData } from "@tg-rp-bot/shared";
 import { chatCompletion } from "../llm/client.js";
 import { MissingApiKeyError } from "../llm/errors.js";
 import type { ChatCompletionOptions, ChatCompletionResult } from "../llm/types.js";
@@ -30,11 +31,12 @@ export function streamCompletion(
       ? (token) => {
           // Запись внутри callback — fire-and-forget (не ждём промис): клиент мог уйти, генерацию
           // это не прерывает — ответ всё равно сохранится.
-          sink.writeSSE({ event: "token", data: JSON.stringify({ text: token }) }).catch(() => {});
+          const data: SseTokenData = { text: token };
+          sink.writeSSE({ event: SSE_EVENTS.token, data: JSON.stringify(data) }).catch(() => {});
         }
       : undefined,
     // Перед ретраем пустого/отказного ответа — просим клиента стереть показанный текст.
-    doStream ? () => sink.writeSSE({ event: "reset", data: "{}" }).catch(() => {}) : undefined,
+    doStream ? () => sink.writeSSE({ event: SSE_EVENTS.reset, data: "{}" }).catch(() => {}) : undefined,
   );
 }
 
@@ -45,5 +47,6 @@ export function streamCompletion(
 export async function writeGenerationError(sink: SseSink, err: unknown): Promise<void> {
   const message =
     err instanceof MissingApiKeyError ? err.message : "Не удалось сгенерировать ответ. Попробуйте ещё раз.";
-  await sink.writeSSE({ event: "error", data: JSON.stringify({ message }) });
+  const data: SseErrorData = { message };
+  await sink.writeSSE({ event: SSE_EVENTS.error, data: JSON.stringify(data) });
 }
