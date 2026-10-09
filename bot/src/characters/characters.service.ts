@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { type CharacterInput, type CharacterListItem, MAX_CHARACTERS_PER_USER } from "@tg-rp-bot/shared";
 import type { Character } from "../db/schema.js";
-import { isFkViolation } from "../server/shared/fkViolation.js";
+import { isFkViolation } from "../common/fk-violation.js";
 import { found } from "../common/found.js";
 import { CharactersRepository } from "./characters.repository.js";
 

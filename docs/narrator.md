@@ -26,10 +26,11 @@ RP-чата), переиспользуя только реально переи�
   `compactAutoEnabled`/`compactFloorTokens`/`compactWords`, зеркало `chat_settings`) +
   `story_compactions` (пересказы сжатых сообщений — см. раздел compact ниже).
 - **Сервер:** Nest-модуль `narrator-templates/` (CRUD шаблонов; `db/narratorTemplates/` — временный
-  мост `getNarratorTemplate` для stories), `db/knowledge/`, `db/stories/` (зеркало `db/chats/`,
+  мост `getNarratorTemplate` для stories), Nest-модуль `knowledge-books/` (книги и записи; `db/knowledge/` —
+  временный мост `getBook`/`getActiveEntriesForPrompt` для stories), `db/stories/` (зеркало `db/chats/`,
   вкл. `settings.ts` и `crypto.ts` — расшифровка кэша переводов); `server/prompt/storyPromptBuilder/`
   (+тест), `server/stories/story.handlers.ts` (вкл. перевод бита/директивы через `googleTranslate`) +
-  контроллер `server/stories/stories.controller.ts`, домены-роуты `books/`/`stories/`
+  контроллер `server/stories/stories.controller.ts`, домен-роут `stories/`
   (у `stories` — `settings` GET/PUT + `messages/:id/translate`).
 - **Webapp:** фичи `narrator`/`knowledge-books`/`narrator-templates`, страницы `pages/narrator/*`,
   `pages/knowledge-books/*`, `pages/narrator-templates/*`; кнопки на главной (Режим игры + Библиотека).

@@ -2,7 +2,7 @@ import { DatabaseService } from "../../database/database.service.js";
 import { PersonasRepository } from "../../personas/personas.repository.js";
 
 /**
- * ВРЕМЕННЫЙ мост для legacy Hono-кода (books, chats), которому ещё нужна персона: тот же
+ * ВРЕМЕННЫЙ мост для legacy Hono-кода (chats), которому ещё нужна персона: тот же
  * PersonasRepository, что в Nest. Удаляется, когда эти домены переедут на Nest и получат
  * репозиторий через DI (PersonasModule его экспортирует).
  */

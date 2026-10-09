@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { MAX_PERSONAS_PER_USER, type PersonaInput, type PersonaListItem } from "@tg-rp-bot/shared";
 import type { Persona } from "../db/schema.js";
-import { isFkViolation } from "../server/shared/fkViolation.js";
+import { isFkViolation } from "../common/fk-violation.js";
 import { found } from "../common/found.js";
 import { PersonasRepository } from "./personas.repository.js";
 

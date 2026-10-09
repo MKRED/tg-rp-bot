@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { MAX_PRESETS_PER_USER, type PresetInput, type PresetListItem } from "@tg-rp-bot/shared";
 import type { GenerationPreset } from "../db/schema.js";
-import { isFkViolation } from "../server/shared/fkViolation.js";
+import { isFkViolation } from "../common/fk-violation.js";
 import { found } from "../common/found.js";
 import { PresetsRepository } from "./presets.repository.js";
 

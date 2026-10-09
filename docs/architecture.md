@@ -21,7 +21,7 @@ bot/src/
   database/     — DatabaseModule (@Global) + DatabaseService поверх drizzle-клиента из db/index.ts
   users/        — UsersService.ensureTelegramUser (upsert строки users, кэш на процесс)
   common/       — ApiExceptionFilter (ошибки → { error }), createValidationPipe, found() (undefined → 404),
-                  image-limits (лимиты полей-картинок data URL),
+                  image-limits (лимиты полей-картинок data URL), fk-violation (FK 23503 → 409 in_use),
                   decorators/ (IsDataImageUrl — поле-картинка data URL с лимитом; IsOptionalNote — сноска, пусто → null)
   characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ — доменные модули Nest: controller / service / repository (бывший DAO) / dto/;
                   у cards/ ещё card-lock.ts (лок карточки, общий для PUT и генерации) и generation/ — поблочная
@@ -39,6 +39,11 @@ bot/src/
   avatars/      — POST /api/avatars/batch: батч-резолв картинок персонажей/персон для AvatarStack
                   (см. ниже) — controller / service (лимит батча) / repository / dto/ (некорректные
                   дескрипторы молча выпадают)
+  knowledge-books/ — /api/books: книги знаний (lorebook) narrator-режима — books/ (CRUD, лимит книг,
+                  409 in_use) и entries/ (записи книги: ссылка на своего персонажа/персону с alias или
+                  свободный текст; лимит, reorder — только полная перестановка, entry-alias, entries-order;
+                  entries-prompt.repository — записи для промпта истории); у каждой controller/service/
+                  repository/dto/; персонажи и персоны — через DI (CharactersModule, PersonasModule)
   me/           — /api/me: профиль из initData, фото профиля (GET /photo) и фото из лайтбокса себе в
                   чат (POST /send-photo) — controller / service / dto/; media/ — profilePhoto (Bot API +
                   кэш на час) и photoToChat (sendPhoto с web_app-кнопкой deep link и «Закрыть»)
@@ -56,11 +61,12 @@ bot/src/
                   DAO-папки по таблицам: characters/ personas/ presets/ rpTemplates/ narratorTemplates/
                   impersonations/ (characters/ personas/ presets/ rpTemplates/ narratorTemplates/ —
                   временные мосты getCharacter/getPersona/getPreset/getRpTemplate/getNarratorTemplate
-                  на репозитории Nest для ещё не перенесённых books/chats/stories), settings/ (мост
+                  на репозитории Nest для ещё не перенесённых chats/stories), settings/ (мост
                   getDecryptedDeepSeekCredentials для resolveProvider) (у каждой DAO-файл + types.ts/constants.ts при наличии + barrel index.ts;
                   типы контракта API перенесённых в Nest доменов — из @tg-rp-bot/shared),
                   chats/ stories/ (+ storyAvatars.ts — LATERAL-фрагмент топ-N аватаров книги знаний
-                  для карточки истории) knowledge/ (деревья/лорбук), users.ts
+                  для карточки истории) knowledge/ (мост getBook/getActiveEntriesForPrompt на репозитории
+                  knowledge-books/ для stories), users.ts
   llm/          — LLM client (client/request/errors/types/constants/completionGuard/providers/
                   resolveProvider/deepseekModels) — серверно; единственный активный провайдер —
                   DeepSeek, ключ/модель резолвятся per-user через resolveProvider(userId) из
@@ -76,13 +82,12 @@ bot/src/
                   legacyBridge.ts — express-middleware, отдающий в Hono всё вне NEST_ROUTE_PREFIXES;
                   index=createLegacyApp,
                   routes.ts — карта эндпоинтов (монтаж контроллеров), middleware/ (initData — валидация
-                  подписи), доменные папки books/
-                  chats/ stories/ — у каждого
+                  подписи), доменные папки chats/ stories/ — у каждого
                   <домен>.controller.ts (Hono-роуты) + validation/
                   constants/types рядом + barrel index.ts; chats/ — messages.handlers + impersonate.handlers
                   + stats.handler; stories/ — story.handlers (SSE-генерация RP/narrator); prompt/ —
                   promptBuilder + storyPromptBuilder + общий budget (у каждого constants/types/test рядом);
-                  shared/ — fkViolation, streamGeneration, apiError (переиспользуемое между доменами)
+                  shared/ — streamGeneration, apiError (переиспользуемое между доменами)
                   + раздача собранной статики Mini App из ./public (SPA-fallback) — один процесс
   scripts/      — разовые скрипты (backfill-message-encryption)
   utils/        — retry, crypto (per-user шифрование сообщений), concurrency (runWithConcurrency —

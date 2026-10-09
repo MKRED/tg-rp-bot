@@ -1,3 +1,4 @@
+import type { ReorderEntriesRequest } from "@tg-rp-bot/shared";
 import { apiFetch } from "../../../shared/api/client";
 import type { Book, BookInput, BookListItem, Entry, EntryInput } from "../types/book";
 
@@ -49,6 +50,6 @@ export function removeEntry(bookId: number, entryId: number): Promise<{ ok: true
 export function reorderEntries(bookId: number, orderedIds: number[]): Promise<{ ok: true }> {
   return apiFetch<{ ok: true }>(`/books/${bookId}/entries/reorder`, {
     method: "PUT",
-    body: JSON.stringify({ order: orderedIds }),
+    body: JSON.stringify({ order: orderedIds } satisfies ReorderEntriesRequest),
   });
 }

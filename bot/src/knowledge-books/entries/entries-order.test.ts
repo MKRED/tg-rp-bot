@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPermutationOf } from "./entriesOrder.js";
+import { isPermutationOf } from "./entries-order.js";
 
 describe("isPermutationOf", () => {
   it("принимает ту же перестановку", () => {

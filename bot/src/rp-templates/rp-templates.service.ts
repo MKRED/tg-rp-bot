@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { MAX_RP_TEMPLATES_PER_USER, type RpTemplateInput, type RpTemplateListItem } from "@tg-rp-bot/shared";
 import type { RpTemplate } from "../db/schema.js";
 import { templateTokenWeight } from "../server/prompt/templateTokenWeight.js";
-import { isFkViolation } from "../server/shared/fkViolation.js";
+import { isFkViolation } from "../common/fk-violation.js";
 import { found } from "../common/found.js";
 import { RpTemplatesRepository } from "./rp-templates.repository.js";
 

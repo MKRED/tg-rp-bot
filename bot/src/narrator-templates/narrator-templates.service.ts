@@ -7,7 +7,7 @@ import {
 import type { NarratorTemplate } from "../db/schema.js";
 import { normalizeStoryPromptOrder } from "../server/prompt/storyPromptOrder.js";
 import { templateTokenWeight } from "../server/prompt/templateTokenWeight.js";
-import { isFkViolation } from "../server/shared/fkViolation.js";
+import { isFkViolation } from "../common/fk-violation.js";
 import { found } from "../common/found.js";
 import { NarratorTemplatesRepository } from "./narrator-templates.repository.js";
 

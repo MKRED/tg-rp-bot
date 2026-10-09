@@ -10,3 +10,4 @@ export * from "./debug.js";
 export * from "./translate.js";
 export * from "./avatars.js";
 export * from "./me.js";
+export * from "./knowledge-books.js";
