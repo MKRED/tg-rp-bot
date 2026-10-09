@@ -89,6 +89,20 @@ lib/        — чистые хелперы и данные (форматтер�
 ```
 Категории без файлов не заводим.
 
+Правила раскладки (pages vs features, barrel, импорты внутри фичи) — в CLAUDE.md → «webapp — mandatory».
+Пример потребителя: `import { CharacterForm, useCharacter } from "../../features/characters"`.
+
+### Роутер и deep-link
+- **`HashRouter`** (react-router-dom): маршрут в hash переживает reload. Нативная кнопка «Назад» Telegram
+  связана с роутером в `app/BackButtonBridge.tsx` — `navigate(parentPath(...))`, т.е. вверх по иерархии,
+  а не по истории. Catch-all `*` → главная: на Telegram Web launch-параметры приходят в hash, и без
+  редиректа роутер показал бы пустой экран.
+- **Deep-link из бота** (`app/deepLink.ts` + `main.tsx`): web_app-кнопка под фото из лайтбокса открывает
+  Mini App с `?dl=<путь>` (напр. `/characters/123`). `resolveDeepLink()` вызывается **до** `render()`
+  (после `initTelegram()`, который уже считал launch-данные из hash) и переписывает hash на маршрут —
+  иначе catch-all успел бы увести на главную. Делать это в компоненте внутри роутера НЕЛЬЗЯ: эффект
+  `<Navigate>` из catch-all в том же flush перебьёт переход.
+
 ---
 
 ## Прокси для Telegram и Tavily — детали

@@ -32,13 +32,13 @@ CWD со строчной буквой диска (`d:/…`), и пул `forks` 
 
 **Артефакт B — холодный флейк пула `forks` (0 passed).** vitest падает на инициализации воркера —
 `Cannot read properties of undefined (reading 'config')` / «Vitest failed to find the runner», **0 passed**.
-Per CLAUDE.md это задокументированный флейк: «Vite's cold dep-optimizer occasionally fails the first run».
+Это задокументированный флейк (docs/testing.md → «Pool `forks` — намеренно»): холодный dep-optimizer Vite иногда валит первый прогон.
 **Первая и единственная реакция — просто перезапустить `yarn test` (1 раз, максимум 2).** На втором прогоне
 пул прогревается и suite проходит штатно за секунды.
 - **НЕ** реагируй на это `yarn install` / `yarn install --check-files` / cold-reinstall — это минуты впустую,
   а зависимости тут ни при чём (доказательство: повторный прогон сразу зелёный).
 - **НЕ** предлагай менять `pool: "forks"` на `threads` в `vitest.config.ts`. `forks` выбран **намеренно**
-  (инвариант CLAUDE.md): на Windows именно `threads` флейчит на холодную, `forks` детерминирует прогон.
+  (инвариант CLAUDE.md, подробности — docs/testing.md): на Windows именно `threads` флейчит на холодную, `forks` детерминирует прогон.
 - Реальный битый peer-dep `vite` (см. ниже) отличается тем, что **переживает перезапуск**: 0 passed и на
   втором, и на третьем прогоне. Только тогда — `yarn install`.
 

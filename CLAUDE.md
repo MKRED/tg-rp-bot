@@ -1,177 +1,117 @@
 # tg-rp-bot — Claude Code Instructions
 
-## Субагенты проекта (`.claude/agents/`)
-Специализированные агенты — используй их вместо ручной работы, когда задача под них подходит. Совет
-по подходу/архитектуре, застревание на повторяющейся ошибке и проверка перед «задача выполнена» —
-через встроенный **`advisor`** tool Claude Code (не субагент проекта), см. правила его использования
-в системном промпте.
+## Language
+- **Talk to the user in Russian.**
+- **Code comments, commit descriptions, and `docs/` / README are written in Russian.** This file is in
+  English for compactness; keep it English when editing.
 
-| Агент | Когда звать | Правит код? |
-|---|---|---|
-| **`test-runner`** | Гейт тестов+сборки перед коммитом/деплоем (см. «Задеплой» — **mandatory** там) | да, по запросу |
-| **`code-reviewer`** | Ревью текущего диффа перед коммитом (конвенции + корректность) | нет |
-| **`docs-updater`** | Актуализация README/CLAUDE.md после заметных правок кода | да |
-| **`bug-investigator`** | Найти корень бага по симптому (трассировка + прод-логи) | нет |
-| **`codebase-explorer`** | «Где у меня X / как устроено Y» без дампа файлов в контекст | нет |
-| **`log-analyzer`** | Разбор прод-логов бота из Docker по SSH | нет |
-| **`web-researcher`** | Свежая инфа извне (доки библиотек, внешние API, модели LLM-провайдера) | нет |
-
-## Package manager
-Always use **yarn**. Never use npm.
-
-## Монорепо (Yarn workspaces)
-Проект — монорепо из двух workspace-пакетов:
-- **`bot/`** — Telegram-бот (grammY) + HTTP API для Mini App (Hono). Node 24, native ESM.
+## Project
+Yarn-workspaces monorepo:
+- **`bot/`** — Telegram bot (grammY) + HTTP API for the Mini App (Hono). Node 24, native ESM.
 - **`webapp/`** — Telegram Mini App (React + Vite).
 
-Корневой `package.json` — только менеджер workspaces + сквозные скрипты (`yarn dev`, `yarn test`, `yarn build`).
+Root `package.json` only manages workspaces + cross-package scripts. Production is one Docker container
+serving both the API and the Mini App static files ([docs/deploy.md](docs/deploy.md)).
 
-## Module system
-**Важно:** правила ниже относятся к **`bot/`** (Node ESM). В **`webapp/`** (Vite/React, `moduleResolution: bundler`) импорты пишутся БЕЗ расширений (`./App`, не `./App.js`).
+## ⚠️ Critical invariants — never violate
+- **There is no dev database.** `DATABASE_URL` in `bot/.env` points to the **production Postgres via an
+  SSH tunnel**. Running the bot locally, `drizzle-kit generate/migrate`, ad-hoc queries — all hit prod
+  data. Migrations are forward-only; be careful with destructive operations. The tunnel must be up
+  before `yarn dev` / `drizzle-kit`.
+- **Proxy only for services unreachable from the server network:** Telegram (`bot.ts` →
+  `baseFetchConfig.agent`, HttpsProxyAgent) and Tavily (`tavily/tavilyUsage.ts`, undici ProxyAgent),
+  both via `TELEGRAM_PROXY_URL`. **NEVER** set a global proxy (`HTTPS_PROXY` / `ALL_PROXY`) — it would
+  route LLM traffic through it too. Why `agent` and not `dispatcher` — [docs/architecture.md](docs/architecture.md).
+- **LLM/Tavily keys are server-side, per-user (BYOK).** Stored encrypted in `user_settings`
+  (`ENCRYPTION_KEY`), never sent to the browser; no fallback to a shared/env key. Generation goes through
+  the bot's HTTP API, not from the webapp directly. Details — [docs/llm.md](docs/llm.md).
+- **Mini App auth:** webapp → `/api/*` requests carry signed `initData` (`Authorization: tma …`), the
+  server verifies HMAC with **`@tma.js/init-data-node`** (NOT `@telegram-apps/*`) — [docs/architecture.md](docs/architecture.md).
+- **Narrator: the prompt array must not start with `assistant`.** A synthetic leading-user is inserted
+  before the root (openingBeat); played user turns are neutralized into `CONTINUE_MARKER` (except the
+  last). Easy to break when editing `storyPromptBuilder` — read [docs/narrator.md](docs/narrator.md) first.
+- **Commit/push only on explicit request.** Commits go straight to `main` unless asked for a branch.
 
-`bot/` — **native ESM** (`"type": "module"`, tsconfig `module`/`moduleResolution: nodenext`).
-- Every **relative** import/export MUST carry an explicit `.js` extension — even though the source file is `.ts`. Example: `import { config } from "../config.js";`
-- Importing a directory does **not** work — point at the barrel file explicitly: `import { X } from "../utils/index.js";`
-- Bare package imports (`grammy`, `drizzle-orm`, …) stay extensionless as usual.
-
-## Dev workflow
-Команды запускаются из корня монорепо. Drizzle-kit работает в контексте `bot/`.
-
-**Окружение разработки — Windows** (shell — Git Bash / POSIX sh). Не предлагай unix-only команды
-(`pkill`, `lsof`, `kill $(...)`); стоп бота — `Stop-Process -Name "node"` (PowerShell).
+## Commands
+Run from the monorepo root. Dev environment is **Windows** (Bash tool = Git Bash). Don't suggest
+unix-only commands (`pkill`, `lsof`, `kill $(...)`).
 
 ```
 yarn dev           # start bot (= yarn workspace bot dev) — run in background
 yarn dev:web       # start Mini App (Vite dev server)
-yarn dev:all       # both at once in one terminal (concurrently) — Ctrl+C stops both. Бот БЕЗ watch (tsx, не tsx watch) — на Windows tsx watch намертво виснет под concurrently
-Stop-Process -Name "node"  # stop bot
-yarn workspace bot drizzle-kit generate  # generate migration from schema changes
-yarn workspace bot drizzle-kit migrate   # apply migrations to DB
-yarn test          # run bot + webapp unit tests once (vitest run)
-yarn test:watch    # run bot tests in watch mode
-cd bot && yarn vitest run src/path/file.test.ts   # один файл (отладка); webapp — cd webapp
+yarn dev:all       # both via concurrently; bot WITHOUT watch (tsx watch hangs under concurrently on Windows)
+Stop-Process -Name "node"                # stop bot (PowerShell)
+yarn workspace bot drizzle-kit generate  # migration from schema changes
+yarn workspace bot drizzle-kit migrate   # apply migrations (→ PROD DB!)
+yarn test          # bot + webapp unit tests (vitest run)
+yarn test:watch    # bot tests in watch mode
+cd bot && yarn vitest run src/path/file.test.ts   # single file (webapp: cd webapp)
 yarn build         # build bot + webapp
 ```
 
-**Env:** локальные переменные — `bot/.env` (шаблон `bot/.env.example`), обязательны `BOT_TOKEN` +
-`DATABASE_URL`. Без `.env` падает `config.ts` (`requireEnv`) — отсюда правило про мок `logger` в тестах.
+- **Always yarn, never npm.**
+- **Env:** `bot/.env` (template `bot/.env.example`); `BOT_TOKEN` + `DATABASE_URL` are required — without
+  them `config.ts` (`requireEnv`) throws.
 
-**Dev-базы нет.** `DATABASE_URL` в `bot/.env` смотрит на **прод-Postgres через SSH-туннель на сервер** —
-отдельной dev/staging базы не существует. Любая операция с БД в разработке (запуск бота локально,
-`drizzle-kit generate`/`migrate`, ручные запросы) идёт напрямую в прод-данные. Действовать соответственно:
-миграции — только forward, аккуратно с деструктивными операциями (см. «Откат» в DB schema changes),
-туннель должен быть поднят до запуска `yarn dev`/`drizzle-kit`.
-
-## Architecture — карта верхнего уровня
-
-> 📘 **Полный инвентарь дерева** (`bot/src`, `webapp/src`, раскладка фичи) + детали границ
-> (прокси Telegram, Mini App API) — см. [docs/architecture.md](docs/architecture.md).
-
+## Architecture
 ```
-bot/src/    — index (thin entry) · bot.ts (grammY) · config · logger · proxy · db/ (drizzle DAO
-              по таблицам) · llm/ (LLM client, провайдер по env) · tavily/ (веб-поиск, квота) ·
-              handlers/ · server/ (Hono API + раздача статики Mini App) · utils/ (retry, crypto)
-webapp/src/ — main/init (Telegram SDK) · app/ (оболочка, HashRouter) · pages/ (экран на маршрут) ·
-              features/ (доменные модули) · shared/ (кросс-каттинг)
+bot/src/    — index (thin entry) · bot.ts (grammY) · config · logger · proxy · db/ (drizzle DAO per
+              table) · llm/ (LLM client, per-user provider) · tavily/ (web search, quota) ·
+              handlers/ · server/ (Hono API + Mini App static) · utils/ (retry, crypto)
+webapp/src/ — main/init (Telegram SDK) · app/ (shell, HashRouter) · pages/ (one screen per route) ·
+              features/ (domain modules) · shared/ (cross-cutting)
 ```
-
-Домены bot и webapp зеркалят друг друга: characters, personas, cards, generation-presets, rp-templates,
+bot and webapp domains mirror each other: characters, personas, cards, generation-presets, rp-templates,
 rp-chat, narrator, knowledge-books, narrator-templates, debug.
 
-### Структура webapp — pages vs features
-> 📘 **Стили и режимы Mini App** — Telegram UI (tgui), темы/платформы, viewport, safe area,
-> compact/full-screen, mobile vs desktop: см. [docs/telegram-ui.md](docs/telegram-ui.md).
-> Свериться с ним перед правкой UI webapp или обновлением tgui/SDK.
-
-- **Единый стиль через компоненты tgui — mandatory.** Любая новая вёрстка или правка существующей в
-  `webapp/` в первую очередь использует готовые компоненты `@telegram-apps/telegram-ui` (типографика
-  `Text`/`Subheadline`/`Caption`/…, структура `Cell`/`Section`/`List`/…, формы, оверлеи) — это даёт всему
-  приложению единый визуальный стиль. Если подходящего компонента tgui нет — делаем свой в
-  `shared/components/`, максимально переиспользуя примитивы tgui внутри (а не голый `div`/`span` с CSS
-  с нуля). Полный каталог компонентов tgui по категориям с назначением каждого —
-  [docs/tgui-components.md](docs/tgui-components.md).
-- **`pages/<screen>/`** — цель маршрута, по одной на `ROUTES.*`. Тонкая обёртка, собирающая фичи.
-- **`features/<feature>/`** — самодостаточный доменный модуль (UI + логика).
-- **Раскладка фичи по категориям — mandatory.** Внутри фичи файлы лежат в подпапках `api/ hooks/ components/
-  types/ lib/`, а не россыпью в корне. Категории без файлов не создаём. (Дерево — в docs/architecture.md.)
-- **Barrel `index.ts` на фичу.** У каждой фичи `index.ts` реэкспортирует **только публичную поверхность**
-  (то, что потребляют страницы/`App`); внутренние под-компоненты в barrel не выносим. Потребители импортируют
-  фичу как модуль: `import { CharacterForm, useCharacter } from "../../features/characters"`.
-- **Внутрифичевые импорты — напрямую к файлам, НЕ через свой barrel** (`../types/character`, `../api/...`):
-  импорт собственного `index.ts` создаёт цикл, который компилируется, но даёт `undefined` в рантайме.
-- **`shared/`** — только переиспользуемое между фичами (`api/client.ts` — граница к `/api`, `telegram/`,
-  `text/`, `image/`, `components/`, `toast/`, …). Новую папку заводим, когда сущность реально появилась.
-- **Роутер — `HashRouter`** (react-router-dom): маршрут в hash переживает reload. Нативная кнопка «Назад» Telegram связана с роутером в `app/BackButtonBridge.tsx` (`navigate(parentPath(...))` — вверх по иерархии, а не по истории). Catch-all `*` → главная: на Telegram Web launch-параметры приходят в hash, и без редиректа роутер показал бы пустой экран.
-- **Deep-link из бота** (`app/deepLink.ts` + `main.tsx`): web_app-кнопка под фото из лайтбокса открывает Mini App с `?dl=<путь>` (напр. `/characters/123`). `resolveDeepLink()` вызывается **до** `render()` (после `initTelegram()`, который уже считал launch-данные из hash) и переписывает hash на маршрут — иначе catch-all успел бы увести на главную. Делать это в компоненте внутри роутера НЕЛЬЗЯ: эффект `<Navigate>` из catch-all в том же flush перебьёт переход.
-
-## Инварианты и границы (trap-предупреждения)
-
-> 📘 Подробности «почему и как устроено» — в docs. Здесь — короткие правила, которые нельзя нарушить.
-
-- **Прокси — только для сервисов, недоступных напрямую с сети сервера.** Сейчас это Telegram
-  (`bot.ts` → `baseFetchConfig.agent`, HttpsProxyAgent) и Tavily (`tavily/tavilyUsage.ts`, undici
-  ProxyAgent) — оба используют один и тот же `TELEGRAM_PROXY_URL`. LLM-провайдер (DeepSeek) и прочие
-  fetch идут напрямую. НИКОГДА не ставить глобальный прокси (`HTTPS_PROXY` / `ALL_PROXY`) — уведёт
-  через прокси и трафик к LLM-провайдеру. Почему у Telegram `agent`, а не `dispatcher` (node-fetch@2
-  quirk) — [docs/architecture.md](docs/architecture.md).
-- **Ключ LLM-провайдера — только серверно, per-user (BYOK).** Ключ DeepSeek хранится зашифрованным
-  в `user_settings` (`bot/src/db/userLlmSettings.ts`, шифрование — `ENCRYPTION_KEY`), в браузер не
-  отдаётся; RP-генерация идёт через HTTP API бота, а не напрямую из webapp. Запросы webapp → `/api/*`
-  несут подписанный `initData` (`Authorization: tma …`), сервер проверяет HMAC. Пакет валидации —
-  **`@tma.js/init-data-node`** (НЕ `@telegram-apps/*`), детали — [docs/architecture.md](docs/architecture.md).
-- **Narrator: массив промпта не может начинаться с `assistant`.** Перед корнем (openingBeat) вставляется
-  синтетический leading-user; отыгранные user-ходы нейтрализуются в `CONTINUE_MARKER` (кроме последнего).
-  На эти грабли легко наступить при правке `storyPromptBuilder` — полный нарратив режима «Режиссёр истории»
-  и сжатия (compact): [docs/narrator.md](docs/narrator.md).
-
-## Git — коммиты
-Коммиты — **Conventional Commits** с русским описанием: `type(scope): краткое описание`.
-- Типы: `feat` / `fix` / `chore` / `refactor` / `docs` / `test`.
-- Scope — домен/пакет: `webapp`, `knowledge`, `agents`, `bot`, `server`, … (по затронутой области).
-- Пример: `fix(webapp): кнопка перевода первой в строке действий RP-чата`.
-Ветки: `main` (основная) и `deploy` (триггер автодеплоя, см. ниже). Коммить/пуш — только по явной
-просьбе пользователя; новые коммиты по умолчанию делаются прямо на `main`, отдельную ветку заводи
-только по явной просьбе пользователя.
-
-## Деплой
-Прод — один Docker-контейнер, раздаёт HTTP API и статику Mini App одним процессом. Инфраструктура
-(Docker, CI/CD по ветке `deploy`) — [docs/deploy.md](docs/deploy.md).
-
-### Команда «Задеплой»
-Когда пользователь пишет «Задеплой» (или просит задеплоить) — выполни строго по шагам:
-1. **Гейт проверок.** Весь гейт (тесты + сборка) делегируй субагенту **`test-runner`** (Agent tool,
-   `subagent_type: test-runner`) — он в одном запуске гоняет `yarn test`, затем `yarn build`, разбирает
-   падения и возвращает единый вердикт. Это обязательный гейт деплоя: запускай его **без отдельной просьбы**
-   пользователя. Если агент сообщает о падении тестов или ошибке сборки — **СТОП**, не пушим, показать его
-   диагноз пользователю. Дальше идём только при зелёном вердикте.
-2. **Запомнить исходную ветку:** `git branch --show-current` — с неё деплоим и на неё вернёмся в конце.
-3. **Залить на `deploy` и запушить:** `git checkout deploy` → `git merge --ff-only <исходная>` →
-   `git push origin deploy`. Пуш в `deploy` триггерит автодеплой на сервер.
-4. **Вернуться на исходную ветку:** `git checkout <исходная>`.
-
-Изменения должны быть **закоммичены** на исходной ветке до деплоя — `--ff-only` переносит на `deploy`
-именно коммиты. Если fast-forward невозможен (ветки разошлись) — не делать merge-коммит молча,
-сообщить пользователю и спросить, как поступить.
-
-## Структура и размер файлов — mandatory
-Чтобы файлы не разрастались и проект оставался читаемым/масштабируемым:
-- **Один файл — одна обязанность.** «Главный» файл (entry-point, register-агрегатор, цикл воркера) держим тонким, вынося реализацию в соседние файлы той же папки.
-- **Ориентир ~100–150 строк.** Файл за ~150 строк — сигнал, что в нём несколько обязанностей; разбей, если они отделимы. Это эвристика читаемости, **не** жёсткий лимит: когезивные single-responsibility файлы (данные/строки, одиночный хендлер, DAO одной таблицы) не дробим ради цифры.
-- **Папка-сущность, когда сущность обрастает файлами.** Как только у одной сущности (компонент, модуль, DAO и т.п.) появляется ≥2 файла-реализации сверх основного — стили (`.css`), `.constants.ts`, `.types.ts`, второй `.ts` с логикой и т.д. — сущность переезжает в свою подпапку по имени: `EntityName/EntityName.ts(x)`, `EntityName.constants.ts`, `EntityName.css`, … + `index.ts`-барrel, реэкспортирующий публичную поверхность. Один сопутствующий `.test.ts` рядом с исходником подпапку не триггерит — это норма (см. Testing). Правило действует по всему проекту (bot/ и webapp/), а не только для pages/features: если родительская папка содержит несколько разных сущностей вперемешку, каждая обрастающая сущность получает свою подпапку, а не остаётся плоской рядом с чужими файлами. Для новых/дорастающих сущностей — сразу так; существующие плоские скопления не мигрируем разом, переносим по мере правки соответствующей сущности.
-- **Со-локация констант/типов.** Фичевые константы/типы лежат рядом с использованием (`<feature>/constants.ts`, `<feature>/types.ts`), а не в общем barrel. В `src/constants/`/`src/types/` оставляем только кросс-каттинговое.
-- **Новый фоновый воркер / внешний источник** — только папкой (`worker.ts` + `client.ts` + `types.ts` + `constants.ts`); экспортирует функцию запуска воркера, которая подключается одной строкой в `index.ts`.
+Full tree, webapp layout rules, router/deep-link details — [docs/architecture.md](docs/architecture.md).
 
 ## Code conventions
 
-### Logging — mandatory
-Every new module that does external I/O (API calls, DB writes, Telegram API) **must**:
-1. Import `logger` from `../logger` (adjust path as needed)
-2. Log the start or key parameters at `debug` or `info`
-3. Measure duration: `const t0 = Date.now()` before the call, `durationMs: Date.now() - t0` in the log after
-4. Log completion with timing and relevant metadata (token counts for LLM calls, row counts for DB ops, `dims` for embeddings)
-5. Log errors with `logger.error({ err, ...context }, "description")` — never swallow silently
+### ESM imports
+- **`bot/`** (`nodenext`): every **relative** import/export MUST end in `.js` even though the source is
+  `.ts` (`import { config } from "../config.js"`). Directory imports don't work — point at the barrel:
+  `"../utils/index.js"`. Bare package imports stay extensionless.
+- **`webapp/`** (`moduleResolution: bundler`): imports WITHOUT extensions (`./App`).
 
-Pattern from existing code:
+### webapp — mandatory
+- **tgui first.** Any new or edited UI uses `@telegram-apps/telegram-ui` components (`Text`/`Subheadline`/
+  `Caption`, `Cell`/`Section`/`List`, forms, overlays). No suitable component → build one in
+  `shared/components/` on top of tgui primitives, not bare `div`/`span` + custom CSS. Catalog —
+  [docs/tgui-components.md](docs/tgui-components.md); themes/viewport/safe area/platforms —
+  [docs/telegram-ui.md](docs/telegram-ui.md) (check before UI edits or tgui/SDK upgrades).
+- **`pages/<screen>/`** = thin route target; **`features/<feature>/`** = self-contained domain module.
+- **Feature files go into `api/ hooks/ components/ types/ lib/`** subfolders, not loose in the root.
+  Don't create empty categories.
+- **Feature barrel `index.ts`** exports only the public surface; consumers import the feature as a module.
+- **Inside a feature, import files directly** (`../types/character`), NEVER via the feature's own barrel —
+  that creates a cycle that compiles but yields `undefined` at runtime.
+- **`shared/`** — only what is reused across features.
+- **Deep-link (`?dl=`) is resolved in `main.tsx` BEFORE `render()`**, never in a component inside the
+  router — the catch-all `<Navigate>` would win in the same flush. Details — [docs/architecture.md](docs/architecture.md).
+
+### File structure & size — mandatory (bot/ and webapp/)
+- **One file — one responsibility.** Keep "main" files (entry points, register aggregators, worker loops)
+  thin; move implementation into sibling files.
+- **~100–150 lines is a guideline, not a hard limit.** Past ~150 lines, split if responsibilities are
+  separable. Don't split cohesive single-responsibility files (data/strings, one handler, one table's DAO).
+- **Entity folder when an entity grows files.** Once an entity has ≥2 implementation files beyond the main
+  one (`.css`, `.constants.ts`, `.types.ts`, a second logic `.ts`…) it moves into its own folder:
+  `EntityName/EntityName.ts(x)` + siblings + `index.ts` barrel. A single co-located `.test.ts` doesn't
+  trigger this. Applies to new/growing entities; migrate existing flat clusters only when you touch them.
+- **Co-locate constants/types** with their usage (`<feature>/constants.ts`); `src/constants/` and
+  `src/types/` are for cross-cutting things only.
+- **New background worker / external source** — always a folder (`worker.ts` + `client.ts` + `types.ts` +
+  `constants.ts`) exporting a start function wired with one line in `index.ts`.
+
+### Logging — mandatory
+Every module doing external I/O (API calls, DB writes, Telegram API) must:
+1. `import logger from "../logger.js"` (adjust path).
+2. Log start/key params at `debug` or `info`.
+3. Measure duration: `const t0 = Date.now()` before, `durationMs: Date.now() - t0` after.
+4. Log completion with timing + relevant metadata (token counts for LLM, row counts for DB, `dims` for embeddings).
+5. Log errors as `logger.error({ err, ...context }, "description")` — never swallow.
+
 ```typescript
 const t0 = Date.now();
 const result = await externalCall(...);
@@ -179,108 +119,113 @@ logger.info({ durationMs: Date.now() - t0, ...relevantFields }, "Operation compl
 ```
 
 ### Error handling — mandatory
-- Every new `async` function must either propagate errors to its caller or catch and log them explicitly
-- Fire-and-forget chains (`.then().catch()`) must always end with `.catch((err) => logger.warn({ err, ...ctx }, "what failed"))`
-- Never use an empty `catch {}` block — always log at minimum
-- For handlers: unexpected errors should be logged with `logger.error` and result in a user-facing reply
-- **Exception — group handlers**: on error, log with `logger.error` but do **not** send a user-facing reply. The bot is one of many participants in a shared chat, so surfacing every internal error would spam the group. Errors stay in the logs only.
+- Every new `async` function either propagates errors or catches and logs them explicitly.
+- Never an empty `catch {}` — log at minimum.
+- Fire-and-forget chains always end with `.catch`:
+  ```typescript
+  someAsyncWork()
+    .then((result) => logger.info({ result }, "Background work done"))
+    .catch((err) => logger.warn({ err, ...ctx }, "Background work failed"));
+  ```
+- Handlers: unexpected errors → `logger.error` + a user-facing reply.
+- **Exception — group handlers:** log with `logger.error` but do **not** reply (the bot is one of many
+  chat participants; surfacing internal errors would spam the group).
 
-### Comments — encouraged
-Add comments freely, especially in places with non-trivial logic. Preferred spots:
-- Complex conditionals or multi-step flows — explain the intent
-- Non-obvious constraints or invariants
-- Workarounds for external API quirks
-- Any place where a reader might ask "why is this done this way?"
+### Key patterns
+- **Retry** all transiently failing external calls:
+  ```typescript
+  await retry(() => someApiCall(), 3, 1500, "Label");
+  await retry(() => call(), 3, 1500, "Label", (err) => !(err instanceof NonRetryableError));
+  ```
+- **Processing lock** — `Set<string>` keyed by context (e.g. `"chatId:threadId"`) to reject concurrent
+  requests; always release in `finally`:
+  ```typescript
+  const key = `${chatId}:${threadId}`;
+  if (processing.has(key)) return;
+  processing.add(key);
+  try { /* ... */ } finally { processing.delete(key); }
+  ```
 
-All comments must be written in **Russian**.
-
-Still avoid restating what the code obviously does — focus on the **why**, not the **what**.
+### Comments
+Encouraged, **in Russian**, explaining the **why** (non-trivial conditionals/flows, invariants, external
+API quirks, "why is it done this way?") — not restating the obvious.
 
 ### DB schema changes
-1. Edit `src/db/schema.ts`
-2. Run `yarn drizzle-kit generate` to create migration SQL in `drizzle/`
-3. For pgvector extensions: manually add `CREATE EXTENSION IF NOT EXISTS vector;` to the migration — drizzle-kit does not generate it
-4. Run `yarn drizzle-kit migrate` to apply
+1. Edit `bot/src/db/schema.ts`.
+2. `yarn workspace bot drizzle-kit generate` → migration SQL in `bot/drizzle/`.
+3. pgvector: manually add `CREATE EXTENSION IF NOT EXISTS vector;` (drizzle-kit doesn't generate it).
+4. `yarn workspace bot drizzle-kit migrate` (remember: prod DB).
 
-**Откат:** drizzle-kit — forward-only, команды `migrate:down` нет. Ещё **не применённую** миграцию
-убираем через `yarn workspace bot drizzle-kit drop` (снимает последнюю из журнала) + удаляем `.sql`.
-**Уже применённую** назад не откатываем автоматически — пишем новую корректирующую миграцию
-(`generate` → правим SQL → `migrate`). Ломающие изменения на проде — только через forward-миграцию.
+**Rollback:** drizzle-kit is forward-only (no `migrate:down`). A **not yet applied** migration:
+`yarn workspace bot drizzle-kit drop` + delete the `.sql`. An **applied** one: write a new corrective
+migration (`generate` → edit SQL → `migrate`). Breaking prod changes only via forward migrations.
 
-### Testing — vitest
-Test runner is **vitest** в **обоих** workspace (`bot/` и `webapp/`), у каждого свой `vitest.config.ts`
-(pool `forks`). Корневой `yarn test` гоняет оба пакета по очереди; `yarn test:watch` — только bot.
-- **Co-locate** tests next to the code as `*.test.ts` (same folder, e.g. `transform.ts` → `transform.test.ts`). The runner globs `src/**/*.test.ts`. В `bot/` `tsc` (`yarn build`) исключает тесты через `**/*.test.ts` в `tsconfig.json`, так что они не попадают в `dist/`; в `webapp/` сборка `noEmit` (vite бандлит только импортируемое), поэтому тесты не нужно исключать.
-- **webapp:** импорты в тестах — **без** `.js` (bundler resolution); чистую логику изолируем от Telegram SDK
-  (напр. SSE-парсер `parseSSE.ts` вынесен из `sse.ts`, чтобы тест не тянул `@telegram-apps/sdk-react`).
-- **What to test:** pure functions — transformers, formatters, parsers, retry/decision logic — the stuff with no I/O. Workers, DAOs (`db/*`), and Telegram/LLM handlers are **not** unit-tested (they need a live DB / external services / mutable module state).
-- **Imports still need `.js`** in test files too (native ESM). Vitest/Vite resolves the `.js` specifier to the `.ts` source automatically.
-- **Avoid pulling in `config`/`logger` transitively.** A unit under test that imports `../logger.js` will drag in `config.ts` (which `requireEnv`s `BOT_TOKEN` etc. and would throw without a `.env`) plus pino-roll worker threads. Mock it: `vi.mock("../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() } }))`.
-- **Pool is `forks`** (not the default threads): on Windows the thread pool + Vite's cold dep-optimizer occasionally fails the first run. Forks make cold runs deterministic — keep it.
-- **`vite` is an explicit `devDependency`** even though nothing in `src/` imports it. In **vitest 4 Vite is a `peerDependency`**, so it must be installed by the project, not relied on as a transitive leftover. If it's missing/mis-linked, the whole suite fails on *every* file with `TypeError: Cannot read properties of undefined (reading 'config')`. Fix: `yarn install`; the explicit pin keeps it from recurring. Keep `vite`'s major within vitest's peer range (`^6 || ^7 || ^8`).
-- **Adding new pure logic?** Add a `*.test.ts` beside it.
+### Testing
+vitest in both packages, pool `forks`. Details and "why" — [docs/testing.md](docs/testing.md).
+- Co-locate tests: `foo.ts` → `foo.test.ts`. **Adding pure logic? Add a test beside it.**
+- Test pure functions only (transformers, formatters, parsers, retry/decision logic). DAOs, workers,
+  Telegram/LLM handlers are not unit-tested.
+- bot tests also need `.js` in relative imports; webapp tests — no extensions, isolate logic from the Telegram SDK.
+- Code importing `logger.js` drags in `config.ts` (throws without `.env`) — mock it:
+  `vi.mock("../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() } }))`.
+- Keep pool `forks` and the explicit `vite` devDependency (vitest 4 peer, major within `^6 || ^7 || ^8`).
 
 ## External APIs
 
-| Service | Used for | Key env var |
+| Service | Used for | Key |
 |---|---|---|
-| Telegram | Bot API (через HTTP-прокси) | `BOT_TOKEN`, `TELEGRAM_PROXY_URL` |
-| DeepSeek | LLM (chat completion), серверно, ключ per-user (BYOK) | нет — ключ в БД, не в env |
-| Tavily | Веб-поиск (квота), серверно, ключ per-user (BYOK), через HTTP-прокси | нет — ключ в БД, не в env |
-| Postgres | БД (drizzle) | `DATABASE_URL` |
+| Telegram | Bot API (via HTTP proxy) | `BOT_TOKEN`, `TELEGRAM_PROXY_URL` |
+| DeepSeek | LLM chat completion — the **only active provider**, server-side, per-user (BYOK) | in DB, not env |
+| Tavily | Web search (quota), server-side, per-user (BYOK), via HTTP proxy | in DB, not env |
+| Postgres | DB (drizzle) | `DATABASE_URL` |
 
-**LLM-провайдер сейчас единственный активный — DeepSeek**, ключ и модель не глобальные: каждый
-пользователь задаёт свои в Mini App → `/settings` → «ИИ (DeepSeek)» (`webapp/src/features/llm-settings/`
-→ `bot/src/server/settings/`), хранятся зашифрованными в `user_settings`
-(`bot/src/db/userLlmSettings.ts`, ключ шифрования — `ENCRYPTION_KEY`). За запрос провайдер резолвится
-`bot/src/llm/resolveProvider.ts` (`resolveProvider(userId)`); без сохранённого ключа бросает
-`MissingApiKeyError` (`bot/src/llm/errors.ts`) — без фоллбэка на общий/env-ключ. `bot/src/llm/client.ts`
-остаётся общим OpenAI-совместимым клиентом; фабрика `buildOpenRouterProvider()` (`providers.ts`)
-оставлена заделом, но нигде не вызывается — у OpenRouter сейчас нет активного пути конфигурации.
-**Инвариант (сохраняется структурно):** тело запросов OpenRouter не меняем — это запасной путь;
-reasoning («мышление» из пресета, поля `requestReasoning`/`reasoningEffort`) применяется только для
-DeepSeek (`thinking`-режим), для OpenRouter `reasoningBody` возвращает `{}`.
+Provider resolution, `MissingApiKeyError`, dormant OpenRouter path and its untouchable request body,
+reasoning/thinking rules — [docs/llm.md](docs/llm.md).
+
+## Subagents (`.claude/agents/`)
+Use them instead of manual work when a task fits. For approach advice, being stuck, and pre-"done"
+checks use the built-in **`advisor`** tool (not a project agent).
+
+| Agent | When | Edits code? |
+|---|---|---|
+| **`test-runner`** | Tests + build gate before commit/deploy (**mandatory** in Deploy) | yes, on request |
+| **`code-reviewer`** | Review the current diff before commit (conventions + correctness) | no |
+| **`docs-updater`** | Sync README/CLAUDE.md/docs after notable code changes | yes |
+| **`bug-investigator`** | Find a bug's root cause from a symptom (tracing + prod logs) | no |
+| **`codebase-explorer`** | "Where is X / how does Y work" without dumping files into context | no |
+| **`log-analyzer`** | Analyze prod bot logs from Docker over SSH | no |
+| **`web-researcher`** | Fresh external info (library docs, external APIs, LLM provider models) | no |
+
+## Git
+**Conventional Commits** with a Russian description: `type(scope): краткое описание`.
+- Types: `feat` / `fix` / `chore` / `refactor` / `docs` / `test`.
+- Scope = domain/package: `webapp`, `knowledge`, `agents`, `bot`, `server`, …
+- Example: `fix(webapp): кнопка перевода первой в строке действий RP-чата`.
+
+Branches: `main` (primary) and `deploy` (pushing it triggers auto-deploy).
+
+## Deploy — the "Задеплой" command
+When the user says "Задеплой" (or asks to deploy), follow strictly:
+1. **Check gate.** Delegate tests + build to the **`test-runner`** subagent (`subagent_type: test-runner`)
+   **without asking** — it runs `yarn test` then `yarn build` and returns one verdict. On failure — **STOP**,
+   don't push, show its diagnosis. Proceed only on green.
+2. **Remember the source branch:** `git branch --show-current`.
+3. **Fast-forward and push:** `git checkout deploy` → `git merge --ff-only <source>` → `git push origin deploy`.
+4. **Return:** `git checkout <source>`.
+
+Changes must be **committed** on the source branch first (`--ff-only` moves commits). If fast-forward is
+impossible (branches diverged) — don't silently create a merge commit; tell the user and ask.
 
 ## Keeping docs up to date
-
-Все доки отражают **текущее состояние** проекта, не историю: что убрали из кода — убираем и из доков.
-- **README.md** — при изменениях, важных новому разработчику: новая внешняя зависимость/сервис, новые
-  шаги установки (env-переменные, миграции, требуемый тулинг), крупная фича, устаревший раздел стека.
-- **CLAUDE.md** (этот файл) — при изменениях процесса/конвенций: новый архитектурный паттерн или тип
-  модуля, новый внешний API/модель, новое mandatory-правило, значимое изменение структуры проекта.
-- **docs/** — справочные нарративы: `architecture.md` (инвентарь дерева + границы прокси/Mini App),
-  `narrator.md` (режим «Режиссёр истории» + compact), `deploy.md` (инфра), `telegram-ui.md` (стили tgui).
-  Правишь фичу — обнови соответствующий файл; в CLAUDE.md держим только тонкую ссылку.
-- **`.claude/agents/*.md`** (промпты субагентов) — узко: только протухшие **литералы-факты** (имя
-  внешнего провайдера/API, env-переменная, путь к файлу/папке, команда), которые изменились в диффе
-  и встречаются в промпте агента дословно — точечная замена факта, не переписывание. НЕ трогать:
-  frontmatter (`name`/`description`/`tools`/`model`), структуру, тон, роль, инструкции агента,
-  операционные детали (SSH-доступы, пути логов на сервере — они не выводятся из диффа кода).
-
-## Key patterns
-
-**Retry wrapper** — use for all external calls that can transiently fail:
-```typescript
-await retry(() => someApiCall(), 3, 1500, "Label");
-// or with custom shouldRetry:
-await retry(() => call(), 3, 1500, "Label", (err) => !(err instanceof NonRetryableError));
-```
-
-**Fire-and-forget** — for non-blocking background work:
-```typescript
-someAsyncWork()
-  .then((result) => logger.info({ result }, "Background work done"))
-  .catch((err) => logger.warn({ err }, "Background work failed"));
-```
-
-**Processing lock** — use a `Set<string>` keyed by a unique context key (e.g. `"chatId:threadId"`) to reject concurrent requests from the same context. Lock must always be released in `finally`:
-```typescript
-const key = `${chatId}:${threadId}`;
-if (processing.has(key)) return;
-processing.add(key);
-try {
-  // ...
-} finally {
-  processing.delete(key);
-}
-```
+Docs describe the **current** state, not history — what's removed from code is removed from docs.
+- **README.md** — what a new developer needs: new external service/dependency, setup steps (env, migrations,
+  tooling), major feature, stale stack section.
+- **CLAUDE.md** — process/convention changes: new architectural pattern or module type, new external
+  API/model, new mandatory rule, significant structure change.
+- **docs/** — reference narratives; when editing a feature, update its file and keep only a thin link here:
+  `architecture.md` (tree, webapp layout, router, proxy/Mini App boundaries), `llm.md` (provider, BYOK),
+  `narrator.md` (story director mode + compact), `testing.md`, `deploy.md`, `telegram-ui.md`,
+  `tgui-components.md`.
+- **`.claude/agents/*.md`** — only replace stale literal facts (provider name, env var, path, command)
+  that the diff changed; never rewrite agent frontmatter/role/instructions. Full rules live in
+  `.claude/agents/docs-updater.md`.
