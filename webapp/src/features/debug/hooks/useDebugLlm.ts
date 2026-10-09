@@ -4,21 +4,19 @@ import {
   getLlmDebug,
   updateLlmDebugSettings,
 } from "../api/debug-api";
-import type { LlmDebugRecord, LlmDebugSettings } from "../types/debug";
-
-const DEFAULT_SETTINGS: LlmDebugSettings = {
-  enabled: true,
-  maxRequests: 30,
-  headMessages: 3,
-  tailMessages: 5,
-};
+import {
+  DEFAULT_DEBUG_SETTINGS,
+  type LlmDebugRecord,
+  type LlmDebugSettings,
+  type LlmDebugSettingsPatch,
+} from "../types/debug";
 
 /**
  * Состояние экрана отладки LLM: все настройки (тумблер, N, сколько сообщений с краёв) приходят
  * с сервера и через него же сохраняются — поэтому одинаковы на всех устройствах пользователя.
  */
 export function useDebugLlm() {
-  const [settings, setSettings] = useState<LlmDebugSettings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<LlmDebugSettings>(DEFAULT_DEBUG_SETTINGS);
   const [records, setRecords] = useState<LlmDebugRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,7 +37,7 @@ export function useDebugLlm() {
 
   // Настройки сохраняем оптимистично: при ошибке откатываем к прежнему значению.
   const updateSettings = useCallback(
-    async (patch: Partial<LlmDebugSettings>) => {
+    async (patch: LlmDebugSettingsPatch) => {
       const prev = settings;
       setSettings({ ...settings, ...patch });
       try {

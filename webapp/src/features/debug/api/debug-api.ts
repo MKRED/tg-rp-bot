@@ -1,18 +1,13 @@
 import { apiFetch } from "../../../shared/api/client";
-import type { LlmDebugRecord, LlmDebugSettings } from "../types/debug";
+import type { LlmDebugSettings, LlmDebugSettingsPatch, LlmDebugView } from "../types/debug";
 
 /** Настройки перехвата + накопленные записи запросов пользователя. */
-export async function getLlmDebug(): Promise<{
-  settings: LlmDebugSettings;
-  records: LlmDebugRecord[];
-}> {
-  return apiFetch<{ settings: LlmDebugSettings; records: LlmDebugRecord[] }>("/debug/llm");
+export async function getLlmDebug(): Promise<LlmDebugView> {
+  return apiFetch<LlmDebugView>("/debug/llm");
 }
 
 /** Изменить настройки перехвата (частичный patch). */
-export async function updateLlmDebugSettings(
-  patch: Partial<LlmDebugSettings>,
-): Promise<LlmDebugSettings> {
+export async function updateLlmDebugSettings(patch: LlmDebugSettingsPatch): Promise<LlmDebugSettings> {
   const res = await apiFetch<{ settings: LlmDebugSettings }>("/debug/llm/settings", {
     method: "PATCH",
     body: JSON.stringify(patch),

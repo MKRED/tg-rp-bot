@@ -1,3 +1,4 @@
+import type { LlmToolCall } from "@tg-rp-bot/shared";
 import type { LlmCallLabel } from "./debugCapture.js";
 
 /** Роль в диалоге (OpenAI-совместимая). */
@@ -9,12 +10,8 @@ export interface ChatMessage {
   content: string;
 }
 
-/** Один вызов инструмента моделью (OpenAI-совместимый tool_calls[i]). */
-export interface ToolCall {
-  id: string;
-  type: "function";
-  function: { name: string; arguments: string };
-}
+/** Один вызов инструмента моделью (OpenAI-совместимый tool_calls[i]); тот же тип уходит в записи экрана отладки. */
+export type ToolCall = LlmToolCall;
 
 /**
  * Ответ-инструмента (assistant с tool_calls) в истории диалога. content часто пустой/null —

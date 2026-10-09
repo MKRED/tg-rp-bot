@@ -1,56 +1,10 @@
-/**
- * Типы отладочного перехвата LLM — ручное зеркало серверных. При изменении на сервере
- * синхронизировать здесь вручную: LlmCallLabel (bot/src/llm/debugCapture.ts), LlmDebugSettings
- * (bot/src/llm/debugSettings.ts), поля LlmDebugRecord/LlmDebugResponse (bot/src/llm/debugCapture.ts).
- */
-
-export type LlmCallLabel =
-  | "rp"
-  | "impersonate"
-  | "narrator"
-  | "translate"
-  | "compact"
-  | "cards"
-  | "other";
-
-export interface ToolCall {
-  id: string;
-  type: "function";
-  function: { name: string; arguments: string };
-}
-
-export interface LlmDebugResponse {
-  ok: boolean;
-  status?: number;
-  content?: string;
-  model?: string;
-  usage?: { promptTokens: number; completionTokens: number; totalTokens?: number };
-  error?: string;
-  /** Модель запросила инструмент(ы) вместо текста (веб-поиск карточек) — иначе content пуст. */
-  toolCalls?: ToolCall[];
-}
-
-export interface LlmDebugRecord {
-  id: number;
-  at: string;
-  userId: number | null;
-  label: LlmCallLabel;
-  provider: string;
-  model: string;
-  streaming: boolean;
-  durationMs: number;
-  /** RAW-тело запроса (messages[] + сэмплинг-поля) — отображаем как есть. */
-  request: Record<string, unknown>;
-  response: LlmDebugResponse;
-}
-
-export interface LlmDebugSettings {
-  /** Писать ли RAW-лог запросов (тумблер). */
-  enabled: boolean;
-  /** Сколько последних запросов держать. */
-  maxRequests: number;
-  /** Сколько сообщений messages[] показывать с начала (усечение середины — на клиенте). */
-  headMessages: number;
-  /** Сколько сообщений messages[] показывать с конца. */
-  tailMessages: number;
-}
+/** Типы отладочного перехвата LLM, настройки экрана и их дефолт — контракт с сервером, в @tg-rp-bot/shared. */
+export { DEFAULT_DEBUG_SETTINGS } from "@tg-rp-bot/shared";
+export type {
+  LlmCallLabel,
+  LlmDebugRecord,
+  LlmDebugResponse,
+  LlmDebugSettings,
+  LlmDebugSettingsPatch,
+  LlmDebugView,
+} from "@tg-rp-bot/shared";

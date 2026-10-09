@@ -33,7 +33,7 @@ export class LlmSettingsRepository {
 
   /**
    * Партиальный upsert: трогает только поля, реально пришедшие в patch (в отличие от debug-настроек
-   * в db/userSettings.ts, которые перезаписываются целиком под клампом) — полная перезапись здесь
+   * в debug/debug.repository.ts, которые перезаписываются целиком под клампом) — полная перезапись здесь
    * случайно затёрла бы ключ при смене одной модели.
    */
   async upsert(userId: number, patch: LlmSettingsPatch): Promise<LlmSettingsStatus> {

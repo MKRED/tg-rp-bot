@@ -30,6 +30,9 @@ bot/src/
                   translate/ (режим перевода PromptEditorOverlay) — у каждой controller/service/repository;
                   dto/ (снисходительные PATCH: невалидное поле игнорируется), key-format.ts (400
                   invalid_key_format); экспортирует TavilySettingsRepository для генерации карточек
+  debug/        — /api/debug/llm: настройки перехвата LLM (repository — колонки user_settings) + записи из
+                  in-memory кольца llm/debugCapture; DebugService праймит кэш настроек на старте
+                  (OnApplicationBootstrap)
   bot.ts        — grammY bot instance (+ прокси для Telegram через baseFetchConfig)
   bot.constants.ts
   config.ts     — env vars (requireEnv для обязательных, process.env для опциональных)
@@ -46,14 +49,14 @@ bot/src/
                   getAvatarsBatch) (у каждой DAO-файл + types.ts/constants.ts при наличии + barrel index.ts;
                   типы контракта API перенесённых в Nest доменов — из @tg-rp-bot/shared),
                   chats/ stories/ (+ storyAvatars.ts — LATERAL-фрагмент топ-N аватаров книги знаний
-                  для карточки истории) knowledge/ (деревья/лорбук), users.ts, userSettings.ts
-                  (debug-настройки перехвата LLM)
+                  для карточки истории) knowledge/ (деревья/лорбук), users.ts
   llm/          — LLM client (client/request/errors/types/constants/completionGuard/providers/
                   resolveProvider/deepseekModels) — серверно; единственный активный провайдер —
                   DeepSeek, ключ/модель резолвятся per-user через resolveProvider(userId) из
                   settings/llm (без ключа — MissingApiKeyError); фабрика buildOpenRouterProvider
                   в providers.ts не задействована (задел, нет пути конфигурации);
-                  debugCapture (+debug.types) — in-memory перехват RAW-запросов к LLM для экрана отладки
+                  debugCapture (+debug.types, debugSettings — кламп настроек) — in-memory перехват RAW-запросов
+                  к LLM для экрана отладки (горячий путь каждого вызова; настройки — в debug/)
   tavily/       — Tavily API client (per-user BYOK): tavilyUsage.ts (getTavilyUsage — GET /usage,
                   через fetch/ProxyAgent из пакета undici, TELEGRAM_PROXY_URL), errors.ts (TavilyHttpError)
   handlers/     — обработчики команд/кнопок бота (index = registerHandlers, start.ts,
@@ -63,7 +66,7 @@ bot/src/
                   index=createLegacyApp,
                   routes.ts — карта эндпоинтов (монтаж контроллеров), middleware/ (initData — валидация
                   подписи), доменные папки me/ books/
-                  chats/ stories/ debug/ avatars/ (POST /batch — батч-резолв аватаров для
+                  chats/ stories/ avatars/ (POST /batch — батч-резолв аватаров для
                   AvatarStack, см. ниже) — у каждого
                   <домен>.controller.ts (Hono-роуты) + validation/
                   constants/types рядом + barrel index.ts; chats/ — messages.handlers + impersonate.handlers

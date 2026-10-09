@@ -6,3 +6,4 @@ export * from "./rp-templates.js";
 export * from "./narrator-templates.js";
 export * from "./cards.js";
 export * from "./settings.js";
+export * from "./debug.js";

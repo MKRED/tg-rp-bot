@@ -6,7 +6,7 @@ import { bot } from "./bot.js";
 import { config } from "./config.js";
 import { registerHandlers } from "./handlers/index.js";
 import logger from "./logger.js";
-import { createLegacyApp, createLegacyBridge, primeLlmDebugSettings } from "./server/index.js";
+import { createLegacyApp, createLegacyBridge } from "./server/index.js";
 
 // Лимит JSON-тела: в Express по умолчанию 100 КБ, а персонаж несёт миниатюру (до 900 тыс. символов)
 // и полное фото (до 2,5 млн) data URL'ами — см. server/shared/imageValidation.constants.ts.
@@ -26,7 +26,6 @@ async function bootstrap(): Promise<void> {
 
   await app.listen(config.port);
   logger.info({ port: config.port }, "HTTP server (Mini App API + webapp) started");
-  primeLlmDebugSettings();
 
   registerHandlers(bot);
   startBot();

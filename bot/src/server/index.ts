@@ -1,8 +1,5 @@
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
-import { listAllLlmDebugSettings } from "../db/userSettings.js";
-import { primeDebugSettings } from "../llm/debugCapture.js";
-import logger from "../logger.js";
 import { createApiRoutes } from "./routes.js";
 
 // Каталог собранной статики Mini App относительно cwd процесса (в контейнере cwd = /app/bot,
@@ -29,16 +26,6 @@ export function createLegacyApp(): Hono {
   app.get("/*", serveStatic({ path: `${WEBAPP_DIR}/index.html` }));
 
   return app;
-}
-
-/**
- * Прайм in-memory кэша настроек отладки из БД: перехват уважает сохранённый тумблер/N
- * ещё до первого открытия экрана. Fire-and-forget — на сбое перехват просто стартует с дефолтами.
- */
-export function primeLlmDebugSettings(): void {
-  listAllLlmDebugSettings()
-    .then((rows) => primeDebugSettings(rows))
-    .catch((err) => logger.warn({ err }, "Failed to prime LLM debug settings cache"));
 }
 
 export { createLegacyBridge } from "./legacyBridge.js";

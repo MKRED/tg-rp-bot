@@ -107,6 +107,8 @@ Nest поднимается на том же порту, текущее Hono-п�
   раундов веб-поиска — в shared; генерация карточек получает ключ Tavily через DI; resolveProvider и
   /api/translate читают настройки через временный мост db/settings (удалить, когда resolveProvider и
   перевод получат репозитории через DI).
+- **Блок J ✅** — debug (экран отладки LLM): контракт записей перехвата и настроек — в shared; прайм
+  кэша настроек на старте — DebugService (OnApplicationBootstrap) вместо ручного вызова в main.ts.
 - **Дальше** — остальные домены по одному (… chats/stories с SSE
   последними), затем бот grammY как provider и удаление Hono.
 

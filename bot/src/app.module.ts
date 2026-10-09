@@ -7,6 +7,7 @@ import { CharactersModule } from "./characters/characters.module.js";
 import { ApiExceptionFilter } from "./common/api-exception.filter.js";
 import { createValidationPipe } from "./common/validation-pipe.js";
 import { DatabaseModule } from "./database/database.module.js";
+import { DebugModule } from "./debug/debug.module.js";
 import logger from "./logger.js";
 import { NarratorTemplatesModule } from "./narrator-templates/narrator-templates.module.js";
 import { PersonasModule } from "./personas/personas.module.js";
@@ -29,6 +30,7 @@ import { SettingsModule } from "./settings/settings.module.js";
     NarratorTemplatesModule,
     CardsModule,
     SettingsModule,
+    DebugModule,
   ],
   providers: [
     { provide: APP_PIPE, useFactory: createValidationPipe },
