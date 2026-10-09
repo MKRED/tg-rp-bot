@@ -225,7 +225,7 @@ Docs describe the **current** state, not history — what's removed from code is
 - **docs/** — reference narratives; when editing a feature, update its file and keep only a thin link here:
   `architecture.md` (tree, webapp layout, router, proxy/Mini App boundaries), `llm.md` (provider, BYOK),
   `narrator.md` (story director mode + compact), `testing.md`, `deploy.md`, `telegram-ui.md`,
-  `tgui-components.md`.
+  `tgui-components.md`; `plan/` — roadmaps of upcoming large changes (update or remove as steps land).
 - **`.claude/agents/*.md`** — only replace stale literal facts (provider name, env var, path, command)
   that the diff changed; never rewrite agent frontmatter/role/instructions. Full rules live in
   `.claude/agents/docs-updater.md`.
