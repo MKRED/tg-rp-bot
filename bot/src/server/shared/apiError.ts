@@ -6,7 +6,7 @@ import type { AppVariables } from "../middleware/initData.types.js";
  * Единый ответ на ошибку не-стримингового вызова chatCompletion (ИИ-перевод, ручное сжатие
  * истории). На MissingApiKeyError (нет персонального ключа DeepSeek — BYOK) отдаёт 400 с готовым
  * текстом-подсказкой; иначе — прежний общий 500. Стриминговые генерации (SSE) используют свой
- * аналог — writeGenerationError в streamGeneration.ts.
+ * аналог — writeGenerationError в common/stream-completion.ts.
  */
 export function chatCompletionErrorResponse(c: Context<{ Variables: AppVariables }>, err: unknown): Response {
   if (err instanceof MissingApiKeyError) {

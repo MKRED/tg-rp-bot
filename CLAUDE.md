@@ -66,7 +66,8 @@ yarn build         # build bot (nest build) + webapp
 ```
 bot/src/    — main (Nest bootstrap + bot start) · app.module · bot.ts (grammY) · config · logger · proxy ·
               Nest modules: auth/ database/ users/ common/ <domain>/ (characters, …) ·
-              db/ (schema + legacy DAO per table) · llm/ (LLM client, per-user provider) · tavily/ ·
+              db/ (schema + legacy DAO per table) · llm/ (LLM client, per-user provider) ·
+              prompt/ (prompt assembly, no Nest) · tavily/ ·
               handlers/ · server/ (legacy Hono API + Mini App static, behind legacyBridge) · utils/
 webapp/src/ — main/init (Telegram SDK) · app/ (shell, HashRouter) · pages/ (one screen per route) ·
               features/ (domain modules) · shared/ (cross-cutting)

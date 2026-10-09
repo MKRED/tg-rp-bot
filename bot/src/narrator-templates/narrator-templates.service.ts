@@ -5,8 +5,8 @@ import {
   type NarratorTemplateListItem,
 } from "@tg-rp-bot/shared";
 import type { NarratorTemplate } from "../db/schema.js";
-import { normalizeStoryPromptOrder } from "../server/prompt/storyPromptOrder.js";
-import { templateTokenWeight } from "../server/prompt/templateTokenWeight.js";
+import { normalizeStoryPromptOrder } from "../prompt/storyPromptOrder.js";
+import { templateTokenWeight } from "../prompt/templateTokenWeight.js";
 import { isFkViolation } from "../common/fk-violation.js";
 import { found } from "../common/found.js";
 import { NarratorTemplatesRepository } from "./narrator-templates.repository.js";

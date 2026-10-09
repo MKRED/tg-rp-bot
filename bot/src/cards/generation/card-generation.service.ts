@@ -8,7 +8,7 @@ import type {
 import { MissingApiKeyError } from "../../llm/errors.js";
 import logger from "../../logger.js";
 import { PresetsRepository } from "../../presets/presets.repository.js";
-import { presetToCompletionOptions } from "../../server/prompt/promptBuilder/index.js";
+import { presetToCompletionOptions } from "../../prompt/promptBuilder/index.js";
 import { TavilySettingsRepository } from "../../settings/tavily/tavily-settings.repository.js";
 import { tryLockCard, unlockCard } from "../card-lock.js";
 import { CardsRepository } from "../cards.repository.js";

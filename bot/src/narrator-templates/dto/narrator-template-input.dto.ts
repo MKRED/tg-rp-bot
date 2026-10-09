@@ -10,7 +10,7 @@ import {
 } from "@tg-rp-bot/shared";
 import { Transform } from "class-transformer";
 import { IsArray, IsBoolean, IsIn, IsNotEmpty, IsString } from "class-validator";
-import { normalizeStoryPromptOrder } from "../../server/prompt/storyPromptOrder.js";
+import { normalizeStoryPromptOrder } from "../../prompt/storyPromptOrder.js";
 
 const trimmed = ({ value }: { value: unknown }) => (typeof value === "string" ? value.trim() : value);
 

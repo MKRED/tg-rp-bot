@@ -3,16 +3,16 @@ import { getNarratorTemplate } from "../../db/narratorTemplates/index.js";
 import { getPreset } from "../../db/presets/index.js";
 import { getStory, getStorySettings, listCompactions } from "../../db/stories/index.js";
 import logger from "../../logger.js";
-import { selectValidChain } from "../prompt/compactionPlan.js";
-import { matchesTriggerKeywords } from "../prompt/keywordMatch.js";
-import { presetToCompletionOptions } from "../prompt/promptBuilder/index.js";
+import { selectValidChain } from "../../prompt/compactionPlan.js";
+import { matchesTriggerKeywords } from "../../prompt/keywordMatch.js";
+import { presetToCompletionOptions } from "../../prompt/promptBuilder/index.js";
 import {
   buildStoryMessages,
   DEFAULT_NARRATOR_PROMPT_ORDER,
   DEFAULT_NARRATOR_TEMPLATE,
   resolveNarratorMarkers,
-} from "../prompt/storyPromptBuilder/index.js";
-import { normalizeStoryPromptOrder } from "../prompt/storyPromptOrder.js";
+} from "../../prompt/storyPromptBuilder/index.js";
+import { normalizeStoryPromptOrder } from "../../prompt/storyPromptOrder.js";
 
 /**
  * Собирает вход для narrator-генерации из текущего состояния истории: системный промпт (из шаблона

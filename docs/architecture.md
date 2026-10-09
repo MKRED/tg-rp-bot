@@ -22,7 +22,9 @@ bot/src/
   users/        — UsersService.ensureTelegramUser (upsert строки users, кэш на процесс)
   common/       — ApiExceptionFilter (ошибки → { error }), createValidationPipe, found() (undefined → 404),
                   image-limits (лимиты полей-картинок data URL), fk-violation (FK 23503 → 409 in_use),
-                  decorators/ (IsDataImageUrl — поле-картинка data URL с лимитом; IsOptionalNote — сноска, пусто → null)
+                  decorators/ (IsDataImageUrl — поле-картинка data URL с лимитом; IsOptionalNote — сноска, пусто → null),
+                  stream-completion (streamCompletion/writeGenerationError — LLM-генерация в SSE-события
+                  token/reset/error через интерфейс SseSink: годится и для Hono, и для Nest @Sse)
   characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ — доменные модули Nest: controller / service / repository (бывший DAO) / dto/;
                   у cards/ ещё card-lock.ts (лок карточки, общий для PUT и генерации) и generation/ — поблочная
                   генерация: card-generation.service (Nest-сервис) + prompt-assembly / tool-loop (web_search +
@@ -51,6 +53,9 @@ bot/src/
                   PromptEditorOverlay) — controller / service / dto/; engine/ — движок перевода без Nest
                   (googleTranslate, aiTranslate, resolveTranslationReasoning, чанкинг блока, разбивка на
                   абзацы, константы), общий с legacy-переводом в server/chats и server/stories
+  prompt/       — сборка промптов без Nest: promptBuilder (RP-чат, impersonate, сэмплинг пресета) +
+                  storyPromptBuilder (narrator) + общий budget, compactionPlan, keywordMatch,
+                  storyPromptOrder, templateTokenWeight (у каждого constants/types/test рядом)
   bot.ts        — grammY bot instance (+ прокси для Telegram через baseFetchConfig)
   bot.constants.ts
   config.ts     — env vars (requireEnv для обязательных, process.env для опциональных)
@@ -85,9 +90,8 @@ bot/src/
                   подписи), доменные папки chats/ stories/ — у каждого
                   <домен>.controller.ts (Hono-роуты) + validation/
                   constants/types рядом + barrel index.ts; chats/ — messages.handlers + impersonate.handlers
-                  + stats.handler; stories/ — story.handlers (SSE-генерация RP/narrator); prompt/ —
-                  promptBuilder + storyPromptBuilder + общий budget (у каждого constants/types/test рядом);
-                  shared/ — streamGeneration, apiError (переиспользуемое между доменами)
+                  + stats.handler; stories/ — story.handlers (SSE-генерация RP/narrator);
+                  shared/ — apiError (переиспользуемое между доменами)
                   + раздача собранной статики Mini App из ./public (SPA-fallback) — один процесс
   scripts/      — разовые скрипты (backfill-message-encryption)
   utils/        — retry, crypto (per-user шифрование сообщений), concurrency (runWithConcurrency —

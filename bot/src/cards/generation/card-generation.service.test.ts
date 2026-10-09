@@ -6,7 +6,7 @@ vi.mock("../../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), in
 vi.mock("../../db/index.js", () => ({ db: {}, schema: {} }));
 const runCardGenerationToolLoop = vi.fn();
 vi.mock("./tool-loop.js", () => ({ runCardGenerationToolLoop }));
-vi.mock("../../server/prompt/promptBuilder/index.js", () => ({ presetToCompletionOptions: () => ({ temperature: 0.5 }) }));
+vi.mock("../../prompt/promptBuilder/index.js", () => ({ presetToCompletionOptions: () => ({ temperature: 0.5 }) }));
 
 const { CardGenerationService } = await import("./card-generation.service.js");
 const { tryLockCard, unlockCard } = await import("../card-lock.js");

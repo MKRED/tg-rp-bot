@@ -13,15 +13,15 @@ import { chatCompletion } from "../../llm/client.js";
 import type { ChatMessage } from "../../llm/types.js";
 import logger from "../../logger.js";
 import { countTokens, retry } from "../../utils/index.js";
-import { PER_MESSAGE_OVERHEAD } from "../prompt/budget.js";
-import { planCompactionSegments, selectValidChain } from "../prompt/compactionPlan.js";
+import { PER_MESSAGE_OVERHEAD } from "../../prompt/budget.js";
+import { planCompactionSegments, selectValidChain } from "../../prompt/compactionPlan.js";
 import {
   COMPACTION_CONTEXT_HEADER,
   DEFAULT_COMPACTION_PROMPT,
   DEFAULT_NARRATOR_PROMPT_ORDER,
   resolveNarratorMarkers,
-} from "../prompt/storyPromptBuilder/index.js";
-import { normalizeStoryPromptOrder } from "../prompt/storyPromptOrder.js";
+} from "../../prompt/storyPromptBuilder/index.js";
+import { normalizeStoryPromptOrder } from "../../prompt/storyPromptOrder.js";
 import { chatCompletionErrorResponse } from "../shared/apiError.js";
 import { compactAvailable, resolveCompactFloor } from "./compact.gate.js";
 import type { Ctx } from "./stories.types.js";

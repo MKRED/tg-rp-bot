@@ -1,4 +1,4 @@
-import { countTokens } from "../../utils/index.js";
+import { countTokens } from "../utils/index.js";
 
 interface TemplateOwnedFields {
   systemPrompt: string;

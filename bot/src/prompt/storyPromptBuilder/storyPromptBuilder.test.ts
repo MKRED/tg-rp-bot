@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { StoryMessageInPath } from "../../../db/stories/index.js";
-import { countTokens } from "../../../utils/index.js";
+import type { StoryMessageInPath } from "../../db/stories/index.js";
+import { countTokens } from "../../utils/index.js";
 import { PER_MESSAGE_OVERHEAD } from "../budget.js";
 import {
   buildStoryMessages,

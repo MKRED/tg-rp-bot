@@ -7,9 +7,9 @@ import {
   listVariants,
 } from "../../db/impersonations/index.js";
 import logger from "../../logger.js";
-import { presetToCompletionOptions, renderImpersonateMessages } from "../prompt/promptBuilder/index.js";
+import { presetToCompletionOptions, renderImpersonateMessages } from "../../prompt/promptBuilder/index.js";
 import { chatCompletionErrorResponse } from "../shared/apiError.js";
-import { streamCompletion, writeGenerationError } from "../shared/streamGeneration.js";
+import { streamCompletion, writeGenerationError } from "../../common/stream-completion.js";
 import { aiTranslate, englishLangName, googleTranslate } from "../../translate/engine/index.js";
 import { loadChatContext } from "./messages.handlers.js";
 import type { Ctx } from "./chats.types.js";

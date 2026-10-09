@@ -10,7 +10,7 @@ import {
   deleteStoryMessage,
 } from "../../db/stories/index.js";
 import logger from "../../logger.js";
-import { streamCompletion, writeGenerationError } from "../shared/streamGeneration.js";
+import { streamCompletion, writeGenerationError } from "../../common/stream-completion.js";
 import { buildStoryCompletionInput } from "./storyContext.js";
 import type { Ctx } from "./stories.types.js";
 

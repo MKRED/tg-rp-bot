@@ -1,5 +1,5 @@
-import type { MessageInPath } from "../../../db/chats/index.js";
-import type { PromptOrderItem } from "../../../db/schema.js";
+import type { MessageInPath } from "../../db/chats/index.js";
+import type { PromptOrderItem } from "../../db/schema.js";
 import type { TrimInfo } from "../budget.js";
 
 export type PromptCharacter = {

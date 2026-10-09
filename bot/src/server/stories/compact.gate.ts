@@ -1,4 +1,4 @@
-import { DEFAULT_OUTPUT_RESERVE } from "../prompt/budget.js";
+import { DEFAULT_OUTPUT_RESERVE } from "../../prompt/budget.js";
 
 /** Минимальный размер контекста, при котором сжатие имеет смысл (ниже — фича недоступна). */
 export const MIN_COMPACT_CONTEXT = 4000;

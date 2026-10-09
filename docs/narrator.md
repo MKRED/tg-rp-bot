@@ -28,7 +28,7 @@ RP-чата), переиспользуя только реально переи�
 - **Сервер:** Nest-модуль `narrator-templates/` (CRUD шаблонов; `db/narratorTemplates/` — временный
   мост `getNarratorTemplate` для stories), Nest-модуль `knowledge-books/` (книги и записи; `db/knowledge/` —
   временный мост `getBook`/`getActiveEntriesForPrompt` для stories), `db/stories/` (зеркало `db/chats/`,
-  вкл. `settings.ts` и `crypto.ts` — расшифровка кэша переводов); `server/prompt/storyPromptBuilder/`
+  вкл. `settings.ts` и `crypto.ts` — расшифровка кэша переводов); `prompt/storyPromptBuilder/`
   (+тест), `server/stories/story.handlers.ts` (вкл. перевод бита/директивы через `googleTranslate`) +
   контроллер `server/stories/stories.controller.ts`, домен-роут `stories/`
   (у `stories` — `settings` GET/PUT + `messages/:id/translate`).
@@ -51,7 +51,7 @@ RP-чата), переиспользуя только реально переи�
 leading-user — иначе массив начинался бы с assistant, что отвергают Anthropic (через OpenRouter) и
 reasoner DeepSeek. Книга знаний: `always_on`-записи идут в промпт всегда; `keyword`-записи — только если
 хотя бы одно из её триггер-слов встретилось (word-boundary матч по Unicode-классам `\p{L}`/`\p{N}`,
-регистронезависимо, ё↔е нормализация — `server/prompt/keywordMatch.ts`) среди последних `keywordDepth`
+регистронезависимо, ё↔е нормализация — `prompt/keywordMatch.ts`) среди последних `keywordDepth`
 сообщений **активного пути** истории (`story.messages`, весь путь, не урезанный под токен-бюджет `history`
 ниже) — намеренно: лорбук должен донести факт, даже если само сообщение-триггер потом не поместилось в
 бюджет и не попало в реальный промпт модели.

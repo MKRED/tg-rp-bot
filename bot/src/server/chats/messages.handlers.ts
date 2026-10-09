@@ -15,9 +15,9 @@ import { getPersona } from "../../db/personas/index.js";
 import { getPreset } from "../../db/presets/index.js";
 import { getRpTemplate } from "../../db/rpTemplates/index.js";
 import logger from "../../logger.js";
-import { buildMessages, DEFAULT_RP_PROMPT_ORDER, presetToCompletionOptions } from "../prompt/promptBuilder/index.js";
+import { buildMessages, DEFAULT_RP_PROMPT_ORDER, presetToCompletionOptions } from "../../prompt/promptBuilder/index.js";
 import { chatCompletionErrorResponse } from "../shared/apiError.js";
-import { streamCompletion, writeGenerationError } from "../shared/streamGeneration.js";
+import { streamCompletion, writeGenerationError } from "../../common/stream-completion.js";
 import { aiTranslate, englishLangName, googleTranslate } from "../../translate/engine/index.js";
 import type { ChatContext, Ctx } from "./chats.types.js";
 

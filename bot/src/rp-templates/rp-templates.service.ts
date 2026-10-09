@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { MAX_RP_TEMPLATES_PER_USER, type RpTemplateInput, type RpTemplateListItem } from "@tg-rp-bot/shared";
 import type { RpTemplate } from "../db/schema.js";
-import { templateTokenWeight } from "../server/prompt/templateTokenWeight.js";
+import { templateTokenWeight } from "../prompt/templateTokenWeight.js";
 import { isFkViolation } from "../common/fk-violation.js";
 import { found } from "../common/found.js";
 import { RpTemplatesRepository } from "./rp-templates.repository.js";

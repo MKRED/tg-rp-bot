@@ -138,7 +138,10 @@ webapp (`apiFetch`) читает тело любого успешного отв
 - `ensureUser` (строка в `users` для FK) делает guard с кэшем на процесс, а не каждый контроллер.
 
 ### Без проблем переносятся
-- SSE-стриминг генерации — через `@Sse` или сырой ответ.
+- SSE-стриминг генерации — штатный `@Sse` с методом POST (`@Sse(path, { [METHOD_METADATA]: RequestMethod.POST })`,
+  Nest 12): webapp стримит POST + fetch, тело запроса несёт текст реплики. Проверено: токены уходят по мере
+  появления, 404/400 до возврата Observable — обычный JSON через ApiExceptionFilter; POST по умолчанию
+  отвечает 201 — нужен `@HttpCode(200)`. Общая разводка генерации в события — `common/stream-completion.ts`.
 - Бот grammY — как отдельный сервис (provider) внутри приложения Nest.
 - Раздача статики Mini App — `@nestjs/serve-static` (только если `public` существует, исключая
   `/api/{*path}`) или сырой обработчик с SPA-fallback.

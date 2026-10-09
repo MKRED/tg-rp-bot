@@ -1,7 +1,7 @@
-import type { StoryPromptComponentId, StoryPromptOrderItem } from "../../../db/schema.js";
-import type { StoryMessageInPath } from "../../../db/stories/index.js";
-import type { ChatMessage } from "../../../llm/types.js";
-import { countTokens } from "../../../utils/index.js";
+import type { StoryPromptComponentId, StoryPromptOrderItem } from "../../db/schema.js";
+import type { StoryMessageInPath } from "../../db/stories/index.js";
+import type { ChatMessage } from "../../llm/types.js";
+import { countTokens } from "../../utils/index.js";
 import { DEFAULT_OUTPUT_RESERVE, PER_MESSAGE_OVERHEAD, trimHistoryToBudget } from "../budget.js";
 import {
   COMPACT_SUMMARY_HEADER,

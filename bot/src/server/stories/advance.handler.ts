@@ -8,8 +8,8 @@ import {
 } from "../../db/stories/index.js";
 import { getNarratorTemplate } from "../../db/narratorTemplates/index.js";
 import logger from "../../logger.js";
-import { resolveNarratorMarkers } from "../prompt/storyPromptBuilder/index.js";
-import { streamCompletion, writeGenerationError } from "../shared/streamGeneration.js";
+import { resolveNarratorMarkers } from "../../prompt/storyPromptBuilder/index.js";
+import { streamCompletion, writeGenerationError } from "../../common/stream-completion.js";
 import { compactStory, shouldAutoCompact } from "./compact.handler.js";
 import { buildStoryCompletionInput } from "./storyContext.js";
 import type { Ctx } from "./stories.types.js";
