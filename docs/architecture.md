@@ -16,10 +16,12 @@ bot/src/
   app.module.ts — корневой модуль Nest: LoggerModule (nestjs-pino поверх logger.ts), глобальные
                   ValidationPipe (common/validation-pipe) и ApiExceptionFilter (common/), модули ниже
   auth/         — TelegramAuthGuard (глобальный APP_GUARD) + @CurrentUser() (внутренний userId) +
+                  @TelegramUser() (профиль Telegram — только для me/, где нужен Telegram id для Bot API) +
                   initData.ts — проверка initData, общая с Hono-middleware
   database/     — DatabaseModule (@Global) + DatabaseService поверх drizzle-клиента из db/index.ts
   users/        — UsersService.ensureTelegramUser (upsert строки users, кэш на процесс)
   common/       — ApiExceptionFilter (ошибки → { error }), createValidationPipe, found() (undefined → 404),
+                  image-limits (лимиты полей-картинок data URL),
                   decorators/ (IsDataImageUrl — поле-картинка data URL с лимитом; IsOptionalNote — сноска, пусто → null)
   characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ — доменные модули Nest: controller / service / repository (бывший DAO) / dto/;
                   у cards/ ещё card-lock.ts (лок карточки, общий для PUT и генерации) и generation/ — поблочная
@@ -37,6 +39,9 @@ bot/src/
   avatars/      — POST /api/avatars/batch: батч-резолв картинок персонажей/персон для AvatarStack
                   (см. ниже) — controller / service (лимит батча) / repository / dto/ (некорректные
                   дескрипторы молча выпадают)
+  me/           — /api/me: профиль из initData, фото профиля (GET /photo) и фото из лайтбокса себе в
+                  чат (POST /send-photo) — controller / service / dto/; media/ — profilePhoto (Bot API +
+                  кэш на час) и photoToChat (sendPhoto с web_app-кнопкой deep link и «Закрыть»)
   translate/    — POST /api/translate/text: безэнтитный батч-перевод абзацев (режим перевода
                   PromptEditorOverlay) — controller / service / dto/; engine/ — движок перевода без Nest
                   (googleTranslate, aiTranslate, resolveTranslationReasoning, чанкинг блока, разбивка на
@@ -71,14 +76,13 @@ bot/src/
                   legacyBridge.ts — express-middleware, отдающий в Hono всё вне NEST_ROUTE_PREFIXES;
                   index=createLegacyApp,
                   routes.ts — карта эндпоинтов (монтаж контроллеров), middleware/ (initData — валидация
-                  подписи), доменные папки me/ books/
+                  подписи), доменные папки books/
                   chats/ stories/ — у каждого
                   <домен>.controller.ts (Hono-роуты) + validation/
                   constants/types рядом + barrel index.ts; chats/ — messages.handlers + impersonate.handlers
                   + stats.handler; stories/ — story.handlers (SSE-генерация RP/narrator); prompt/ —
                   promptBuilder + storyPromptBuilder + общий budget (у каждого constants/types/test рядом);
-                  media/ — profilePhoto + photoToChat (POST /me/send-photo); shared/ — fkViolation,
-                  imageValidation, streamGeneration, apiError (переиспользуемое между доменами)
+                  shared/ — fkViolation, streamGeneration, apiError (переиспользуемое между доменами)
                   + раздача собранной статики Mini App из ./public (SPA-fallback) — один процесс
   scripts/      — разовые скрипты (backfill-message-encryption)
   utils/        — retry, crypto (per-user шифрование сообщений), concurrency (runWithConcurrency —

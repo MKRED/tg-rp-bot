@@ -19,6 +19,7 @@ export const NEST_ROUTE_PREFIXES: readonly string[] = [
   "/api/debug",
   "/api/translate",
   "/api/avatars",
+  "/api/me",
 ];
 
 /** Обслуживает ли путь Nest: точное совпадение с префиксом или вложенный путь под ним. */

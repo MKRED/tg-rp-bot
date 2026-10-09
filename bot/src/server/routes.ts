@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 import { createBookRoutes } from "./books/index.js";
 import { createChatRoutes } from "./chats/index.js";
-import { createMeRoutes } from "./me/index.js";
 import { type AppVariables } from "./middleware/initData.types.js";
 import { requireInitData } from "./middleware/initData.js";
 import { createStoryRoutes } from "./stories/index.js";
@@ -20,11 +19,8 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
   // Все /api/* требуют валидный Telegram initData (проверка подписи, см. middleware/initData.ts)
   api.use("*", requireInitData);
 
-  // Текущий пользователь: профиль, фото профиля, отправка фото из лайтбокса в чат.
-  api.route("/me", createMeRoutes());
-
-  // Персонажи, персоны, пресеты, RP- и narrator-шаблоны, карточки, настройки, отладку,
-  // безэнтитный перевод (/translate) и батч-аватары (/avatars) обслуживает Nest (см. legacyBridge.ts).
+  // Персонажи, персоны, пресеты, RP- и narrator-шаблоны, карточки, настройки, отладку, безэнтитный
+  // перевод (/translate), батч-аватары (/avatars) и текущего пользователя (/me) обслуживает Nest (см. legacyBridge.ts).
 
   // RP-чаты: CRUD + стриминговая генерация + ветвление + перевод.
   api.route("/chats", createChatRoutes());

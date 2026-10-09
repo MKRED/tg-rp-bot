@@ -10,6 +10,7 @@ import { createValidationPipe } from "./common/validation-pipe.js";
 import { DatabaseModule } from "./database/database.module.js";
 import { DebugModule } from "./debug/debug.module.js";
 import logger from "./logger.js";
+import { MeModule } from "./me/me.module.js";
 import { NarratorTemplatesModule } from "./narrator-templates/narrator-templates.module.js";
 import { PersonasModule } from "./personas/personas.module.js";
 import { PresetsModule } from "./presets/presets.module.js";
@@ -35,6 +36,7 @@ import { TranslateModule } from "./translate/translate.module.js";
     DebugModule,
     TranslateModule,
     AvatarsModule,
+    MeModule,
   ],
   providers: [
     { provide: APP_PIPE, useFactory: createValidationPipe },

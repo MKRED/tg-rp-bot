@@ -1,10 +1,5 @@
-/**
- * Имя query-параметра deep-link от web_app-кнопки бота. Согласовано с сервером
- * (bot/src/server/media/photoToChat.ts) — менять только синхронно.
- */
-const DEEP_LINK_PARAM = "dl";
-/** Разрешённые внутренние пути (та же защита, что на сервере) — без внешних URL/мусора. */
-const DEEP_LINK_RE = /^\/(characters|personas)\/\d+$/;
+// Имя query-параметра и белый список путей — общие с ботом (он строит web_app-кнопку под фото).
+import { DEEP_LINK_PARAM, DEEP_LINK_PATH_RE } from "@tg-rp-bot/shared";
 
 /**
  * Чистое ядро: из query-строки вычисляет новый (search, hash) для deep-link или null, если
@@ -18,7 +13,7 @@ export function computeDeepLinkRewrite(
   if (!raw) return null;
 
   const path = decodeURIComponent(raw);
-  if (!DEEP_LINK_RE.test(path)) return null;
+  if (!DEEP_LINK_PATH_RE.test(path)) return null;
 
   params.delete(DEEP_LINK_PARAM); // dl убираем, остальные query-параметры сохраняем
   return { search: params.toString(), hash: path };

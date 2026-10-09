@@ -3,7 +3,7 @@ import { Transform } from "class-transformer";
 import { ArrayMaxSize, IsArray, IsNotEmpty, IsString } from "class-validator";
 import { IsDataImageUrl } from "../../common/decorators/is-data-image-url.decorator.js";
 import { IsOptionalNote } from "../../common/decorators/is-optional-note.decorator.js";
-import { MAX_IMAGE_CHARS, MAX_IMAGE_FULL_CHARS } from "../../server/shared/imageValidation.constants.js";
+import { MAX_IMAGE_CHARS, MAX_IMAGE_FULL_CHARS } from "../../common/image-limits.js";
 
 /**
  * Тело POST/PUT /api/characters. Поля и их смысл — контракт CharacterInput из @tg-rp-bot/shared;

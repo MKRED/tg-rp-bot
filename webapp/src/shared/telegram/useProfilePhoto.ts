@@ -1,3 +1,4 @@
+import type { ProfilePhotoResponse } from "@tg-rp-bot/shared";
 import { useEffect, useState } from "react";
 import { apiFetch } from "../api/client";
 
@@ -20,7 +21,7 @@ export function useProfilePhoto(): string | undefined {
       return;
     }
     let cancelled = false; // защита от StrictMode-двойного эффекта и размонтирования
-    apiFetch<{ dataUrl: string | null }>("/me/photo")
+    apiFetch<ProfilePhotoResponse>("/me/photo")
       .then((res) => {
         if (!cancelled && res.dataUrl) {
           cachedPhotoUrl = res.dataUrl;

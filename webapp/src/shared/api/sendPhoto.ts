@@ -1,11 +1,7 @@
+import type { SendPhotoRequest } from "@tg-rp-bot/shared";
 import { apiFetch } from "./client";
 
-export interface SendPhotoToChatOptions {
-  /** Текст кнопки-ссылки под фото = имя персонажа/персоны. */
-  label: string;
-  /** Внутренний путь Mini App для кнопки-ссылки: "/characters/:id" | "/personas/:id". */
-  deepLink: string;
-}
+export type SendPhotoToChatOptions = Pick<SendPhotoRequest, "label" | "deepLink">;
 
 /**
  * Отправляет картинку (data URL) пользователю в чат с ботом: бот шлёт фото с инлайн-кнопками
@@ -18,6 +14,6 @@ export async function sendPhotoToChat(
 ): Promise<void> {
   await apiFetch("/me/send-photo", {
     method: "POST",
-    body: JSON.stringify({ image: dataUrl, label: opts.label, deepLink: opts.deepLink }),
+    body: JSON.stringify({ image: dataUrl, label: opts.label, deepLink: opts.deepLink } satisfies SendPhotoRequest),
   });
 }

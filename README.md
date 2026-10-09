@@ -33,7 +33,7 @@ tg-rp-bot/
 │  │  ├─ main.ts       # точка входа: bootstrap Nest (+ мост в legacy Hono), старт бота
 │  │  ├─ app.module.ts # корневой модуль Nest (глобальные guard/pipe/filter)
 │  │  ├─ auth/ database/ users/ common/  # общие модули Nest: initData-guard + @CurrentUser, БД, …
-│  │  ├─ characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ settings/ debug/ translate/ avatars/  # доменные модули Nest: module/controller/service/repository/dto
+│  │  ├─ characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ settings/ debug/ translate/ avatars/ me/  # доменные модули Nest: module/controller/service/repository/dto
 │  │  ├─ bot.ts        # инстанс grammY (+ прокси для Telegram)
 │  │  ├─ config.ts     # переменные окружения
 │  │  ├─ logger.ts     # pino
@@ -45,7 +45,7 @@ tg-rp-bot/
 │  │  ├─ handlers/     # обработчики команд бота (/start …)
 │  │  ├─ server/       # legacy Hono HTTP API (/health, /api; переезжает на Nest по доменам), routes —
 │  │  │                #   карта эндпоинтов, у каждого домена *.controller.ts + validation/constants/
-│  │  │                #   types; chats/ stories/ — SSE-генерация; prompt/ media/ shared/ + статика
+│  │  │                #   types; chats/ stories/ — SSE-генерация; prompt/ shared/ + статика
 │  │  ├─ scripts/      # разовые скрипты (backfill шифрования сообщений)
 │  │  └─ utils/        # retry, crypto (per-user шифрование)
 │  └─ drizzle/         # SQL-миграции

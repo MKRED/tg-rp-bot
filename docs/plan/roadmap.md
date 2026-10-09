@@ -113,6 +113,9 @@ Nest поднимается на том же порту, текущее Hono-п�
   `server/shared/` в `translate/engine/` — им пользуются и legacy chats/stories.
 - **Блок L ✅** — avatars (`POST /api/avatars/batch`, AvatarStack): контракт дескрипторов и лимит
   батча — в shared; DAO `db/avatars` стал репозиторием модуля.
+- **Блок M ✅** — me (профиль, фото профиля, фото из лайтбокса в чат): контракт и deep link (параметр и
+  белый список путей) — в shared; `server/media` переехал в `me/media/`. Эндпоинтам Bot API нужен
+  Telegram id — для них `@TelegramUser()` (исключение из правила `@CurrentUser()`).
 - **Дальше** — остальные домены по одному (… chats/stories с SSE
   последними), затем бот grammY как provider и удаление Hono.
 

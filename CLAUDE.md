@@ -109,7 +109,9 @@ Full tree, webapp layout rules, router/deep-link details — [docs/architecture.
   from `server/` + `server/routes.ts` in the same change. Legacy callers of a moved DAO go through a
   temporary shim in `db/<domain>/index.ts` (see `db/characters`), removed when they migrate.
 - **Auth:** global `TelegramAuthGuard` (`auth/`) — every controller is protected; read the user with
-  `@CurrentUser() userId: number` (internal id), never the Telegram profile. The guard also ensures the
+  `@CurrentUser() userId: number` (internal id), never the Telegram profile. Only endpoints that are
+  Telegram by nature (`me/`: initData profile, Bot API calls needing the Telegram id) use
+  `@TelegramUser()`. The guard also ensures the
   `users` row, so controllers don't call `ensureUser`.
 - **Response contract is the webapp's:** keep Hono-era codes and bodies (`201 {character}`,
   `200 {ok:true}`, never `204` — `apiFetch` parses every OK body as JSON). Errors go through the global

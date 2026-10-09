@@ -9,7 +9,7 @@ import logger from "./logger.js";
 import { createLegacyApp, createLegacyBridge } from "./server/index.js";
 
 // Лимит JSON-тела: в Express по умолчанию 100 КБ, а персонаж несёт миниатюру (до 900 тыс. символов)
-// и полное фото (до 2,5 млн) data URL'ами — см. server/shared/imageValidation.constants.ts.
+// и полное фото (до 2,5 млн) data URL'ами — см. common/image-limits.ts.
 const JSON_BODY_LIMIT = "8mb";
 
 async function bootstrap(): Promise<void> {
