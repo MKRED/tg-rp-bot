@@ -1,3 +1,4 @@
+import type { PromptTranslateEngine, TranslateTextRequest, TranslateTextResponse } from "@tg-rp-bot/shared";
 import { apiFetch } from "./client";
 
 /**
@@ -7,18 +8,13 @@ import { apiFetch } from "./client";
  * (тот же прецедент, что TranslateSheet + useComposeTranslate).
  */
 
-export type PromptTranslateEngine = "google" | "ai";
+export type { PromptTranslateEngine };
 
-export interface TranslateBlocksParams {
-  blocks: string[];
-  sourceLang: string;
-  targetLang: string;
-  mode: PromptTranslateEngine;
-}
+export type TranslateBlocksParams = TranslateTextRequest;
 
 /** Батч-перевод абзацев, строго 1:1 по порядку с blocks. */
 export async function translateBlocksApi(params: TranslateBlocksParams): Promise<string[]> {
-  const res = await apiFetch<{ translations: string[] }>("/translate/text", {
+  const res = await apiFetch<TranslateTextResponse>("/translate/text", {
     method: "POST",
     body: JSON.stringify(params),
   });

@@ -29,10 +29,15 @@ bot/src/
                   ENCRYPTION_KEY; verify — /models, баланс), tavily/ (ключ Tavily + лимит раундов поиска),
                   translate/ (режим перевода PromptEditorOverlay) — у каждой controller/service/repository;
                   dto/ (снисходительные PATCH: невалидное поле игнорируется), key-format.ts (400
-                  invalid_key_format); экспортирует TavilySettingsRepository для генерации карточек
+                  invalid_key_format); экспортирует TavilySettingsRepository (генерация карточек) и
+                  TranslateSettingsRepository (перевод)
   debug/        — /api/debug/llm: настройки перехвата LLM (repository — колонки user_settings) + записи из
                   in-memory кольца llm/debugCapture; DebugService праймит кэш настроек на старте
                   (OnApplicationBootstrap)
+  translate/    — POST /api/translate/text: безэнтитный батч-перевод абзацев (режим перевода
+                  PromptEditorOverlay) — controller / service / dto/; engine/ — движок перевода без Nest
+                  (googleTranslate, aiTranslate, resolveTranslationReasoning, чанкинг блока, разбивка на
+                  абзацы, константы), общий с legacy-переводом в server/chats и server/stories
   bot.ts        — grammY bot instance (+ прокси для Telegram через baseFetchConfig)
   bot.constants.ts
   config.ts     — env vars (requireEnv для обязательных, process.env для опциональных)
@@ -44,7 +49,7 @@ bot/src/
                   impersonations/ (characters/ personas/ presets/ rpTemplates/ narratorTemplates/ —
                   временные мосты getCharacter/getPersona/getPreset/getRpTemplate/getNarratorTemplate
                   на репозитории Nest для ещё не перенесённых books/chats/stories), settings/ (мост
-                  getDecryptedDeepSeekCredentials/getUserTranslateSettings для resolveProvider и /api/translate)
+                  getDecryptedDeepSeekCredentials для resolveProvider)
                   avatars/ (батч-резолв аватаров для AvatarStack —
                   getAvatarsBatch) (у каждой DAO-файл + types.ts/constants.ts при наличии + barrel index.ts;
                   типы контракта API перенесённых в Nest доменов — из @tg-rp-bot/shared),
@@ -73,10 +78,11 @@ bot/src/
                   + stats.handler; stories/ — story.handlers (SSE-генерация RP/narrator); prompt/ —
                   promptBuilder + storyPromptBuilder + общий budget (у каждого constants/types/test рядом);
                   media/ — profilePhoto + photoToChat (POST /me/send-photo); shared/ — fkViolation,
-                  imageValidation, streamGeneration, translate (переиспользуемое между доменами)
+                  imageValidation, streamGeneration, apiError (переиспользуемое между доменами)
                   + раздача собранной статики Mini App из ./public (SPA-fallback) — один процесс
   scripts/      — разовые скрипты (backfill-message-encryption)
-  utils/        — retry, crypto (per-user шифрование сообщений)
+  utils/        — retry, crypto (per-user шифрование сообщений), concurrency (runWithConcurrency —
+                  пул с ограниченной конкурентностью)
 ```
 
 ## Пакет `shared/` (`@tg-rp-bot/shared`)

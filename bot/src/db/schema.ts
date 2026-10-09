@@ -290,7 +290,7 @@ export const rpTemplates = pgTable("rp_templates", {
   userPersonaStreaming: boolean("user_persona_streaming").notNull().default(true),
   // Служебный: системный промпт для ИИ-перевода черновика сообщения (режим «ИИ» в шторе перевода).
   // Плейсхолдер {{target_lang}} — полное англ. название целевого языка; текст уходит ролью user.
-  // Пусто → дефолтный шаблон (DEFAULT_TRANSLATION_TEMPLATE в server/shared/translate.constants.ts).
+  // Пусто → дефолтный шаблон (DEFAULT_TRANSLATION_TEMPLATE в translate/engine/translate.constants.ts).
   translationSystemPrompt: text("translation_system_prompt").notNull().default(""),
   // Порядок и включённость компонентов запроса. Дефолт — канонический порядок;
   // userDescription выключен (пользователь включает вручную, когда нужна персона).

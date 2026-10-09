@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
-// translate.ts тянет chatCompletion (→ config.ts, requireEnv BOT_TOKEN/DATABASE_URL) и logger —
+// translators.ts тянет chatCompletion (→ config.ts, requireEnv BOT_TOKEN/DATABASE_URL) и logger —
 // мокаем оба, тестируем только чистую resolveTranslationReasoning.
 vi.mock("../../llm/client.js", () => ({ chatCompletion: vi.fn() }));
 vi.mock("../../logger.js", () => ({
   default: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }));
 
-const { resolveTranslationReasoning } = await import("./translate.js");
+const { resolveTranslationReasoning } = await import("./translators.js");
 
 describe("resolveTranslationReasoning", () => {
   it('"off" → рассуждение отключено, эффорт не передаётся', () => {

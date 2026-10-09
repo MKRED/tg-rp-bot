@@ -1,11 +1,13 @@
 import type { NarratorTemplate } from "../../db/schema.js";
 import { LlmHttpError, MissingApiKeyError } from "../../llm/errors.js";
 import logger from "../../logger.js";
-import { retry } from "../../utils/index.js";
-import { runWithConcurrency } from "../shared/concurrency.js";
-import { TRANSLATE_BLOCK_CONCURRENCY } from "../shared/translate.constants.js";
-import { aiTranslate } from "../shared/translate.js";
-import { joinParagraphs, splitParagraphs } from "../shared/translateParagraphs.js";
+import {
+  aiTranslate,
+  joinParagraphs,
+  splitParagraphs,
+  TRANSLATE_BLOCK_CONCURRENCY,
+} from "../../translate/engine/index.js";
+import { retry, runWithConcurrency } from "../../utils/index.js";
 
 /**
  * ИИ-перевод текста бита/директивы с учётом translatePerParagraph шаблона: включено — делит текст

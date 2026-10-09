@@ -24,7 +24,7 @@ import { TranslateSettingsService } from "./translate/translate-settings.service
     TranslateSettingsService,
     TranslateSettingsRepository,
   ],
-  // Генерации карточек нужен ключ Tavily и лимит раундов поиска.
-  exports: [TavilySettingsRepository],
+  // Генерации карточек нужен ключ Tavily и лимит раундов поиска, переводу — промпт-шаблон и effort.
+  exports: [TavilySettingsRepository, TranslateSettingsRepository],
 })
 export class SettingsModule {}

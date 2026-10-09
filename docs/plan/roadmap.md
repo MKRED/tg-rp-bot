@@ -104,11 +104,13 @@ Nest поднимается на том же порту, текущее Hono-п�
   отказы — HttpException с кодом причины), сборка промпта и tool-loop — в `cards/generation/`;
   контракт шага генерации и кодов отказа — в shared.
 - **Блок I ✅** — settings (ключ/модель DeepSeek, ключ Tavily, режим перевода): контракт и диапазон
-  раундов веб-поиска — в shared; генерация карточек получает ключ Tavily через DI; resolveProvider и
-  /api/translate читают настройки через временный мост db/settings (удалить, когда resolveProvider и
-  перевод получат репозитории через DI).
+  раундов веб-поиска — в shared; генерация карточек получает ключ Tavily через DI; resolveProvider читает ключ DeepSeek
+  через временный мост db/settings (удалить, когда вызов LLM получит репозиторий через DI).
 - **Блок J ✅** — debug (экран отладки LLM): контракт записей перехвата и настроек — в shared; прайм
   кэша настроек на старте — DebugService (OnApplicationBootstrap) вместо ручного вызова в main.ts.
+- **Блок K ✅** — translate (`POST /api/translate/text`): контракт запроса и лимит абзацев — в shared;
+  настройки перевода — через DI (мост db/settings больше их не отдаёт); движок перевода переехал из
+  `server/shared/` в `translate/engine/` — им пользуются и legacy chats/stories.
 - **Дальше** — остальные домены по одному (… chats/stories с SSE
   последними), затем бот grammY как provider и удаление Hono.
 

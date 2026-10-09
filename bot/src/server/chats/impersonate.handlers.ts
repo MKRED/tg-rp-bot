@@ -10,7 +10,7 @@ import logger from "../../logger.js";
 import { presetToCompletionOptions, renderImpersonateMessages } from "../prompt/promptBuilder/index.js";
 import { chatCompletionErrorResponse } from "../shared/apiError.js";
 import { streamCompletion, writeGenerationError } from "../shared/streamGeneration.js";
-import { aiTranslate, englishLangName, googleTranslate } from "../shared/translate.js";
+import { aiTranslate, englishLangName, googleTranslate } from "../../translate/engine/index.js";
 import { loadChatContext } from "./messages.handlers.js";
 import type { Ctx } from "./chats.types.js";
 

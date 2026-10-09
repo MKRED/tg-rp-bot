@@ -22,10 +22,8 @@ export const DEFAULT_TRANSLATION_TEMPLATE =
 export { DEFAULT_TRANSLATION_REASONING_EFFORT } from "@tg-rp-bot/shared";
 
 // Константы безэнтитного эндпоинта POST /api/translate/text (режим перевода в PromptEditorOverlay);
-// его настройки по умолчанию (уровни reasoning и т.п.) — в @tg-rp-bot/shared (settings.ts).
-
-/** Максимум абзацев в одном запросе POST /api/translate/text. */
-export const MAX_BLOCKS_PER_REQUEST = 500;
+// лимит абзацев в запросе — часть контракта (@tg-rp-bot/shared, translate.ts), настройки по
+// умолчанию (уровни reasoning и т.п.) — там же (settings.ts).
 
 /**
  * Порог длины (символы) для чанкинга ОДНОГО блока на сервере (translateChunking.ts) — консервативный

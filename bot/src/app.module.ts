@@ -14,6 +14,7 @@ import { PersonasModule } from "./personas/personas.module.js";
 import { PresetsModule } from "./presets/presets.module.js";
 import { RpTemplatesModule } from "./rp-templates/rp-templates.module.js";
 import { SettingsModule } from "./settings/settings.module.js";
+import { TranslateModule } from "./translate/translate.module.js";
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { SettingsModule } from "./settings/settings.module.js";
     CardsModule,
     SettingsModule,
     DebugModule,
+    TranslateModule,
   ],
   providers: [
     { provide: APP_PIPE, useFactory: createValidationPipe },

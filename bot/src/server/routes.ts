@@ -6,7 +6,6 @@ import { createMeRoutes } from "./me/index.js";
 import { type AppVariables } from "./middleware/initData.types.js";
 import { requireInitData } from "./middleware/initData.js";
 import { createStoryRoutes } from "./stories/index.js";
-import { createTranslateRoutes } from "./translate/index.js";
 
 /**
  * Маршруты Mini App API под префиксом /api — карта всех эндпоинтов.
@@ -25,7 +24,8 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
   // Текущий пользователь: профиль, фото профиля, отправка фото из лайтбокса в чат.
   api.route("/me", createMeRoutes());
 
-  // Персонажи, персоны, пресеты, RP- и narrator-шаблоны, карточки, настройки, отладка обслуживает Nest (см. legacyBridge.ts).
+  // Персонажи, персоны, пресеты, RP- и narrator-шаблоны, карточки, настройки, отладку и
+  // безэнтитный перевод (/translate) обслуживает Nest (см. legacyBridge.ts).
 
   // Батч-резолв аватаров (AvatarStack в списке историй / шапке чата narrator).
   api.route("/avatars", createAvatarRoutes());
@@ -36,9 +36,6 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
   // Narrator-режим («Режиссёр истории»): книги знаний, истории (шаблоны — в Nest).
   api.route("/books", createBookRoutes());
   api.route("/stories", createStoryRoutes());
-
-  // Безэнтитный батч-перевод абзацев (режим перевода в PromptEditorOverlay).
-  api.route("/translate", createTranslateRoutes());
 
   return api;
 }

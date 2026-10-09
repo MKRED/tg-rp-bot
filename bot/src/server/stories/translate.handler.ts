@@ -8,7 +8,7 @@ import {
 import { getNarratorTemplate } from "../../db/narratorTemplates/index.js";
 import logger from "../../logger.js";
 import { chatCompletionErrorResponse } from "../shared/apiError.js";
-import { englishLangName, googleTranslate, resolveTranslationReasoning } from "../shared/translate.js";
+import { englishLangName, googleTranslate, resolveTranslationReasoning } from "../../translate/engine/index.js";
 import { aiTranslateStoryText } from "./translateStoryText.js";
 import type { Ctx } from "./stories.types.js";
 

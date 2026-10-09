@@ -18,7 +18,7 @@ import logger from "../../logger.js";
 import { buildMessages, DEFAULT_RP_PROMPT_ORDER, presetToCompletionOptions } from "../prompt/promptBuilder/index.js";
 import { chatCompletionErrorResponse } from "../shared/apiError.js";
 import { streamCompletion, writeGenerationError } from "../shared/streamGeneration.js";
-import { aiTranslate, englishLangName, googleTranslate } from "../shared/translate.js";
+import { aiTranslate, englishLangName, googleTranslate } from "../../translate/engine/index.js";
 import type { ChatContext, Ctx } from "./chats.types.js";
 
 /**
