@@ -1,4 +1,4 @@
-import { getDecryptedDeepSeekCredentials } from "../db/userLlmSettings.js";
+import { getDecryptedDeepSeekCredentials } from "../db/settings/index.js";
 import { MissingApiKeyError } from "./errors.js";
 import { buildDeepSeekProvider } from "./providers.js";
 import type { LlmProvider } from "./providers.types.js";

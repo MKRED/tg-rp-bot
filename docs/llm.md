@@ -5,11 +5,11 @@
 ## Ключ и модель — у каждого пользователя свои
 Глобального ключа/модели нет. Пользователь задаёт их в Mini App → `/settings` → «ИИ (DeepSeek)»:
 - webapp: `webapp/src/features/llm-settings/`
-- сервер: `bot/src/server/settings/`
-- хранение: `user_settings`, зашифровано (`bot/src/db/userLlmSettings.ts`, ключ шифрования — `ENCRYPTION_KEY`).
+- сервер: `bot/src/settings/llm/` (Nest: контроллер, сервис, репозиторий)
+- хранение: `user_settings`, зашифровано (`llm-settings.repository.ts`, ключ шифрования — `ENCRYPTION_KEY`).
 
 Ключ в браузер не отдаётся; RP-генерация идёт через HTTP API бота, а не напрямую из webapp.
-Tavily (веб-поиск) устроен так же: per-user ключ в `userTavilySettings.ts`, `features/tavily-settings/`.
+Tavily (веб-поиск) устроен так же: per-user ключ в `bot/src/settings/tavily/`, `features/tavily-settings/`.
 
 ## Резолв провайдера
 За каждый запрос провайдер резолвится через `bot/src/llm/resolveProvider.ts` (`resolveProvider(userId)`).

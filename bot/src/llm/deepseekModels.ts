@@ -9,7 +9,7 @@ interface DeepSeekModelsResponse {
 
 /**
  * Список доступных моделей DeepSeek для данного ключа — совмещает «проверить ключ» и «получить
- * модели» в одном запросе (см. bot/src/server/settings/settings.controller.ts). Бросает
+ * модели» в одном запросе (см. settings/llm/llm-settings.service.ts). Бросает
  * LlmHttpError на не-2xx — 401 отличает неверный ключ от прочих сбоев. Без ретрая на 401
  * (как в client.ts — ретраятся только 5xx/429, а не сама неверность ключа).
  */

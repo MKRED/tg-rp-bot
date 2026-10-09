@@ -5,11 +5,11 @@ import type {
   CardGenerationError,
   CardGenerationStep,
 } from "@tg-rp-bot/shared";
-import { getDecryptedTavilyKey, getTavilyMaxSearchRounds } from "../../db/userTavilySettings.js";
 import { MissingApiKeyError } from "../../llm/errors.js";
 import logger from "../../logger.js";
 import { PresetsRepository } from "../../presets/presets.repository.js";
 import { presetToCompletionOptions } from "../../server/prompt/promptBuilder/index.js";
+import { TavilySettingsRepository } from "../../settings/tavily/tavily-settings.repository.js";
 import { tryLockCard, unlockCard } from "../card-lock.js";
 import { CardsRepository } from "../cards.repository.js";
 import { ASK_USER_DECLINED_ANSWER, ASK_USER_MAX_ANSWERED_QUESTIONS } from "./ask-user-tool.js";
@@ -32,6 +32,7 @@ export class CardGenerationService {
   constructor(
     private readonly cards: CardsRepository,
     private readonly presets: PresetsRepository,
+    private readonly tavilySettings: TavilySettingsRepository,
   ) {}
 
   /**
@@ -80,7 +81,7 @@ export class CardGenerationService {
 
       // Ключ мог быть удалён в настройках, а тумблер на карточке остался включённым — генерируем
       // без поиска, а не роняем генерацию блока (но не молчим).
-      const tavilyApiKey = card.useWebSearch ? await getDecryptedTavilyKey(userId) : null;
+      const tavilyApiKey = card.useWebSearch ? await this.tavilySettings.getDecryptedKey(userId) : null;
       if (card.useWebSearch && !tavilyApiKey) {
         logger.warn({ userId, cardId }, "Card useWebSearch включён, но ключ Tavily не задан — генерируем без поиска");
       }
@@ -94,7 +95,7 @@ export class CardGenerationService {
         baseOptions: { userId, debugLabel: "cards", ...presetToCompletionOptions(preset) },
         history: assembled.messages,
         tavilyApiKey,
-        maxSearchRounds: await getTavilyMaxSearchRounds(userId),
+        maxSearchRounds: await this.tavilySettings.getMaxSearchRounds(userId),
         askUserEnabled,
       });
 

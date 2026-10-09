@@ -5,3 +5,4 @@ export * from "./presets.js";
 export * from "./rp-templates.js";
 export * from "./narrator-templates.js";
 export * from "./cards.js";
+export * from "./settings.js";

@@ -25,6 +25,11 @@ bot/src/
                   у cards/ ещё card-lock.ts (лок карточки, общий для PUT и генерации) и generation/ — поблочная
                   генерация: card-generation.service (Nest-сервис) + prompt-assembly / tool-loop (web_search +
                   ask_user) / ask-user-tool
+  settings/     — /api/settings (всё в строке user_settings): llm/ (ключ/модель DeepSeek, BYOK, шифруется
+                  ENCRYPTION_KEY; verify — /models, баланс), tavily/ (ключ Tavily + лимит раундов поиска),
+                  translate/ (режим перевода PromptEditorOverlay) — у каждой controller/service/repository;
+                  dto/ (снисходительные PATCH: невалидное поле игнорируется), key-format.ts (400
+                  invalid_key_format); экспортирует TavilySettingsRepository для генерации карточек
   bot.ts        — grammY bot instance (+ прокси для Telegram через baseFetchConfig)
   bot.constants.ts
   config.ts     — env vars (requireEnv для обязательных, process.env для опциональных)
@@ -35,18 +40,18 @@ bot/src/
                   DAO-папки по таблицам: characters/ personas/ presets/ rpTemplates/ narratorTemplates/
                   impersonations/ (characters/ personas/ presets/ rpTemplates/ narratorTemplates/ —
                   временные мосты getCharacter/getPersona/getPreset/getRpTemplate/getNarratorTemplate
-                  на репозитории Nest для ещё не перенесённых books/chats/stories)
+                  на репозитории Nest для ещё не перенесённых books/chats/stories), settings/ (мост
+                  getDecryptedDeepSeekCredentials/getUserTranslateSettings для resolveProvider и /api/translate)
                   avatars/ (батч-резолв аватаров для AvatarStack —
                   getAvatarsBatch) (у каждой DAO-файл + types.ts/constants.ts при наличии + barrel index.ts;
                   типы контракта API перенесённых в Nest доменов — из @tg-rp-bot/shared),
                   chats/ stories/ (+ storyAvatars.ts — LATERAL-фрагмент топ-N аватаров книги знаний
-                  для карточки истории) knowledge/ (деревья/лорбук), users.ts, userSettings.ts,
-                  userLlmSettings.ts (per-user ключ/модель DeepSeek, BYOK, шифруется ENCRYPTION_KEY),
-                  userTavilySettings.ts (per-user ключ Tavily, BYOK, шифруется ENCRYPTION_KEY)
+                  для карточки истории) knowledge/ (деревья/лорбук), users.ts, userSettings.ts
+                  (debug-настройки перехвата LLM)
   llm/          — LLM client (client/request/errors/types/constants/completionGuard/providers/
                   resolveProvider/deepseekModels) — серверно; единственный активный провайдер —
                   DeepSeek, ключ/модель резолвятся per-user через resolveProvider(userId) из
-                  userLlmSettings (без ключа — MissingApiKeyError); фабрика buildOpenRouterProvider
+                  settings/llm (без ключа — MissingApiKeyError); фабрика buildOpenRouterProvider
                   в providers.ts не задействована (задел, нет пути конфигурации);
                   debugCapture (+debug.types) — in-memory перехват RAW-запросов к LLM для экрана отладки
   tavily/       — Tavily API client (per-user BYOK): tavilyUsage.ts (getTavilyUsage — GET /usage,
@@ -59,8 +64,7 @@ bot/src/
                   routes.ts — карта эндпоинтов (монтаж контроллеров), middleware/ (initData — валидация
                   подписи), доменные папки me/ books/
                   chats/ stories/ debug/ avatars/ (POST /batch — батч-резолв аватаров для
-                  AvatarStack, см. ниже) settings/ (settings.controller.ts — per-user ключ/модель
-                  DeepSeek + tavily.controller.ts — per-user ключ/квота Tavily, оба BYOK) — у каждого
+                  AvatarStack, см. ниже) — у каждого
                   <домен>.controller.ts (Hono-роуты) + validation/
                   constants/types рядом + barrel index.ts; chats/ — messages.handlers + impersonate.handlers
                   + stats.handler; stories/ — story.handlers (SSE-генерация RP/narrator); prompt/ —

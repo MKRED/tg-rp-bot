@@ -30,7 +30,7 @@ const tavilyDispatcher = config.telegramProxyUrl ? new ProxyAgent(config.telegra
 
 /**
  * Квота Tavily для данного ключа. Отдельного эндпоинта верификации у Tavily нет — валидный ответ
- * GET /usage сам по себе означает валидный ключ (см. server/settings/tavily.controller.ts).
+ * GET /usage сам по себе означает валидный ключ (см. settings/tavily/tavily-settings.service.ts).
  */
 export async function getTavilyUsage(apiKey: string): Promise<TavilyUsage> {
   const t0 = Date.now();

@@ -1,5 +1,3 @@
-import { REASONING_EFFORTS } from "@tg-rp-bot/shared";
-
 /**
  * Полные английские названия языков по коду (значения LANG_OPTIONS из webapp). Нужны для
  * подстановки в плейсхолдер {{target_lang}} ИИ-промпта — он всегда получает английское название,
@@ -23,15 +21,8 @@ export const DEFAULT_TRANSLATION_TEMPLATE =
 /** Дефолт narrator_templates.translation_reasoning_effort (колонка обязательна) — общий с webapp. */
 export { DEFAULT_TRANSLATION_REASONING_EFFORT } from "@tg-rp-bot/shared";
 
-/**
- * Константы безэнтитного эндпоинта POST /api/translate/text (режим перевода в PromptEditorOverlay).
- * Отдельно от DEFAULT_TRANSLATION_REASONING_EFFORT (RP-чат) — этот путь может делать много мелких
- * пер-абзацных вызовов за одно действие пользователя, "off" по умолчанию держит его быстрым.
- */
-export const DEFAULT_PROMPT_TRANSLATE_REASONING_EFFORT = "off";
-
-/** Допустимые уровни reasoning для user_settings.prompt_translate_reasoning_effort. */
-export const PROMPT_TRANSLATE_REASONING_LEVELS = ["off", ...REASONING_EFFORTS] as const;
+// Константы безэнтитного эндпоинта POST /api/translate/text (режим перевода в PromptEditorOverlay);
+// его настройки по умолчанию (уровни reasoning и т.п.) — в @tg-rp-bot/shared (settings.ts).
 
 /** Максимум абзацев в одном запросе POST /api/translate/text. */
 export const MAX_BLOCKS_PER_REQUEST = 500;

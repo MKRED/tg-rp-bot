@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 import { Hono } from "hono";
-import { getUserTranslateSettings } from "../../db/userTranslateSettings.js";
+import { getUserTranslateSettings } from "../../db/settings/index.js";
 import { MissingApiKeyError } from "../../llm/errors.js";
 import logger from "../../logger.js";
 import { retry } from "../../utils/index.js";

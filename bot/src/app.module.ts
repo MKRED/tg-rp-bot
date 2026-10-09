@@ -12,6 +12,7 @@ import { NarratorTemplatesModule } from "./narrator-templates/narrator-templates
 import { PersonasModule } from "./personas/personas.module.js";
 import { PresetsModule } from "./presets/presets.module.js";
 import { RpTemplatesModule } from "./rp-templates/rp-templates.module.js";
+import { SettingsModule } from "./settings/settings.module.js";
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { RpTemplatesModule } from "./rp-templates/rp-templates.module.js";
     RpTemplatesModule,
     NarratorTemplatesModule,
     CardsModule,
+    SettingsModule,
   ],
   providers: [
     { provide: APP_PIPE, useFactory: createValidationPipe },

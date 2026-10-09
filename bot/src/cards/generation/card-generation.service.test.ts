@@ -6,8 +6,6 @@ vi.mock("../../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), in
 vi.mock("../../db/index.js", () => ({ db: {}, schema: {} }));
 const runCardGenerationToolLoop = vi.fn();
 vi.mock("./tool-loop.js", () => ({ runCardGenerationToolLoop }));
-const getDecryptedTavilyKey = vi.fn();
-vi.mock("../../db/userTavilySettings.js", () => ({ getDecryptedTavilyKey, getTavilyMaxSearchRounds: vi.fn().mockResolvedValue(3) }));
 vi.mock("../../server/prompt/promptBuilder/index.js", () => ({ presetToCompletionOptions: () => ({ temperature: 0.5 }) }));
 
 const { CardGenerationService } = await import("./card-generation.service.js");
@@ -16,6 +14,7 @@ const { MissingApiKeyError } = await import("../../llm/errors.js");
 const { ASK_USER_DECLINED_ANSWER, ASK_USER_MAX_ANSWERED_QUESTIONS } = await import("./ask-user-tool.js");
 type Cards = ConstructorParameters<typeof CardGenerationService>[0];
 type Presets = ConstructorParameters<typeof CardGenerationService>[1];
+type TavilySettings = ConstructorParameters<typeof CardGenerationService>[2];
 
 const CARD_ID = 5;
 const category = (id: string, over: Partial<CardCategory> = {}): CardCategory => ({
@@ -49,8 +48,13 @@ function setup(opts: { card?: ReturnType<typeof makeCard>; preset?: object } = {
     applyCategoryAnswers: vi.fn().mockResolvedValue(card),
   };
   const presets = { findOne: vi.fn().mockResolvedValue(preset) };
-  const service = new CardGenerationService(cards as unknown as Cards, presets as unknown as Presets);
-  return { service, cards };
+  const tavilySettings = { getDecryptedKey: vi.fn().mockResolvedValue(null), getMaxSearchRounds: vi.fn().mockResolvedValue(3) };
+  const service = new CardGenerationService(
+    cards as unknown as Cards,
+    presets as unknown as Presets,
+    tavilySettings as unknown as TavilySettings,
+  );
+  return { service, cards, tavilySettings };
 }
 
 /** Отказ генерации → { status, error }, как его отдал бы ApiExceptionFilter. */
@@ -149,8 +153,8 @@ describe("CardGenerationService.generate", () => {
 
   it("веб-поиск: ключ Tavily передаётся; без ключа — генерация без поиска", async () => {
     runCardGenerationToolLoop.mockResolvedValue({ done: true, content: "t" });
-    getDecryptedTavilyKey.mockResolvedValueOnce("tvly-key").mockResolvedValueOnce(null);
-    const { service } = setup({ card: makeCard({ useWebSearch: true }) });
+    const { service, tavilySettings } = setup({ card: makeCard({ useWebSearch: true }) });
+    tavilySettings.getDecryptedKey.mockResolvedValueOnce("tvly-key").mockResolvedValueOnce(null);
     await service.generate(1, CARD_ID);
     expect(runCardGenerationToolLoop).toHaveBeenLastCalledWith(expect.objectContaining({ tavilyApiKey: "tvly-key" }));
     await service.generate(1, CARD_ID);

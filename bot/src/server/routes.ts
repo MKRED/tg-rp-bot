@@ -6,7 +6,6 @@ import { createDebugRoutes } from "./debug/index.js";
 import { createMeRoutes } from "./me/index.js";
 import { type AppVariables } from "./middleware/initData.types.js";
 import { requireInitData } from "./middleware/initData.js";
-import { createSettingsRoutes } from "./settings/index.js";
 import { createStoryRoutes } from "./stories/index.js";
 import { createTranslateRoutes } from "./translate/index.js";
 
@@ -27,7 +26,7 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
   // Текущий пользователь: профиль, фото профиля, отправка фото из лайтбокса в чат.
   api.route("/me", createMeRoutes());
 
-  // Персонажи, персоны, пресеты, RP- и narrator-шаблоны, карточки обслуживает Nest (см. legacyBridge.ts).
+  // Персонажи, персоны, пресеты, RP- и narrator-шаблоны, карточки, настройки обслуживает Nest (см. legacyBridge.ts).
 
   // Батч-резолв аватаров (AvatarStack в списке историй / шапке чата narrator).
   api.route("/avatars", createAvatarRoutes());
@@ -41,9 +40,6 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
 
   // Отладка: просмотр RAW-запросов к LLM и управление перехватом.
   api.route("/debug", createDebugRoutes());
-
-  // Персональные настройки: ключ и модель DeepSeek (BYOK).
-  api.route("/settings", createSettingsRoutes());
 
   // Безэнтитный батч-перевод абзацев (режим перевода в PromptEditorOverlay).
   api.route("/translate", createTranslateRoutes());
