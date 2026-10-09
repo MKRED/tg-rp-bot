@@ -3,7 +3,7 @@ import { decryptField } from "../../utils/index.js";
 /**
  * Расшифровывает значения кэша переводов бита/директивы (ключи — коды языков — открыты).
  * null → null. Legacy-plaintext значения возвращаются как есть (см. decryptField).
- * Зеркало db/chats/crypto.ts decryptTranslations под story_messages.
+ * Зеркало rp-chat/message-crypto.ts decryptTranslations под story_messages.
  */
 export function decryptStoryTranslations(
   translations: Record<string, string> | null,

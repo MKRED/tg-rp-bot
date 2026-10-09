@@ -1,16 +1,8 @@
 import { streamSSE } from "hono/streaming";
-import { getChat } from "../../db/chats/index.js";
-import {
-  deleteAllVariantsForChat,
-  deleteVariant,
-  insertVariant,
-  listVariants,
-} from "../../db/impersonations/index.js";
+import { insertVariant } from "../../db/impersonations/index.js";
 import logger from "../../logger.js";
 import { presetToCompletionOptions, renderImpersonateMessages } from "../../prompt/promptBuilder/index.js";
-import { chatCompletionErrorResponse } from "../shared/apiError.js";
 import { streamCompletion, writeGenerationError } from "../../common/stream-completion.js";
-import { aiTranslate, englishLangName, googleTranslate } from "../../translate/engine/index.js";
 import { loadChatContext } from "./messages.handlers.js";
 import type { Ctx } from "./chats.types.js";
 
@@ -66,95 +58,4 @@ export async function handleImpersonate(c: Ctx) {
       await writeGenerationError(stream, err);
     }
   });
-}
-
-/** GET /:id/impersonate — список вариантов для текущего момента (chat.activeMessageId). */
-export async function handleListImpersonations(c: Ctx) {
-  const userId = c.get("tgUser")!.id;
-  const chatId = Number(c.req.param("id"));
-
-  const chat = await getChat(userId, chatId);
-  if (!chat) return c.json({ error: "Chat not found" }, 404);
-
-  const variants = await listVariants(userId, chatId, chat.activeMessageId);
-  return c.json({ variants });
-}
-
-/** DELETE /:id/impersonate — очистить ВСЕ сохранённые варианты реплик чата. */
-export async function handleClearImpersonations(c: Ctx) {
-  const userId = c.get("tgUser")!.id;
-  const chatId = Number(c.req.param("id"));
-
-  // Проверяем принадлежность чата пользователю до массового удаления
-  const chat = await getChat(userId, chatId);
-  if (!chat) return c.json({ error: "Chat not found" }, 404);
-
-  const deleted = await deleteAllVariantsForChat(chatId);
-  return c.json({ ok: true, deleted });
-}
-
-/** DELETE /:id/impersonate/:variantId — удалить один сохранённый вариант реплики. */
-export async function handleDeleteImpersonation(c: Ctx) {
-  const userId = c.get("tgUser")!.id;
-  const chatId = Number(c.req.param("id"));
-  const variantId = Number(c.req.param("variantId"));
-
-  // Проверяем принадлежность чата пользователю до удаления варианта
-  const chat = await getChat(userId, chatId);
-  if (!chat) return c.json({ error: "Chat not found" }, 404);
-
-  const deleted = await deleteVariant(chatId, variantId);
-  if (!deleted) return c.json({ error: "Variant not found" }, 404);
-  return c.json({ ok: true });
-}
-
-/**
- * POST /:id/translate-text — перевод произвольного текста (эфемерно, без кэша в БД).
- * mode: "google" (по умолчанию — Google Translate) или "ai" (запрос к LLM с промптом перевода
- * из RP-шаблона). Используется и карточками impersonate (без mode → google), и шторой перевода черновика.
- */
-export async function handleTranslateText(c: Ctx) {
-  const userId = c.get("tgUser")!.id;
-  const chatId = Number(c.req.param("id"));
-
-  const body = (await c.req.json().catch(() => ({}))) as {
-    text?: string;
-    targetLang?: string;
-    mode?: string;
-  };
-  const text = typeof body.text === "string" ? body.text : "";
-  const targetLang = typeof body.targetLang === "string" ? body.targetLang.trim() : "";
-  const mode = body.mode === "ai" ? "ai" : "google";
-  if (!text.trim() || !targetLang) return c.json({ error: "text and targetLang are required" }, 400);
-
-  if (mode === "ai") {
-    // ИИ-режиму нужны RP-шаблон и пресет чата (проверка владельца — внутри loadChatContext).
-    const ctx = await loadChatContext(userId, chatId);
-    if (!ctx) return c.json({ error: "Chat not found" }, 404);
-    const { template, preset } = ctx;
-    try {
-      // Сэмплинг пресета НЕ переиспользуем: его maxTokens обрезал бы длинный перевод, а высокие
-      // temperature/penalties (настроенные под RP) портят верность перевода. Управляющая
-      // поверхность ИИ-режима — промпт перевода из RP-шаблона; параметры оставляем дефолтными.
-      const translation = await aiTranslate(
-        template?.translationSystemPrompt ?? "",
-        text,
-        englishLangName(targetLang),
-        userId,
-        true,
-        preset?.reasoningEffort,
-      );
-      return c.json({ translation });
-    } catch (err) {
-      logger.error({ err, userId, chatId }, "Failed to translate draft text");
-      return chatCompletionErrorResponse(c, err);
-    }
-  }
-
-  // Проверяем принадлежность чата пользователю
-  const chat = await getChat(userId, chatId);
-  if (!chat) return c.json({ error: "Chat not found" }, 404);
-
-  const translation = await googleTranslate(text, targetLang);
-  return c.json({ translation });
 }

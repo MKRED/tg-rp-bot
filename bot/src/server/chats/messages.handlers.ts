@@ -1,30 +1,18 @@
 import { streamSSE } from "hono/streaming";
-import {
-  deleteMessage,
-  deleteTranslation,
-  getChatSettings,
-  getMessage,
-  getChat,
-  insertMessage,
-  saveTranslation,
-  setActiveMessage,
-  updateActiveMessage,
-} from "../../db/chats/index.js";
+import { getChat, getMessage, insertMessage, setActiveMessage, updateActiveMessage } from "../../db/chats/index.js";
 import { getCharacter } from "../../db/characters/index.js";
 import { getPersona } from "../../db/personas/index.js";
 import { getPreset } from "../../db/presets/index.js";
 import { getRpTemplate } from "../../db/rpTemplates/index.js";
 import logger from "../../logger.js";
 import { buildMessages, DEFAULT_RP_PROMPT_ORDER, presetToCompletionOptions } from "../../prompt/promptBuilder/index.js";
-import { chatCompletionErrorResponse } from "../shared/apiError.js";
 import { streamCompletion, writeGenerationError } from "../../common/stream-completion.js";
-import { aiTranslate, englishLangName, googleTranslate } from "../../translate/engine/index.js";
 import type { ChatContext, Ctx } from "./chats.types.js";
 
 /**
  * Загружает чат + связанные сущности (персонаж/персона/RP-шаблон/пресет) с проверкой владельца.
  * Возвращает null, если чат или персонаж не найдены. Переиспользуется обычной генерацией
- * и impersonate-хендлерами.
+ * и impersonate-хендлером (Nest-аналог — rp-chat/chat-context.service.ts).
  */
 export async function loadChatContext(
   userId: number,
@@ -227,120 +215,4 @@ export async function handleRegenerateMessage(c: Ctx) {
       await writeGenerationError(stream, err);
     }
   });
-}
-
-/** POST /:id/messages/:msgId/branch — переключает активную ветку (устанавливает курсор). */
-export async function handleSwitchBranch(c: Ctx) {
-  const userId = c.get("tgUser")!.id;
-  const chatId = Number(c.req.param("id"));
-  const msgId = Number(c.req.param("msgId"));
-
-  // Проверяем принадлежность чата пользователю
-  const chat = await getChat(userId, chatId);
-  if (!chat) return c.json({ error: "Chat not found" }, 404);
-
-  const msg = await getMessage(userId, msgId);
-  if (!msg || msg.chatId !== chatId) return c.json({ error: "Message not found" }, 404);
-
-  // Ставим курсор ровно на выбранный узел (без спуска к листу): клик в графе по
-  // узлу в середине дерева фиксирует диалог на нём — можно ответвиться отсюда.
-  await setActiveMessage(chatId, msgId);
-  return c.json({ ok: true });
-}
-
-/** DELETE /:id/messages/:msgId — удаляет сообщение и всё его поддерево. */
-export async function handleDeleteMessage(c: Ctx) {
-  const userId = c.get("tgUser")!.id;
-  const chatId = Number(c.req.param("id"));
-  const msgId = Number(c.req.param("msgId"));
-
-  // Проверяем принадлежность чата пользователю
-  const chat = await getChat(userId, chatId);
-  if (!chat) return c.json({ error: "Chat not found" }, 404);
-
-  const t0 = Date.now();
-  const deleted = await deleteMessage(userId, chatId, msgId);
-  if (!deleted) return c.json({ error: "Message not found" }, 404);
-
-  logger.info({ durationMs: Date.now() - t0, userId, chatId, msgId }, "Message deleted via API");
-  return c.json({ ok: true });
-}
-
-/**
- * POST /:id/messages/:msgId/translate — переводит сообщение и кэширует результат.
- * body.force=true пропускает кэш и пересчитывает перевод текущим методом (перезаписывая его) —
- * нужно для кнопки «Перевести заново» и при смене метода перевода в настройках.
- * Метод (google/ai) берётся из chatSettings.translateMethod, не из тела запроса.
- */
-export async function handleTranslateMessage(c: Ctx) {
-  const userId = c.get("tgUser")!.id;
-  const chatId = Number(c.req.param("id"));
-  const msgId = Number(c.req.param("msgId"));
-
-  const body = (await c.req.json().catch(() => ({}))) as { targetLang?: string; force?: unknown };
-  const targetLang = typeof body.targetLang === "string" ? body.targetLang.trim() : "";
-  const force = body.force === true;
-  if (!targetLang) return c.json({ error: "targetLang is required" }, 400);
-
-  try {
-    // Проверяем принадлежность через chatId→userId
-    const chat = await getChat(userId, chatId);
-    if (!chat) return c.json({ error: "Chat not found" }, 404);
-
-    const msg = await getMessage(userId, msgId);
-    if (!msg || msg.chatId !== chatId) return c.json({ error: "Message not found" }, 404);
-
-    // Если кэш уже есть и не запрошен пересчёт — вернём без повторного запроса
-    // (translations расшифрованы в getMessage).
-    const cached = (msg.translations as Record<string, string> | null)?.[targetLang];
-    if (cached && !force) return c.json({ translation: cached });
-
-    const { translateMethod } = await getChatSettings(chatId);
-    let translation: string;
-    if (translateMethod === "ai") {
-      // Промпт перевода — из RP-шаблона чата, эффорт рассуждения — из пресета (шаблон промптов
-      // не хранит сэмплинг). Сэмплинг RP не переиспользуем (см. handleTranslateText/aiTranslate —
-      // параметры RP испортили бы верность перевода).
-      const template = chat.template ? await getRpTemplate(userId, chat.template.id) : null;
-      const preset = chat.preset ? await getPreset(userId, chat.preset.id) : null;
-      translation = await aiTranslate(
-        template?.translationSystemPrompt ?? "",
-        msg.content,
-        englishLangName(targetLang),
-        userId,
-        true,
-        preset?.reasoningEffort,
-      );
-    } else {
-      translation = await googleTranslate(msg.content, targetLang);
-    }
-    await saveTranslation(userId, msgId, targetLang, translation);
-    return c.json({ translation });
-  } catch (err) {
-    logger.error({ err, userId, chatId, msgId }, "Failed to translate message");
-    return chatCompletionErrorResponse(c, err);
-  }
-}
-
-/** DELETE /:id/messages/:msgId/translate?lang=xx — убирает закэшированный перевод для языка. */
-export async function handleDeleteTranslation(c: Ctx) {
-  const userId = c.get("tgUser")!.id;
-  const chatId = Number(c.req.param("id"));
-  const msgId = Number(c.req.param("msgId"));
-  const targetLang = c.req.query("lang")?.trim() ?? "";
-  if (!targetLang) return c.json({ error: "lang is required" }, 400);
-
-  try {
-    const chat = await getChat(userId, chatId);
-    if (!chat) return c.json({ error: "Chat not found" }, 404);
-
-    const msg = await getMessage(userId, msgId);
-    if (!msg || msg.chatId !== chatId) return c.json({ error: "Message not found" }, 404);
-
-    await deleteTranslation(msgId, targetLang);
-    return c.json({ ok: true });
-  } catch (err) {
-    logger.error({ err, userId, chatId, msgId }, "Failed to delete translation");
-    return c.json({ error: "Internal error" }, 500);
-  }
 }

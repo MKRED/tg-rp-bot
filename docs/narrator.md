@@ -27,7 +27,7 @@ RP-чата), переиспользуя только реально переи�
   `story_compactions` (пересказы сжатых сообщений — см. раздел compact ниже).
 - **Сервер:** Nest-модуль `narrator-templates/` (CRUD шаблонов; `db/narratorTemplates/` — временный
   мост `getNarratorTemplate` для stories), Nest-модуль `knowledge-books/` (книги и записи; `db/knowledge/` —
-  временный мост `getBook`/`getActiveEntriesForPrompt` для stories), `db/stories/` (зеркало `db/chats/`,
+  временный мост `getBook`/`getActiveEntriesForPrompt` для stories), `db/stories/` (зеркало репозиториев `rp-chat/`,
   вкл. `settings.ts` и `crypto.ts` — расшифровка кэша переводов); `prompt/storyPromptBuilder/`
   (+тест), `server/stories/story.handlers.ts` (вкл. перевод бита/директивы через `googleTranslate`) +
   контроллер `server/stories/stories.controller.ts`, домен-роут `stories/`

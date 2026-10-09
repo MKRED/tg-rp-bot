@@ -1,5 +1,6 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import type { TranslateTextRequest } from "@tg-rp-bot/shared";
+import { llmHttpError } from "../common/llm-http-error.js";
 import { MissingApiKeyError } from "../llm/errors.js";
 import logger from "../logger.js";
 import { TranslateSettingsRepository } from "../settings/translate/translate-settings.repository.js";
@@ -38,12 +39,9 @@ export class TranslateService {
       return translations;
     } catch (err) {
       // Нет персонального ключа DeepSeek (BYOK) — 400 с готовой подсказкой, как у остальных генераций.
-      if (err instanceof MissingApiKeyError) {
-        logger.warn({ userId, mode }, "Batch block translation: не задан ключ DeepSeek");
-        throw new BadRequestException({ error: "no_api_key", message: err.message });
-      }
-      logger.error({ err, userId, mode, blockCount: blocks.length }, "Batch block translation failed");
-      throw new InternalServerErrorException("Internal error");
+      if (err instanceof MissingApiKeyError) logger.warn({ userId, mode }, "Batch block translation: не задан ключ DeepSeek");
+      else logger.error({ err, userId, mode, blockCount: blocks.length }, "Batch block translation failed");
+      throw llmHttpError(err);
     }
   }
 

@@ -21,15 +21,38 @@ export const NEST_ROUTE_PREFIXES: readonly string[] = [
   "/api/avatars",
   "/api/me",
   "/api/books",
+  "/api/chats",
 ];
 
-/** Обслуживает ли путь Nest: точное совпадение с префиксом или вложенный путь под ним. */
-export function isNestRoute(path: string, prefixes: readonly string[] = NEST_ROUTE_PREFIXES): boolean {
+export type LegacyRoute = { method: string; path: RegExp };
+
+/**
+ * ВРЕМЕННЫЕ исключения внутри перенесённых префиксов: маршруты, которые ещё обслуживает Hono.
+ * Нужны, когда домен переезжает по частям — сейчас это стриминговая генерация RP-чата (SSE),
+ * которая переезжает на Nest @Sse следующим шагом; тогда список опустеет.
+ */
+export const LEGACY_ROUTES: readonly LegacyRoute[] = [
+  { method: "POST", path: /^\/api\/chats\/[^/]+\/messages$/ },
+  { method: "POST", path: /^\/api\/chats\/[^/]+\/messages\/[^/]+\/(edit|regenerate)$/ },
+  { method: "POST", path: /^\/api\/chats\/[^/]+\/impersonate$/ },
+];
+
+/**
+ * Обслуживает ли запрос Nest: путь совпадает с префиксом или вложен в него и не попадает в
+ * LEGACY_ROUTES (метод + путь).
+ */
+export function isNestRoute(
+  method: string,
+  path: string,
+  prefixes: readonly string[] = NEST_ROUTE_PREFIXES,
+  legacy: readonly LegacyRoute[] = LEGACY_ROUTES,
+): boolean {
+  if (legacy.some((r) => r.method === method && r.path.test(path))) return false;
   return prefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
 /**
- * Express-middleware переходного периода: отдаёт в Hono запросы вне NEST_ROUTE_PREFIXES.
+ * Express-middleware переходного периода: отдаёт в Hono запросы вне NEST_ROUTE_PREFIXES и LEGACY_ROUTES.
  *
  * Монтируется через app.use(fn) БЕЗ пути (с путём Express переписал бы req.url, и Hono увидел бы
  * обрезанный адрес) и ДО body-parser Nest — иначе парсер вычитал бы поток тела, и Hono получил бы
@@ -38,7 +61,7 @@ export function isNestRoute(path: string, prefixes: readonly string[] = NEST_ROU
 export function createLegacyBridge(app: Hono) {
   const listener = getRequestListener(app.fetch);
   return (req: Request, res: Response, next: NextFunction): void => {
-    if (isNestRoute(req.path)) {
+    if (isNestRoute(req.method, req.path)) {
       next();
       return;
     }

@@ -4,7 +4,7 @@ import { db, schema } from "../index.js";
 
 /**
  * Рекурсивный CTE: путь от листа (messageId) к корню + sibling-информация для каждого узла.
- * Зеркало db/chats/queries.ts, но по story_messages (story_chat_id, есть kind).
+ * Зеркало rp-chat/chat-path.repository.ts, но по story_messages (story_chat_id, есть kind).
  * Возвращает сырые строки — расшифровку content/translations делает вызывающая сторона (нужен ключ).
  */
 export async function queryStoryActivePath(

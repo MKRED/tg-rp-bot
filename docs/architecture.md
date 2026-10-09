@@ -22,6 +22,7 @@ bot/src/
   users/        — UsersService.ensureTelegramUser (upsert строки users, кэш на процесс)
   common/       — ApiExceptionFilter (ошибки → { error }), createValidationPipe, found() (undefined → 404),
                   image-limits (лимиты полей-картинок data URL), fk-violation (FK 23503 → 409 in_use),
+                  llm-http-error (ошибка не-стримингового LLM-вызова → 400 no_api_key / 500),
                   decorators/ (IsDataImageUrl — поле-картинка data URL с лимитом; IsOptionalNote — сноска, пусто → null),
                   stream-completion (streamCompletion/writeGenerationError — LLM-генерация в SSE-события
                   token/reset/error через интерфейс SseSink: годится и для Hono, и для Nest @Sse)
@@ -46,6 +47,14 @@ bot/src/
                   свободный текст; лимит, reorder — только полная перестановка, entry-alias, entries-order;
                   entries-prompt.repository — записи для промпта истории); у каждой controller/service/
                   repository/dto/; персонажи и персоны — через DI (CharactersModule, PersonasModule)
+  rp-chat/      — /api/chats: RP-чаты — chats/ (список, создание из своих персонажа/персоны/шаблона/
+                  пресета, чат с активным путём, переименование, граф веток), messages/ (ветка, удаление
+                  поддерева), translation/ (перевод сообщения с кэшем, эфемерный перевод текста),
+                  settings/ (настройки перевода, снисходительный PUT), stats/ (токены, лимит контекста),
+                  impersonations/ (сохранённые варианты реплик игрока); у каждой controller/service/
+                  repository/dto/; chat-context.service (чат + персонаж/персона/шаблон/пресет с проверкой
+                  владельца), chat-path.repository (активный путь и листья дерева), message-crypto.
+                  Стриминговая генерация (send/edit/regenerate/impersonate) пока в server/chats
   me/           — /api/me: профиль из initData, фото профиля (GET /photo) и фото из лайтбокса себе в
                   чат (POST /send-photo) — controller / service / dto/; media/ — profilePhoto (Bot API +
                   кэш на час) и photoToChat (sendPhoto с web_app-кнопкой deep link и «Закрыть»)
@@ -64,12 +73,13 @@ bot/src/
                   переиспользуется для Tavily, но через отдельный undici ProxyAgent (см. tavily/)
   db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + клиент +
                   DAO-папки по таблицам: characters/ personas/ presets/ rpTemplates/ narratorTemplates/
-                  impersonations/ (characters/ personas/ presets/ rpTemplates/ narratorTemplates/ —
+                  (characters/ personas/ presets/ rpTemplates/ narratorTemplates/ —
                   временные мосты getCharacter/getPersona/getPreset/getRpTemplate/getNarratorTemplate
                   на репозитории Nest для ещё не перенесённых chats/stories), settings/ (мост
                   getDecryptedDeepSeekCredentials для resolveProvider) (у каждой DAO-файл + types.ts/constants.ts при наличии + barrel index.ts;
                   типы контракта API перенесённых в Nest доменов — из @tg-rp-bot/shared),
-                  chats/ stories/ (+ storyAvatars.ts — LATERAL-фрагмент топ-N аватаров книги знаний
+                  chats/ impersonations/ (мосты на репозитории rp-chat/ для стриминговых хендлеров
+                  server/chats), stories/ (+ storyAvatars.ts — LATERAL-фрагмент топ-N аватаров книги знаний
                   для карточки истории) knowledge/ (мост getBook/getActiveEntriesForPrompt на репозитории
                   knowledge-books/ для stories), users.ts
   llm/          — LLM client (client/request/errors/types/constants/completionGuard/providers/
@@ -84,13 +94,14 @@ bot/src/
   handlers/     — обработчики команд/кнопок бота (index = registerHandlers, start.ts,
                   photoActions.ts — callback «Закрыть» под фото из лайтбокса)
   server/       — legacy Hono HTTP API (переезжает на Nest по доменам — docs/plan/roadmap.md):
-                  legacyBridge.ts — express-middleware, отдающий в Hono всё вне NEST_ROUTE_PREFIXES;
+                  legacyBridge.ts — express-middleware, отдающий в Hono всё вне NEST_ROUTE_PREFIXES
+                  (+ LEGACY_ROUTES — временные исключения внутри перенесённых префиксов, метод + путь);
                   index=createLegacyApp,
                   routes.ts — карта эндпоинтов (монтаж контроллеров), middleware/ (initData — валидация
                   подписи), доменные папки chats/ stories/ — у каждого
                   <домен>.controller.ts (Hono-роуты) + validation/
-                  constants/types рядом + barrel index.ts; chats/ — messages.handlers + impersonate.handlers
-                  + stats.handler; stories/ — story.handlers (SSE-генерация RP/narrator);
+                  constants/types рядом + barrel index.ts; chats/ — только стриминговая генерация
+                  (messages.handlers: send/edit/regenerate, impersonate.handlers); stories/ — story.handlers (SSE-генерация RP/narrator);
                   shared/ — apiError (переиспользуемое между доменами)
                   + раздача собранной статики Mini App из ./public (SPA-fallback) — один процесс
   scripts/      — разовые скрипты (backfill-message-encryption)

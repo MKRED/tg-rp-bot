@@ -1,5 +1,5 @@
-import { decryptField, getUserEncryptionKey } from "../../utils/index.js";
-import type { Message } from "../schema.js";
+import type { Message } from "../db/schema.js";
+import { decryptField, getUserEncryptionKey } from "../utils/index.js";
 
 /**
  * Расшифровывает значения кэша переводов (ключи — коды языков — остаются открытыми).

@@ -20,9 +20,9 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
 
   // Персонажи, персоны, пресеты, RP- и narrator-шаблоны, карточки, настройки, отладку, безэнтитный
   // перевод (/translate), батч-аватары (/avatars), текущего пользователя (/me) и книги знаний
-  // (/books) обслуживает Nest (см. legacyBridge.ts).
+  // (/books) и RP-чаты (/chats) обслуживает Nest (см. legacyBridge.ts).
 
-  // RP-чаты: CRUD + стриминговая генерация + ветвление + перевод.
+  // RP-чаты: только стриминговая генерация (SSE) — временно, до переезда на Nest @Sse.
   api.route("/chats", createChatRoutes());
 
   // Narrator-режим («Режиссёр истории»): истории (книги знаний и шаблоны — в Nest).

@@ -198,7 +198,7 @@ async function pruneOrphanSteers(
  * Удаляет сообщение истории и всё поддерево, затем вычищает осиротевшие user-ходы вверх (мёртвые
  * триггеры без бита — история должна заканчиваться битом, а не висящей директивой). Если курсор
  * указывал на что-либо удалённое — переставляет его на выжившего предка (бит). Зеркало
- * db/chats/messages.ts deleteMessage + narrator-инвариант «конец истории = бит».
+ * rp-chat/messages/messages.repository.ts removeSubtree + narrator-инвариант «конец истории = бит».
  */
 export async function deleteStoryMessage(
   userId: number,
