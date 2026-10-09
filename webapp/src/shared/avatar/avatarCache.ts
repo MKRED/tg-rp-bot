@@ -1,5 +1,7 @@
-/** Дескриптор аватара (эхо серверного StoryAvatarRef, без завязки на фичу narrator). */
-export type AvatarRef = { type: "character" | "persona"; id: number };
+import type { AvatarRef } from "@tg-rp-bot/shared";
+
+/** Дескриптор аватара — контракт /api/avatars/batch (без завязки на фичу narrator). */
+export type { AvatarRef };
 
 // Кэш на сессию SPA: "type:id" → data URL. Живёт пока открыта вкладка; при update/delete
 // персонажа/персоны — инвалидируется через invalidateAvatar (см. characters-api/personas-api).

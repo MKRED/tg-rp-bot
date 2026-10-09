@@ -34,6 +34,9 @@ bot/src/
   debug/        — /api/debug/llm: настройки перехвата LLM (repository — колонки user_settings) + записи из
                   in-memory кольца llm/debugCapture; DebugService праймит кэш настроек на старте
                   (OnApplicationBootstrap)
+  avatars/      — POST /api/avatars/batch: батч-резолв картинок персонажей/персон для AvatarStack
+                  (см. ниже) — controller / service (лимит батча) / repository / dto/ (некорректные
+                  дескрипторы молча выпадают)
   translate/    — POST /api/translate/text: безэнтитный батч-перевод абзацев (режим перевода
                   PromptEditorOverlay) — controller / service / dto/; engine/ — движок перевода без Nest
                   (googleTranslate, aiTranslate, resolveTranslationReasoning, чанкинг блока, разбивка на
@@ -49,9 +52,7 @@ bot/src/
                   impersonations/ (characters/ personas/ presets/ rpTemplates/ narratorTemplates/ —
                   временные мосты getCharacter/getPersona/getPreset/getRpTemplate/getNarratorTemplate
                   на репозитории Nest для ещё не перенесённых books/chats/stories), settings/ (мост
-                  getDecryptedDeepSeekCredentials для resolveProvider)
-                  avatars/ (батч-резолв аватаров для AvatarStack —
-                  getAvatarsBatch) (у каждой DAO-файл + types.ts/constants.ts при наличии + barrel index.ts;
+                  getDecryptedDeepSeekCredentials для resolveProvider) (у каждой DAO-файл + types.ts/constants.ts при наличии + barrel index.ts;
                   типы контракта API перенесённых в Nest доменов — из @tg-rp-bot/shared),
                   chats/ stories/ (+ storyAvatars.ts — LATERAL-фрагмент топ-N аватаров книги знаний
                   для карточки истории) knowledge/ (деревья/лорбук), users.ts
@@ -71,8 +72,7 @@ bot/src/
                   index=createLegacyApp,
                   routes.ts — карта эндпоинтов (монтаж контроллеров), middleware/ (initData — валидация
                   подписи), доменные папки me/ books/
-                  chats/ stories/ avatars/ (POST /batch — батч-резолв аватаров для
-                  AvatarStack, см. ниже) — у каждого
+                  chats/ stories/ — у каждого
                   <домен>.controller.ts (Hono-роуты) + validation/
                   constants/types рядом + barrel index.ts; chats/ — messages.handlers + impersonate.handlers
                   + stats.handler; stories/ — story.handlers (SSE-генерация RP/narrator); prompt/ —
@@ -197,7 +197,7 @@ deprecated). Это противоположно выбору org для **webap
 
 Картинки отдаются по двум разным паттернам: поштучно (`GET /characters/:id/image`,
 `characters/characters.controller.ts`, Nest) — для форм редактирования, где нужна ровно одна карточка; батчем
-(`POST /avatars/batch`, `server/avatars/`) — для AvatarStack (стек аватаров в списке историй / шапке
+(`POST /avatars/batch`, `avatars/`, Nest) — для AvatarStack (стек аватаров в списке историй / шапке
 чата), где на экране сразу N дескрипторов {type, id} и поштучные запросы дали бы N round-trip'ов.
 Батч отдаёт только найденные картинки (чужие/несуществующие/пустые id молча выпадают), результат
 кэшируется в webapp на сессию SPA (`shared/avatar/avatarCache.ts`).

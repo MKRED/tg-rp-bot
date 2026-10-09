@@ -111,6 +111,8 @@ Nest поднимается на том же порту, текущее Hono-п�
 - **Блок K ✅** — translate (`POST /api/translate/text`): контракт запроса и лимит абзацев — в shared;
   настройки перевода — через DI (мост db/settings больше их не отдаёт); движок перевода переехал из
   `server/shared/` в `translate/engine/` — им пользуются и legacy chats/stories.
+- **Блок L ✅** — avatars (`POST /api/avatars/batch`, AvatarStack): контракт дескрипторов и лимит
+  батча — в shared; DAO `db/avatars` стал репозиторием модуля.
 - **Дальше** — остальные домены по одному (… chats/stories с SSE
   последними), затем бот grammY как provider и удаление Hono.
 

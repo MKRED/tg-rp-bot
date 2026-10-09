@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { APP_FILTER, APP_PIPE } from "@nestjs/core";
 import { LoggerModule } from "nestjs-pino";
 import { AuthModule } from "./auth/auth.module.js";
+import { AvatarsModule } from "./avatars/avatars.module.js";
 import { CardsModule } from "./cards/cards.module.js";
 import { CharactersModule } from "./characters/characters.module.js";
 import { ApiExceptionFilter } from "./common/api-exception.filter.js";
@@ -33,6 +34,7 @@ import { TranslateModule } from "./translate/translate.module.js";
     SettingsModule,
     DebugModule,
     TranslateModule,
+    AvatarsModule,
   ],
   providers: [
     { provide: APP_PIPE, useFactory: createValidationPipe },

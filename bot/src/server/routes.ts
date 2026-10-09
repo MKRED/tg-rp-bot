@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { createAvatarRoutes } from "./avatars/index.js";
 import { createBookRoutes } from "./books/index.js";
 import { createChatRoutes } from "./chats/index.js";
 import { createMeRoutes } from "./me/index.js";
@@ -24,11 +23,8 @@ export function createApiRoutes(): Hono<{ Variables: AppVariables }> {
   // Текущий пользователь: профиль, фото профиля, отправка фото из лайтбокса в чат.
   api.route("/me", createMeRoutes());
 
-  // Персонажи, персоны, пресеты, RP- и narrator-шаблоны, карточки, настройки, отладку и
-  // безэнтитный перевод (/translate) обслуживает Nest (см. legacyBridge.ts).
-
-  // Батч-резолв аватаров (AvatarStack в списке историй / шапке чата narrator).
-  api.route("/avatars", createAvatarRoutes());
+  // Персонажи, персоны, пресеты, RP- и narrator-шаблоны, карточки, настройки, отладку,
+  // безэнтитный перевод (/translate) и батч-аватары (/avatars) обслуживает Nest (см. legacyBridge.ts).
 
   // RP-чаты: CRUD + стриминговая генерация + ветвление + перевод.
   api.route("/chats", createChatRoutes());

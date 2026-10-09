@@ -33,7 +33,7 @@ tg-rp-bot/
 │  │  ├─ main.ts       # точка входа: bootstrap Nest (+ мост в legacy Hono), старт бота
 │  │  ├─ app.module.ts # корневой модуль Nest (глобальные guard/pipe/filter)
 │  │  ├─ auth/ database/ users/ common/  # общие модули Nest: initData-guard + @CurrentUser, БД, …
-│  │  ├─ characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ settings/ debug/ translate/  # доменные модули Nest: module/controller/service/repository/dto
+│  │  ├─ characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ settings/ debug/ translate/ avatars/  # доменные модули Nest: module/controller/service/repository/dto
 │  │  ├─ bot.ts        # инстанс grammY (+ прокси для Telegram)
 │  │  ├─ config.ts     # переменные окружения
 │  │  ├─ logger.ts     # pino

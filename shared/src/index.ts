@@ -8,3 +8,4 @@ export * from "./cards.js";
 export * from "./settings.js";
 export * from "./debug.js";
 export * from "./translate.js";
+export * from "./avatars.js";
