@@ -1,6 +1,7 @@
 import type { ProfilePhotoResponse } from "@tg-rp-bot/shared";
 import { useEffect, useState } from "react";
 import { apiFetch } from "../api/client";
+import { isInsideTelegram } from "./initData";
 
 // Кэш фото профиля на сессию SPA — фото одно, инвалидация не нужна.
 let cachedPhotoUrl: string | undefined;
@@ -20,6 +21,8 @@ export function useProfilePhoto(): string | undefined {
       setDataUrl(cachedPhotoUrl);
       return;
     }
+    // Фото берётся через Bot API по Telegram id из initData — в браузере (вход по логину) его нет.
+    if (!isInsideTelegram()) return;
     let cancelled = false; // защита от StrictMode-двойного эффекта и размонтирования
     apiFetch<ProfilePhotoResponse>("/me/photo")
       .then((res) => {

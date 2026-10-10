@@ -1,4 +1,4 @@
-import { getApiBase, getAuthHeader } from "../../../shared/api/client";
+import { getApiBase, getAuthHeaders, reportAuthFailure } from "../../../shared/api/client";
 
 /**
  * Самодостаточный POST-SSE-ридер для narrator-генерации (advance/regenerate). Намеренно не тянет
@@ -13,11 +13,12 @@ export async function readStorySSE(
 ): Promise<void> {
   const response = await fetch(`${getApiBase()}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: getAuthHeader() },
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
     body: JSON.stringify(body),
   });
 
   if (!response.ok || !response.body) {
+    reportAuthFailure(response.status);
     onError("Request failed");
     return;
   }

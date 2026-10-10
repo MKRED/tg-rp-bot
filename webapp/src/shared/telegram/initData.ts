@@ -37,3 +37,11 @@ export function getTgUser(): TgUserInfo | undefined {
     isPremium: Boolean(user.is_premium),
   };
 }
+
+/**
+ * Открыто ли приложение внутри Telegram (есть подписанный initData). Вне Telegram — обычный браузер
+ * со входом по логину и паролю: профиль берётся из сессии, Telegram-функции скрыты.
+ */
+export function isInsideTelegram(): boolean {
+  return Boolean(initData.raw());
+}

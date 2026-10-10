@@ -32,8 +32,9 @@ serving both the API and the Mini App static files ([docs/deploy.md](docs/deploy
 - **LLM/Tavily keys are server-side, per-user (BYOK).** Stored encrypted in `user_settings`
   (`ENCRYPTION_KEY`), never sent to the browser; no fallback to a shared/env key. Generation goes through
   the bot's HTTP API, not from the webapp directly. Details — [docs/llm.md](docs/llm.md).
-- **Mini App auth:** webapp → `/api/*` requests carry signed `initData` (`Authorization: tma …`), the
-  server verifies HMAC with **`@tma.js/init-data-node`** (NOT `@telegram-apps/*`) — [docs/architecture.md](docs/architecture.md).
+- **API auth:** in the Mini App, webapp → `/api/*` requests carry signed `initData` (`Authorization: tma …`),
+  the server verifies HMAC with **`@tma.js/init-data-node`** (NOT `@telegram-apps/*`); outside Telegram the
+  user logs in with login + password (httpOnly session cookie, `AuthGate` in webapp) — [docs/architecture.md](docs/architecture.md).
 - **Narrator: the prompt array must not start with `assistant`.** A synthetic leading-user is inserted
   before the root (openingBeat); played user turns are neutralized into `CONTINUE_MARKER` (except the
   last). Easy to break when editing `storyPromptBuilder` — read [docs/narrator.md](docs/narrator.md) first.
@@ -115,12 +116,15 @@ Full tree, webapp layout rules, router/deep-link details — [docs/architecture.
   skip `/api` and `/health` — `webapp-static/spa-fallback.ts`). Pure (non-Nest) functions never build repositories/services
   themselves — the calling service passes the dependency as a parameter (e.g. `ChatCompleter` = injected
   `LlmService` for LLM calls, `WebSearcher` = injected `TavilyService` with the user's key for web search).
-- **Auth:** global `TelegramAuthGuard` (`auth/`) — every controller is protected (only `@Public()` routes skip it — `/health`; don't add more without a
-  reason); read the user with
-  `@CurrentUser() userId: number` (internal id), never the Telegram profile. Only endpoints that are
-  Telegram by nature (`me/`: initData profile, Bot API calls needing the Telegram id) use
-  `@TelegramUser()`. The guard also ensures the
-  `users` row, so controllers don't call `UsersService.ensureTelegramUser`.
+- **Auth:** global `AuthGuard` (`auth/`) — every controller is protected (only `@Public()` routes skip it —
+  `/health`, `/api/auth/register|login|logout`; don't add more without a reason). Login is either Telegram
+  `initData` (Mini App) or a session cookie (browser, login + password); both resolve to the same internal
+  id — read it with `@CurrentUser() userId: string` (UUID), never the Telegram profile. Only endpoints that
+  are Telegram by nature (`me/`: initData profile, Bot API calls needing the Telegram id) use
+  `@TelegramUser()` (409 `telegram_not_linked` for browser logins). The guard also ensures the `users`
+  row, so controllers don't call `UsersService.ensureTelegramUser`. Mutating requests without `initData`
+  must carry the CSRF header (`CSRF_HEADER` in `@tg-rp-bot/shared`) — webapp's `apiFetch`/`getAuthHeaders`
+  add it; raw `fetch` to `/api` must use `getAuthHeaders()` too.
 - **Response contract is the webapp's:** keep Hono-era codes and bodies (`201 {character}`,
   `200 {ok:true}`, never `204` — `apiFetch` parses every OK body as JSON). Errors go through the global
   `ApiExceptionFilter` → `{ error: string }`; custom bodies (`{ error: "no_api_key", message }`) pass through.

@@ -3,6 +3,7 @@ import { AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { characterEditPath } from "../../../../app/routes";
 import { sendPhotoToChat } from "../../../../shared/api/sendPhoto";
+import { isInsideTelegram } from "../../../../shared/telegram/initData";
 import { ImageLightbox } from "../../../../shared/components/ImageLightbox";
 import { nameInitials as characterInitials } from "../../../../shared/text/initials";
 import { useCharacterImage } from "../../hooks/useCharacterImage";
@@ -64,8 +65,11 @@ export function CharacterAvatar({
         {open && src && (
           <ImageLightbox
             src={lightboxSrc}
-            onSend={(photo) =>
-              sendPhotoToChat(photo, { label: name, deepLink: characterEditPath(id) })
+            // «Отправить в чат» — через бота в личку по Telegram id; в браузере (вход по логину) его нет.
+            onSend={
+              isInsideTelegram()
+                ? (photo) => sendPhotoToChat(photo, { label: name, deepLink: characterEditPath(id) })
+                : undefined
             }
             onClose={() => setOpen(false)}
           />

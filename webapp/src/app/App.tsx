@@ -1,5 +1,6 @@
 import { AppRoot } from "@telegram-apps/telegram-ui";
 import { HashRouter } from "react-router-dom";
+import { AuthGate } from "../features/auth";
 import { getPlatform } from "../shared/telegram/platform";
 import { ThemeProvider, useTheme } from "../shared/theme";
 import { ToastProvider } from "../shared/toast";
@@ -42,11 +43,14 @@ function AppInner() {
       {/* ToastProvider оборачивает всё приложение: тосты доступны на любом экране (в т.ч.
           в порталах — лайтбокс), а Snackbar наследует тему AppRoot. */}
       <ToastProvider>
-        <HashRouter>
-          {/* Мост нативной кнопки «Назад» — внутри роутера, т.к. использует navigate/location. */}
-          <BackButtonBridge />
-          <AnimatedRoutes />
-        </HashRouter>
+        {/* Вход (вне Telegram — экран логина) — над роутером: экран входа не маршрут. */}
+        <AuthGate>
+          <HashRouter>
+            {/* Мост нативной кнопки «Назад» — внутри роутера, т.к. использует navigate/location. */}
+            <BackButtonBridge />
+            <AnimatedRoutes />
+          </HashRouter>
+        </AuthGate>
       </ToastProvider>
     </AppRoot>
   );

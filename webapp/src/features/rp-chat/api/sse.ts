@@ -1,4 +1,4 @@
-import { getApiBase, getAuthHeader } from "../../../shared/api/client";
+import { getApiBase, getAuthHeaders, reportAuthFailure } from "../../../shared/api/client";
 import { parseSSELines } from "./parseSSE";
 
 /**
@@ -17,12 +17,13 @@ export async function readSSE(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: getAuthHeader(),
+      ...getAuthHeaders(),
     },
     body: JSON.stringify(body),
   });
 
   if (!response.ok || !response.body) {
+    reportAuthFailure(response.status);
     onError("Request failed");
     return;
   }

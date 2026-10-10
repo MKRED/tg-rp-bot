@@ -14,7 +14,7 @@ Telegram-бот для ролевой игры (RP) с упором на **Teleg
 | Веб-поиск | Tavily (квота ключа); ключ — персональный (BYOK), задаётся пользователем в Mini App |
 | Логи | pino (+ pino-roll, pino-pretty) |
 | Mini App | React 19 + Vite + `@telegram-apps/sdk-react` + `@telegram-apps/telegram-ui` + `react-router-dom` (HashRouter) + `@xyflow/react` (граф диалога) + `framer-motion` + `react-easy-crop` (кроп аватара) |
-| initData | подпись проверяется серверно через `@tma.js/init-data-node` |
+| Вход | Mini App — initData (подпись проверяется серверно через `@tma.js/init-data-node`); браузер — логин и пароль (scrypt, сессия в httpOnly-cookie, `@nestjs/throttler`) |
 | Прокси | `https-proxy-agent` (Telegram, agent) + `undici` `ProxyAgent` (Tavily, dispatcher) — оба сервиса недоступны напрямую с сети сервера |
 | Тесты | vitest (bot + webapp) |
 
@@ -32,7 +32,7 @@ tg-rp-bot/
 │  ├─ src/
 │  │  ├─ main.ts       # точка входа: bootstrap Nest (лимит JSON-тела, /health вне /api, статика Mini App)
 │  │  ├─ app.module.ts # корневой модуль Nest (глобальные guard/pipe/filter)
-│  │  ├─ auth/ database/ users/ common/  # общие модули Nest: initData-guard + @CurrentUser, БД, …
+│  │  ├─ auth/ database/ users/ common/  # общие модули Nest: guard (initData / cookie сессии) + вход по логину + @CurrentUser, БД, …
 │  │  ├─ telegram/     # бот grammY как провайдер Nest: обработчики (/start, «Закрыть»), запуск/остановка polling, прокси Telegram
 │  │  ├─ characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ settings/ debug/ translate/ avatars/ me/ knowledge-books/ rp-chat/ narrator/  # доменные модули Nest: module/controller/service/repository/dto
 │  │  ├─ config.ts     # переменные окружения

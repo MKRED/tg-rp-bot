@@ -16,10 +16,12 @@ bot/src/
                   health, статика Mini App, enableShutdownHooks); бот стартует из telegram/
   app.module.ts — корневой модуль Nest: LoggerModule (nestjs-pino поверх logger.ts), глобальные
                   ValidationPipe (common/validation-pipe) и ApiExceptionFilter (common/), модули ниже
-  auth/         — TelegramAuthGuard (глобальный APP_GUARD) + @CurrentUser() (внутренний userId) +
-                  @TelegramUser() (профиль Telegram — только для me/, где нужен Telegram id для Bot API) +
-                  initData.ts — проверка initData (чистая функция) + @Public() (маршрут без авторизации —
-                  только health/)
+  auth/         — AuthGuard (глобальный APP_GUARD: initData → cookie сессии → dev-обход; CSRF-заголовок) +
+                  @CurrentUser() (внутренний userId) + @TelegramUser() (профиль Telegram — только для me/,
+                  где нужен Telegram id для Bot API; без Telegram → 409) + initData.ts — проверка initData
+                  (чистая функция) + @Public() (маршрут без авторизации — health/, вход по логину) +
+                  /api/auth (вход по логину и паролю: register/login/logout/session, лимит попыток —
+                  @nestjs/throttler) + password/ (scrypt) + session/ (user_sessions, токен в httpOnly-cookie)
   database/     — DatabaseModule (@Global) + DatabaseService поверх drizzle-клиента из db/index.ts
   users/        — UsersService (ensureTelegramUser для guard: upsert строки users по telegram_id с кэшем
                   telegramId → UUID на процесс; saveTelegramProfile для /start: всегда) + UsersRepository.
@@ -183,8 +185,10 @@ webapp/src/
                   generation-presets/ rp-templates/ rp-chat/ narrator/
                   knowledge-books/ narrator-templates/ debug/ llm-settings/ (per-user ключ/модель
                   DeepSeek, BYOK, экран /settings) tavily-settings/ (per-user ключ Tavily + квота,
-                  BYOK, экран /settings)
-  shared/       — кросс-каттинг: api/ (client с Authorization), telegram/ (initData, confirm, profile
+                  BYOK, экран /settings) auth/ (AuthGate над роутером: в Telegram — сразу приложение, в
+                  браузере — сессия или экран входа/регистрации; useAuth — способ входа и сессия)
+  shared/       — кросс-каттинг: api/ (client с заголовками авторизации, сигнал 401 → экран входа),
+                  telegram/ (initData + isInsideTelegram, confirm, profile
                   photo, platform), text/, image/, graph/, hooks/, constants/, toast/, components/,
                   avatar/ (avatarCache — dataURL-кэш на сессию SPA, avatars-api — обёртка над
                   /api/avatars/batch, useAvatarBatch — хук резолва для AvatarStack)
@@ -244,13 +248,23 @@ Tavily-клиент (`bot/src/tavily/tavily.service.ts`, диспетчер — 
 ## Mini App API — детали границы
 
 Правило (в CLAUDE.md): ключ LLM-провайдера (DeepSeek, per-user BYOK) только серверно; webapp ходит
-в `/api/*` с подписанным `initData`. Детали валидации:
+в `/api/*` либо с подписанным `initData` (Mini App), либо с cookie сессии (браузер, вход по логину).
+Guard — `auth/auth.guard.ts`, способ входа выбирается по запросу:
 
-Запросы webapp → `/api/*` несут подписанный Telegram `initData` в заголовке
-`Authorization: tma <initData>` (webapp: `shared/api/client.ts`). Сервер
-(`auth/initData.ts` — функция для guard'а Nest `auth/telegram-auth.guard.ts`) **проверяет HMAC-подпись** по `BOT_TOKEN` через
-**`@tma.js/init-data-node`** (`validate` бросает при подделке/просрочке, `parse` достаёт юзера в
-`request.userId` → `@CurrentUser()`). Без подписи: в проде → 401, в dev → пропускаем (отладка webapp из браузера).
+1. **Mini App.** Запросы несут подписанный Telegram `initData` в заголовке `Authorization: tma <initData>`
+   (webapp: `shared/api/client.ts`). Сервер (`auth/initData.ts`) **проверяет HMAC-подпись** по `BOT_TOKEN`
+   через **`@tma.js/init-data-node`** (`validate` бросает при подделке/просрочке, `parse` достаёт юзера);
+   строка `users` находится/создаётся по `telegram_id`, в `request.userId` — её UUID.
+2. **Браузер.** Регистрация/вход (`POST /api/auth/register|login`) ставят httpOnly-cookie `tgrp_session`
+   (`Secure` в проде, `SameSite=Lax`, `Path=/api`, 30 дней); в `user_sessions` — только SHA-256 токена,
+   срок продлевается при использовании (не чаще раза в час, cookie переотправляется). Пароль — scrypt в
+   `users.password_hash`. Webapp вне Telegram сначала спрашивает `GET /api/auth/session`: 401 → экран входа.
+3. **Без способа входа:** в dev при `DEV_USER_ID` — dev-пользователь (отладка webapp из браузера), иначе 401.
+
+**CSRF:** изменяющий запрос без `initData` обязан нести `X-Requested-With: tg-rp-bot` (`CSRF_HEADER` в
+`@tg-rp-bot/shared`, webapp ставит его на каждый запрос), иначе 403 — и на публичных маршрутах входа.
+CORS не включён, поэтому чужая страница не может поставить этот заголовок на запрос к нашему домену.
+Лимит попыток регистрации/входа — 10 в минуту с IP (`@nestjs/throttler`; `trust proxy` = 1 хоп, nginx).
 
 ⚠️ Серверный пакет — **`@tma.js/init-data-node`**, НЕ `@telegram-apps/init-data-node` (последний
 deprecated). Это противоположно выбору org для **webapp** (там `@telegram-apps/*` — см. README/стек):

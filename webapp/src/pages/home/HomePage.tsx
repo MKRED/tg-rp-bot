@@ -3,6 +3,7 @@ import { MessageCircle, Users, User, Smile, SlidersHorizontal, Clapperboard, Boo
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { ROUTES } from "../../app/routes";
+import { useAuth } from "../../features/auth";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { PageTransition } from "../../shared/components/PageTransition";
 import { getTgUser } from "../../shared/telegram/initData";
@@ -30,18 +31,27 @@ const itemAnimate = { opacity: 1, y: 0 };
 export function HomePage() {
   const navigate = useTransitionNavigate();
   const user = getTgUser();
+  const { session } = useAuth();
   const photoUrl = useProfilePhoto();
   // Приветствие фиксируется при монтировании — одно на сессию, не мигает при ре-рендерах.
   const [greeting] = useState(() => randomGreeting());
 
-  const displayName = user?.firstName ?? "Гость";
-  const handle = user?.username ? `@${user.username}` : "не в Telegram";
+  // В Telegram — профиль из initData; в браузере — из сессии входа по логину.
+  const displayName = user?.firstName ?? session?.displayName ?? "Гость";
+  const fullName = user?.fullName ?? session?.displayName;
+  const handle = user
+    ? user.username
+      ? `@${user.username}`
+      : "Telegram"
+    : session?.login
+      ? `логин: ${session.login}`
+      : "не в Telegram";
 
   return (
     <PageTransition>
       <div className="home">
         <header className="home__greeting">
-          <Avatar size={96} src={photoUrl} acronym={user ? initialsOf(user.fullName) : undefined} />
+          <Avatar size={96} src={photoUrl} acronym={fullName ? initialsOf(fullName) : undefined} />
           <Title level="1" weight="2" className="home__name">
             {greeting}, {displayName}!
           </Title>
