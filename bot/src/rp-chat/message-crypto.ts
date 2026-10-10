@@ -1,9 +1,8 @@
 import type { Message } from "../db/schema.js";
-import { decryptField, decryptTranslations, getUserEncryptionKey } from "../utils/index.js";
+import { decryptField, decryptTranslations } from "../utils/index.js";
 
 /** Расшифровывает зашифрованные поля строки сообщения (content + значения translations). */
-export function decryptMessageRow(row: Message, userId: number): Message {
-  const key = getUserEncryptionKey(userId);
+export function decryptMessageRow(row: Message, key: Buffer): Message {
   return {
     ...row,
     content: decryptField(row.content, key),

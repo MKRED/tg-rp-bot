@@ -33,7 +33,7 @@ export class DebugRepository {
   constructor(private readonly database: DatabaseService) {}
 
   /** Настройки пользователя; если строки ещё нет — дефолты. */
-  async getSettings(userId: number): Promise<LlmDebugSettings> {
+  async getSettings(userId: string): Promise<LlmDebugSettings> {
     const t0 = Date.now();
     const rows = await this.database.db
       .select(debugColumns())
@@ -48,7 +48,7 @@ export class DebugRepository {
    * Частичный upsert: недостающие поля берутся из текущих настроек, итог клампится и пишется
    * целиком (все четыре колонки). Возвращает итоговые настройки — для кэша и ответа клиенту.
    */
-  async upsertSettings(userId: number, patch: LlmDebugSettingsPatch): Promise<LlmDebugSettings> {
+  async upsertSettings(userId: string, patch: LlmDebugSettingsPatch): Promise<LlmDebugSettings> {
     const t0 = Date.now();
     const current = await this.getSettings(userId);
     const next: LlmDebugSettings = {
@@ -72,7 +72,7 @@ export class DebugRepository {
   }
 
   /** Настройки всех пользователей — для прайма in-memory кэша на старте сервера. */
-  async listAllSettings(): Promise<Array<{ userId: number } & LlmDebugSettings>> {
+  async listAllSettings(): Promise<Array<{ userId: string } & LlmDebugSettings>> {
     const t0 = Date.now();
     const rows = await this.database.db
       .select({ userId: schema.userSettings.userId, ...debugColumns() })

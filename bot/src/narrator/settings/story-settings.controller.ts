@@ -9,12 +9,12 @@ export class StorySettingsController {
   constructor(private readonly settings: StorySettingsService) {}
 
   @Get()
-  async get(@CurrentUser() userId: number, @Param("id", ParseIntPipe) storyId: number) {
+  async get(@CurrentUser() userId: string, @Param("id", ParseIntPipe) storyId: number) {
     return { settings: await this.settings.get(userId, storyId) };
   }
 
   @Put()
-  async update(@CurrentUser() userId: number, @Param("id", ParseIntPipe) storyId: number, @Body() dto: UpdateStorySettingsDto) {
+  async update(@CurrentUser() userId: string, @Param("id", ParseIntPipe) storyId: number, @Body() dto: UpdateStorySettingsDto) {
     return { settings: await this.settings.update(userId, storyId, dto) };
   }
 }

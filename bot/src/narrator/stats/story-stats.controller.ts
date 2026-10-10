@@ -8,7 +8,7 @@ export class StoryStatsController {
   constructor(private readonly stats: StoryStatsService) {}
 
   @Get()
-  async get(@CurrentUser() userId: number, @Param("id", ParseIntPipe) storyId: number) {
+  async get(@CurrentUser() userId: string, @Param("id", ParseIntPipe) storyId: number) {
     return { stats: await this.stats.get(userId, storyId) };
   }
 }

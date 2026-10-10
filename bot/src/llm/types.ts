@@ -80,7 +80,7 @@ export interface ChatCompletionOptions {
    * «только мои запросы» на экране отладки (buildBody выбирает поля явно, поэтому это поле
    * в тело запроса к LLM не попадает).
    */
-  userId: number;
+  userId: string;
   /** Ярлык типа вызова (rp/impersonate/narrator/translate) — для списка на экране отладки. */
   debugLabel?: LlmCallLabel;
 }

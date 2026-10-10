@@ -21,14 +21,14 @@ export class StoryMessagesService {
    * самому глубокому листу — иначе клик в середине графа увёл бы в конец истории. Висячий ход без
    * бита (середина генерации) — откат на родительский бит.
    */
-  async switchBranch(userId: number, storyId: number, messageId: number): Promise<void> {
+  async switchBranch(userId: string, storyId: number, messageId: number): Promise<void> {
     const { msg } = await this.access.requireMessage(userId, storyId, messageId);
     const target = msg.kind === "beat" ? messageId : ((await this.path.newestChild(storyId, messageId)) ?? msg.parentId);
     await this.messages.setCursor(storyId, target);
   }
 
   /** Правит текст бита на месте (любого, включая открытие): без ИИ и нового сиблинга. Директивы — 400. */
-  async editBeat(userId: number, storyId: number, messageId: number, content: string): Promise<EditStoryBeatResponse> {
+  async editBeat(userId: string, storyId: number, messageId: number, content: string): Promise<EditStoryBeatResponse> {
     const { msg } = await this.access.requireMessage(userId, storyId, messageId);
     if (msg.role !== "assistant" || msg.kind !== "beat") throw new BadRequestException("Can only edit a beat");
     const updated = await this.messages.updateContent(userId, storyId, messageId, content);
@@ -38,7 +38,7 @@ export class StoryMessagesService {
   }
 
   /** Удаляет сообщение с поддеревом; открытие (корень) удалять нельзя — история без него пуста. */
-  async remove(userId: number, storyId: number, messageId: number): Promise<void> {
+  async remove(userId: string, storyId: number, messageId: number): Promise<void> {
     const { msg } = await this.access.requireMessage(userId, storyId, messageId);
     if (msg.parentId == null) throw new BadRequestException("Cannot delete the opening beat");
     const t0 = Date.now();

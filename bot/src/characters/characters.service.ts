@@ -10,36 +10,36 @@ import { CharactersRepository } from "./characters.repository.js";
 export class CharactersService {
   constructor(private readonly repository: CharactersRepository) {}
 
-  list(userId: number): Promise<CharacterListItem[]> {
+  list(userId: string): Promise<CharacterListItem[]> {
     return this.repository.list(userId);
   }
 
-  async get(userId: number, id: number): Promise<Character> {
+  async get(userId: string, id: number): Promise<Character> {
     return found(await this.repository.findOne(userId, id));
   }
 
   /** Аватар: null — персонаж есть, но без картинки. */
-  async getImage(userId: number, id: number): Promise<string | null> {
+  async getImage(userId: string, id: number): Promise<string | null> {
     return found(await this.repository.findImage(userId, id));
   }
 
   /** Полноразмерное фото: null — персонаж есть, но без фото. */
-  async getImageFull(userId: number, id: number): Promise<string | null> {
+  async getImageFull(userId: string, id: number): Promise<string | null> {
     return found(await this.repository.findImageFull(userId, id));
   }
 
-  async create(userId: number, input: CharacterInput): Promise<Character> {
+  async create(userId: string, input: CharacterInput): Promise<Character> {
     if ((await this.repository.count(userId)) >= MAX_CHARACTERS_PER_USER) {
       throw new BadRequestException(`Character limit reached (max ${MAX_CHARACTERS_PER_USER})`);
     }
     return this.repository.create(userId, input);
   }
 
-  async update(userId: number, id: number, input: CharacterInput): Promise<Character> {
+  async update(userId: string, id: number, input: CharacterInput): Promise<Character> {
     return found(await this.repository.update(userId, id, input));
   }
 
-  async remove(userId: number, id: number): Promise<void> {
+  async remove(userId: string, id: number): Promise<void> {
     let deleted: boolean;
     try {
       deleted = await this.repository.delete(userId, id);

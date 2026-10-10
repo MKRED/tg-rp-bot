@@ -13,23 +13,23 @@ export class PresetsController {
 
   /** Список (поля для сводки под названием, без полного сэмплинга). */
   @Get()
-  async list(@CurrentUser() userId: number) {
+  async list(@CurrentUser() userId: string) {
     return { presets: await this.presets.list(userId) };
   }
 
   @Get(":id")
-  async get(@CurrentUser() userId: number, @Param("id", ParseIntPipe) id: number) {
+  async get(@CurrentUser() userId: string, @Param("id", ParseIntPipe) id: number) {
     return { preset: await this.presets.get(userId, id) };
   }
 
   @Post()
-  async create(@CurrentUser() userId: number, @Body() input: PresetInputDto) {
+  async create(@CurrentUser() userId: string, @Body() input: PresetInputDto) {
     return { preset: await this.presets.create(userId, input) };
   }
 
   @Put(":id")
   async update(
-    @CurrentUser() userId: number,
+    @CurrentUser() userId: string,
     @Param("id", ParseIntPipe) id: number,
     @Body() input: PresetInputDto,
   ) {
@@ -37,7 +37,7 @@ export class PresetsController {
   }
 
   @Delete(":id")
-  async remove(@CurrentUser() userId: number, @Param("id", ParseIntPipe) id: number) {
+  async remove(@CurrentUser() userId: string, @Param("id", ParseIntPipe) id: number) {
     await this.presets.remove(userId, id);
     return { ok: true };
   }

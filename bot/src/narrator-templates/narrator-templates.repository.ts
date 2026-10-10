@@ -21,7 +21,7 @@ export class NarratorTemplatesRepository {
   constructor(private readonly database: DatabaseService) {}
 
   /** Список шаблонов пользователя — свежие сверху. */
-  async list(userId: number): Promise<NarratorTemplateListRow[]> {
+  async list(userId: string): Promise<NarratorTemplateListRow[]> {
     const t0 = Date.now();
     const rows = await this.database.db
       .select({
@@ -41,7 +41,7 @@ export class NarratorTemplatesRepository {
   }
 
   /** Сколько шаблонов у пользователя (для проверки мягкого лимита). */
-  async count(userId: number): Promise<number> {
+  async count(userId: string): Promise<number> {
     const rows = await this.database.db
       .select({ count: sql<number>`count(*)::int` })
       .from(schema.narratorTemplates)
@@ -50,13 +50,13 @@ export class NarratorTemplatesRepository {
   }
 
   /** Полный шаблон по id, только если он принадлежит этому пользователю. */
-  async findOne(userId: number, id: number): Promise<NarratorTemplate | undefined> {
+  async findOne(userId: string, id: number): Promise<NarratorTemplate | undefined> {
     const rows = await this.database.db.select().from(schema.narratorTemplates).where(this.ownedBy(userId, id));
     return rows[0];
   }
 
   /** Создаёт шаблон и возвращает созданную строку. */
-  async create(userId: number, input: NarratorTemplateInput): Promise<NarratorTemplate> {
+  async create(userId: string, input: NarratorTemplateInput): Promise<NarratorTemplate> {
     const t0 = Date.now();
     const rows = await this.database.db
       .insert(schema.narratorTemplates)
@@ -68,7 +68,7 @@ export class NarratorTemplatesRepository {
   }
 
   /** Обновляет шаблон (только свой); undefined — если такого у пользователя нет. */
-  async update(userId: number, id: number, input: NarratorTemplateInput): Promise<NarratorTemplate | undefined> {
+  async update(userId: string, id: number, input: NarratorTemplateInput): Promise<NarratorTemplate | undefined> {
     const t0 = Date.now();
     const rows = await this.database.db
       .update(schema.narratorTemplates)
@@ -84,7 +84,7 @@ export class NarratorTemplatesRepository {
   }
 
   /** Удаляет шаблон (только свой). true — если строка была удалена. */
-  async delete(userId: number, id: number): Promise<boolean> {
+  async delete(userId: string, id: number): Promise<boolean> {
     const t0 = Date.now();
     const rows = await this.database.db
       .delete(schema.narratorTemplates)
@@ -95,7 +95,7 @@ export class NarratorTemplatesRepository {
     return deleted;
   }
 
-  private ownedBy(userId: number, id: number) {
+  private ownedBy(userId: string, id: number) {
     return and(eq(schema.narratorTemplates.id, id), eq(schema.narratorTemplates.userId, userId));
   }
 }

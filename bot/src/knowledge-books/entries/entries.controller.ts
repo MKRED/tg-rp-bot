@@ -13,19 +13,19 @@ export class EntriesController {
   constructor(private readonly entries: EntriesService) {}
 
   @Get()
-  async list(@CurrentUser() userId: number, @Param("id", ParseIntPipe) bookId: number) {
+  async list(@CurrentUser() userId: string, @Param("id", ParseIntPipe) bookId: number) {
     return { entries: await this.entries.list(userId, bookId) };
   }
 
   @Post()
-  async create(@CurrentUser() userId: number, @Param("id", ParseIntPipe) bookId: number, @Body() input: EntryInputDto) {
+  async create(@CurrentUser() userId: string, @Param("id", ParseIntPipe) bookId: number, @Body() input: EntryInputDto) {
     return { entry: await this.entries.create(userId, bookId, input) };
   }
 
   /** Объявлен РАНЬШЕ ":entryId" — иначе Express отдал бы "reorder" в параметр entryId. */
   @Put("reorder")
   async reorder(
-    @CurrentUser() userId: number,
+    @CurrentUser() userId: string,
     @Param("id", ParseIntPipe) bookId: number,
     @Body() dto: ReorderEntriesDto,
   ) {
@@ -35,7 +35,7 @@ export class EntriesController {
 
   @Put(":entryId")
   async update(
-    @CurrentUser() userId: number,
+    @CurrentUser() userId: string,
     @Param("entryId", ParseIntPipe) entryId: number,
     @Body() input: EntryInputDto,
   ) {
@@ -44,7 +44,7 @@ export class EntriesController {
   }
 
   @Delete(":entryId")
-  async remove(@CurrentUser() userId: number, @Param("entryId", ParseIntPipe) entryId: number) {
+  async remove(@CurrentUser() userId: string, @Param("entryId", ParseIntPipe) entryId: number) {
     await this.entries.remove(userId, entryId);
     return { ok: true };
   }

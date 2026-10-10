@@ -38,9 +38,8 @@ export class TelegramAuthGuard implements CanActivate {
     }
     if (result.devBypass) logger.debug({ devUserId: result.user.id }, "Dev auth: initData bypassed");
 
-    await this.usersService.ensureTelegramUser(result.user);
+    request.userId = await this.usersService.ensureTelegramUser(result.user);
     request.tgUser = result.user;
-    request.userId = result.user.id;
     return true;
   }
 }

@@ -14,7 +14,7 @@ import logger from "../logger.js";
 export class AvatarsRepository {
   constructor(private readonly database: DatabaseService) {}
 
-  async findBatch(userId: number, refs: AvatarRef[]): Promise<AvatarBatchResult[]> {
+  async findBatch(userId: string, refs: AvatarRef[]): Promise<AvatarBatchResult[]> {
     const t0 = Date.now();
     const characterIds = refs.filter((r) => r.type === "character").map((r) => r.id);
     const personaIds = refs.filter((r) => r.type === "persona").map((r) => r.id);

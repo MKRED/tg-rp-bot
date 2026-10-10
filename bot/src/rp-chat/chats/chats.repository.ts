@@ -5,8 +5,9 @@ import { DatabaseService } from "../../database/database.service.js";
 import { schema } from "../../db/index.js";
 import type { Chat } from "../../db/schema.js";
 import logger from "../../logger.js";
-import { decryptField, decryptTranslations, encryptField, getUserEncryptionKey } from "../../utils/index.js";
+import { decryptField, decryptTranslations, encryptField } from "../../utils/index.js";
 import { ChatPathRepository } from "../chat-path.repository.js";
+import { UserKeysService } from "../../user-keys/user-keys.service.js";
 
 /** Сущности, выбранные при создании чата (выбранное приветствие передаётся отдельно, уже текстом). */
 export type ChatRefs = { characterId: number; personaId: number; templateId: number; presetId: number };
@@ -35,10 +36,11 @@ export class ChatsRepository {
   constructor(
     private readonly database: DatabaseService,
     private readonly path: ChatPathRepository,
+    private readonly keys: UserKeysService,
   ) {}
 
   /** Пагинированный список чатов пользователя (свежие по последнему сообщению сверху). */
-  async list(userId: number, page: number, pageSize: number): Promise<{ items: ChatListItem[]; total: number }> {
+  async list(userId: string, page: number, pageSize: number): Promise<{ items: ChatListItem[]; total: number }> {
     const t0 = Date.now();
     const offset = (page - 1) * pageSize;
     const rows = await this.database.db.execute(sql`
@@ -74,7 +76,7 @@ export class ChatsRepository {
       .from(schema.chats)
       .where(eq(schema.chats.userId, userId));
     const total = countRows[0]?.cnt ?? 0;
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
 
     const items: ChatListItem[] = (rows as Record<string, unknown>[]).map((r) => ({
       // bigint из сырого SQL приходит строкой — все id приводим к number явно.
@@ -93,7 +95,7 @@ export class ChatsRepository {
   }
 
   /** Строка чата без сообщений, только если он принадлежит пользователю. */
-  async findRow(userId: number, chatId: number): Promise<ChatRow | undefined> {
+  async findRow(userId: string, chatId: number): Promise<ChatRow | undefined> {
     const c = schema.chats;
     const rows = await this.database.db
       .select({
@@ -110,7 +112,7 @@ export class ChatsRepository {
   }
 
   /** Чат + активный путь с информацией о сиблингах (для экрана чата и сборки промпта). */
-  async findDetail(userId: number, chatId: number): Promise<ChatDetail | undefined> {
+  async findDetail(userId: string, chatId: number): Promise<ChatDetail | undefined> {
     const t0 = Date.now();
     const chatRows = await this.database.db.execute(sql`
       SELECT
@@ -138,7 +140,7 @@ export class ChatsRepository {
     const row = (chatRows as Record<string, unknown>[])[0];
     if (!row) return undefined;
 
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     // bigint строкой → number: иначе на клиенте activeMessageId === message.id не совпадёт.
     let activeMessageId = row.active_message_id != null ? Number(row.active_message_id) : null;
     let messages: MessageInPath[] = [];
@@ -173,7 +175,7 @@ export class ChatsRepository {
   }
 
   /** Все сообщения чата плоским массивом с флагом isOnActivePath (граф веток). Чат должен быть проверен. */
-  async tree(userId: number, chat: ChatRow): Promise<TreeNode[]> {
+  async tree(userId: string, chat: ChatRow): Promise<TreeNode[]> {
     const t0 = Date.now();
     const activePath = chat.activeMessageId ? await this.path.activePathIds(chat.activeMessageId) : new Set<number>();
     const m = schema.messages;
@@ -183,7 +185,7 @@ export class ChatsRepository {
       .where(eq(m.chatId, chat.id))
       .orderBy(m.createdAt);
     logger.debug({ durationMs: Date.now() - t0, userId, chatId: chat.id, count: rows.length }, "Chat tree loaded");
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     return rows.map((r) => ({
       id: r.id,
       parentId: r.parentId,
@@ -195,14 +197,14 @@ export class ChatsRepository {
   }
 
   /** Создаёт чат и, если задано, стартовое сообщение ассистента (курсор — на него). */
-  async create(userId: number, refs: ChatRefs, firstMessage: string | null): Promise<Chat> {
+  async create(userId: string, refs: ChatRefs, firstMessage: string | null): Promise<Chat> {
     const t0 = Date.now();
     const [chat] = await this.database.db
       .insert(schema.chats)
       .values({ userId, ...refs })
       .returning();
     if (firstMessage) {
-      const key = getUserEncryptionKey(userId);
+      const key = await this.keys.forUser(userId);
       const [msg] = await this.database.db
         .insert(schema.messages)
         .values({ chatId: chat!.id, parentId: null, role: "assistant", content: encryptField(firstMessage, key) })
@@ -218,11 +220,11 @@ export class ChatsRepository {
    * Переименовывает чат. Пустая/пробельная строка → title = null (UI вернётся к имени персонажа).
    * Возвращает применённый title или undefined, если чат не найден.
    */
-  async rename(userId: number, chatId: number, rawTitle: string): Promise<{ title: string | null } | undefined> {
+  async rename(userId: string, chatId: number, rawTitle: string): Promise<{ title: string | null } | undefined> {
     const t0 = Date.now();
     const trimmed = rawTitle.trim();
     const title = trimmed.length > 0 ? trimmed : null;
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     const rows = await this.database.db
       .update(schema.chats)
       .set({ title: title != null ? encryptField(title, key) : null })
@@ -237,7 +239,7 @@ export class ChatsRepository {
   }
 
   /** Удаляет чат (сообщения и варианты — каскадом). true — если строка была удалена. */
-  async remove(userId: number, chatId: number): Promise<boolean> {
+  async remove(userId: string, chatId: number): Promise<boolean> {
     const t0 = Date.now();
     const rows = await this.database.db
       .delete(schema.chats)

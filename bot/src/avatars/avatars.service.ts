@@ -8,7 +8,7 @@ export class AvatarsService {
   constructor(private readonly avatars: AvatarsRepository) {}
 
   /** Лимит считается по уже отсеянным дескрипторам (DTO выкидывает некорректные), как в Hono. */
-  async resolveBatch(userId: number, refs: AvatarRef[]): Promise<AvatarBatchResult[]> {
+  async resolveBatch(userId: string, refs: AvatarRef[]): Promise<AvatarBatchResult[]> {
     if (refs.length === 0) return [];
     if (refs.length > MAX_AVATAR_BATCH_REFS) {
       throw new BadRequestException(`Too many refs (max ${MAX_AVATAR_BATCH_REFS})`);

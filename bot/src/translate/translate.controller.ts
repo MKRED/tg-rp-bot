@@ -11,7 +11,7 @@ export class TranslateController {
   /** Действие, а не создание ресурса — 200, как у Hono-контроллера. */
   @Post("text")
   @HttpCode(200)
-  async translateText(@CurrentUser() userId: number, @Body() dto: TranslateTextDto): Promise<TranslateTextResponse> {
+  async translateText(@CurrentUser() userId: string, @Body() dto: TranslateTextDto): Promise<TranslateTextResponse> {
     return { translations: await this.translate.translateBlocks(userId, dto) };
   }
 }

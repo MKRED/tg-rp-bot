@@ -302,6 +302,13 @@
       "when": 1789694552522,
       "tag": "0042_elite_amphibian",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1791643093748,
+      "tag": "0043_users_uuid",
+      "breakpoints": true
     }
   ]
 }

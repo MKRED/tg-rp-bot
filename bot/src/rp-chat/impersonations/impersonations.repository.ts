@@ -5,7 +5,8 @@ import { DatabaseService } from "../../database/database.service.js";
 import { schema } from "../../db/index.js";
 import type { ImpersonationVariant } from "../../db/schema.js";
 import logger from "../../logger.js";
-import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/index.js";
+import { decryptField, encryptField } from "../../utils/index.js";
+import { UserKeysService } from "../../user-keys/user-keys.service.js";
 
 /**
  * Фильтр «момента» = (chatId, parentMessageId). parentMessageId === null требует isNull,
@@ -24,10 +25,13 @@ function momentFilter(chatId: number, parentMessageId: number | null): SQL {
  */
 @Injectable()
 export class ImpersonationsRepository {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly keys: UserKeysService,
+  ) {}
 
   /** Варианты момента, свежие сверху (не более MAX_IMPERSONATION_VARIANTS), расшифрованные. */
-  async list(userId: number, chatId: number, parentMessageId: number | null): Promise<ImpersonationVariant[]> {
+  async list(userId: string, chatId: number, parentMessageId: number | null): Promise<ImpersonationVariant[]> {
     const v = schema.impersonationVariants;
     const rows = await this.database.db
       .select()
@@ -35,7 +39,7 @@ export class ImpersonationsRepository {
       .where(momentFilter(chatId, parentMessageId))
       .orderBy(desc(v.createdAt))
       .limit(MAX_IMPERSONATION_VARIANTS);
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     return rows.map((r) => ({ ...r, content: decryptField(r.content, key) }));
   }
 
@@ -43,10 +47,10 @@ export class ImpersonationsRepository {
    * Вставляет вариант и удаляет всё, что выходит за лимит момента (FIFO по createdAt).
    * content шифруется при записи, но возвращается расшифрованным (уходит клиенту по SSE).
    */
-  async insert(userId: number, chatId: number, parentMessageId: number | null, content: string): Promise<ImpersonationVariant> {
+  async insert(userId: string, chatId: number, parentMessageId: number | null, content: string): Promise<ImpersonationVariant> {
     const t0 = Date.now();
     const v = schema.impersonationVariants;
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     const [created] = await this.database.db
       .insert(v)
       .values({ chatId, parentMessageId, content: encryptField(content, key) })

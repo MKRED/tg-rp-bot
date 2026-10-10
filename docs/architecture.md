@@ -21,8 +21,11 @@ bot/src/
                   initData.ts — проверка initData (чистая функция) + @Public() (маршрут без авторизации —
                   только health/)
   database/     — DatabaseModule (@Global) + DatabaseService поверх drizzle-клиента из db/index.ts
-  users/        — UsersService (ensureTelegramUser для guard: upsert строки users с кэшем на процесс;
-                  saveTelegramProfile для /start: всегда) + UsersRepository
+  users/        — UsersService (ensureTelegramUser для guard: upsert строки users по telegram_id с кэшем
+                  telegramId → UUID на процесс; saveTelegramProfile для /start: всегда) + UsersRepository.
+                  users.id — собственный UUID, telegram_id — необязательный (заполнен у привязавших Telegram)
+  user-keys/    — UserKeysModule (@Global): UserKeysService.forUser(userId) — ключ шифрования данных
+                  пользователя (см. «Шифрование данных пользователя» ниже)
   common/       — ApiExceptionFilter (ошибки → { error }), createValidationPipe, found() (undefined → 404),
                   image-limits (лимиты полей-картинок data URL), fk-violation (FK 23503 → 409 in_use),
                   llm-http-error (ошибка не-стримингового LLM-вызова → 400 no_api_key / 500), query-int
@@ -36,7 +39,7 @@ bot/src/
                   генерация: card-generation.service (Nest-сервис) + prompt-assembly / tool-loop (web_search +
                   ask_user) / ask-user-tool
   settings/     — /api/settings (всё в строке user_settings): llm/ (ключ/модель DeepSeek, BYOK, шифруется
-                  ENCRYPTION_KEY; verify — /models, баланс), tavily/ (ключ Tavily + лимит раундов поиска; verify — TavilyService),
+                  ключом пользователя; verify — /models, баланс), tavily/ (ключ Tavily + лимит раундов поиска; verify — TavilyService),
                   translate/ (режим перевода PromptEditorOverlay) — у каждой controller/service/repository;
                   dto/ (снисходительные PATCH: невалидное поле игнорируется), key-format.ts (400
                   invalid_key_format); экспортирует TavilySettingsRepository (генерация карточек) и
@@ -116,10 +119,27 @@ bot/src/
                   spa-fallback — чистое решение «index.html или дальше в Nest» (/api и /health — в Nest,
                   неизвестный /api/* → JSON 404). Express-middleware до маршрутов Nest, не контроллер —
                   иначе глобальный guard отдал бы на страницу 401
-  scripts/      — разовые скрипты (backfill-message-encryption)
-  utils/        — retry, crypto (per-user шифрование сообщений и кэша переводов), concurrency (runWithConcurrency —
+  scripts/      — разовые скрипты вне Nest: migrate-user-keys (перешифровка v1 → v2 при переходе на
+                  UUID-пользователей), test-web-search (прототип DeepSeek + Tavily)
+  utils/        — retry, crypto (шифрование полей ключом пользователя, обёртка ключа мастер-ключом), concurrency (runWithConcurrency —
                   пул с ограниченной конкурентностью)
 ```
+
+## Шифрование данных пользователя
+
+Тексты пользователя (промпты персонажей и персон, карточки, записи книг, сообщения и их переводы,
+истории, пересказы, ключи DeepSeek/Tavily) хранятся зашифрованными AES-256-GCM (`utils/crypto.ts`):
+- **мастер-ключ** = HKDF(`ENCRYPTION_KEY` из env, соль в коде) — для расшифровки нужны оба;
+- **ключ пользователя** — 32 случайных байта, хранится в `users.data_key` зашифрованным мастер-ключом
+  (`k1:…`). Не выводится из id: id и способ входа можно менять, не трогая данные; смена мастер-ключа —
+  перешифровать только `data_key`. Репозитории берут его через `UserKeysService.forUser(userId)` (кэш
+  на процесс); ключ создаётся вместе со строкой `users` и **никогда не пересоздаётся** — новый ключ
+  сделает все данные пользователя нечитаемыми;
+- **поле** — `v2:` + base64(iv‖tag‖шифротекст). `decryptField` пропускает только `null` и `''`
+  (DB default), всё остальное без `v2:` — ошибка, а не «открытый текст как есть».
+
+До перехода на UUID (миграция `0043_users_uuid`) ключ пользователя выводился из Telegram id (`v1:`);
+всё перешифровано скриптом `scripts/migrate-user-keys`, рабочий код `v1` не читает.
 
 ## Пакет `shared/` (`@tg-rp-bot/shared`)
 

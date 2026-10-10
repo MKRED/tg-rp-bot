@@ -29,7 +29,7 @@ export class TranslateService {
     private readonly llm: LlmService,
   ) {}
 
-  async translateBlocks(userId: number, req: TranslateTextRequest): Promise<string[]> {
+  async translateBlocks(userId: string, req: TranslateTextRequest): Promise<string[]> {
     const t0 = Date.now();
     const { blocks, sourceLang, targetLang, mode } = req;
     logger.debug({ userId, mode, blockCount: blocks.length, sourceLang, targetLang }, "Batch block translation start");
@@ -54,7 +54,7 @@ export class TranslateService {
    * читаем их один раз на весь батч, а не на каждый блок.
    */
   private async chunkTranslator(
-    userId: number,
+    userId: string,
     { targetLang, mode }: TranslateTextRequest,
   ): Promise<(text: string) => Promise<string>> {
     if (mode === "google") return (text) => googleTranslate(text, targetLang);

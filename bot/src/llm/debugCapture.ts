@@ -33,26 +33,26 @@ const CAPTURE_DEFAULTS: CaptureSettings = {
 };
 
 // Кэш настроек per-user (источник истины — БД; здесь копия для горячего пути).
-const settingsCache = new Map<number, CaptureSettings>();
+const settingsCache = new Map<string, CaptureSettings>();
 // Глобальное кольцо записей; чтение/тримминг — по userId.
 let records: LlmDebugRecord[] = [];
 let nextId = 1;
 
 /** Эффективные настройки пользователя: из кэша или дефолт (в т.ч. для userId=null). */
-function effectiveSettings(userId: number | null): CaptureSettings {
+function effectiveSettings(userId: string | null): CaptureSettings {
   if (userId == null) return CAPTURE_DEFAULTS;
   return settingsCache.get(userId) ?? CAPTURE_DEFAULTS;
 }
 
 /** Положить настройки пользователя в кэш (после чтения/записи в БД или при прайме). */
-export function cacheDebugSettings(userId: number, s: LlmDebugSettings): void {
+export function cacheDebugSettings(userId: string, s: LlmDebugSettings): void {
   settingsCache.set(userId, { enabled: s.enabled, maxRequests: clampMaxRequests(s.maxRequests) });
   // При уменьшении N подрезаем уже накопленные записи этого пользователя сразу.
   trimUser(userId);
 }
 
 /** Прайм кэша на старте сервера: заливаем все известные настройки разом. */
-export function primeDebugSettings(rows: Array<{ userId: number } & LlmDebugSettings>): void {
+export function primeDebugSettings(rows: Array<{ userId: string } & LlmDebugSettings>): void {
   for (const r of rows) {
     settingsCache.set(r.userId, { enabled: r.enabled, maxRequests: clampMaxRequests(r.maxRequests) });
   }
@@ -60,17 +60,17 @@ export function primeDebugSettings(rows: Array<{ userId: number } & LlmDebugSett
 }
 
 /** Записи пользователя (последние сверху). Фильтр по userId — каждый видит только свои. */
-export function getDebugRecords(userId: number): LlmDebugRecord[] {
+export function getDebugRecords(userId: string): LlmDebugRecord[] {
   return records.filter((r) => r.userId === userId).reverse();
 }
 
 /** Очистить записи пользователя (кнопка «Очистить» на экране). */
-export function clearDebugRecords(userId: number): void {
+export function clearDebugRecords(userId: string): void {
   records = records.filter((r) => r.userId !== userId);
 }
 
 /** Подрезать записи одного пользователя до его maxRequests (выкидываем самые старые). */
-function trimUser(userId: number | null): void {
+function trimUser(userId: string | null): void {
   const max = effectiveSettings(userId).maxRequests;
   const userRecs = records.filter((r) => r.userId === userId);
   if (userRecs.length <= max) return;

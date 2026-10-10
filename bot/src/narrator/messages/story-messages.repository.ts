@@ -5,15 +5,15 @@ import { DatabaseService } from "../../database/database.service.js";
 import { schema } from "../../db/index.js";
 import type { StoryMessage as StoryMessageRow } from "../../db/schema.js";
 import logger from "../../logger.js";
-import { decryptField, decryptTranslations, encryptField, getUserEncryptionKey } from "../../utils/index.js";
+import { decryptField, decryptTranslations, encryptField } from "../../utils/index.js";
 import { CompactionsRepository } from "../compaction/compactions.repository.js";
 import { StoryPathRepository } from "../story-path.repository.js";
+import { UserKeysService } from "../../user-keys/user-keys.service.js";
 
 export type { StoryMessageRow };
 
 /** Расшифровывает content и значения translations строки сообщения истории. */
-function decryptRow(row: StoryMessageRow, userId: number): StoryMessageRow {
-  const key = getUserEncryptionKey(userId);
+function decryptRow(row: StoryMessageRow, key: Buffer): StoryMessageRow {
   return { ...row, content: decryptField(row.content, key), translations: decryptTranslations(row.translations, key) };
 }
 
@@ -27,11 +27,12 @@ export class StoryMessagesRepository {
     private readonly database: DatabaseService,
     private readonly path: StoryPathRepository,
     private readonly compactions: CompactionsRepository,
+    private readonly keys: UserKeysService,
   ) {}
 
   /** Вставляет сообщение; возвращает его расшифрованным (уходит клиенту по SSE). */
   async insert(
-    userId: number,
+    userId: string,
     storyId: number,
     parentId: number | null,
     role: MessageRole,
@@ -39,38 +40,38 @@ export class StoryMessagesRepository {
     content: string,
   ): Promise<StoryMessageRow> {
     const t0 = Date.now();
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     const [row] = await this.database.db
       .insert(schema.storyMessages)
       .values({ storyChatId: storyId, parentId, role, kind, content: encryptField(content, key) })
       .returning();
     logger.debug({ durationMs: Date.now() - t0, userId, storyId, messageId: row!.id, role, kind }, "Story message inserted");
-    return decryptRow(row!, userId);
+    return decryptRow(row!, await this.keys.forUser(userId));
   }
 
   /**
    * Сообщение этой истории, расшифрованное (история уже проверена вызывающим). storyId — в WHERE, а не
    * сравнением после: строку чужой истории расшифровать ключом пользователя нельзя (500 вместо 404).
    */
-  async findOne(userId: number, storyId: number, messageId: number): Promise<StoryMessageRow | undefined> {
+  async findOne(userId: string, storyId: number, messageId: number): Promise<StoryMessageRow | undefined> {
     const rows = await this.database.db
       .select()
       .from(schema.storyMessages)
       .where(and(eq(schema.storyMessages.id, messageId), eq(schema.storyMessages.storyChatId, storyId)));
-    return rows[0] ? decryptRow(rows[0], userId) : undefined;
+    return rows[0] ? decryptRow(rows[0], await this.keys.forUser(userId)) : undefined;
   }
 
   /**
    * Правит текст бита на месте — без нового сиблинга, курсор и граф не меняются. Кэш перевода
    * сбрасывается: он относился к старому тексту.
    */
-  async updateContent(userId: number, storyId: number, messageId: number, content: string): Promise<StoryMessageRow | undefined> {
+  async updateContent(userId: string, storyId: number, messageId: number, content: string): Promise<StoryMessageRow | undefined> {
     const rows = await this.database.db
       .update(schema.storyMessages)
-      .set({ content: encryptField(content, getUserEncryptionKey(userId)), translations: null })
+      .set({ content: encryptField(content, await this.keys.forUser(userId)), translations: null })
       .where(and(eq(schema.storyMessages.id, messageId), eq(schema.storyMessages.storyChatId, storyId)))
       .returning();
-    return rows[0] ? decryptRow(rows[0], userId) : undefined;
+    return rows[0] ? decryptRow(rows[0], await this.keys.forUser(userId)) : undefined;
   }
 
   /** Курсор — на лист под messageId (спуск по самым свежим детям). */
@@ -91,7 +92,7 @@ export class StoryMessagesRepository {
    * заканчиваться битом, а не висящей директивой). Курсор на удалённом узле переносится на
    * выжившего предка; пересказы с якорем в удалённом — инвалидируются каскадом вперёд.
    */
-  async removeSubtree(userId: number, storyId: number, messageId: number): Promise<boolean> {
+  async removeSubtree(userId: string, storyId: number, messageId: number): Promise<boolean> {
     const t0 = Date.now();
     const msg = await this.findOne(userId, storyId, messageId);
     if (!msg) return false;
@@ -141,8 +142,8 @@ export class StoryMessagesRepository {
   }
 
   /** Кэширует перевод: сливает запись в jsonb translations. Значение шифруется, код языка — открыт. */
-  async saveTranslation(userId: number, messageId: number, lang: string, text: string): Promise<void> {
-    const encrypted = encryptField(text, getUserEncryptionKey(userId));
+  async saveTranslation(userId: string, messageId: number, lang: string, text: string): Promise<void> {
+    const encrypted = encryptField(text, await this.keys.forUser(userId));
     await this.database.db.execute(sql`
       UPDATE story_messages
       SET translations = COALESCE(translations, '{}'::jsonb) || jsonb_build_object(${lang}::text, ${encrypted}::text)

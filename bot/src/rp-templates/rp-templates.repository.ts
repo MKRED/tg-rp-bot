@@ -21,7 +21,7 @@ export class RpTemplatesRepository {
   constructor(private readonly database: DatabaseService) {}
 
   /** Список шаблонов пользователя — свежие сверху. */
-  async list(userId: number): Promise<RpTemplateListRow[]> {
+  async list(userId: string): Promise<RpTemplateListRow[]> {
     const t0 = Date.now();
     const rows = await this.database.db
       .select({
@@ -41,7 +41,7 @@ export class RpTemplatesRepository {
   }
 
   /** Сколько шаблонов у пользователя (для проверки мягкого лимита). */
-  async count(userId: number): Promise<number> {
+  async count(userId: string): Promise<number> {
     const rows = await this.database.db
       .select({ count: sql<number>`count(*)::int` })
       .from(schema.rpTemplates)
@@ -50,13 +50,13 @@ export class RpTemplatesRepository {
   }
 
   /** Полный шаблон по id, только если он принадлежит этому пользователю. */
-  async findOne(userId: number, id: number): Promise<RpTemplate | undefined> {
+  async findOne(userId: string, id: number): Promise<RpTemplate | undefined> {
     const rows = await this.database.db.select().from(schema.rpTemplates).where(this.ownedBy(userId, id));
     return rows[0];
   }
 
   /** Создаёт шаблон и возвращает созданную строку. */
-  async create(userId: number, input: RpTemplateInput): Promise<RpTemplate> {
+  async create(userId: string, input: RpTemplateInput): Promise<RpTemplate> {
     const t0 = Date.now();
     const rows = await this.database.db
       .insert(schema.rpTemplates)
@@ -68,7 +68,7 @@ export class RpTemplatesRepository {
   }
 
   /** Обновляет шаблон (только свой); undefined — если такого у пользователя нет. */
-  async update(userId: number, id: number, input: RpTemplateInput): Promise<RpTemplate | undefined> {
+  async update(userId: string, id: number, input: RpTemplateInput): Promise<RpTemplate | undefined> {
     const t0 = Date.now();
     const rows = await this.database.db
       .update(schema.rpTemplates)
@@ -84,7 +84,7 @@ export class RpTemplatesRepository {
   }
 
   /** Удаляет шаблон (только свой). true — если строка была удалена. */
-  async delete(userId: number, id: number): Promise<boolean> {
+  async delete(userId: string, id: number): Promise<boolean> {
     const t0 = Date.now();
     const rows = await this.database.db
       .delete(schema.rpTemplates)
@@ -95,7 +95,7 @@ export class RpTemplatesRepository {
     return deleted;
   }
 
-  private ownedBy(userId: number, id: number) {
+  private ownedBy(userId: string, id: number) {
     return and(eq(schema.rpTemplates.id, id), eq(schema.rpTemplates.userId, userId));
   }
 }

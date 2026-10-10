@@ -8,6 +8,7 @@ import {
   real,
   text,
   timestamp,
+  uuid,
 } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type {
@@ -32,11 +33,17 @@ export type {
 } from "./schema.types.js";
 
 /**
- * Пользователи бота. id — это Telegram user id (помещается в безопасный диапазон integer).
- * Стартовая таблица: задаёт паттерн миграций, дальше расширяем под RP-сущности.
+ * Пользователи. id — собственный UUID, не связанный со способом входа: Telegram у пользователя
+ * необязателен (telegram_id заполнен, только если он привязан).
+ *
+ * dataKey — случайный ключ шифрования данных пользователя, зашифрованный мастер-ключом
+ * (generateDataKey/unwrapDataKey в utils/crypto.ts). Все per-user зашифрованные поля других таблиц
+ * шифруются им, поэтому строку нельзя пересоздать: новый ключ сделает данные нечитаемыми.
  */
 export const users = pgTable("users", {
-  id: bigint("id", { mode: "number" }).primaryKey(),
+  id: uuid("id").primaryKey().defaultRandom(),
+  telegramId: bigint("telegram_id", { mode: "number" }).unique(),
+  dataKey: text("data_key").notNull(),
   username: text("username"),
   firstName: text("first_name"),
   lastName: text("last_name"),
@@ -62,7 +69,7 @@ export type NewUser = typeof users.$inferInsert;
  *   одинаковыми на всех устройствах пользователя.
  */
 export const userSettings = pgTable("user_settings", {
-  userId: bigint("user_id", { mode: "number" })
+  userId: uuid("user_id")
     .primaryKey()
     .references(() => users.id, { onDelete: "cascade" }),
   llmDebugEnabled: boolean("llm_debug_enabled").notNull().default(true),
@@ -110,7 +117,7 @@ export type NewUserSettings = typeof userSettings.$inferInsert;
  * варианты первого сообщения держим в jsonb (форма элемента ещё будет меняться), а теги
  * в text[] (плоские, вероятная ось будущей фильтрации по БД).
  *
- * id — собственный identity-ключ (в отличие от users.id, который равен Telegram id):
+ * id — собственный identity-ключ (bigint, не UUID, как у users):
  * персонаж адресуется только за стеной initData, непредсказуемость не нужна.
  * image (data URL) — nullable: квадратная миниатюра (кроп, выбранный пользователем) для аватара.
  * imageFull (data URL) — nullable: то же фото целиком (уменьшенное, без кадрирования) для
@@ -118,7 +125,7 @@ export type NewUserSettings = typeof userSettings.$inferInsert;
  */
 export const characters = pgTable("characters", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
-  userId: bigint("user_id", { mode: "number" })
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
@@ -154,7 +161,7 @@ export type NewCharacter = typeof characters.$inferInsert;
  */
 export const personas = pgTable("personas", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
-  userId: bigint("user_id", { mode: "number" })
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
@@ -198,7 +205,7 @@ export type NewPersona = typeof personas.$inferInsert;
  */
 export const cards = pgTable("cards", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
-  userId: bigint("user_id", { mode: "number" })
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
@@ -238,7 +245,7 @@ export type NewCard = typeof cards.$inferInsert;
  */
 export const generationPresets = pgTable("generation_presets", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
-  userId: bigint("user_id", { mode: "number" })
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
@@ -281,7 +288,7 @@ export type NewGenerationPreset = typeof generationPresets.$inferInsert;
  */
 export const rpTemplates = pgTable("rp_templates", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
-  userId: bigint("user_id", { mode: "number" })
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
@@ -324,7 +331,7 @@ export type NewRpTemplate = typeof rpTemplates.$inferInsert;
  */
 export const chats = pgTable("chats", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
-  userId: bigint("user_id", { mode: "number" })
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   characterId: bigint("character_id", { mode: "number" })
@@ -442,7 +449,7 @@ export type NewImpersonationVariant = typeof impersonationVariants.$inferInsert;
  */
 export const knowledgeBooks = pgTable("knowledge_books", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
-  userId: bigint("user_id", { mode: "number" })
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
@@ -517,7 +524,7 @@ export type NewKnowledgeBookEntry = typeof knowledgeBookEntries.$inferInsert;
  */
 export const narratorTemplates = pgTable("narrator_templates", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
-  userId: bigint("user_id", { mode: "number" })
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
@@ -576,7 +583,7 @@ export type NewNarratorTemplate = typeof narratorTemplates.$inferInsert;
  */
 export const storyChats = pgTable("story_chats", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
-  userId: bigint("user_id", { mode: "number" })
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   bookId: bigint("book_id", { mode: "number" })

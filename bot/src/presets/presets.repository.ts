@@ -15,7 +15,7 @@ export class PresetsRepository {
   constructor(private readonly database: DatabaseService) {}
 
   /** Список пресетов пользователя (поля для сводки в списке) — свежие сверху. */
-  async list(userId: number): Promise<PresetListItem[]> {
+  async list(userId: string): Promise<PresetListItem[]> {
     const t0 = Date.now();
     const rows = await this.database.db
       .select({
@@ -37,7 +37,7 @@ export class PresetsRepository {
   }
 
   /** Сколько пресетов у пользователя (для проверки мягкого лимита). */
-  async count(userId: number): Promise<number> {
+  async count(userId: string): Promise<number> {
     const rows = await this.database.db
       .select({ count: sql<number>`count(*)::int` })
       .from(schema.generationPresets)
@@ -46,7 +46,7 @@ export class PresetsRepository {
   }
 
   /** Полный пресет по id, только если он принадлежит этому пользователю. */
-  async findOne(userId: number, id: number): Promise<GenerationPreset | undefined> {
+  async findOne(userId: string, id: number): Promise<GenerationPreset | undefined> {
     const rows = await this.database.db
       .select()
       .from(schema.generationPresets)
@@ -55,7 +55,7 @@ export class PresetsRepository {
   }
 
   /** Создаёт пресет и возвращает созданную строку. */
-  async create(userId: number, input: PresetInput): Promise<GenerationPreset> {
+  async create(userId: string, input: PresetInput): Promise<GenerationPreset> {
     const t0 = Date.now();
     const rows = await this.database.db
       .insert(schema.generationPresets)
@@ -67,7 +67,7 @@ export class PresetsRepository {
   }
 
   /** Обновляет пресет (только свой); undefined — если такого у пользователя нет. */
-  async update(userId: number, id: number, input: PresetInput): Promise<GenerationPreset | undefined> {
+  async update(userId: string, id: number, input: PresetInput): Promise<GenerationPreset | undefined> {
     const t0 = Date.now();
     const rows = await this.database.db
       .update(schema.generationPresets)
@@ -83,7 +83,7 @@ export class PresetsRepository {
   }
 
   /** Удаляет пресет (только свой). true — если строка была удалена. */
-  async delete(userId: number, id: number): Promise<boolean> {
+  async delete(userId: string, id: number): Promise<boolean> {
     const t0 = Date.now();
     const rows = await this.database.db
       .delete(schema.generationPresets)
@@ -94,7 +94,7 @@ export class PresetsRepository {
     return deleted;
   }
 
-  private ownedBy(userId: number, id: number) {
+  private ownedBy(userId: string, id: number) {
     return and(eq(schema.generationPresets.id, id), eq(schema.generationPresets.userId, userId));
   }
 }

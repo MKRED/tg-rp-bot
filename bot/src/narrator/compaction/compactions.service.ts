@@ -16,7 +16,7 @@ export class CompactionsService {
   ) {}
 
   /** Валидная цепочка пересказов активной ветки (без якорей — они внутренние). */
-  async listActive(userId: number, storyId: number): Promise<StoryCompaction[]> {
+  async listActive(userId: string, storyId: number): Promise<StoryCompaction[]> {
     const story = await this.stories.findDetail(userId, storyId);
     if (!story) throw new NotFoundException(STORY_NOT_FOUND);
     if (story.activeMessageId == null) return [];
@@ -25,7 +25,7 @@ export class CompactionsService {
   }
 
   /** Удаляет пересказ и все последующие; сжатые ими сообщения возвращаются в живую историю. */
-  async remove(userId: number, storyId: number, compactionId: number): Promise<StoryCompaction[]> {
+  async remove(userId: string, storyId: number, compactionId: number): Promise<StoryCompaction[]> {
     await this.access.requireRow(userId, storyId);
     if (!(await this.compactions.removeCascade(storyId, compactionId))) throw new NotFoundException("Compaction not found");
     logger.info({ userId, storyId, compactionId }, "Story compaction deleted via API");

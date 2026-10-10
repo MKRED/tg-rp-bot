@@ -8,7 +8,7 @@ export class ChatStatsController {
   constructor(private readonly stats: ChatStatsService) {}
 
   @Get()
-  async get(@CurrentUser() userId: number, @Param("id", ParseIntPipe) chatId: number) {
+  async get(@CurrentUser() userId: string, @Param("id", ParseIntPipe) chatId: number) {
     return { stats: await this.stats.get(userId, chatId) };
   }
 }

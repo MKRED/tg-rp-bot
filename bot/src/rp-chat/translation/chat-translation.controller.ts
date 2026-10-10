@@ -13,7 +13,7 @@ export class ChatTranslationController {
   @Post("messages/:msgId/translate")
   @HttpCode(200)
   async translateMessage(
-    @CurrentUser() userId: number,
+    @CurrentUser() userId: string,
     @Param("id", ParseIntPipe) chatId: number,
     @Param("msgId", ParseIntPipe) msgId: number,
     @Body() dto: TranslateMessageDto,
@@ -23,7 +23,7 @@ export class ChatTranslationController {
 
   @Delete("messages/:msgId/translate")
   async deleteTranslation(
-    @CurrentUser() userId: number,
+    @CurrentUser() userId: string,
     @Param("id", ParseIntPipe) chatId: number,
     @Param("msgId", ParseIntPipe) msgId: number,
     @Query() { lang }: DeleteTranslationQueryDto,
@@ -34,7 +34,7 @@ export class ChatTranslationController {
 
   @Post("translate-text")
   @HttpCode(200)
-  async translateText(@CurrentUser() userId: number, @Param("id", ParseIntPipe) chatId: number, @Body() dto: MessageTranslateTextDto) {
+  async translateText(@CurrentUser() userId: string, @Param("id", ParseIntPipe) chatId: number, @Body() dto: MessageTranslateTextDto) {
     return { translation: await this.translation.translateText(userId, chatId, dto) };
   }
 }

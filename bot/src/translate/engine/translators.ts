@@ -80,7 +80,7 @@ export async function aiTranslate(
   systemPromptTemplate: string,
   text: string,
   targetLangName: string,
-  userId: number,
+  userId: string,
   requestReasoning: boolean,
   reasoningEffort?: string | null,
 ): Promise<string> {

@@ -14,7 +14,7 @@ export class StorySettingsService {
     private readonly presets: PresetsRepository,
   ) {}
 
-  async get(userId: number, storyId: number): Promise<StorySettings> {
+  async get(userId: string, storyId: number): Promise<StorySettings> {
     await this.access.requireRow(userId, storyId);
     return this.settings.get(storyId);
   }
@@ -23,7 +23,7 @@ export class StorySettingsService {
    * Сохраняет только корректные переданные поля (DTO обнулил невалидные). «Пол» сжатия клампится по
    * окну контекста пресета истории. Пустой патч — без записи: upsert с пустым SET — невалидный SQL.
    */
-  async update(userId: number, storyId: number, input: Partial<StorySettings>): Promise<StorySettings> {
+  async update(userId: string, storyId: number, input: Partial<StorySettings>): Promise<StorySettings> {
     const story = await this.access.requireRow(userId, storyId);
     const patch = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined)) as Partial<StorySettings>;
     if (patch.compactFloorTokens !== undefined) {

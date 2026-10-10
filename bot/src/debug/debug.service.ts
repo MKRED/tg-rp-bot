@@ -23,21 +23,21 @@ export class DebugService implements OnApplicationBootstrap {
       .catch((err) => logger.warn({ err }, "Failed to prime LLM debug settings cache"));
   }
 
-  async view(userId: number): Promise<LlmDebugView> {
+  async view(userId: string): Promise<LlmDebugView> {
     // БД — источник истины; синхронизируем кэш на случай, если прайм на старте не удался.
     const settings = await this.debug.getSettings(userId);
     cacheDebugSettings(userId, settings);
     return { settings, records: getDebugRecords(userId) };
   }
 
-  async updateSettings(userId: number, patch: LlmDebugSettingsPatch): Promise<LlmDebugSettings> {
+  async updateSettings(userId: string, patch: LlmDebugSettingsPatch): Promise<LlmDebugSettings> {
     const settings = await this.debug.upsertSettings(userId, patch);
     cacheDebugSettings(userId, settings); // кэш горячего пути — в ногу с БД
     return settings;
   }
 
   /** Очистить накопленные записи пользователя (настройки не трогаем). */
-  clearRecords(userId: number): void {
+  clearRecords(userId: string): void {
     clearDebugRecords(userId);
   }
 }

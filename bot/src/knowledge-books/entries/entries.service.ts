@@ -16,11 +16,11 @@ export class EntriesService {
   ) {}
 
   /** Владение книгой проверяет репозиторий: для чужой/несуществующей книги — []. */
-  list(userId: number, bookId: number): Promise<EntryListItem[]> {
+  list(userId: string, bookId: number): Promise<EntryListItem[]> {
     return this.entries.list(userId, bookId);
   }
 
-  async create(userId: number, bookId: number, input: EntryInput): Promise<{ id: number }> {
+  async create(userId: string, bookId: number, input: EntryInput): Promise<{ id: number }> {
     await this.checkReference(userId, input);
     if ((await this.entries.count(userId, bookId)) >= MAX_ENTRIES_PER_BOOK) {
       throw new BadRequestException(`Entry limit reached (max ${MAX_ENTRIES_PER_BOOK})`);
@@ -30,17 +30,17 @@ export class EntriesService {
     return created;
   }
 
-  async update(userId: number, entryId: number, input: EntryInput): Promise<void> {
+  async update(userId: string, entryId: number, input: EntryInput): Promise<void> {
     await this.checkReference(userId, input);
     if (!(await this.entries.update(userId, entryId, input))) found(undefined);
   }
 
-  async remove(userId: number, entryId: number): Promise<void> {
+  async remove(userId: string, entryId: number): Promise<void> {
     if (!(await this.entries.remove(userId, entryId))) found(undefined);
   }
 
   /** Порядок принимается, только если это ровно перестановка записей книги (иначе — рассинхрон клиента). */
-  async reorder(userId: number, bookId: number, order: number[]): Promise<void> {
+  async reorder(userId: string, bookId: number, order: number[]): Promise<void> {
     if ((await this.entries.reorder(userId, bookId, order)) === "invalid") {
       throw new BadRequestException("Invalid order");
     }
@@ -50,7 +50,7 @@ export class EntriesService {
    * Запись-персонаж/персона: сущность должна принадлежать пользователю; если её промпт/сценарий
    * ссылается на недостающую сторону ({{user}} у персонажа, {{char}} у персоны), alias обязателен.
    */
-  private async checkReference(userId: number, input: EntryInput): Promise<void> {
+  private async checkReference(userId: string, input: EntryInput): Promise<void> {
     if (input.characterId !== null) {
       const character = await this.characters.findOne(userId, input.characterId);
       if (!character) throw new NotFoundException("Character not found");

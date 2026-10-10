@@ -13,23 +13,23 @@ export class RpTemplatesController {
 
   /** Список (без текстов промптов, с их весом в токенах). */
   @Get()
-  async list(@CurrentUser() userId: number) {
+  async list(@CurrentUser() userId: string) {
     return { templates: await this.templates.list(userId) };
   }
 
   @Get(":id")
-  async get(@CurrentUser() userId: number, @Param("id", ParseIntPipe) id: number) {
+  async get(@CurrentUser() userId: string, @Param("id", ParseIntPipe) id: number) {
     return { template: await this.templates.get(userId, id) };
   }
 
   @Post()
-  async create(@CurrentUser() userId: number, @Body() input: RpTemplateInputDto) {
+  async create(@CurrentUser() userId: string, @Body() input: RpTemplateInputDto) {
     return { template: await this.templates.create(userId, input) };
   }
 
   @Put(":id")
   async update(
-    @CurrentUser() userId: number,
+    @CurrentUser() userId: string,
     @Param("id", ParseIntPipe) id: number,
     @Body() input: RpTemplateInputDto,
   ) {
@@ -37,7 +37,7 @@ export class RpTemplatesController {
   }
 
   @Delete(":id")
-  async remove(@CurrentUser() userId: number, @Param("id", ParseIntPipe) id: number) {
+  async remove(@CurrentUser() userId: string, @Param("id", ParseIntPipe) id: number) {
     await this.templates.remove(userId, id);
     return { ok: true };
   }

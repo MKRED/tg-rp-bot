@@ -29,7 +29,7 @@ export class LlmService implements ChatCompleter {
    * Сейчас всегда DeepSeek: выбор провайдера появится вместе с UI выбора (см. providers.ts —
    * buildOpenRouterProvider уже готов, но пока нигде не вызывается).
    */
-  private async resolveProvider(userId: number): Promise<LlmProvider> {
+  private async resolveProvider(userId: string): Promise<LlmProvider> {
     const creds = await this.settings.getDecryptedCredentials(userId);
     if (!creds) throw new MissingApiKeyError();
     return buildDeepSeekProvider(creds.apiKey, creds.model ?? DEFAULT_DEEPSEEK_MODEL);

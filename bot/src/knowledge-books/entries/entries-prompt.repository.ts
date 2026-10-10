@@ -3,8 +3,9 @@ import type { EntryActivation } from "@tg-rp-bot/shared";
 import { sql } from "drizzle-orm";
 import { DatabaseService } from "../../database/database.service.js";
 import logger from "../../logger.js";
-import { decryptField, getUserEncryptionKey } from "../../utils/index.js";
+import { decryptField } from "../../utils/index.js";
 import { ownedBooks } from "./owned-books.js";
+import { UserKeysService } from "../../user-keys/user-keys.service.js";
 
 /**
  * Запись, готовая к подстановке в промпт. Для записи-персонажа text собирается из карточки, для
@@ -32,7 +33,10 @@ function subPlaceholders(text: string, charName: string, userName: string): stri
 /** Записи книги для промпта истории: тексты собираются из карточек/персон/content и расшифровываются. */
 @Injectable()
 export class EntriesPromptRepository {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly keys: UserKeysService,
+  ) {}
 
   /**
    * Включённые записи книги, готовые к подстановке в промпт. Для записи-персонажа/персоны текст
@@ -43,7 +47,7 @@ export class EntriesPromptRepository {
    * Фильтрацию по activation (always_on vs keyword) делает сборщик промпта.
    */
   async findActive(
-    userId: number,
+    userId: string,
     bookId: number,
   ): Promise<PromptEntry[]> {
     const t0 = Date.now();
@@ -60,7 +64,7 @@ export class EntriesPromptRepository {
         AND e.enabled = true
       ORDER BY e.sort_order ASC, e.created_at ASC
     `);
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     logger.debug(
       { durationMs: Date.now() - t0, userId, bookId, count: (rows as unknown[]).length },
       "Active book entries loaded for prompt",

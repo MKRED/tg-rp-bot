@@ -13,12 +13,12 @@ export class TranslateSettingsController {
   constructor(private readonly settings: TranslateSettingsService) {}
 
   @Get()
-  get(@CurrentUser() userId: number) {
+  get(@CurrentUser() userId: string) {
     return this.settings.get(userId);
   }
 
   @Patch()
-  update(@CurrentUser() userId: number, @Body() patch: TranslateSettingsPatchDto) {
+  update(@CurrentUser() userId: string, @Body() patch: TranslateSettingsPatchDto) {
     return this.settings.update(userId, patch);
   }
 }

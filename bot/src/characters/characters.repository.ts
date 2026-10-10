@@ -5,7 +5,8 @@ import { schema } from "../db/index.js";
 import type { Character } from "../db/schema.js";
 import { DatabaseService } from "../database/database.service.js";
 import logger from "../logger.js";
-import { decryptField, encryptField, getUserEncryptionKey } from "../utils/index.js";
+import { decryptField, encryptField } from "../utils/index.js";
+import { UserKeysService } from "../user-keys/user-keys.service.js";
 
 /**
  * Доступ к таблице characters. Все запросы ограничены владельцем (user_id); текстовые поля
@@ -13,10 +14,13 @@ import { decryptField, encryptField, getUserEncryptionKey } from "../utils/index
  */
 @Injectable()
 export class CharactersRepository {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly keys: UserKeysService,
+  ) {}
 
   /** Список персонажей пользователя (метаданные, без image) — свежие сверху. */
-  async list(userId: number): Promise<CharacterListItem[]> {
+  async list(userId: string): Promise<CharacterListItem[]> {
     const t0 = Date.now();
     const rows = await this.database.db
       .select({
@@ -33,7 +37,7 @@ export class CharactersRepository {
       .where(eq(schema.characters.userId, userId))
       .orderBy(desc(schema.characters.updatedAt));
     // список не проходит через decryptRow — расшифровываем теги и примечание здесь
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     const result = rows.map((row) => ({
       ...row,
       tags: row.tags.map((tag) => decryptField(tag, key)),
@@ -44,7 +48,7 @@ export class CharactersRepository {
   }
 
   /** Сколько персонажей у пользователя (для проверки мягкого лимита). */
-  async count(userId: number): Promise<number> {
+  async count(userId: string): Promise<number> {
     const rows = await this.database.db
       .select({ count: sql<number>`count(*)::int` })
       .from(schema.characters)
@@ -53,20 +57,20 @@ export class CharactersRepository {
   }
 
   /** Полный персонаж по id, только если он принадлежит этому пользователю. */
-  async findOne(userId: number, id: number): Promise<Character | undefined> {
+  async findOne(userId: string, id: number): Promise<Character | undefined> {
     const rows = await this.database.db
       .select()
       .from(schema.characters)
       .where(this.ownedBy(userId, id));
     const row = rows[0];
-    return row ? this.decryptRow(row, userId) : undefined;
+    return row ? this.decryptRow(row, await this.keys.forUser(userId)) : undefined;
   }
 
   /**
    * Только аватар (одна колонка, без промпта/сообщений). undefined — персонажа нет/не его;
    * null — есть, но без картинки; string — data URL.
    */
-  async findImage(userId: number, id: number): Promise<string | null | undefined> {
+  async findImage(userId: string, id: number): Promise<string | null | undefined> {
     const rows = await this.database.db
       .select({ image: schema.characters.image })
       .from(schema.characters)
@@ -78,7 +82,7 @@ export class CharactersRepository {
    * Полноразмерное (некадрированное) фото — грузится только при открытии лайтбокса. Семантика
    * undefined/null/string — как у findImage; у старых персонажей null до следующего сохранения.
    */
-  async findImageFull(userId: number, id: number): Promise<string | null | undefined> {
+  async findImageFull(userId: string, id: number): Promise<string | null | undefined> {
     const rows = await this.database.db
       .select({ imageFull: schema.characters.imageFull })
       .from(schema.characters)
@@ -87,23 +91,23 @@ export class CharactersRepository {
   }
 
   /** Создаёт персонажа и возвращает созданную строку. */
-  async create(userId: number, input: CharacterInput): Promise<Character> {
+  async create(userId: string, input: CharacterInput): Promise<Character> {
     const t0 = Date.now();
     const rows = await this.database.db
       .insert(schema.characters)
-      .values({ userId, ...this.encryptInput(userId, input) })
+      .values({ userId, ...this.encryptInput(await this.keys.forUser(userId), input) })
       .returning();
     const created = rows[0]!; // insert ... returning всегда отдаёт одну строку
     logger.info({ durationMs: Date.now() - t0, userId, id: created.id }, "Character created");
-    return this.decryptRow(created, userId);
+    return this.decryptRow(created, await this.keys.forUser(userId));
   }
 
   /** Обновляет персонажа (только своего); undefined — если такого у пользователя нет. */
-  async update(userId: number, id: number, input: CharacterInput): Promise<Character | undefined> {
+  async update(userId: string, id: number, input: CharacterInput): Promise<Character | undefined> {
     const t0 = Date.now();
     const rows = await this.database.db
       .update(schema.characters)
-      .set(this.encryptInput(userId, input))
+      .set(this.encryptInput(await this.keys.forUser(userId), input))
       .where(this.ownedBy(userId, id))
       .returning();
     const updated = rows[0];
@@ -111,11 +115,11 @@ export class CharactersRepository {
       { durationMs: Date.now() - t0, userId, id, found: Boolean(updated) },
       "Character update attempted",
     );
-    return updated ? this.decryptRow(updated, userId) : undefined;
+    return updated ? this.decryptRow(updated, await this.keys.forUser(userId)) : undefined;
   }
 
   /** Удаляет персонажа (только своего). true — если строка была удалена. */
-  async delete(userId: number, id: number): Promise<boolean> {
+  async delete(userId: string, id: number): Promise<boolean> {
     const t0 = Date.now();
     const rows = await this.database.db
       .delete(schema.characters)
@@ -126,13 +130,12 @@ export class CharactersRepository {
     return deleted;
   }
 
-  private ownedBy(userId: number, id: number) {
+  private ownedBy(userId: string, id: number) {
     return and(eq(schema.characters.id, id), eq(schema.characters.userId, userId));
   }
 
   /** Колонки для insert/update: текстовые поля зашифрованы, имя и картинки — как есть. */
-  private encryptInput(userId: number, input: CharacterInput) {
-    const key = getUserEncryptionKey(userId);
+  private encryptInput(key: Buffer, input: CharacterInput) {
     return {
       name: input.name,
       tags: input.tags.map((tag) => encryptField(tag, key)),
@@ -145,8 +148,7 @@ export class CharactersRepository {
     };
   }
 
-  private decryptRow(row: Character, userId: number): Character {
-    const key = getUserEncryptionKey(userId);
+  private decryptRow(row: Character, key: Buffer): Character {
     return {
       ...row,
       tags: row.tags.map((tag) => decryptField(tag, key)),

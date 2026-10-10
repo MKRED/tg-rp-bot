@@ -3,7 +3,16 @@ import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from "node:cr
 const ALGORITHM = "aes-256-gcm";
 const IV_BYTES = 12;
 const TAG_BYTES = 16;
-const VERSION_PREFIX = "v1:";
+const DATA_KEY_BYTES = 32;
+
+/**
+ * Префикс зашифрованного поля данных. v2 — шифрование случайным ключом пользователя
+ * (users.data_key). v1 (ключ из Telegram id) остался только в истории: всё перешифровано
+ * скриптом src/scripts/migrate-user-keys, и новый код v1 не читает.
+ */
+const DATA_PREFIX = "v2:";
+/** Префикс ключа пользователя, зашифрованного мастер-ключом (users.data_key). */
+const DATA_KEY_PREFIX = "k1:";
 
 /**
  * Вторая часть ключа, зашитая в коде.
@@ -15,35 +24,36 @@ const CODE_SALT = Buffer.from(
   "hex",
 );
 
-/**
- * Шифрует строку алгоритмом AES-256-GCM.
- * Возвращает: "v1:" + base64(iv[12] || tag[16] || ciphertext).
- * Каждый вызов генерирует новый случайный IV — одинаковый plaintext даёт разные токены.
- */
-export function encrypt(plaintext: string, key: Buffer): string {
+/** AES-256-GCM: prefix + base64(iv[12] || tag[16] || ciphertext), каждый вызов — новый случайный IV. */
+function seal(plaintext: Buffer, key: Buffer, prefix: string): string {
   const iv = randomBytes(IV_BYTES);
   const cipher = createCipheriv(ALGORITHM, key, iv);
-  const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
-  const tag = cipher.getAuthTag();
-  const payload = Buffer.concat([iv, tag, ciphertext]);
-  return VERSION_PREFIX + payload.toString("base64");
+  const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+  return prefix + Buffer.concat([iv, cipher.getAuthTag(), ciphertext]).toString("base64");
 }
 
-/**
- * Расшифровывает токен, созданный encrypt().
- * Бросает при подделке данных, неверном ключе или неизвестной версии.
- */
-export function decrypt(token: string, key: Buffer): string {
-  if (!token.startsWith(VERSION_PREFIX)) {
+/** Обратное seal(); бросает при другом префиксе, подделке данных или неверном ключе. */
+function open(token: string, key: Buffer, prefix: string): Buffer {
+  if (!token.startsWith(prefix)) {
     throw new Error(`Неизвестная версия шифрования: ${token.slice(0, 8)}`);
   }
-  const payload = Buffer.from(token.slice(VERSION_PREFIX.length), "base64");
+  const payload = Buffer.from(token.slice(prefix.length), "base64");
   const iv = payload.subarray(0, IV_BYTES);
   const tag = payload.subarray(IV_BYTES, IV_BYTES + TAG_BYTES);
   const ciphertext = payload.subarray(IV_BYTES + TAG_BYTES);
   const decipher = createDecipheriv(ALGORITHM, key, iv);
   decipher.setAuthTag(tag);
-  return decipher.update(ciphertext) + decipher.final("utf8");
+  return Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+}
+
+/** Шифрует строку ключом пользователя: "v2:" + base64(iv || tag || ciphertext). */
+export function encrypt(plaintext: string, key: Buffer): string {
+  return seal(Buffer.from(plaintext, "utf8"), key, DATA_PREFIX);
+}
+
+/** Расшифровывает токен, созданный encrypt(). Бросает при подделке, неверном ключе или чужой версии. */
+export function decrypt(token: string, key: Buffer): string {
+  return open(token, key, DATA_PREFIX).toString("utf8");
 }
 
 /**
@@ -58,16 +68,18 @@ export function encryptField(value: string | null, key: Buffer): string | null {
 }
 
 /**
- * Расшифровывает поле из БД с поддержкой legacy-значений (plaintext до шифрования).
- * Если значение начинается с "v1:" — расшифровывает; иначе — возвращает как есть.
- * null → null.
+ * Расшифровывает поле из БД. null → null, пустая строка → пустая строка (DB default у части
+ * колонок — '' без шифрования).
+ *
+ * Всё остальное без префикса v2 — ошибка, а не «старый открытый текст как есть»: иначе
+ * шифротекст другой версии (или недоперешифрованный) молча ушёл бы в UI как контент и мог быть
+ * сохранён обратно уже как «текст».
  */
 export function decryptField(value: string, key: Buffer): string;
 export function decryptField(value: string | null, key: Buffer): string | null;
 export function decryptField(value: string | null, key: Buffer): string | null {
   if (value === null || value === undefined) return null;
-  // Legacy plaintext: ещё не перешифровано — возвращаем как есть
-  if (!value.startsWith(VERSION_PREFIX)) return value;
+  if (value === "") return "";
   return decrypt(value, key);
 }
 
@@ -91,24 +103,25 @@ export function getEncryptionKey(): Buffer {
 }
 
 /**
- * Выводит ключ, специфичный для конкретного пользователя.
- * Финальный ключ = HKDF(masterKey, ∅, "tg-rp-bot-user-<userId>").
- * Данные разных пользователей не могут быть расшифрованы одним ключом —
- * попытка GCM-расшифровки падает с ошибкой аутентификации (не просто даёт мусор).
- * Изоляция криптографическая, но НЕ защита от утечки мастер-ключа:
- * зная ENCRYPTION_KEY, можно вывести ключ любого пользователя.
+ * Новый случайный ключ пользователя и он же, зашифрованный мастер-ключом, — для users.data_key.
+ * Ключ не выводится ни из каких id: id пользователя и способ входа можно менять, не трогая данные,
+ * а смена мастер-ключа перешифровывает только по одному полю на пользователя.
  */
-export function getUserEncryptionKey(userId: number): Buffer {
-  const masterKey = getEncryptionKey();
-  return Buffer.from(
-    hkdfSync("sha256", masterKey, Buffer.alloc(0), `tg-rp-bot-user-${userId}`, 32),
-  );
+export function generateDataKey(): { key: Buffer; wrapped: string } {
+  const key = randomBytes(DATA_KEY_BYTES);
+  return { key, wrapped: seal(key, getEncryptionKey(), DATA_KEY_PREFIX) };
+}
+
+/** Расшифровывает users.data_key мастер-ключом. Бросает при чужом мастер-ключе или подделке. */
+export function unwrapDataKey(wrapped: string): Buffer {
+  const key = open(wrapped, getEncryptionKey(), DATA_KEY_PREFIX);
+  if (key.length !== DATA_KEY_BYTES) throw new Error(`Ключ пользователя неверной длины: ${key.length} байт`);
+  return key;
 }
 
 /**
  * Расшифровывает значения кэша переводов сообщения RP-чата или истории (ключи — коды языков —
- * остаются открытыми).
- * null → null. Legacy-plaintext значения возвращаются как есть (см. decryptField).
+ * остаются открытыми). null → null.
  */
 export function decryptTranslations(
   translations: Record<string, string> | null,

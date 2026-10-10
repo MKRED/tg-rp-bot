@@ -21,7 +21,7 @@ export class ChatsService {
     private readonly presets: PresetsRepository,
   ) {}
 
-  list(userId: number, page: number, pageSize: number): Promise<{ items: ChatListItem[]; total: number }> {
+  list(userId: string, page: number, pageSize: number): Promise<{ items: ChatListItem[]; total: number }> {
     return this.chats.list(userId, page, pageSize);
   }
 
@@ -29,7 +29,7 @@ export class ChatsService {
    * Все сущности должны принадлежать пользователю (репозитории user-scoped → undefined для чужих);
    * проверяем по порядку, 404 — на первой не найденной.
    */
-  async create(userId: number, input: CreateChatRequest): Promise<Chat> {
+  async create(userId: string, input: CreateChatRequest): Promise<Chat> {
     const { characterId, personaId, templateId, presetId, firstMessageIndex } = input;
     const character = await this.characters.findOne(userId, characterId);
     if (!character) throw new NotFoundException("Character not found");
@@ -45,23 +45,23 @@ export class ChatsService {
     return chat;
   }
 
-  async get(userId: number, chatId: number): Promise<ChatDetail> {
+  async get(userId: string, chatId: number): Promise<ChatDetail> {
     const chat = await this.chats.findDetail(userId, chatId);
     if (!chat) throw new NotFoundException(CHAT_NOT_FOUND);
     return chat;
   }
 
-  async rename(userId: number, chatId: number, title: string): Promise<string | null> {
+  async rename(userId: string, chatId: number, title: string): Promise<string | null> {
     const result = await this.chats.rename(userId, chatId, title);
     if (!result) throw new NotFoundException(CHAT_NOT_FOUND);
     return result.title;
   }
 
-  async remove(userId: number, chatId: number): Promise<void> {
+  async remove(userId: string, chatId: number): Promise<void> {
     if (!(await this.chats.remove(userId, chatId))) throw new NotFoundException(CHAT_NOT_FOUND);
   }
 
-  async tree(userId: number, chatId: number): Promise<TreeNode[]> {
+  async tree(userId: string, chatId: number): Promise<TreeNode[]> {
     const chat = await this.access.requireRow(userId, chatId);
     return this.chats.tree(userId, chat);
   }

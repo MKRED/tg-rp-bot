@@ -5,10 +5,11 @@ import { DatabaseService } from "../../database/database.service.js";
 import { schema } from "../../db/index.js";
 import type { StoryChat } from "../../db/schema.js";
 import logger from "../../logger.js";
-import { decryptField, decryptTranslations, encryptField, getUserEncryptionKey } from "../../utils/index.js";
+import { decryptField, decryptTranslations, encryptField } from "../../utils/index.js";
 import { type CompactionAnchors, collectCompactedIds } from "../compaction/compacted-ids.js";
 import { StoryPathRepository } from "../story-path.repository.js";
 import { bookAvatarsLateral, mapStoryAvatars } from "./story-avatars.js";
+import { UserKeysService } from "../../user-keys/user-keys.service.js";
 
 /** Книга, шаблон и пресет, выбранные при создании истории. */
 export type StoryRefs = { bookId: number; templateId: number; presetId: number };
@@ -42,10 +43,11 @@ export class StoriesRepository {
   constructor(
     private readonly database: DatabaseService,
     private readonly path: StoryPathRepository,
+    private readonly keys: UserKeysService,
   ) {}
 
   /** Пагинированный список историй пользователя (свежие по последнему сообщению сверху). */
-  async list(userId: number, page: number, pageSize: number): Promise<{ items: StoryListItem[]; total: number }> {
+  async list(userId: string, page: number, pageSize: number): Promise<{ items: StoryListItem[]; total: number }> {
     const t0 = Date.now();
     const offset = (page - 1) * pageSize;
     const rows = await this.database.db.execute(sql`
@@ -75,7 +77,7 @@ export class StoriesRepository {
       .from(schema.storyChats)
       .where(eq(schema.storyChats.userId, userId));
     const total = countRows[0]?.cnt ?? 0;
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
 
     const items: StoryListItem[] = (rows as Record<string, unknown>[]).map((r) => ({
       // bigint из сырого SQL приходит строкой — приводим явно.
@@ -93,7 +95,7 @@ export class StoriesRepository {
   }
 
   /** Строка истории пользователя без сообщений — для проверки принадлежности и курсора. */
-  async findRow(userId: number, storyId: number): Promise<StoryRow | undefined> {
+  async findRow(userId: string, storyId: number): Promise<StoryRow | undefined> {
     const rows = await this.database.db
       .select({
         id: schema.storyChats.id,
@@ -111,7 +113,7 @@ export class StoriesRepository {
    * История с активным путём. Курсор указывает на удалённый узел (FK на active_message_id нет) —
    * самовосстановление: курсор переносится на самый свежий лист.
    */
-  async findDetail(userId: number, storyId: number): Promise<StoryDetail | undefined> {
+  async findDetail(userId: string, storyId: number): Promise<StoryDetail | undefined> {
     const t0 = Date.now();
     const storyRows = await this.database.db.execute(sql`
       SELECT
@@ -131,7 +133,7 @@ export class StoriesRepository {
     const row = (storyRows as Record<string, unknown>[])[0];
     if (!row) return undefined;
 
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     let activeMessageId = row.active_message_id != null ? Number(row.active_message_id) : null;
     let messages: StoryMessage[] = [];
     if (activeMessageId) {
@@ -161,7 +163,7 @@ export class StoriesRepository {
   }
 
   /** Все сообщения истории плоским массивом с флагами активного пути и сжатия (граф веток). */
-  async tree(userId: number, story: StoryRow, anchors: CompactionAnchors[]): Promise<StoryTreeNode[]> {
+  async tree(userId: string, story: StoryRow, anchors: CompactionAnchors[]): Promise<StoryTreeNode[]> {
     const t0 = Date.now();
     const activePath = story.activeMessageId ? await this.path.activePathIds(story.activeMessageId) : new Set<number>();
     const rows = await this.database.db
@@ -179,7 +181,7 @@ export class StoriesRepository {
     const compacted = collectCompactedIds(anchors, rows);
     logger.debug({ durationMs: Date.now() - t0, userId, storyId: story.id, count: rows.length }, "Story tree loaded");
 
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     return rows.map((r) => ({
       id: r.id,
       parentId: r.parentId,
@@ -196,9 +198,9 @@ export class StoriesRepository {
    * Создаёт историю и вставляет обязательное авторское открытие как дословный бит 1 (assistant, beat,
    * без родителя); курсор — на него. openingBeat/premise шифруются per-user.
    */
-  async create(userId: number, refs: StoryRefs, openingBeat: string, premise: string): Promise<StoryChat> {
+  async create(userId: string, refs: StoryRefs, openingBeat: string, premise: string): Promise<StoryChat> {
     const t0 = Date.now();
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     const [story] = await this.database.db
       .insert(schema.storyChats)
       .values({ userId, ...refs, premise: encryptField(premise, key) })
@@ -213,11 +215,11 @@ export class StoriesRepository {
   }
 
   /** Переименовывает историю. Пусто после trim → title = null. undefined — истории нет у пользователя. */
-  async rename(userId: number, storyId: number, rawTitle: string): Promise<{ title: string | null } | undefined> {
+  async rename(userId: string, storyId: number, rawTitle: string): Promise<{ title: string | null } | undefined> {
     const t0 = Date.now();
     const trimmed = rawTitle.trim();
     const title = trimmed.length > 0 ? trimmed : null;
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     const rows = await this.database.db
       .update(schema.storyChats)
       .set({ title: title != null ? encryptField(title, key) : null })
@@ -231,10 +233,10 @@ export class StoriesRepository {
    * Обновляет премизу. Храним как есть после trim (даже "") — без коэрции пусто→null: findDetail
    * читает её через `?? ""`. undefined — истории нет у пользователя.
    */
-  async updatePremise(userId: number, storyId: number, rawPremise: string): Promise<{ premise: string } | undefined> {
+  async updatePremise(userId: string, storyId: number, rawPremise: string): Promise<{ premise: string } | undefined> {
     const t0 = Date.now();
     const premise = rawPremise.trim();
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     const rows = await this.database.db
       .update(schema.storyChats)
       .set({ premise: encryptField(premise, key) })
@@ -245,7 +247,7 @@ export class StoriesRepository {
   }
 
   /** Удаляет историю (сообщения, настройки и пересказы — каскадом FK). */
-  async remove(userId: number, storyId: number): Promise<boolean> {
+  async remove(userId: string, storyId: number): Promise<boolean> {
     const t0 = Date.now();
     const rows = await this.database.db
       .delete(schema.storyChats)

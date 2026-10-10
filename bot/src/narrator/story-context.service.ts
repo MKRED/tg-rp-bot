@@ -28,7 +28,7 @@ export class StoryContextService {
   ) {}
 
   /** Строка истории пользователя без сообщений; чужая/несуществующая — 404 Story not found. */
-  async requireRow(userId: number, storyId: number): Promise<StoryRow> {
+  async requireRow(userId: string, storyId: number): Promise<StoryRow> {
     const row = await this.stories.findRow(userId, storyId);
     if (!row) throw new NotFoundException(STORY_NOT_FOUND);
     return row;
@@ -38,7 +38,7 @@ export class StoryContextService {
    * Сообщение этой истории пользователя. Сначала владелец истории (404 Story not found), потом
    * сообщение (404 Message not found): сам по себе id сообщения владельца не проверяет.
    */
-  async requireMessage(userId: number, storyId: number, messageId: number): Promise<{ story: StoryRow; msg: StoryMessageRow }> {
+  async requireMessage(userId: string, storyId: number, messageId: number): Promise<{ story: StoryRow; msg: StoryMessageRow }> {
     const story = await this.requireRow(userId, storyId);
     const msg = await this.messages.findOne(userId, storyId, messageId);
     if (!msg) throw new NotFoundException(MESSAGE_NOT_FOUND);
@@ -49,7 +49,7 @@ export class StoryContextService {
    * История с активным путём + шаблон, пресет, настройки, записи книги и пересказы. Пересказы
    * читаем, только если сжатие включено и в шаблоне, и в настройках — иначе они не применяются.
    */
-  async requireContext(userId: number, storyId: number): Promise<StoryContext> {
+  async requireContext(userId: string, storyId: number): Promise<StoryContext> {
     const story = await this.stories.findDetail(userId, storyId);
     if (!story) throw new NotFoundException(STORY_NOT_FOUND);
     const [template, preset, settings, entries] = await Promise.all([

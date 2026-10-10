@@ -17,18 +17,18 @@ export class ImpersonationsService {
    * MessagesRepository.removeSubtree, который переносит курсор), а webapp открывает шторку вариантов
    * уже после загрузки чата, где findDetail чинит курсор.
    */
-  async list(userId: number, chatId: number): Promise<ImpersonationVariant[]> {
+  async list(userId: string, chatId: number): Promise<ImpersonationVariant[]> {
     const chat = await this.access.requireRow(userId, chatId);
     return this.impersonations.list(userId, chatId, chat.activeMessageId);
   }
 
   /** Удаляет все варианты чата; возвращает их число. */
-  async clear(userId: number, chatId: number): Promise<number> {
+  async clear(userId: string, chatId: number): Promise<number> {
     await this.access.requireRow(userId, chatId);
     return this.impersonations.removeAll(chatId);
   }
 
-  async remove(userId: number, chatId: number, variantId: number): Promise<void> {
+  async remove(userId: string, chatId: number, variantId: number): Promise<void> {
     await this.access.requireRow(userId, chatId);
     if (!(await this.impersonations.remove(chatId, variantId))) throw new NotFoundException("Variant not found");
   }

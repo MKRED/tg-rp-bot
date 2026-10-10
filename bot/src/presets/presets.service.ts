@@ -10,26 +10,26 @@ import { PresetsRepository } from "./presets.repository.js";
 export class PresetsService {
   constructor(private readonly repository: PresetsRepository) {}
 
-  list(userId: number): Promise<PresetListItem[]> {
+  list(userId: string): Promise<PresetListItem[]> {
     return this.repository.list(userId);
   }
 
-  async get(userId: number, id: number): Promise<GenerationPreset> {
+  async get(userId: string, id: number): Promise<GenerationPreset> {
     return found(await this.repository.findOne(userId, id));
   }
 
-  async create(userId: number, input: PresetInput): Promise<GenerationPreset> {
+  async create(userId: string, input: PresetInput): Promise<GenerationPreset> {
     if ((await this.repository.count(userId)) >= MAX_PRESETS_PER_USER) {
       throw new BadRequestException(`Preset limit reached (max ${MAX_PRESETS_PER_USER})`);
     }
     return this.repository.create(userId, input);
   }
 
-  async update(userId: number, id: number, input: PresetInput): Promise<GenerationPreset> {
+  async update(userId: string, id: number, input: PresetInput): Promise<GenerationPreset> {
     return found(await this.repository.update(userId, id, input));
   }
 
-  async remove(userId: number, id: number): Promise<void> {
+  async remove(userId: string, id: number): Promise<void> {
     let deleted: boolean;
     try {
       deleted = await this.repository.delete(userId, id);

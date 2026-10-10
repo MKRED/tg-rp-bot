@@ -38,7 +38,7 @@ export class StoryGenerationService {
    * с маркером шаблона истории (не глобальным дефолтом — иначе кастомный continueMarker разъедется с
    * тем, что сохраняется). Ход — ребёнок последнего бита, курсор на него; затем бит-ответ.
    */
-  async advance(userId: number, storyId: number, directive: string): Promise<Observable<MessageEvent>> {
+  async advance(userId: string, storyId: number, directive: string): Promise<Observable<MessageEvent>> {
     const story = await this.access.requireRow(userId, storyId);
     const parentBeatId = story.activeMessageId;
     if (parentBeatId == null) throw new BadRequestException("Story has no active beat");
@@ -78,7 +78,7 @@ export class StoryGenerationService {
    * нельзя: у него нет хода-родителя. Курсор поднимается на ход; при сбое подготовки или генерации
    * возвращается ровно туда, где стоял.
    */
-  async regenerate(userId: number, storyId: number, msgId: number): Promise<Observable<MessageEvent>> {
+  async regenerate(userId: string, storyId: number, msgId: number): Promise<Observable<MessageEvent>> {
     const { story, msg } = await this.access.requireMessage(userId, storyId, msgId);
     if (msg.role !== "assistant") throw new BadRequestException("Can only regenerate a beat");
     if (msg.parentId == null) throw new BadRequestException("Cannot regenerate the opening beat");
@@ -110,7 +110,7 @@ export class StoryGenerationService {
    * из-за параллельного прохода) генерацию НЕ роняют — дальше штатная обрезка истории. true — сжатие
    * запускалось: контекст надо перечитать (часть пересказов могла записаться и при сбое прохода).
    */
-  private async autoCompact(sink: SseSink, userId: number, ctx: StoryContext): Promise<boolean> {
+  private async autoCompact(sink: SseSink, userId: string, ctx: StoryContext): Promise<boolean> {
     const storyId = ctx.story.id;
     try {
       const { msgs, compactComponentEnabled } = buildStoryCompletion(ctx, { trim: false });
@@ -127,7 +127,7 @@ export class StoryGenerationService {
   }
 
   /** Запрос к LLM по контексту; история урезается под окно пресета — фиксируем, сколько выпало. */
-  private completion(userId: number, ctx: StoryContext): StoryCompletion {
+  private completion(userId: string, ctx: StoryContext): StoryCompletion {
     const storyId = ctx.story.id;
     return buildStoryCompletion(ctx, {
       onTrim: ({ dropped, kept, total }) => logger.info({ userId, storyId, dropped, kept, total }, "Story history trimmed to context budget"),
@@ -135,7 +135,7 @@ export class StoryGenerationService {
   }
 
   /** Генерирует бит-ответ на ход steerId, сохраняет, ставит курсор на него, пишет done. */
-  private async beat(sink: SseSink, userId: number, storyId: number, steerId: number, completion: StoryCompletion): Promise<void> {
+  private async beat(sink: SseSink, userId: string, storyId: number, steerId: number, completion: StoryCompletion): Promise<void> {
     const t0 = Date.now();
     const result = await streamCompletion(this.llm, sink, { messages: completion.msgs, ...completion.samplingOpts, userId, debugLabel: "narrator" });
     const beat = await this.messages.insert(userId, storyId, steerId, "assistant", "beat", result.content);

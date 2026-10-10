@@ -3,8 +3,9 @@ import { eq } from "drizzle-orm";
 import { DatabaseService } from "../../database/database.service.js";
 import { schema } from "../../db/index.js";
 import logger from "../../logger.js";
-import { countTokens, decryptField, getUserEncryptionKey } from "../../utils/index.js";
+import { countTokens, decryptField } from "../../utils/index.js";
 import { StoryPathRepository } from "../story-path.repository.js";
+import { UserKeysService } from "../../user-keys/user-keys.service.js";
 
 /** Оценка объёма истории в токенах: вся история (все ветки) и текущая активная ветка. */
 export type StoryTokenStats = { tokensTotal: number; tokensActiveBranch: number };
@@ -15,6 +16,7 @@ export class StoryStatsRepository {
   constructor(
     private readonly database: DatabaseService,
     private readonly path: StoryPathRepository,
+    private readonly keys: UserKeysService,
   ) {}
 
   /**
@@ -22,7 +24,7 @@ export class StoryStatsRepository {
    * нельзя (длина шифротекста ≠ длине текста) — расшифровываем. Только сообщения, без промптов.
    * История уже проверена вызывающим (передан её курсор).
    */
-  async tokenStats(userId: number, storyId: number, activeMessageId: number | null): Promise<StoryTokenStats> {
+  async tokenStats(userId: string, storyId: number, activeMessageId: number | null): Promise<StoryTokenStats> {
     const t0 = Date.now();
     const activePathIds = activeMessageId ? await this.path.activePathIds(activeMessageId) : new Set<number>();
     const rows = await this.database.db
@@ -30,7 +32,7 @@ export class StoryStatsRepository {
       .from(schema.storyMessages)
       .where(eq(schema.storyMessages.storyChatId, storyId));
 
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     let tokensTotal = 0;
     let tokensActiveBranch = 0;
     for (const r of rows) {

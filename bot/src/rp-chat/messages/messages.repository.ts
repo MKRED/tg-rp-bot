@@ -5,9 +5,10 @@ import { DatabaseService } from "../../database/database.service.js";
 import { schema } from "../../db/index.js";
 import type { Message } from "../../db/schema.js";
 import logger from "../../logger.js";
-import { encryptField, getUserEncryptionKey } from "../../utils/index.js";
+import { encryptField } from "../../utils/index.js";
 import { ChatPathRepository } from "../chat-path.repository.js";
 import { decryptMessageRow } from "../message-crypto.js";
+import { UserKeysService } from "../../user-keys/user-keys.service.js";
 
 /**
  * Сообщения дерева чата и курсор активной ветки (chats.active_message_id). content и значения
@@ -18,28 +19,29 @@ export class MessagesRepository {
   constructor(
     private readonly database: DatabaseService,
     private readonly path: ChatPathRepository,
+    private readonly keys: UserKeysService,
   ) {}
 
   /** Вставляет сообщение; content шифруется при записи, но возвращается расшифрованным (уходит клиенту). */
-  async insert(userId: number, chatId: number, parentId: number | null, role: MessageRole, content: string): Promise<Message> {
-    const key = getUserEncryptionKey(userId);
+  async insert(userId: string, chatId: number, parentId: number | null, role: MessageRole, content: string): Promise<Message> {
+    const key = await this.keys.forUser(userId);
     const [row] = await this.database.db
       .insert(schema.messages)
       .values({ chatId, parentId, role, content: encryptField(content, key) })
       .returning();
-    return decryptMessageRow(row!, userId);
+    return decryptMessageRow(row!, await this.keys.forUser(userId));
   }
 
   /**
    * Сообщение этого чата, расшифрованное (чат уже проверен вызывающим). chatId — в WHERE, а не
    * сравнением после: строку чужого чата расшифровать ключом пользователя нельзя (500 вместо 404).
    */
-  async findOne(userId: number, chatId: number, messageId: number): Promise<Message | undefined> {
+  async findOne(userId: string, chatId: number, messageId: number): Promise<Message | undefined> {
     const rows = await this.database.db
       .select()
       .from(schema.messages)
       .where(and(eq(schema.messages.id, messageId), eq(schema.messages.chatId, chatId)));
-    return rows[0] ? decryptMessageRow(rows[0], userId) : undefined;
+    return rows[0] ? decryptMessageRow(rows[0], await this.keys.forUser(userId)) : undefined;
   }
 
   /** Курсор — на лист под messageId (спуск по самым свежим детям): продолжение ветки сохраняется. */
@@ -61,7 +63,7 @@ export class MessagesRepository {
    * Удаляет сообщение и всё его поддерево. Если курсор был внутри поддерева — переносит его на
    * родителя (со спуском к оставшемуся листу) или в null, если удалялся корень.
    */
-  async removeSubtree(userId: number, chatId: number, messageId: number): Promise<boolean> {
+  async removeSubtree(userId: string, chatId: number, messageId: number): Promise<boolean> {
     const t0 = Date.now();
     const msg = await this.findOne(userId, chatId, messageId);
     if (!msg) return false;
@@ -107,8 +109,8 @@ export class MessagesRepository {
   }
 
   /** Кэширует перевод: сливает запись в jsonb translations. Значение шифруется, код языка — открыт. */
-  async saveTranslation(userId: number, messageId: number, lang: string, text: string): Promise<void> {
-    const encrypted = encryptField(text, getUserEncryptionKey(userId));
+  async saveTranslation(userId: string, messageId: number, lang: string, text: string): Promise<void> {
+    const encrypted = encryptField(text, await this.keys.forUser(userId));
     await this.database.db.execute(sql`
       UPDATE messages
       SET translations = COALESCE(translations, '{}'::jsonb) || jsonb_build_object(${lang}::text, ${encrypted}::text)

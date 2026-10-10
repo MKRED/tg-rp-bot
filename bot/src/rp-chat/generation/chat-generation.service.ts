@@ -32,7 +32,7 @@ export class ChatGenerationService {
   ) {}
 
   /** Новая реплика игрока в конец активной ветки + ответ ИИ. */
-  async send(userId: number, chatId: number, content: string): Promise<Observable<MessageEvent>> {
+  async send(userId: string, chatId: number, content: string): Promise<Observable<MessageEvent>> {
     const ctx = await this.access.requireContext(userId, chatId);
     const completion = this.completion(userId, chatId, ctx, content);
     const parentId = ctx.chat.activeMessageId;
@@ -52,7 +52,7 @@ export class ChatGenerationService {
    * Правка = новый сиблинг. Ответ ИИ правится без генерации (поток только с done); реплика игрока —
    * новый user-сиблинг и заново сгенерированный ответ на него.
    */
-  async edit(userId: number, chatId: number, msgId: number, content: string): Promise<Observable<MessageEvent>> {
+  async edit(userId: string, chatId: number, msgId: number, content: string): Promise<Observable<MessageEvent>> {
     const { chat, msg: original } = await this.access.requireMessage(userId, chatId, msgId);
 
     if (original.role === "assistant") {
@@ -82,7 +82,7 @@ export class ChatGenerationService {
    * Новый ответ ИИ: на assistant-сообщение — перегенерация (отвечаем на его родительскую реплику),
    * на user-сообщение — первый ответ на неё.
    */
-  async regenerate(userId: number, chatId: number, msgId: number): Promise<Observable<MessageEvent>> {
+  async regenerate(userId: string, chatId: number, msgId: number): Promise<Observable<MessageEvent>> {
     const { chat, msg: original } = await this.access.requireMessage(userId, chatId, msgId);
     const userMsg =
       original.role === "user"
@@ -106,7 +106,7 @@ export class ChatGenerationService {
   }
 
   /** Генерирует ответ на реплику parentId, сохраняет его, ставит курсор и пишет done. */
-  private async reply(sink: SseSink, userId: number, chatId: number, parentId: number, completion: RpCompletion): Promise<void> {
+  private async reply(sink: SseSink, userId: string, chatId: number, parentId: number, completion: RpCompletion): Promise<void> {
     const t0 = Date.now();
     const result = await streamCompletion(this.llm, sink, { messages: completion.messages, ...completion.sampling, userId, debugLabel: "rp" });
     const reply = await this.messages.insert(userId, chatId, parentId, "assistant", result.content);
@@ -115,7 +115,7 @@ export class ChatGenerationService {
     await writeEvent(sink, SSE_EVENTS.done, reply);
   }
 
-  private completion(userId: number, chatId: number, ctx: ChatContext, userMessage: string): RpCompletion {
+  private completion(userId: string, chatId: number, ctx: ChatContext, userMessage: string): RpCompletion {
     // История урезана под contextSize пресета — фиксируем, сколько старых реплик выпало.
     const onTrim = ({ dropped, kept, total }: TrimInfo) =>
       logger.info({ userId, chatId, dropped, kept, total }, "History trimmed to context budget");
@@ -129,7 +129,7 @@ export class ChatGenerationService {
    * живёт внутри потока.
    */
   private async prepare(
-    userId: number,
+    userId: string,
     chatId: number,
     above: number | null,
     userMessage: string,

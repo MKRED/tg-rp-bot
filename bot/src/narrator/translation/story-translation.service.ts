@@ -28,7 +28,7 @@ export class StoryTranslationService {
   ) {}
 
   /** Кэш есть и не force — отдаём его; иначе переводим методом из настроек истории и перезаписываем кэш. */
-  async translateMessage(userId: number, storyId: number, msgId: number, req: TranslateMessageRequest): Promise<string> {
+  async translateMessage(userId: string, storyId: number, msgId: number, req: TranslateMessageRequest): Promise<string> {
     const { targetLang, force } = req;
     const { story, msg } = await this.access.requireMessage(userId, storyId, msgId);
     const cached = msg.translations?.[targetLang];
@@ -50,13 +50,13 @@ export class StoryTranslationService {
     }
   }
 
-  async deleteTranslation(userId: number, storyId: number, msgId: number, lang: string): Promise<void> {
+  async deleteTranslation(userId: string, storyId: number, msgId: number, lang: string): Promise<void> {
     await this.access.requireMessage(userId, storyId, msgId);
     await this.messages.deleteTranslation(msgId, lang);
   }
 
   /** Эфемерный перевод произвольного текста; без кэша. Без mode — Google Translate. */
-  async translateText(userId: number, storyId: number, req: ChatTranslateTextRequest): Promise<string> {
+  async translateText(userId: string, storyId: number, req: ChatTranslateTextRequest): Promise<string> {
     const { text, targetLang, mode } = req;
     const story = await this.access.requireRow(userId, storyId);
     const t0 = Date.now();
@@ -71,7 +71,7 @@ export class StoryTranslationService {
     }
   }
 
-  private async aiTranslate(userId: number, story: StoryRow, text: string, targetLang: string): Promise<string> {
+  private async aiTranslate(userId: string, story: StoryRow, text: string, targetLang: string): Promise<string> {
     const template = story.templateId ? ((await this.templates.findOne(userId, story.templateId)) ?? null) : null;
     const reasoning = resolveTranslationReasoning(template?.translationReasoningEffort);
     return aiTranslateStoryText(this.llm, text, englishLangName(targetLang), userId, template, reasoning);

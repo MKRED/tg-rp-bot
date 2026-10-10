@@ -21,14 +21,14 @@ export class ChatGenerationController {
 
   @Sse("messages", POST)
   @HttpCode(200)
-  send(@CurrentUser() userId: number, @Param("id", ParseIntPipe) chatId: number, @Body() { content }: SendMessageDto) {
+  send(@CurrentUser() userId: string, @Param("id", ParseIntPipe) chatId: number, @Body() { content }: SendMessageDto) {
     return this.generation.send(userId, chatId, content);
   }
 
   @Sse("messages/:msgId/edit", POST)
   @HttpCode(200)
   edit(
-    @CurrentUser() userId: number,
+    @CurrentUser() userId: string,
     @Param("id", ParseIntPipe) chatId: number,
     @Param("msgId", ParseIntPipe) msgId: number,
     @Body() { content }: SendMessageDto,
@@ -38,13 +38,13 @@ export class ChatGenerationController {
 
   @Sse("messages/:msgId/regenerate", POST)
   @HttpCode(200)
-  regenerate(@CurrentUser() userId: number, @Param("id", ParseIntPipe) chatId: number, @Param("msgId", ParseIntPipe) msgId: number) {
+  regenerate(@CurrentUser() userId: string, @Param("id", ParseIntPipe) chatId: number, @Param("msgId", ParseIntPipe) msgId: number) {
     return this.generation.regenerate(userId, chatId, msgId);
   }
 
   @Sse("impersonate", POST)
   @HttpCode(200)
-  generateImpersonation(@CurrentUser() userId: number, @Param("id", ParseIntPipe) chatId: number) {
+  generateImpersonation(@CurrentUser() userId: string, @Param("id", ParseIntPipe) chatId: number) {
     return this.impersonate.generate(userId, chatId);
   }
 }

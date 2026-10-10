@@ -13,8 +13,9 @@ import { schema } from "../db/index.js";
 import type { Card } from "../db/schema.js";
 import { DatabaseService } from "../database/database.service.js";
 import logger from "../logger.js";
-import { decryptField, encryptField, getUserEncryptionKey } from "../utils/index.js";
+import { decryptField, encryptField } from "../utils/index.js";
 import { decryptCategories, encryptCategories } from "./card-crypto.js";
+import { UserKeysService } from "../user-keys/user-keys.service.js";
 
 /** Строка списка, как её отдаёт БД (Date) — сервис сериализует в контракт CardListItem. */
 export interface CardListRow {
@@ -32,10 +33,13 @@ type CategoryPatch = (category: CardCategory) => CardCategory;
  */
 @Injectable()
 export class CardsRepository {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly keys: UserKeysService,
+  ) {}
 
   /** Список карточек пользователя — свежие сверху. */
-  async list(userId: number): Promise<CardListRow[]> {
+  async list(userId: string): Promise<CardListRow[]> {
     const t0 = Date.now();
     const rows = await this.database.db
       .select({ id: schema.cards.id, name: schema.cards.name, updatedAt: schema.cards.updatedAt })
@@ -47,7 +51,7 @@ export class CardsRepository {
   }
 
   /** Сколько карточек у пользователя (для проверки мягкого лимита). */
-  async count(userId: number): Promise<number> {
+  async count(userId: string): Promise<number> {
     const t0 = Date.now();
     const rows = await this.database.db
       .select({ count: sql<number>`count(*)::int` })
@@ -59,22 +63,22 @@ export class CardsRepository {
   }
 
   /** Полная карточка по id, только если она принадлежит этому пользователю (расшифрована). */
-  async findOne(userId: number, id: number): Promise<Card | undefined> {
+  async findOne(userId: string, id: number): Promise<Card | undefined> {
     const rows = await this.database.db
       .select()
       .from(schema.cards)
       .where(and(eq(schema.cards.id, id), eq(schema.cards.userId, userId)));
     const row = rows[0];
-    return row ? decryptRow(row, userId) : undefined;
+    return row ? decryptRow(row, await this.keys.forUser(userId)) : undefined;
   }
 
   /**
    * Создаёт карточку. Пустые systemPrompt/prompt/categories (новая карточка без явных значений)
    * заменяются дефолтами здесь, а не DB default колонки: текст шифруется per-user.
    */
-  async create(userId: number, input: CardInput): Promise<Card> {
+  async create(userId: string, input: CardInput): Promise<Card> {
     const t0 = Date.now();
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     const rows = await this.database.db
       .insert(schema.cards)
       .values({
@@ -90,7 +94,7 @@ export class CardsRepository {
       .returning();
     const created = rows[0]!;
     logger.info({ durationMs: Date.now() - t0, userId, id: created.id }, "Card created");
-    return decryptRow(created, userId);
+    return decryptRow(created, await this.keys.forUser(userId));
   }
 
   /**
@@ -99,7 +103,7 @@ export class CardsRepository {
    * categories без подмешивания стёрла бы их при любом сохранении формы — переносим из текущей
    * строки по id категории.
    */
-  async update(userId: number, id: number, input: CardInput): Promise<Card | undefined> {
+  async update(userId: string, id: number, input: CardInput): Promise<Card | undefined> {
     const existing = await this.findOne(userId, id);
     if (!existing) return undefined;
     const existingById = new Map(existing.categories.map((c) => [c.id, c]));
@@ -112,7 +116,7 @@ export class CardsRepository {
   }
 
   /** Удаляет карточку (только свою). true — строка была удалена. */
-  async delete(userId: number, id: number): Promise<boolean> {
+  async delete(userId: string, id: number): Promise<boolean> {
     const t0 = Date.now();
     const rows = await this.database.db
       .delete(schema.cards)
@@ -128,13 +132,13 @@ export class CardsRepository {
    * появляется, только когда генерация завершена, а оставшиеся вопросы (клиент не увидел паузу —
    * потерял сеть) навсегда перекрывали бы готовый блок каруселью в интерфейсе.
    */
-  setCategoryContent(userId: number, id: number, categoryId: string, content: string): Promise<Card | undefined> {
+  setCategoryContent(userId: string, id: number, categoryId: string, content: string): Promise<Card | undefined> {
     return this.patchCategory(userId, id, categoryId, (c) => ({ ...c, content, pendingQuestions: undefined }));
   }
 
   /** Записывает вопросы ask_user, ждущие ответа (генерация блока приостановлена до ответа). */
   setCategoryPendingQuestions(
-    userId: number,
+    userId: string,
     id: number,
     categoryId: string,
     questions: AskUserQuestion[],
@@ -147,13 +151,13 @@ export class CardsRepository {
    * для заменяемого варианта блока реплеились бы в промпт вечно и занимали бы бюджет
    * ASK_USER_MAX_ANSWERED_QUESTIONS. Ответ на паузу ask_user сюда не заходит — там ответы копятся.
    */
-  clearCategoryAskUserAnswers(userId: number, id: number, categoryId: string): Promise<Card | undefined> {
+  clearCategoryAskUserAnswers(userId: string, id: number, categoryId: string): Promise<Card | undefined> {
     return this.patchCategory(userId, id, categoryId, (c) => ({ ...c, askUserAnswers: undefined }));
   }
 
   /** Дописывает ответы (или отказ) ask_user в историю категории и снимает pendingQuestions. */
   applyCategoryAnswers(
-    userId: number,
+    userId: string,
     id: number,
     categoryId: string,
     answers: AskUserAnswer[],
@@ -170,7 +174,7 @@ export class CardsRepository {
    * read-modify-write всей строки — от гонки с PUT защищает cardLock (card-lock.ts) у вызывающих.
    */
   private async patchCategory(
-    userId: number,
+    userId: string,
     id: number,
     categoryId: string,
     patch: CategoryPatch,
@@ -186,9 +190,9 @@ export class CardsRepository {
    * systemPrompt заменяется дефолтом (как на вставке) — иначе контракт поблочной генерации исчез бы;
    * пустой prompt пишется как есть.
    */
-  private async persist(userId: number, id: number, input: CardInput): Promise<Card | undefined> {
+  private async persist(userId: string, id: number, input: CardInput): Promise<Card | undefined> {
     const t0 = Date.now();
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     const rows = await this.database.db
       .update(schema.cards)
       .set({
@@ -204,7 +208,7 @@ export class CardsRepository {
       .returning();
     const updated = rows[0];
     logger.info({ durationMs: Date.now() - t0, userId, id, found: Boolean(updated) }, "Card update attempted");
-    return updated ? decryptRow(updated, userId) : undefined;
+    return updated ? decryptRow(updated, await this.keys.forUser(userId)) : undefined;
   }
 }
 
@@ -213,8 +217,7 @@ export class CardsRepository {
  * созданных до появления поля, в колонке пустая строка (миграция не может подставить per-user
  * шифротекст), и без фолбэка они уходили бы на генерацию с пустым system-сообщением.
  */
-function decryptRow(row: Card, userId: number): Card {
-  const key = getUserEncryptionKey(userId);
+function decryptRow(row: Card, key: Buffer): Card {
   return {
     ...row,
     systemPrompt: decryptField(row.systemPrompt, key) || DEFAULT_CARD_SYSTEM_PROMPT,

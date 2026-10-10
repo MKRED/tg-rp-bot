@@ -3,8 +3,9 @@ import { and, asc, eq, gte, inArray, or, sql } from "drizzle-orm";
 import { DatabaseService } from "../../database/database.service.js";
 import { schema } from "../../db/index.js";
 import logger from "../../logger.js";
-import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/index.js";
+import { decryptField, encryptField } from "../../utils/index.js";
 import type { CompactionAnchors } from "./compacted-ids.js";
+import { UserKeysService } from "../../user-keys/user-keys.service.js";
 
 /** Пересказ сжатого диапазона (summary расшифрован). Якоря — внутренние, в webapp не уходят. */
 export type CompactionRow = CompactionAnchors & {
@@ -37,11 +38,14 @@ function mapRow(row: typeof schema.storyCompactions.$inferSelect, key: Buffer): 
  */
 @Injectable()
 export class CompactionsRepository {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly keys: UserKeysService,
+  ) {}
 
   /** Все пересказы истории по порядку seq. */
-  async list(userId: number, storyId: number): Promise<CompactionRow[]> {
-    const key = getUserEncryptionKey(userId);
+  async list(userId: string, storyId: number): Promise<CompactionRow[]> {
+    const key = await this.keys.forUser(userId);
     const rows = await this.database.db
       .select()
       .from(schema.storyCompactions)
@@ -69,9 +73,9 @@ export class CompactionsRepository {
   }
 
   /** Вставляет пересказ (summary шифруется per-user). */
-  async insert(userId: number, storyId: number, input: NewCompaction): Promise<CompactionRow> {
+  async insert(userId: string, storyId: number, input: NewCompaction): Promise<CompactionRow> {
     const t0 = Date.now();
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     const [row] = await this.database.db
       .insert(schema.storyCompactions)
       .values({ storyChatId: storyId, ...input, summary: encryptField(input.summary, key) })

@@ -14,7 +14,7 @@ export class BooksRepository {
   constructor(private readonly database: DatabaseService) {}
 
   /** Список книг знаний пользователя (свежие сверху) + счётчик записей в каждой. */
-  async list(userId: number): Promise<BookListItem[]> {
+  async list(userId: string): Promise<BookListItem[]> {
     const t0 = Date.now();
     const rows = await this.database.db.execute(sql`
       SELECT
@@ -40,7 +40,7 @@ export class BooksRepository {
   }
 
   /** Полная книга по id, только если принадлежит пользователю. */
-  async findOne(userId: number, id: number): Promise<KnowledgeBook | undefined> {
+  async findOne(userId: string, id: number): Promise<KnowledgeBook | undefined> {
     const rows = await this.database.db
       .select()
       .from(schema.knowledgeBooks)
@@ -49,7 +49,7 @@ export class BooksRepository {
   }
 
   /** Сколько книг у пользователя (для мягкого лимита). */
-  async count(userId: number): Promise<number> {
+  async count(userId: string): Promise<number> {
     const rows = await this.database.db
       .select({ count: sql<number>`count(*)::int` })
       .from(schema.knowledgeBooks)
@@ -58,7 +58,7 @@ export class BooksRepository {
   }
 
   /** Создаёт книгу и возвращает созданную строку. */
-  async create(userId: number, input: BookInput): Promise<KnowledgeBook> {
+  async create(userId: string, input: BookInput): Promise<KnowledgeBook> {
     const t0 = Date.now();
     const rows = await this.database.db
       .insert(schema.knowledgeBooks)
@@ -71,7 +71,7 @@ export class BooksRepository {
 
   /** Обновляет книгу (только свою). undefined — если не найдена. */
   async update(
-    userId: number,
+    userId: string,
     id: number,
     input: BookInput,
   ): Promise<KnowledgeBook | undefined> {
@@ -87,7 +87,7 @@ export class BooksRepository {
   }
 
   /** Удаляет книгу (только свою). true — если строка была удалена. */
-  async remove(userId: number, id: number): Promise<boolean> {
+  async remove(userId: string, id: number): Promise<boolean> {
     const t0 = Date.now();
     const rows = await this.database.db
       .delete(schema.knowledgeBooks)

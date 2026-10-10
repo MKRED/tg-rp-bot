@@ -11,7 +11,7 @@ export class ChatSettingsService {
     private readonly access: ChatContextService,
   ) {}
 
-  async get(userId: number, chatId: number): Promise<ChatSettings> {
+  async get(userId: string, chatId: number): Promise<ChatSettings> {
     await this.access.requireRow(userId, chatId);
     return this.settings.get(chatId);
   }
@@ -20,7 +20,7 @@ export class ChatSettingsService {
    * Сохраняет только корректные переданные поля (DTO обнулил невалидные). Пустой патч — без записи:
    * upsert с пустым SET — невалидный SQL.
    */
-  async update(userId: number, chatId: number, input: Partial<ChatSettings>): Promise<ChatSettings> {
+  async update(userId: string, chatId: number, input: Partial<ChatSettings>): Promise<ChatSettings> {
     await this.access.requireRow(userId, chatId);
     const patch = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined)) as Partial<ChatSettings>;
     if (Object.keys(patch).length === 0) return this.settings.get(chatId);

@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "drizzle-kit": "drizzle-kit",
-    "test-web-search": "tsx src/scripts/test-web-search.ts"
+    "test-web-search": "tsx src/scripts/test-web-search.ts",
+    "migrate-user-keys": "tsx src/scripts/migrate-user-keys/index.ts"
   },
   "dependencies": {
     "@nestjs/common": "~12.1.1",

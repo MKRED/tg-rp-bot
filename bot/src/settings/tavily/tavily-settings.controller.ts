@@ -9,19 +9,19 @@ export class TavilySettingsController {
   constructor(private readonly settings: TavilySettingsService) {}
 
   @Get()
-  get(@CurrentUser() userId: number) {
+  get(@CurrentUser() userId: string) {
     return this.settings.get(userId);
   }
 
   /** 200, а не 201 по умолчанию для POST: ok:false (нет/неверный ключ) — тоже штатный результат. */
   @Post("verify")
   @HttpCode(200)
-  verify(@CurrentUser() userId: number, @Body() body: VerifyKeyDto) {
+  verify(@CurrentUser() userId: string, @Body() body: VerifyKeyDto) {
     return this.settings.verify(userId, body.apiKey);
   }
 
   @Patch()
-  update(@CurrentUser() userId: number, @Body() patch: TavilySettingsPatchDto) {
+  update(@CurrentUser() userId: string, @Body() patch: TavilySettingsPatchDto) {
     return this.settings.update(userId, patch);
   }
 }

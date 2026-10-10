@@ -6,6 +6,7 @@ export type TgUser = ReturnType<typeof parse>["user"];
 
 /** Запрос после guard'а: внутренний id пользователя + профиль Telegram, из которого он получен. */
 export interface AuthenticatedRequest extends Request {
-  userId: number;
+  /** Внутренний id (UUID), не Telegram id. */
+  userId: string;
   tgUser: NonNullable<TgUser>;
 }

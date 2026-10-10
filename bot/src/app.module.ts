@@ -22,6 +22,7 @@ import { RpTemplatesModule } from "./rp-templates/rp-templates.module.js";
 import { SettingsModule } from "./settings/settings.module.js";
 import { TelegramModule } from "./telegram/telegram.module.js";
 import { TranslateModule } from "./translate/translate.module.js";
+import { UserKeysModule } from "./user-keys/user-keys.module.js";
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { TranslateModule } from "./translate/translate.module.js";
     // построчный лог каждого запроса дублировал бы их.
     LoggerModule.forRoot({ pinoHttp: { logger, autoLogging: false } }),
     DatabaseModule,
+    UserKeysModule,
     AuthModule,
     HealthModule,
     TelegramModule,

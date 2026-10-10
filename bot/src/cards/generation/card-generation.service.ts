@@ -55,7 +55,7 @@ export class CardGenerationService {
    * ask_user лок тоже снимается: вопросы уже персистентны на категории, ждать ответа нечем.
    */
   async generate(
-    userId: number,
+    userId: string,
     cardId: number,
     categoryId?: string,
     resetAskUserAnswers = false,
@@ -141,7 +141,7 @@ export class CardGenerationService {
    * сам — удержание здесь давало бы гарантированный "busy" на каждый ответ.
    */
   async answer(
-    userId: number,
+    userId: string,
     cardId: number,
     categoryId: string,
     input: AnswerCardQuestionsInput,
@@ -202,7 +202,7 @@ export class CardGenerationService {
  * Нет персонального ключа DeepSeek (BYOK) — 400 с готовой подсказкой, как у остальных генераций.
  * Остальное — как есть: HttpException-отказы уходят клиенту, прочие ошибки логирует ApiExceptionFilter.
  */
-function toHttpError(err: unknown, userId: number, cardId: number): unknown {
+function toHttpError(err: unknown, userId: string, cardId: number): unknown {
   if (!(err instanceof MissingApiKeyError)) return err;
   logger.warn({ userId, cardId }, "Card generation: не задан ключ DeepSeek");
   return new BadRequestException({ error: "no_api_key", message: err.message });

@@ -21,7 +21,7 @@ import type { SendPhotoOptions } from "./lightbox-photo.types.js";
 export class LightboxPhotoService {
   constructor(private readonly bot: Bot) {}
 
-  async send(userId: number, opts: SendPhotoOptions): Promise<void> {
+  async send(telegramId: number, opts: SendPhotoOptions): Promise<void> {
     const { dataUrl, label, deepLink } = opts;
 
     // data:image/jpeg;base64,XXXX → берём часть после запятой и декодируем в бинарь.
@@ -41,14 +41,14 @@ export class LightboxPhotoService {
     }
     keyboard.text("Закрыть", PHOTO_CLOSE_CALLBACK);
 
-    logger.debug({ userId, bytes: buffer.length, deepLink }, "Sending lightbox photo to chat");
+    logger.debug({ telegramId, bytes: buffer.length, deepLink }, "Sending lightbox photo to chat");
     const t0 = Date.now();
-    await this.bot.api.sendPhoto(userId, new InputFile(buffer), {
+    await this.bot.api.sendPhoto(telegramId, new InputFile(buffer), {
       caption,
       reply_markup: keyboard,
     });
     logger.info(
-      { userId, bytes: buffer.length, deepLink, durationMs: Date.now() - t0 },
+      { telegramId, bytes: buffer.length, deepLink, durationMs: Date.now() - t0 },
       "Lightbox photo sent to chat",
     );
   }

@@ -14,19 +14,19 @@ export class CompactionsController {
   /** Один проход сжатия; ответ — число созданных пересказов и обновлённый список. */
   @Post("compact")
   @HttpCode(200)
-  async compact(@CurrentUser() userId: number, @Param("id", ParseIntPipe) storyId: number) {
+  async compact(@CurrentUser() userId: string, @Param("id", ParseIntPipe) storyId: number) {
     const created = await this.compaction.compact(userId, storyId);
     return { created, compactions: await this.compactions.listActive(userId, storyId) };
   }
 
   @Get("compactions")
-  async list(@CurrentUser() userId: number, @Param("id", ParseIntPipe) storyId: number) {
+  async list(@CurrentUser() userId: string, @Param("id", ParseIntPipe) storyId: number) {
     return { compactions: await this.compactions.listActive(userId, storyId) };
   }
 
   @Delete("compactions/:cid")
   async remove(
-    @CurrentUser() userId: number,
+    @CurrentUser() userId: string,
     @Param("id", ParseIntPipe) storyId: number,
     @Param("cid", ParseIntPipe) compactionId: number,
   ) {

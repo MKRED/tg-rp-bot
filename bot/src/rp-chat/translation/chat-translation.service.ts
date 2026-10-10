@@ -33,7 +33,7 @@ export class ChatTranslationService {
    * Перевод сообщения. Кэш есть и не force — отдаём его; иначе переводим методом из настроек чата
    * (google/ai) и перезаписываем кэш для языка.
    */
-  async translateMessage(userId: number, chatId: number, msgId: number, req: TranslateMessageRequest): Promise<string> {
+  async translateMessage(userId: string, chatId: number, msgId: number, req: TranslateMessageRequest): Promise<string> {
     const { targetLang, force } = req;
     const { chat, msg } = await this.access.requireMessage(userId, chatId, msgId);
     const cached = msg.translations?.[targetLang];
@@ -53,13 +53,13 @@ export class ChatTranslationService {
     }
   }
 
-  async deleteTranslation(userId: number, chatId: number, msgId: number, lang: string): Promise<void> {
+  async deleteTranslation(userId: string, chatId: number, msgId: number, lang: string): Promise<void> {
     await this.access.requireMessage(userId, chatId, msgId);
     await this.messages.deleteTranslation(msgId, lang);
   }
 
   /** Эфемерный перевод произвольного текста; без кэша. */
-  async translateText(userId: number, chatId: number, req: ChatTranslateTextRequest): Promise<string> {
+  async translateText(userId: string, chatId: number, req: ChatTranslateTextRequest): Promise<string> {
     const { text, targetLang, mode } = req;
     const chat = await this.access.requireRow(userId, chatId);
     try {
@@ -70,7 +70,7 @@ export class ChatTranslationService {
     }
   }
 
-  private async aiTranslate(userId: number, chat: ChatRow, text: string, targetLang: string): Promise<string> {
+  private async aiTranslate(userId: string, chat: ChatRow, text: string, targetLang: string): Promise<string> {
     const [template, preset] = await Promise.all([
       chat.templateId ? this.templates.findOne(userId, chat.templateId) : undefined,
       chat.presetId ? this.presets.findOne(userId, chat.presetId) : undefined,

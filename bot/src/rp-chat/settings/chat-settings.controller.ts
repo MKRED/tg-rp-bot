@@ -9,12 +9,12 @@ export class ChatSettingsController {
   constructor(private readonly settings: ChatSettingsService) {}
 
   @Get()
-  async get(@CurrentUser() userId: number, @Param("id", ParseIntPipe) chatId: number) {
+  async get(@CurrentUser() userId: string, @Param("id", ParseIntPipe) chatId: number) {
     return { settings: await this.settings.get(userId, chatId) };
   }
 
   @Put()
-  async update(@CurrentUser() userId: number, @Param("id", ParseIntPipe) chatId: number, @Body() dto: UpdateChatSettingsDto) {
+  async update(@CurrentUser() userId: string, @Param("id", ParseIntPipe) chatId: number, @Body() dto: UpdateChatSettingsDto) {
     return { settings: await this.settings.update(userId, chatId, dto) };
   }
 }

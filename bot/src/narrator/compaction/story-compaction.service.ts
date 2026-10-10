@@ -31,7 +31,7 @@ export class StoryCompactionService {
    * Hono-версии: 404 not_found, 409 busy / unavailable / gate_off / no_active; сбой LLM — 400
    * no_api_key или 500.
    */
-  async compact(userId: number, storyId: number): Promise<number> {
+  async compact(userId: string, storyId: number): Promise<number> {
     if (this.compacting.has(storyId)) throw new ConflictException("busy");
     this.compacting.add(storyId);
     const t0 = Date.now();
@@ -63,7 +63,7 @@ export class StoryCompactionService {
 
   /** Пересказ каждого сегмента по очереди: прошлые пересказы (и только что созданные) — «story so far». */
   private async summarize(
-    userId: number,
+    userId: string,
     ctx: StoryContext,
     segments: ReturnType<typeof planStoryCompaction>["segments"],
     priorSummaries: string[],

@@ -10,26 +10,26 @@ import { BooksRepository } from "./books.repository.js";
 export class BooksService {
   constructor(private readonly books: BooksRepository) {}
 
-  list(userId: number): Promise<BookListItem[]> {
+  list(userId: string): Promise<BookListItem[]> {
     return this.books.list(userId);
   }
 
-  async get(userId: number, id: number): Promise<KnowledgeBook> {
+  async get(userId: string, id: number): Promise<KnowledgeBook> {
     return found(await this.books.findOne(userId, id));
   }
 
-  async create(userId: number, input: BookInput): Promise<KnowledgeBook> {
+  async create(userId: string, input: BookInput): Promise<KnowledgeBook> {
     if ((await this.books.count(userId)) >= MAX_BOOKS_PER_USER) {
       throw new BadRequestException(`Book limit reached (max ${MAX_BOOKS_PER_USER})`);
     }
     return this.books.create(userId, input);
   }
 
-  async update(userId: number, id: number, input: BookInput): Promise<KnowledgeBook> {
+  async update(userId: string, id: number, input: BookInput): Promise<KnowledgeBook> {
     return found(await this.books.update(userId, id, input));
   }
 
-  async remove(userId: number, id: number): Promise<void> {
+  async remove(userId: string, id: number): Promise<void> {
     let deleted: boolean;
     try {
       deleted = await this.books.remove(userId, id);

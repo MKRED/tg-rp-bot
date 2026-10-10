@@ -30,7 +30,7 @@ export interface LlmDebugRecord {
   id: number;
   /** ISO-время. */
   at: string;
-  userId: number | null;
+  userId: string | null;
   label: LlmCallLabel;
   provider: string;
   model: string;

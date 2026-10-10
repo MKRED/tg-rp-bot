@@ -21,7 +21,7 @@ export class ImpersonateGenerationService {
     private readonly llm: LlmService,
   ) {}
 
-  async generate(userId: number, chatId: number): Promise<Observable<MessageEvent>> {
+  async generate(userId: string, chatId: number): Promise<Observable<MessageEvent>> {
     const ctx = await this.access.requireContext(userId, chatId);
     const { messages, sampling, doStream } = buildImpersonateCompletion(ctx, ({ dropped, kept, total }) =>
       logger.info({ userId, chatId, dropped, kept, total }, "Impersonate history trimmed to context budget"),

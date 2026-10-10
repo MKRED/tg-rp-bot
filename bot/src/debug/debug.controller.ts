@@ -12,17 +12,17 @@ export class DebugController {
   constructor(private readonly debug: DebugService) {}
 
   @Get()
-  view(@CurrentUser() userId: number) {
+  view(@CurrentUser() userId: string) {
     return this.debug.view(userId);
   }
 
   @Patch("settings")
-  async updateSettings(@CurrentUser() userId: number, @Body() patch: LlmDebugSettingsPatchDto) {
+  async updateSettings(@CurrentUser() userId: string, @Body() patch: LlmDebugSettingsPatchDto) {
     return { settings: await this.debug.updateSettings(userId, patch) };
   }
 
   @Delete("records")
-  clearRecords(@CurrentUser() userId: number) {
+  clearRecords(@CurrentUser() userId: string) {
     this.debug.clearRecords(userId);
     return { ok: true };
   }

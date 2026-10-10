@@ -3,8 +3,9 @@ import { eq } from "drizzle-orm";
 import { DatabaseService } from "../../database/database.service.js";
 import { schema } from "../../db/index.js";
 import logger from "../../logger.js";
-import { countTokens, decryptField, getUserEncryptionKey } from "../../utils/index.js";
+import { countTokens, decryptField } from "../../utils/index.js";
 import { ChatPathRepository } from "../chat-path.repository.js";
+import { UserKeysService } from "../../user-keys/user-keys.service.js";
 
 /** Оценка объёма чата в токенах: весь чат (все ветки) и текущая активная ветка. */
 export type ChatTokenStats = { tokensTotal: number; tokensActiveBranch: number };
@@ -15,6 +16,7 @@ export class ChatStatsRepository {
   constructor(
     private readonly database: DatabaseService,
     private readonly path: ChatPathRepository,
+    private readonly keys: UserKeysService,
   ) {}
 
   /**
@@ -22,7 +24,7 @@ export class ChatStatsRepository {
    * нельзя (длина шифротекста ≠ длине текста) — расшифровываем. Только сообщения, без промптов.
    * Чат уже проверен вызывающим (передан его курсор).
    */
-  async tokenStats(userId: number, chatId: number, activeMessageId: number | null): Promise<ChatTokenStats> {
+  async tokenStats(userId: string, chatId: number, activeMessageId: number | null): Promise<ChatTokenStats> {
     const t0 = Date.now();
     const activePathIds = activeMessageId ? await this.path.activePathIds(activeMessageId) : new Set<number>();
     const rows = await this.database.db
@@ -30,7 +32,7 @@ export class ChatStatsRepository {
       .from(schema.messages)
       .where(eq(schema.messages.chatId, chatId));
 
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     let tokensTotal = 0;
     let tokensActiveBranch = 0;
     for (const r of rows) {

@@ -30,7 +30,7 @@ export class ChatStatsService {
    *   contextLimit — окно контекста пресета (null — безграничный/не задан);
    *   impersonationCount — число сохранённых вариантов реплик игрока.
    */
-  async get(userId: number, chatId: number): Promise<ChatStats> {
+  async get(userId: string, chatId: number): Promise<ChatStats> {
     const { chat, character, persona, template, preset } = await this.access.requireContext(userId, chatId);
 
     // userMessage пуст: текущий объём без ещё не введённой реплики. trim:false — намеренно НЕ урезаем:

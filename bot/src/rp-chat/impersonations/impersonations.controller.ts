@@ -11,18 +11,18 @@ export class ImpersonationsController {
   constructor(private readonly impersonations: ImpersonationsService) {}
 
   @Get()
-  async list(@CurrentUser() userId: number, @Param("id", ParseIntPipe) chatId: number) {
+  async list(@CurrentUser() userId: string, @Param("id", ParseIntPipe) chatId: number) {
     return { variants: await this.impersonations.list(userId, chatId) };
   }
 
   @Delete()
-  async clear(@CurrentUser() userId: number, @Param("id", ParseIntPipe) chatId: number) {
+  async clear(@CurrentUser() userId: string, @Param("id", ParseIntPipe) chatId: number) {
     return { ok: true, deleted: await this.impersonations.clear(userId, chatId) };
   }
 
   @Delete(":variantId")
   async remove(
-    @CurrentUser() userId: number,
+    @CurrentUser() userId: string,
     @Param("id", ParseIntPipe) chatId: number,
     @Param("variantId", ParseIntPipe) variantId: number,
   ) {

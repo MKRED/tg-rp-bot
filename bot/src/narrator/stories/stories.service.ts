@@ -20,12 +20,12 @@ export class StoriesService {
     private readonly presets: PresetsRepository,
   ) {}
 
-  list(userId: number, page: number, pageSize: number): Promise<{ items: StoryListItem[]; total: number }> {
+  list(userId: string, page: number, pageSize: number): Promise<{ items: StoryListItem[]; total: number }> {
     return this.stories.list(userId, page, pageSize);
   }
 
   /** Книга, шаблон и пресет должны принадлежать пользователю; 404 — на первом не найденном. */
-  async create(userId: number, input: CreateStoryRequest): Promise<StoryChat> {
+  async create(userId: string, input: CreateStoryRequest): Promise<StoryChat> {
     const { bookId, templateId, presetId, openingBeat, premise } = input;
     if (!(await this.books.findOne(userId, bookId))) throw new NotFoundException("Book not found");
     if (!(await this.templates.findOne(userId, templateId))) throw new NotFoundException("Template not found");
@@ -33,14 +33,14 @@ export class StoriesService {
     return this.stories.create(userId, { bookId, templateId, presetId }, openingBeat, premise);
   }
 
-  async get(userId: number, storyId: number): Promise<StoryDetail> {
+  async get(userId: string, storyId: number): Promise<StoryDetail> {
     const story = await this.stories.findDetail(userId, storyId);
     if (!story) throw new NotFoundException(STORY_NOT_FOUND);
     return story;
   }
 
   /** Одно поле за запрос: title (приоритетнее) либо premise — ответ содержит только применённое. */
-  async update(userId: number, storyId: number, input: UpdateStoryRequest): Promise<{ title: string | null } | { premise: string }> {
+  async update(userId: string, storyId: number, input: UpdateStoryRequest): Promise<{ title: string | null } | { premise: string }> {
     const result =
       input.title !== undefined
         ? await this.stories.rename(userId, storyId, input.title)
@@ -49,11 +49,11 @@ export class StoriesService {
     return result;
   }
 
-  async remove(userId: number, storyId: number): Promise<void> {
+  async remove(userId: string, storyId: number): Promise<void> {
     if (!(await this.stories.remove(userId, storyId))) throw new NotFoundException(STORY_NOT_FOUND);
   }
 
-  async tree(userId: number, storyId: number): Promise<StoryTreeNode[]> {
+  async tree(userId: string, storyId: number): Promise<StoryTreeNode[]> {
     const story = await this.access.requireRow(userId, storyId);
     return this.stories.tree(userId, story, await this.compactions.anchors(storyId));
   }

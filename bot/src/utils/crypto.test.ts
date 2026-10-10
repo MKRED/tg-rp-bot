@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { decrypt, decryptField, encrypt, encryptField, getUserEncryptionKey } from "./crypto.js";
+import { decrypt, decryptField, encrypt, encryptField, generateDataKey, unwrapDataKey } from "./crypto.js";
 
 const KEY = randomBytes(32);
 
@@ -8,6 +8,10 @@ describe("encrypt / decrypt", () => {
   it("round-trip: расшифровывает то, что зашифровал", () => {
     const plain = "Привет, мир! 🔐";
     expect(decrypt(encrypt(plain, KEY), KEY)).toBe(plain);
+  });
+
+  it("токен в формате v2", () => {
+    expect(encrypt("test", KEY)).toMatch(/^v2:/);
   });
 
   it("каждый encrypt даёт уникальный токен (случайный IV)", () => {
@@ -23,12 +27,12 @@ describe("encrypt / decrypt", () => {
 
   it("decrypt бросает при неверном ключе", () => {
     const token = encrypt("secret", KEY);
-    const wrongKey = randomBytes(32);
-    expect(() => decrypt(token, wrongKey)).toThrow();
+    expect(() => decrypt(token, randomBytes(32))).toThrow();
   });
 
-  it("decrypt бросает при неизвестной версии", () => {
-    expect(() => decrypt("v2:abc123", KEY)).toThrow("Неизвестная версия шифрования");
+  it("decrypt бросает на старой версии v1 и неизвестной версии", () => {
+    expect(() => decrypt("v1:abc123", KEY)).toThrow("Неизвестная версия шифрования");
+    expect(() => decrypt("v3:abc123", KEY)).toThrow("Неизвестная версия шифрования");
   });
 
   it("шифрует пустую строку", () => {
@@ -38,43 +42,6 @@ describe("encrypt / decrypt", () => {
   it("шифрует длинный текст (промпт)", () => {
     const long = "А".repeat(5000);
     expect(decrypt(encrypt(long, KEY), KEY)).toBe(long);
-  });
-});
-
-describe("getUserEncryptionKey", () => {
-  const TEST_KEY = randomBytes(32).toString("hex");
-
-  beforeEach(() => {
-    process.env.ENCRYPTION_KEY = TEST_KEY;
-  });
-
-  afterEach(() => {
-    delete process.env.ENCRYPTION_KEY;
-  });
-
-  it("одинаковый userId → одинаковый ключ (детерминированность)", () => {
-    const k1 = getUserEncryptionKey(42);
-    const k2 = getUserEncryptionKey(42);
-    expect(k1.equals(k2)).toBe(true);
-  });
-
-  it("разные userId → разные ключи", () => {
-    const k1 = getUserEncryptionKey(1);
-    const k2 = getUserEncryptionKey(2);
-    expect(k1.equals(k2)).toBe(false);
-  });
-
-  it("ключ пользователя A не расшифровывает данные пользователя B", () => {
-    const keyA = getUserEncryptionKey(1);
-    const keyB = getUserEncryptionKey(2);
-    const token = encrypt("секрет", keyA);
-    expect(() => decrypt(token, keyB)).toThrow();
-  });
-
-  it("round-trip с пользовательским ключом", () => {
-    const key = getUserEncryptionKey(123);
-    const plain = "промпт персонажа";
-    expect(decrypt(encrypt(plain, key), key)).toBe(plain);
   });
 });
 
@@ -89,14 +56,45 @@ describe("encryptField / decryptField", () => {
     expect(decryptField(encryptField(plain, KEY), KEY)).toBe(plain);
   });
 
-  it("decryptField возвращает legacy plaintext как есть", () => {
-    const legacy = "старый незашифрованный промпт";
-    expect(decryptField(legacy, KEY)).toBe(legacy);
+  it("пустая строка без шифрования (DB default) читается как пустая", () => {
+    expect(decryptField("", KEY)).toBe("");
   });
 
-  it("encryptField шифрует пустую строку", () => {
-    const token = encryptField("", KEY);
-    expect(token).toMatch(/^v1:/);
-    expect(decryptField(token, KEY)).toBe("");
+  it("открытый текст и шифротекст v1 — ошибка, а не «как есть»", () => {
+    expect(() => decryptField("старый незашифрованный промпт", KEY)).toThrow();
+    expect(() => decryptField("v1:AAAA", KEY)).toThrow();
+  });
+});
+
+describe("generateDataKey / unwrapDataKey", () => {
+  beforeEach(() => {
+    process.env.ENCRYPTION_KEY = randomBytes(32).toString("hex");
+  });
+
+  afterEach(() => {
+    delete process.env.ENCRYPTION_KEY;
+  });
+
+  it("обёрнутый ключ разворачивается в тот же ключ", () => {
+    const { key, wrapped } = generateDataKey();
+    expect(wrapped).toMatch(/^k1:/);
+    expect(unwrapDataKey(wrapped).equals(key)).toBe(true);
+  });
+
+  it("каждый пользователь получает свой ключ; чужим ключом данные не расшифровать", () => {
+    const a = generateDataKey();
+    const b = generateDataKey();
+    expect(a.key.equals(b.key)).toBe(false);
+    expect(() => decrypt(encrypt("секрет", a.key), b.key)).toThrow();
+  });
+
+  it("при другом мастер-ключе обёрнутый ключ не разворачивается", () => {
+    const { wrapped } = generateDataKey();
+    process.env.ENCRYPTION_KEY = randomBytes(32).toString("hex");
+    expect(() => unwrapDataKey(wrapped)).toThrow();
+  });
+
+  it("токен данных не принимается как обёрнутый ключ", () => {
+    expect(() => unwrapDataKey(encrypt("x", KEY))).toThrow("Неизвестная версия шифрования");
   });
 });

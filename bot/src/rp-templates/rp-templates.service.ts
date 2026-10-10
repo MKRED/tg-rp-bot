@@ -12,7 +12,7 @@ export class RpTemplatesService {
   constructor(private readonly repository: RpTemplatesRepository) {}
 
   /** Тексты промптов на клиент не уходят — только их суммарный вес в токенах. */
-  async list(userId: number): Promise<RpTemplateListItem[]> {
+  async list(userId: string): Promise<RpTemplateListItem[]> {
     const rows = await this.repository.list(userId);
     return rows.map((row) => ({
       id: row.id,
@@ -22,22 +22,22 @@ export class RpTemplatesService {
     }));
   }
 
-  async get(userId: number, id: number): Promise<RpTemplate> {
+  async get(userId: string, id: number): Promise<RpTemplate> {
     return found(await this.repository.findOne(userId, id));
   }
 
-  async create(userId: number, input: RpTemplateInput): Promise<RpTemplate> {
+  async create(userId: string, input: RpTemplateInput): Promise<RpTemplate> {
     if ((await this.repository.count(userId)) >= MAX_RP_TEMPLATES_PER_USER) {
       throw new BadRequestException(`Template limit reached (max ${MAX_RP_TEMPLATES_PER_USER})`);
     }
     return this.repository.create(userId, input);
   }
 
-  async update(userId: number, id: number, input: RpTemplateInput): Promise<RpTemplate> {
+  async update(userId: string, id: number, input: RpTemplateInput): Promise<RpTemplate> {
     return found(await this.repository.update(userId, id, input));
   }
 
-  async remove(userId: number, id: number): Promise<void> {
+  async remove(userId: string, id: number): Promise<void> {
     let deleted: boolean;
     try {
       deleted = await this.repository.delete(userId, id);

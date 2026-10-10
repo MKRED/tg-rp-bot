@@ -11,7 +11,7 @@ export class AvatarsController {
   /** Чтение батчем, а не создание ресурса — 200, как у Hono-контроллера. */
   @Post("batch")
   @HttpCode(200)
-  async batch(@CurrentUser() userId: number, @Body() dto: AvatarBatchDto): Promise<AvatarBatchResponse> {
+  async batch(@CurrentUser() userId: string, @Body() dto: AvatarBatchDto): Promise<AvatarBatchResponse> {
     return { avatars: await this.avatars.resolveBatch(userId, dto.refs) };
   }
 }

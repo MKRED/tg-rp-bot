@@ -20,7 +20,7 @@ export class StoryStatsService {
    *   contextLimit — окно контекста пресета (null — безграничный/не задан);
    *   compactAvailable/compactReason — гейт секции сжатия: нужен и лимит пресета, и компонент шаблона.
    */
-  async get(userId: number, storyId: number): Promise<StoryStats> {
+  async get(userId: string, storyId: number): Promise<StoryStats> {
     const ctx = await this.access.requireContext(userId, storyId);
     // trim:false — намеренно НЕ урезаем историю: бар показывает «желаемый» объём, чтобы было видно
     // переполнение окна (used > limit → красный), хотя сама генерация историю урежет.

@@ -14,16 +14,16 @@ export class CardsService {
     private readonly presets: PresetsRepository,
   ) {}
 
-  async list(userId: number): Promise<CardListItem[]> {
+  async list(userId: string): Promise<CardListItem[]> {
     const rows = await this.repository.list(userId);
     return rows.map((row) => ({ ...row, updatedAt: row.updatedAt.toISOString() }));
   }
 
-  async get(userId: number, id: number): Promise<Card> {
+  async get(userId: string, id: number): Promise<Card> {
     return found(await this.repository.findOne(userId, id));
   }
 
-  async create(userId: number, input: CardInput): Promise<Card> {
+  async create(userId: string, input: CardInput): Promise<Card> {
     await this.assertPresetOwned(userId, input.presetId);
     if ((await this.repository.count(userId)) >= MAX_CARDS_PER_USER) {
       throw new BadRequestException(`Card limit reached (max ${MAX_CARDS_PER_USER})`);
@@ -31,7 +31,7 @@ export class CardsService {
     return this.repository.create(userId, input);
   }
 
-  async update(userId: number, id: number, input: CardInput): Promise<Card> {
+  async update(userId: string, id: number, input: CardInput): Promise<Card> {
     await this.assertPresetOwned(userId, input.presetId);
     // Тот же лок, что у генерации блока (card-lock.ts): оба пути делают read-modify-write полной
     // строки, без него параллельные PUT и «Сгенерировать» могли бы затереть друг друга.
@@ -43,7 +43,7 @@ export class CardsService {
     }
   }
 
-  async remove(userId: number, id: number): Promise<void> {
+  async remove(userId: string, id: number): Promise<void> {
     if (!(await this.repository.delete(userId, id))) throw new NotFoundException("Not found");
   }
 
@@ -53,7 +53,7 @@ export class CardsService {
    * фильтром по владельцу) молча не нашла бы его — пользователь увидел бы вводящий в заблуждение
    * preset_required. Тот же ответ, что у чатов.
    */
-  private async assertPresetOwned(userId: number, presetId: number | null): Promise<void> {
+  private async assertPresetOwned(userId: string, presetId: number | null): Promise<void> {
     if (presetId === null) return;
     if (!(await this.presets.findOne(userId, presetId))) throw new NotFoundException("Preset not found");
   }

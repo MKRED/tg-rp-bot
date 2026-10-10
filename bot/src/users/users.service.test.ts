@@ -8,15 +8,15 @@ type Repo = ConstructorParameters<typeof UsersService>[0];
 
 const user = { id: 42, first_name: "Alice" };
 const setup = () => {
-  const repo = { upsertTelegramProfile: vi.fn().mockResolvedValue(undefined) };
+  const repo = { upsertTelegramProfile: vi.fn().mockResolvedValue("uuid-42") };
   return { repo, service: new UsersService(repo as unknown as Repo) };
 };
 
 describe("UsersService.ensureTelegramUser", () => {
-  it("upsert один раз на процесс для одного пользователя", async () => {
+  it("upsert один раз на процесс; возвращает внутренний id, а не Telegram id", async () => {
     const { repo, service } = setup();
-    await service.ensureTelegramUser(user);
-    await service.ensureTelegramUser(user);
+    await expect(service.ensureTelegramUser(user)).resolves.toBe("uuid-42");
+    await expect(service.ensureTelegramUser(user)).resolves.toBe("uuid-42");
     expect(repo.upsertTelegramProfile).toHaveBeenCalledTimes(1);
   });
 

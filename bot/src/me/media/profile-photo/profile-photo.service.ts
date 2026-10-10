@@ -53,25 +53,25 @@ export class ProfilePhotoService {
    * data URL фото профиля пользователя или null (нет фото / скрыто настройками приватности).
    * Бросает только при неожиданных сбоях сети/API — вызывающий (роут) их логирует и отдаёт null.
    */
-  async dataUrl(userId: number): Promise<string | null> {
-    const cached = this.cache.get(userId);
+  async dataUrl(telegramId: number): Promise<string | null> {
+    const cached = this.cache.get(telegramId);
     if (cached && cached.expires > Date.now()) return cached.dataUrl;
 
     const t0 = Date.now();
     // Берём один (самый свежий) набор размеров одного фото
-    const photos = await this.bot.api.getUserProfilePhotos(userId, { limit: 1 });
+    const photos = await this.bot.api.getUserProfilePhotos(telegramId, { limit: 1 });
     // photos[0] отсортирован по возрастанию размера — берём самый крупный
     const sizes = photos.photos[0] ?? [];
     const largest = sizes[sizes.length - 1];
     if (!largest) {
-      this.cache.set(userId, { dataUrl: null, expires: Date.now() + CACHE_TTL_MS });
-      logger.debug({ userId }, "User has no accessible profile photo");
+      this.cache.set(telegramId, { dataUrl: null, expires: Date.now() + CACHE_TTL_MS });
+      logger.debug({ telegramId }, "User has no accessible profile photo");
       return null;
     }
 
     const file = await this.bot.api.getFile(largest.file_id);
     if (!file.file_path) {
-      logger.warn({ userId, fileId: largest.file_id }, "getFile returned no file_path");
+      logger.warn({ telegramId, fileId: largest.file_id }, "getFile returned no file_path");
       return null;
     }
 
@@ -80,9 +80,9 @@ export class ProfilePhotoService {
     const { buffer, contentType } = await downloadFile(url, this.agent);
     const dataUrl = `data:${contentType};base64,${buffer.toString("base64")}`;
 
-    this.cache.set(userId, { dataUrl, expires: Date.now() + CACHE_TTL_MS });
+    this.cache.set(telegramId, { dataUrl, expires: Date.now() + CACHE_TTL_MS });
     logger.info(
-      { userId, filePath: file.file_path, bytes: buffer.length, durationMs: Date.now() - t0 },
+      { telegramId, filePath: file.file_path, bytes: buffer.length, durationMs: Date.now() - t0 },
       "Profile photo fetched",
     );
     return dataUrl;

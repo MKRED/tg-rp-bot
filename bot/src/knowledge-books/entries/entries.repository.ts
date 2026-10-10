@@ -4,9 +4,10 @@ import { and, eq, sql } from "drizzle-orm";
 import { DatabaseService } from "../../database/database.service.js";
 import { schema } from "../../db/index.js";
 import logger from "../../logger.js";
-import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/index.js";
+import { decryptField, encryptField } from "../../utils/index.js";
 import { isPermutationOf } from "./entries-order.js";
 import { ownedBooks } from "./owned-books.js";
+import { UserKeysService } from "../../user-keys/user-keys.service.js";
 
 /**
  * Записи книг знаний (knowledge_book_entries) для UI: CRUD и порядок. name/alias/content/keywords
@@ -14,14 +15,17 @@ import { ownedBooks } from "./owned-books.js";
  */
 @Injectable()
 export class EntriesRepository {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly keys: UserKeysService,
+  ) {}
 
   /**
    * Записи книги для UI (с резолвом персонажа/персоны). Проверяет владение книгой. name/content/keywords
    * зашифрованы per-user — расшифровываем; имя персонажа/персоны берём из characters/personas (name там
    * в открытом виде).
    */
-  async list(userId: number, bookId: number): Promise<EntryListItem[]> {
+  async list(userId: string, bookId: number): Promise<EntryListItem[]> {
     const t0 = Date.now();
     const rows = await this.database.db.execute(sql`
       SELECT
@@ -38,7 +42,7 @@ export class EntriesRepository {
         AND e.book_id IN ${ownedBooks(userId)}
       ORDER BY e.sort_order ASC, e.created_at ASC
     `);
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     logger.debug({ durationMs: Date.now() - t0, userId, bookId, count: (rows as unknown[]).length }, "Entries listed");
     return (rows as Record<string, unknown>[]).map((r) => ({
       // bigint из сырого SQL приходит строкой — приводим явно (как characterId/personaId ниже).
@@ -61,7 +65,7 @@ export class EntriesRepository {
   }
 
   /** Сколько записей в книге пользователя (для мягкого лимита, без декрипта). */
-  async count(userId: number, bookId: number): Promise<number> {
+  async count(userId: string, bookId: number): Promise<number> {
     const rows = await this.database.db
       .select({ count: sql<number>`count(*)::int` })
       .from(schema.knowledgeBookEntries)
@@ -76,7 +80,7 @@ export class EntriesRepository {
 
   /** Создаёт запись в книге (проверяя владение книгой). undefined — книги нет/не его. */
   async create(
-    userId: number,
+    userId: string,
     bookId: number,
     input: EntryInput,
   ): Promise<{ id: number } | undefined> {
@@ -92,7 +96,7 @@ export class EntriesRepository {
     // получит count > 0 и детерминированно встанет в конец списка.
     const sortOrder = await this.count(userId, bookId);
 
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     const rows = await this.database.db
       .insert(schema.knowledgeBookEntries)
       .values({
@@ -115,12 +119,12 @@ export class EntriesRepository {
 
   /** Обновляет запись (только в книге пользователя). false — если не найдена. */
   async update(
-    userId: number,
+    userId: string,
     entryId: number,
     input: EntryInput,
   ): Promise<boolean> {
     const t0 = Date.now();
-    const key = getUserEncryptionKey(userId);
+    const key = await this.keys.forUser(userId);
     const rows = await this.database.db
       .update(schema.knowledgeBookEntries)
       .set({
@@ -148,7 +152,7 @@ export class EntriesRepository {
   }
 
   /** Удаляет запись (только в книге пользователя). true — если удалена. */
-  async remove(userId: number, entryId: number): Promise<boolean> {
+  async remove(userId: string, entryId: number): Promise<boolean> {
     const t0 = Date.now();
     const rows = await this.database.db
       .delete(schema.knowledgeBookEntries)
@@ -171,7 +175,7 @@ export class EntriesRepository {
    * 0,1,2… одним атомарным UPDATE ... FROM (VALUES …). Владение книгой проверяется через ownedBooks.
    */
   async reorder(
-    userId: number,
+    userId: string,
     bookId: number,
     orderedIds: number[],
   ): Promise<"ok" | "invalid"> {

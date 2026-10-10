@@ -4,20 +4,24 @@ import { eq } from "drizzle-orm";
 import { DatabaseService } from "../../database/database.service.js";
 import { schema } from "../../db/index.js";
 import logger from "../../logger.js";
-import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/crypto.js";
+import { decryptField, encryptField } from "../../utils/crypto.js";
+import { UserKeysService } from "../../user-keys/user-keys.service.js";
 
 /** Колонки user_settings с персональным ключом и моделью DeepSeek (BYOK, см. llm/llm.service.ts). */
 @Injectable()
 export class LlmSettingsRepository {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly keys: UserKeysService,
+  ) {}
 
   /** Статус ключа/модели для UI настроек — без расшифрованного ключа. */
-  async getStatus(userId: number): Promise<LlmSettingsStatus> {
+  async getStatus(userId: string): Promise<LlmSettingsStatus> {
     const t0 = Date.now();
     const row = await this.findRow(userId);
     logger.debug({ durationMs: Date.now() - t0, userId, found: Boolean(row) }, "User LLM settings read");
     if (!row?.apiKey) return { hasKey: false, last4: null, model: row?.model ?? null };
-    const key = decryptField(row.apiKey, getUserEncryptionKey(userId));
+    const key = decryptField(row.apiKey, await this.keys.forUser(userId));
     return { hasKey: true, last4: key.slice(-4), model: row.model };
   }
 
@@ -25,10 +29,10 @@ export class LlmSettingsRepository {
    * Расшифрованный ключ + модель — для LlmService (один запрос на вызов LLM) и реверификации
    * уже сохранённого ключа (verify без apiKey в теле). null — ключ не задан.
    */
-  async getDecryptedCredentials(userId: number): Promise<{ apiKey: string; model: string | null } | null> {
+  async getDecryptedCredentials(userId: string): Promise<{ apiKey: string; model: string | null } | null> {
     const row = await this.findRow(userId);
     if (!row?.apiKey) return null;
-    return { apiKey: decryptField(row.apiKey, getUserEncryptionKey(userId)), model: row.model };
+    return { apiKey: decryptField(row.apiKey, await this.keys.forUser(userId)), model: row.model };
   }
 
   /**
@@ -36,7 +40,7 @@ export class LlmSettingsRepository {
    * в debug/debug.repository.ts, которые перезаписываются целиком под клампом) — полная перезапись здесь
    * случайно затёрла бы ключ при смене одной модели.
    */
-  async upsert(userId: number, patch: LlmSettingsPatch): Promise<LlmSettingsStatus> {
+  async upsert(userId: string, patch: LlmSettingsPatch): Promise<LlmSettingsStatus> {
     const t0 = Date.now();
     const setFields: { deepseekApiKey?: string | null; deepseekModel?: string | null; updatedAt: Date } = {
       updatedAt: new Date(),
@@ -51,7 +55,7 @@ export class LlmSettingsRepository {
         setFields.deepseekApiKey = null;
         setFields.deepseekModel = null;
       } else {
-        setFields.deepseekApiKey = encryptField(patch.apiKey, getUserEncryptionKey(userId));
+        setFields.deepseekApiKey = encryptField(patch.apiKey, await this.keys.forUser(userId));
       }
     }
 
@@ -67,7 +71,7 @@ export class LlmSettingsRepository {
     return this.getStatus(userId);
   }
 
-  private async findRow(userId: number) {
+  private async findRow(userId: string) {
     const rows = await this.database.db
       .select({ apiKey: schema.userSettings.deepseekApiKey, model: schema.userSettings.deepseekModel })
       .from(schema.userSettings)

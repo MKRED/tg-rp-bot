@@ -18,27 +18,27 @@ export class CardsController {
   ) {}
 
   @Get()
-  async list(@CurrentUser() userId: number) {
+  async list(@CurrentUser() userId: string) {
     return { cards: await this.cards.list(userId) };
   }
 
   @Get(":id")
-  async get(@CurrentUser() userId: number, @Param("id", ParseIntPipe) id: number) {
+  async get(@CurrentUser() userId: string, @Param("id", ParseIntPipe) id: number) {
     return { card: await this.cards.get(userId, id) };
   }
 
   @Post()
-  async create(@CurrentUser() userId: number, @Body() input: CardInputDto) {
+  async create(@CurrentUser() userId: string, @Body() input: CardInputDto) {
     return { card: await this.cards.create(userId, input) };
   }
 
   @Put(":id")
-  async update(@CurrentUser() userId: number, @Param("id", ParseIntPipe) id: number, @Body() input: CardInputDto) {
+  async update(@CurrentUser() userId: string, @Param("id", ParseIntPipe) id: number, @Body() input: CardInputDto) {
     return { card: await this.cards.update(userId, id, input) };
   }
 
   @Delete(":id")
-  async remove(@CurrentUser() userId: number, @Param("id", ParseIntPipe) id: number) {
+  async remove(@CurrentUser() userId: string, @Param("id", ParseIntPipe) id: number) {
     await this.cards.remove(userId, id);
     return { ok: true };
   }
@@ -50,7 +50,7 @@ export class CardsController {
    */
   @Post(":id/generate")
   @HttpCode(200)
-  generate(@CurrentUser() userId: number, @Param("id", ParseIntPipe) id: number, @Body() body: GenerateCardBlockDto) {
+  generate(@CurrentUser() userId: string, @Param("id", ParseIntPipe) id: number, @Body() body: GenerateCardBlockDto) {
     // Явный categoryId — всегда клик «Перегенерировать»: сбрасываем накопленные ответы ask_user блока.
     return this.generation.generate(userId, id, body.categoryId, body.categoryId !== undefined);
   }
@@ -58,7 +58,7 @@ export class CardsController {
   /** Ответ (или отказ — skipped) на вопросы ask_user категории; вопросы хранятся на карточке, без таймаута. */
   @Post(":id/generate/answer")
   @HttpCode(200)
-  answer(@CurrentUser() userId: number, @Param("id", ParseIntPipe) id: number, @Body() body: AnswerCardQuestionsDto) {
+  answer(@CurrentUser() userId: string, @Param("id", ParseIntPipe) id: number, @Body() body: AnswerCardQuestionsDto) {
     const input = body.skipped ? { skipped: true as const } : { skipped: false as const, answers: body.answers ?? [] };
     return this.generation.answer(userId, id, body.categoryId, input);
   }

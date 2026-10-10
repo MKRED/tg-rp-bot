@@ -13,7 +13,7 @@ export class TavilySettingsService {
     private readonly tavily: TavilyService,
   ) {}
 
-  get(userId: number): Promise<TavilySettingsStatus> {
+  get(userId: string): Promise<TavilySettingsStatus> {
     return this.settings.getStatus(userId);
   }
 
@@ -22,7 +22,7 @@ export class TavilySettingsService {
    * валидный ответ GET /usage сам по себе означает валидный ключ. typedKey — ещё не сохранённый
    * ключ; пустой — реверификация сохранённого. Нет/неверный ключ — ok:false (200).
    */
-  async verify(userId: number, typedKey: string): Promise<VerifyTavilyKeyResult> {
+  async verify(userId: string, typedKey: string): Promise<VerifyTavilyKeyResult> {
     const apiKey = typedKey || (await this.settings.getDecryptedKey(userId));
     if (!apiKey) return { ok: false, error: "no_key" };
     try {
@@ -34,7 +34,7 @@ export class TavilySettingsService {
   }
 
   /** Сохраняет/удаляет ключ и/или лимит раундов (кламп — в репозитории). apiKey: null — удалить ключ. */
-  update(userId: number, patch: TavilySettingsPatch): Promise<TavilySettingsStatus> {
+  update(userId: string, patch: TavilySettingsPatch): Promise<TavilySettingsStatus> {
     assertValidKeyFormat(patch.apiKey);
     return this.settings.upsert(userId, patch);
   }

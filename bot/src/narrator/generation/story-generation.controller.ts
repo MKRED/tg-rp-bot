@@ -14,13 +14,13 @@ export class StoryGenerationController {
 
   @Sse("advance", POST)
   @HttpCode(200)
-  advance(@CurrentUser() userId: number, @Param("id", ParseIntPipe) storyId: number, @Body() { directive }: AdvanceStoryDto) {
+  advance(@CurrentUser() userId: string, @Param("id", ParseIntPipe) storyId: number, @Body() { directive }: AdvanceStoryDto) {
     return this.generation.advance(userId, storyId, directive);
   }
 
   @Sse("messages/:msgId/regenerate", POST)
   @HttpCode(200)
-  regenerate(@CurrentUser() userId: number, @Param("id", ParseIntPipe) storyId: number, @Param("msgId", ParseIntPipe) msgId: number) {
+  regenerate(@CurrentUser() userId: string, @Param("id", ParseIntPipe) storyId: number, @Param("msgId", ParseIntPipe) msgId: number) {
     return this.generation.regenerate(userId, storyId, msgId);
   }
 }

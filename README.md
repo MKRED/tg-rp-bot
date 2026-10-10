@@ -42,8 +42,9 @@ tg-rp-bot/
 │  │  ├─ prompt/       # сборка промптов RP-чата и narrator (без Nest): promptBuilder, storyPromptBuilder, бюджет
 │  │  ├─ tavily/       # TavilyModule: клиент Tavily (веб-поиск, квота ключа), ключ per-user BYOK
 │  │  ├─ health/ webapp-static/  # GET /health (@Public); раздача сборки Mini App из ./public + SPA-fallback
-│  │  ├─ scripts/      # разовые скрипты (backfill шифрования сообщений)
-│  │  └─ utils/        # retry, crypto (per-user шифрование)
+│  │  ├─ user-keys/    # UserKeysModule: ключ шифрования данных пользователя (users.data_key)
+│  │  ├─ scripts/      # разовые скрипты вне Nest (перешифровка данных, прототип веб-поиска)
+│  │  └─ utils/        # retry, crypto (шифрование полей ключом пользователя)
 │  └─ drizzle/         # SQL-миграции
 └─ webapp/             # Mini App (React + Vite)
    └─ src/

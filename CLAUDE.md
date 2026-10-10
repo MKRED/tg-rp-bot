@@ -25,6 +25,10 @@ serving both the API and the Mini App static files ([docs/deploy.md](docs/deploy
   (`telegram/telegram-bot.factory.ts` → `baseFetchConfig.agent`, HttpsProxyAgent) and Tavily (`tavily/tavily-proxy.ts`, undici ProxyAgent),
   both via `TELEGRAM_PROXY_URL`. **NEVER** set a global proxy (`HTTPS_PROXY` / `ALL_PROXY`) — it would
   route LLM traffic through it too. Why `agent` and not `dispatcher` — [docs/architecture.md](docs/architecture.md).
+- **Per-user encryption key lives in `users.data_key`** (random, wrapped by the master key from
+  `ENCRYPTION_KEY`); repositories get it via `UserKeysService.forUser(userId)`. Never regenerate or
+  overwrite it — the user's data becomes unreadable. `users.id` is a UUID; `telegram_id` is optional.
+  Details — [docs/architecture.md](docs/architecture.md).
 - **LLM/Tavily keys are server-side, per-user (BYOK).** Stored encrypted in `user_settings`
   (`ENCRYPTION_KEY`), never sent to the browser; no fallback to a shared/env key. Generation goes through
   the bot's HTTP API, not from the webapp directly. Details — [docs/llm.md](docs/llm.md).
@@ -65,7 +69,7 @@ yarn build         # build bot (nest build) + webapp
 ## Architecture
 ```
 bot/src/    — main (Nest bootstrap) · app.module · config · logger ·
-              Nest modules: auth/ database/ users/ common/ telegram/ (grammY bot as a provider: handlers,
+              Nest modules: auth/ database/ users/ user-keys/ common/ telegram/ (grammY bot as a provider: handlers,
               polling lifecycle, Telegram proxy) · <domain>/ (characters, …) ·
               db/ (drizzle schema + client) · llm/ (LlmModule: LLM call with the user's key; pure client) ·
               prompt/ (prompt assembly, no Nest) · tavily/ (TavilyModule: Tavily client) ·

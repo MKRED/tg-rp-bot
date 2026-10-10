@@ -39,7 +39,7 @@ export class ChatContextService {
   ) {}
 
   /** Строка чата пользователя без сообщений; чужой/несуществующий — 404 Chat not found. */
-  async requireRow(userId: number, chatId: number): Promise<ChatRow> {
+  async requireRow(userId: string, chatId: number): Promise<ChatRow> {
     const row = await this.chats.findRow(userId, chatId);
     if (!row) throw new NotFoundException(CHAT_NOT_FOUND);
     return row;
@@ -49,7 +49,7 @@ export class ChatContextService {
    * Сообщение этого чата пользователя. Сначала владелец чата (404 Chat not found), потом сообщение
    * (404 Message not found): сам по себе id сообщения не проверяет владельца.
    */
-  async requireMessage(userId: number, chatId: number, messageId: number): Promise<{ chat: ChatRow; msg: Message }> {
+  async requireMessage(userId: string, chatId: number, messageId: number): Promise<{ chat: ChatRow; msg: Message }> {
     const chat = await this.requireRow(userId, chatId);
     const msg = await this.messages.findOne(userId, chatId, messageId);
     if (!msg) throw new NotFoundException(MESSAGE_NOT_FOUND);
@@ -57,7 +57,7 @@ export class ChatContextService {
   }
 
   /** Чат с активным путём + персонаж/персона/шаблон/пресет. Нет чата или персонажа — 404 Chat not found. */
-  async requireContext(userId: number, chatId: number): Promise<ChatContext> {
+  async requireContext(userId: string, chatId: number): Promise<ChatContext> {
     const chat = await this.chats.findDetail(userId, chatId);
     if (!chat) throw new NotFoundException(CHAT_NOT_FOUND);
     const character = await this.characters.findOne(userId, chat.character.id);

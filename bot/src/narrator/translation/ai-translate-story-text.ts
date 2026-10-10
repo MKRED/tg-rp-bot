@@ -24,7 +24,7 @@ export async function aiTranslateStoryText(
   llm: ChatCompleter,
   text: string,
   targetLangName: string,
-  userId: number,
+  userId: string,
   template: NarratorTemplate | null,
   reasoning: { requestReasoning: boolean; reasoningEffort?: string },
 ): Promise<string> {

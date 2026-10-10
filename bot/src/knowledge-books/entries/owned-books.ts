@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 
 /** Подзапрос «книги этого пользователя» — для проверки владения записью без явного join. */
-export function ownedBooks(userId: number) {
+export function ownedBooks(userId: string) {
   return sql`(SELECT id FROM knowledge_books WHERE user_id = ${userId})`;
 }

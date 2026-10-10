@@ -13,7 +13,7 @@ export class MessagesController {
   @Post(":msgId/branch")
   @HttpCode(200)
   async switchBranch(
-    @CurrentUser() userId: number,
+    @CurrentUser() userId: string,
     @Param("id", ParseIntPipe) chatId: number,
     @Param("msgId", ParseIntPipe) msgId: number,
   ) {
@@ -23,7 +23,7 @@ export class MessagesController {
 
   @Delete(":msgId")
   async remove(
-    @CurrentUser() userId: number,
+    @CurrentUser() userId: string,
     @Param("id", ParseIntPipe) chatId: number,
     @Param("msgId", ParseIntPipe) msgId: number,
   ) {

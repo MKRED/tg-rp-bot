@@ -10,11 +10,11 @@ import { TranslateSettingsRepository } from "./translate-settings.repository.js"
 export class TranslateSettingsService {
   constructor(private readonly settings: TranslateSettingsRepository) {}
 
-  get(userId: number): Promise<TranslateSettings> {
+  get(userId: string): Promise<TranslateSettings> {
     return this.settings.get(userId);
   }
 
-  update(userId: number, patch: TranslateSettingsPatch): Promise<TranslateSettings> {
+  update(userId: string, patch: TranslateSettingsPatch): Promise<TranslateSettings> {
     return this.settings.upsert(userId, patch);
   }
 }

@@ -14,7 +14,7 @@ export class StoryMessagesController {
   @Post(":msgId/branch")
   @HttpCode(200)
   async switchBranch(
-    @CurrentUser() userId: number,
+    @CurrentUser() userId: string,
     @Param("id", ParseIntPipe) storyId: number,
     @Param("msgId", ParseIntPipe) msgId: number,
   ) {
@@ -25,7 +25,7 @@ export class StoryMessagesController {
   @Post(":msgId/edit")
   @HttpCode(200)
   editBeat(
-    @CurrentUser() userId: number,
+    @CurrentUser() userId: string,
     @Param("id", ParseIntPipe) storyId: number,
     @Param("msgId", ParseIntPipe) msgId: number,
     @Body() { content }: EditStoryBeatDto,
@@ -35,7 +35,7 @@ export class StoryMessagesController {
 
   @Delete(":msgId")
   async remove(
-    @CurrentUser() userId: number,
+    @CurrentUser() userId: string,
     @Param("id", ParseIntPipe) storyId: number,
     @Param("msgId", ParseIntPipe) msgId: number,
   ) {

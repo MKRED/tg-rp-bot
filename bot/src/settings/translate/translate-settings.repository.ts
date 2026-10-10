@@ -27,7 +27,7 @@ export class TranslateSettingsRepository {
   constructor(private readonly database: DatabaseService) {}
 
   /** Настройки перевода для UI/эндпоинта перевода. Нет строки → дефолты. */
-  async get(userId: number): Promise<TranslateSettings> {
+  async get(userId: string): Promise<TranslateSettings> {
     const t0 = Date.now();
     const rows = await this.database.db
       .select({
@@ -46,7 +46,7 @@ export class TranslateSettingsRepository {
   }
 
   /** Партиальный upsert: трогает только поля, реально пришедшие в patch. */
-  async upsert(userId: number, patch: TranslateSettingsPatch): Promise<TranslateSettings> {
+  async upsert(userId: string, patch: TranslateSettingsPatch): Promise<TranslateSettings> {
     const t0 = Date.now();
     const setFields: {
       promptTranslateEngine?: TranslateSettings["engine"];
