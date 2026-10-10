@@ -716,6 +716,11 @@
     jsonc-parser "3.3.1"
     pluralize "8.0.0"
 
+"@nestjs/throttler@^6.7.1":
+  version "6.7.1"
+  resolved "https://registry.yarnpkg.com/@nestjs/throttler/-/throttler-6.7.1.tgz#89727fd22d91bd8a070938fe4cfc4bc204322a92"
+  integrity sha512-gAyY1AkU+cSK5DCjFOB43xax9oakameH4xZa9kAgqBqSBQZgmv3DZylLV8KyZNzOGhceL3kDVtby+CF8VAdmEA==
+
 "@oxc-project/types@=0.133.0":
   version "0.133.0"
   resolved "https://registry.yarnpkg.com/@oxc-project/types/-/types-0.133.0.tgz#2e282ef9e1d26e06b68ccd14b73f310a3b2cf7f8"

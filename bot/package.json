@@ -18,6 +18,7 @@
     "@nestjs/common": "~12.1.1",
     "@nestjs/core": "~12.1.1",
     "@nestjs/platform-express": "~12.1.1",
+    "@nestjs/throttler": "^6.7.1",
     "@tg-rp-bot/shared": "0.1.0",
     "@tma.js/init-data-node": "^2.0.7",
     "class-transformer": "^0.5.1",

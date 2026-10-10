@@ -309,6 +309,13 @@
       "when": 1791643093748,
       "tag": "0043_users_uuid",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1791656243796,
+      "tag": "0044_user_sessions",
+      "breakpoints": true
     }
   ]
 }

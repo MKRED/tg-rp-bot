@@ -1,8 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { type TelegramProfile, UsersRepository } from "./users.repository.js";
+import { type TelegramProfile, type UserProfileRow, UsersRepository } from "./users.repository.js";
 
 /**
- * Пользователи: строка в users заводится из профиля Telegram — guard'ом API и командой /start бота.
+ * Пользователи: строка в users заводится из профиля Telegram (guard API и /start бота) или регистрацией
+ * по логину (auth/).
  * Внутренний id — UUID; Telegram id только ищет его (users.telegram_id).
  */
 @Injectable()
@@ -29,5 +30,18 @@ export class UsersService {
     const userId = await this.users.upsertTelegramProfile(user);
     this.ensured.set(user.id, userId);
     return userId;
+  }
+
+  /** Регистрация по логину (браузер): внутренний id или null, если логин занят. */
+  createWithLogin(login: string, passwordHash: string): Promise<string | null> {
+    return this.users.createWithLogin(login, passwordHash);
+  }
+
+  findLoginCredentials(login: string): Promise<{ id: string; passwordHash: string } | undefined> {
+    return this.users.findLoginCredentials(login);
+  }
+
+  findProfile(userId: string): Promise<UserProfileRow | undefined> {
+    return this.users.findProfile(userId);
   }
 }

@@ -18,6 +18,9 @@ async function bootstrap(): Promise<void> {
   });
   app.useLogger(app.get(Logger));
   app.useBodyParser("json", { limit: JSON_BODY_LIMIT });
+  // Перед приложением ровно один прокси — nginx сервера (X-Forwarded-For): доверяем одному хопу, чтобы
+  // req.ip был адресом клиента. Иначе лимит попыток входа (ThrottlerGuard) считался бы общим на всех.
+  app.set("trust proxy", 1);
   // /health — вне /api: его опрашивает мониторинг по прежнему адресу.
   app.setGlobalPrefix("api", { exclude: ["health"] });
   serveWebapp(app);

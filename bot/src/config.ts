@@ -58,7 +58,7 @@ export const config = {
 
   /**
    * Telegram-id реального прод-юзера для dev-обхода initData при открытии Mini App
-   * из браузера. undefined вне dev или если переменная не задана — тогда TelegramAuthGuard
+   * из браузера. undefined вне dev или если переменная не задана — тогда AuthGuard
    * без подписи отвечает 401.
    */
   devUserId: !isProduction && devUserIdRaw ? Number(devUserIdRaw) : undefined,

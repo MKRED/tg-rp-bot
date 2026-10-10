@@ -44,6 +44,10 @@ export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   telegramId: bigint("telegram_id", { mode: "number" }).unique(),
   dataKey: text("data_key").notNull(),
+  // Вход по логину и паролю (браузер). Логин хранится в нижнем регистре; пароль — хэш scrypt
+  // (auth/password/password.ts), не шифротекст: расшифровать его нельзя, только сверить.
+  login: text("login").unique(),
+  passwordHash: text("password_hash"),
   username: text("username"),
   firstName: text("first_name"),
   lastName: text("last_name"),
@@ -54,6 +58,23 @@ export const users = pgTable("users", {
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+
+/**
+ * Сессии входа по логину (браузер, httpOnly-cookie). В БД — только SHA-256 токена: утечка таблицы не
+ * даёт войти. expiresAt продлевается при использовании (скользящий срок), строка удаляется при
+ * выходе и по истечении.
+ */
+export const userSessions = pgTable("user_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
 
 /**
  * Пользовательские настройки (одна строка на пользователя). Заведено под отладку LLM-перехвата,
