@@ -1,5 +1,6 @@
 import type { NarratorTemplate } from "../../db/schema.js";
 import { LlmHttpError, MissingApiKeyError } from "../../llm/errors.js";
+import type { ChatCompleter } from "../../llm/types.js";
 import logger from "../../logger.js";
 import {
   aiTranslate,
@@ -20,6 +21,7 @@ import { retry, runWithConcurrency } from "../../utils/index.js";
  * целиком, а отключать мышление не хотим (см. schema.ts, translatePerParagraph).
  */
 export async function aiTranslateStoryText(
+  llm: ChatCompleter,
   text: string,
   targetLangName: string,
   userId: number,
@@ -29,7 +31,7 @@ export async function aiTranslateStoryText(
   const perParagraph = template?.translatePerParagraph ?? false;
 
   // При переводе по абзацам один запрос из нескольких параллельных может упасть транзиентно
-  // (сеть/5xx) — ретраим каждый отдельно вместо падения всего перевода целиком. chatCompletion
+  // (сеть/5xx) — ретраим каждый отдельно вместо падения всего перевода целиком. llm.complete
   // (llm/client.ts) уже ретраит транзиентные ошибки внутри себя (сеть, 5xx/429, пустой ответ) —
   // этот внешний ретрай добавляет ещё попытку(и) поверх, на случай более долгого сбоя у провайдера.
   // НЕ ретраим постоянные ошибки: отсутствие ключа и LlmHttpError с 4xx (кроме 429) — это те же
@@ -42,6 +44,7 @@ export async function aiTranslateStoryText(
     retry(
       () =>
         aiTranslate(
+          llm,
           template?.translationSystemPrompt ?? "",
           chunk,
           targetLangName,

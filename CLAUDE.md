@@ -67,7 +67,7 @@ yarn build         # build bot (nest build) + webapp
 bot/src/    — main (Nest bootstrap) · app.module · config · logger ·
               Nest modules: auth/ database/ users/ common/ telegram/ (grammY bot as a provider: handlers,
               polling lifecycle, Telegram proxy) · <domain>/ (characters, …) ·
-              db/ (schema + legacy DAO per table) · llm/ (LLM client, per-user provider) ·
+              db/ (drizzle schema + client) · llm/ (LlmModule: LLM call with the user's key; pure client) ·
               prompt/ (prompt assembly, no Nest) · tavily/ ·
               health/ (GET /health, @Public) · webapp-static/ (Mini App static + SPA fallback) · utils/
 webapp/src/ — main/init (Telegram SDK) · app/ (shell, HashRouter) · pages/ (one screen per route) ·
@@ -104,12 +104,13 @@ Full tree, webapp layout rules, router/deep-link details — [docs/architecture.
   it is approved — one domain per block, with tests, prod working between blocks.
 - **Domain module = `bot/src/<domain>/`**: `<domain>.module.ts`, `.controller.ts` (HTTP only),
   `.service.ts` (domain rules, throws Nest `HttpException`s), `.repository.ts` (drizzle via injected
-  `DatabaseService`; the old `db/<domain>/` DAO moves here), `dto/` (class-validator, `implements` the
+  `DatabaseService`), `dto/` (class-validator, `implements` the
   `@tg-rp-bot/shared` contract type), tests beside. Reference project with the same stack:
   `D:\GitProject\dnd-online` (`apps/server`).
 - **A new `/api/*` prefix = a new Nest module** (global prefix `api`; static files and the SPA fallback
-  skip `/api` and `/health` — `webapp-static/spa-fallback.ts`). Non-Nest callers of a Nest repository go through a temporary shim in `db/<domain>/index.ts`
-  (see `db/settings`), removed when they get the repository via DI.
+  skip `/api` and `/health` — `webapp-static/spa-fallback.ts`). Pure (non-Nest) functions never build repositories/services
+  themselves — the calling service passes the dependency as a parameter (e.g. `ChatCompleter` = injected
+  `LlmService` for LLM calls, the Tavily key for web search).
 - **Auth:** global `TelegramAuthGuard` (`auth/`) — every controller is protected (only `@Public()` routes skip it — `/health`; don't add more without a
   reason); read the user with
   `@CurrentUser() userId: number` (internal id), never the Telegram profile. Only endpoints that are
@@ -213,7 +214,7 @@ migration (`generate` → edit SQL → `migrate`). Breaking prod changes only vi
 ### Testing
 vitest in both packages, pool `forks`. Details and "why" — [docs/testing.md](docs/testing.md).
 - Co-locate tests: `foo.ts` → `foo.test.ts`. **Adding pure logic? Add a test beside it.**
-- Test pure functions only (transformers, formatters, parsers, retry/decision logic). DAOs/repositories,
+- Test pure functions only (transformers, formatters, parsers, retry/decision logic). Repositories,
   workers, Telegram/LLM handlers are not unit-tested. Nest: test services with a mocked repository
   (construct directly, no `@nestjs/testing`) and DTOs through `createValidationPipe()` (`common/`).
 - bot tests also need `.js` in relative imports; webapp tests — no extensions, isolate logic from the Telegram SDK.

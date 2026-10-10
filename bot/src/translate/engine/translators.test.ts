@@ -1,8 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-// translators.ts тянет chatCompletion (→ config.ts, requireEnv BOT_TOKEN/DATABASE_URL) и logger —
-// мокаем оба, тестируем только чистую resolveTranslationReasoning.
-vi.mock("../../llm/client.js", () => ({ chatCompletion: vi.fn() }));
+// translators.ts тянет logger (→ config.ts, requireEnv BOT_TOKEN/DATABASE_URL) — мокаем его,
+// тестируем только чистую resolveTranslationReasoning.
 vi.mock("../../logger.js", () => ({
   default: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }));

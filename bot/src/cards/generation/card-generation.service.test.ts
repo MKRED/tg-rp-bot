@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("../../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
 vi.mock("../../db/index.js", () => ({ db: {}, schema: {} }));
 const runCardGenerationToolLoop = vi.fn();
+const LLM = { complete: vi.fn() };
 vi.mock("./tool-loop.js", () => ({ runCardGenerationToolLoop }));
 vi.mock("../../prompt/promptBuilder/index.js", () => ({ presetToCompletionOptions: () => ({ temperature: 0.5 }) }));
 
@@ -53,6 +54,7 @@ function setup(opts: { card?: ReturnType<typeof makeCard>; preset?: object } = {
     cards as unknown as Cards,
     presets as unknown as Presets,
     tavilySettings as unknown as TavilySettings,
+    LLM as unknown as ConstructorParameters<typeof CardGenerationService>[3],
   );
   return { service, cards, tavilySettings };
 }
@@ -86,7 +88,7 @@ describe("CardGenerationService.generate", () => {
     await expect(service.generate(1, CARD_ID)).resolves.toEqual({ status: "done", categoryId: "a", content: "text" });
     expect(cards.setCategoryContent).toHaveBeenCalledWith(1, CARD_ID, "a", "text");
     expect(runCardGenerationToolLoop).toHaveBeenCalledWith(
-      expect.objectContaining({ tavilyApiKey: null, maxSearchRounds: 3, askUserEnabled: false }),
+      expect.objectContaining({ llm: LLM, tavilyApiKey: null, maxSearchRounds: 3, askUserEnabled: false }),
     );
     expect(lockFree()).toBe(true);
   });

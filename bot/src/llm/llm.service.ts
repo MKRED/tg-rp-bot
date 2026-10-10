@@ -3,8 +3,7 @@ import { LlmSettingsRepository } from "../settings/llm/llm-settings.repository.j
 import { requestChatCompletion } from "./client.js";
 import { DEFAULT_DEEPSEEK_MODEL } from "./constants.js";
 import { MissingApiKeyError } from "./errors.js";
-import { buildDeepSeekProvider } from "./providers.js";
-import type { LlmProvider } from "./providers.types.js";
+import { buildDeepSeekProvider, type LlmProvider } from "./providers.js";
 import type { ChatCompleter, ChatCompletionOptions, ChatCompletionResult } from "./types.js";
 
 /**

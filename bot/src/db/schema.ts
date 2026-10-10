@@ -73,7 +73,7 @@ export const userSettings = pgTable("user_settings", {
   // (см. utils/crypto.ts), NULL = ключ не задан → генерация падает с MissingApiKeyError.
   deepseekApiKey: text("deepseek_api_key"),
   // Id модели DeepSeek (из GET /models), выбранной пользователем. NULL → используется
-  // DEFAULT_DEEPSEEK_MODEL (см. llm/resolveProvider.ts), если ключ уже задан.
+  // DEFAULT_DEEPSEEK_MODEL (см. llm/constants.ts), если ключ уже задан.
   deepseekModel: text("deepseek_model"),
   // Персональный ключ Tavily (веб-поиск, BYOK). Зашифрован encryptField (см. utils/crypto.ts),
   // NULL = ключ не задан. Квота не кэшируется в БД — запрашивается у Tavily "на лету" (GET /usage).
@@ -194,7 +194,7 @@ export type NewPersona = typeof personas.$inferInsert;
  * FK без onDelete (= restrict): пресет, используемый карточкой, нельзя удалить (23503 → 409 in_use,
  * как у chats/story_chats).
  * systemPrompt, prompt и текстовые поля categories (title/description/content) шифруются per-user
- * в DAO, как prompt/footnote у characters.
+ * в репозитории, как prompt/footnote у characters.
  */
 export const cards = pgTable("cards", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
@@ -320,7 +320,7 @@ export type NewRpTemplate = typeof rpTemplates.$inferInsert;
  * RP-чаты: один чат = персонаж + обязательная персона + RP-шаблон (промпты) + пресет (сэмплинг).
  * activeMessageId — «курсор» активной ветки (лист дерева сообщений).
  * Намеренно НЕ FK: chats ↔ messages образуют цикл, Drizzle/Postgres требовал бы deferrable.
- * Целостность гарантируется кодом (DAO).
+ * Целостность гарантируется кодом (репозиторий).
  */
 export const chats = pgTable("chats", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
@@ -415,7 +415,7 @@ export type NewChatSettings = typeof chatSettings.$inferInsert;
  * Привязаны к «моменту» диалога = parentMessageId (сообщение, после которого пишется реплика,
  * = chats.activeMessageId на время генерации). parentMessageId = null → начало чата (нет родителя).
  * Каскад: вариант удаляется при удалении сообщения-момента или всего чата.
- * Не более 20 на момент — FIFO-эвикт в DAO (insertVariant).
+ * Не более 20 на момент — FIFO-эвикт в репозитории (insertVariant).
  */
 export const impersonationVariants = pgTable("impersonation_variants", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),

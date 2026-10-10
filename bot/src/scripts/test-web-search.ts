@@ -2,8 +2,8 @@
  * Прототип: DeepSeek function calling + веб-поиск через Tavily.
  *
  * Разведочный скрипт для проверки самого механизма (tool_calls → внешний поиск → финальный
- * ответ) до того, как встраивать это в chatCompletion()/BYOK-поток. Бьёт в DeepSeek и Tavily
- * напрямую по env-ключам (не через resolveProvider — там пока нет tools).
+ * ответ) до того, как встраивать это в BYOK-поток (LlmService). Бьёт в DeepSeek и Tavily
+ * напрямую по env-ключам (не через LlmService — скрипт вне Nest).
  *
  * Запуск из корня монорепо (нужны DEEPSEEK_API_KEY и TAVILY_API_KEY в bot/.env):
  *   yarn workspace bot run test-web-search "вопрос"

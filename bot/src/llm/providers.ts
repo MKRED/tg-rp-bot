@@ -38,7 +38,7 @@ function deepSeekReasoningBody(opts: ChatCompletionOptions): Record<string, unkn
 }
 
 /**
- * Провайдер сейчас резолвится per-user (см. llm/resolveProvider.ts) — ключ/модель приходят из
+ * Провайдер сейчас резолвится per-user (см. llm/llm.service.ts) — ключ/модель приходят из
  * userSettings, а не из env. Фабрики принимают их параметрами вместо чтения из глобального config.
  */
 export function buildDeepSeekProvider(apiKey: string, model: string): LlmProvider {
@@ -53,7 +53,7 @@ export function buildDeepSeekProvider(apiKey: string, model: string): LlmProvide
 
 /**
  * Задел на будущий выбор провайдера (пока нигде не вызывается — резолвится только DeepSeek,
- * см. llm/resolveProvider.ts). Оставлена, чтобы не переписывать заново, когда для OpenRouter
+ * см. llm/llm.service.ts). Оставлена, чтобы не переписывать заново, когда для OpenRouter
  * появится своя пара полей в userSettings и выбор в UI настроек.
  */
 export function buildOpenRouterProvider(apiKey: string, model: string): LlmProvider {

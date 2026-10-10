@@ -29,7 +29,7 @@ export type StoryContext = {
   entries: PromptEntry[];
 };
 
-/** Сэмплинг пресета для chatCompletion; без пресета — пусто (дефолты провайдера). */
+/** Сэмплинг пресета для запроса к LLM; без пресета — пусто (дефолты провайдера). */
 export type SamplingOptions = Partial<ReturnType<typeof presetToCompletionOptions>>;
 
 /** Порядок компонентов шаблона; старые шаблоны без `compact` дополняются на дефолтную позицию. */

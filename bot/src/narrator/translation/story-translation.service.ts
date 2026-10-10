@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { ChatTranslateTextRequest, TranslateMessageRequest } from "@tg-rp-bot/shared";
 import { llmHttpError } from "../../common/llm-http-error.js";
 import { MissingApiKeyError } from "../../llm/errors.js";
+import { LlmService } from "../../llm/llm.service.js";
 import logger from "../../logger.js";
 import { NarratorTemplatesRepository } from "../../narrator-templates/narrator-templates.repository.js";
 import { englishLangName, googleTranslate, resolveTranslationReasoning } from "../../translate/engine/index.js";
@@ -23,6 +24,7 @@ export class StoryTranslationService {
     private readonly messages: StoryMessagesRepository,
     private readonly settings: StorySettingsRepository,
     private readonly templates: NarratorTemplatesRepository,
+    private readonly llm: LlmService,
   ) {}
 
   /** Кэш есть и не force — отдаём его; иначе переводим методом из настроек истории и перезаписываем кэш. */
@@ -72,7 +74,7 @@ export class StoryTranslationService {
   private async aiTranslate(userId: number, story: StoryRow, text: string, targetLang: string): Promise<string> {
     const template = story.templateId ? ((await this.templates.findOne(userId, story.templateId)) ?? null) : null;
     const reasoning = resolveTranslationReasoning(template?.translationReasoningEffort);
-    return aiTranslateStoryText(text, englishLangName(targetLang), userId, template, reasoning);
+    return aiTranslateStoryText(this.llm, text, englishLangName(targetLang), userId, template, reasoning);
   }
 
   /** Нет ключа DeepSeek — штатное состояние (warn), прочее — авария (error). */

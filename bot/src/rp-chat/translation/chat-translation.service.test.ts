@@ -8,6 +8,7 @@ const engine = vi.hoisted(() => ({
   googleTranslate: vi.fn(),
   englishLangName: (code: string) => `lang:${code}`,
 }));
+const LLM = { complete: vi.fn() };
 vi.mock("../../translate/engine/index.js", () => engine);
 
 const { MissingApiKeyError } = await import("../../llm/errors.js");
@@ -34,6 +35,7 @@ function setup(method: "google" | "ai" = "google", translations: Record<string, 
     settings as unknown as Args[2],
     templates as unknown as Args[3],
     presets as unknown as Args[4],
+    LLM as unknown as Args[5],
   );
   return { service, access, messages, templates, presets };
 }
@@ -61,7 +63,7 @@ describe("ChatTranslationService.translateMessage", () => {
   it("метод ai — промпт перевода из RP-шаблона, эффорт из пресета", async () => {
     const { service } = setup("ai");
     await expect(service.translateMessage(1, 5, 9, { targetLang: "en" })).resolves.toBe("AI");
-    expect(engine.aiTranslate).toHaveBeenCalledWith("PROMPT", "Текст", "lang:en", 1, true, "high");
+    expect(engine.aiTranslate).toHaveBeenCalledWith(LLM, "PROMPT", "Текст", "lang:en", 1, true, "high");
   });
 
   it("нет ключа DeepSeek — 400 no_api_key с подсказкой; прочий сбой — 500", async () => {

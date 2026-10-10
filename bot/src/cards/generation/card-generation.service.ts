@@ -6,6 +6,7 @@ import type {
   CardGenerationStep,
 } from "@tg-rp-bot/shared";
 import { MissingApiKeyError } from "../../llm/errors.js";
+import { LlmService } from "../../llm/llm.service.js";
 import logger from "../../logger.js";
 import { PresetsRepository } from "../../presets/presets.repository.js";
 import { presetToCompletionOptions } from "../../prompt/promptBuilder/index.js";
@@ -33,6 +34,7 @@ export class CardGenerationService {
     private readonly cards: CardsRepository,
     private readonly presets: PresetsRepository,
     private readonly tavilySettings: TavilySettingsRepository,
+    private readonly llm: LlmService,
   ) {}
 
   /**
@@ -92,6 +94,7 @@ export class CardGenerationService {
       const askUserEnabled = card.useAskUser && (target?.askUserAnswers?.length ?? 0) < ASK_USER_MAX_ANSWERED_QUESTIONS;
 
       const outcome = await runCardGenerationToolLoop({
+        llm: this.llm,
         baseOptions: { userId, debugLabel: "cards", ...presetToCompletionOptions(preset) },
         history: assembled.messages,
         tavilyApiKey,

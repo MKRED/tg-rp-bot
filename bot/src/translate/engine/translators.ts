@@ -1,4 +1,4 @@
-import { chatCompletion } from "../../llm/client.js";
+import type { ChatCompleter } from "../../llm/types.js";
 import logger from "../../logger.js";
 import { retry } from "../../utils/index.js";
 import {
@@ -66,7 +66,8 @@ export function resolveTranslationReasoning(
 /**
  * Переводит текст запросом к LLM (режим «ИИ» в шторе перевода). Системный промпт берётся из
  * пресета (плейсхолдер {{target_lang}} → полное англ. название языка), исходный текст уходит
- * ролью user, ответ ждём от assistant. Нестриминговый вызов chatCompletion (без onChunk).
+ * ролью user, ответ ждём от assistant. Нестриминговый вызов llm.complete (без onChunk); llm —
+ * LlmService вызывающего сервиса (ключ DeepSeek пользователя).
  * Текст оборачивается в <text_to_translate> — явно размечает для модели, что переводить, а не
  * исполнять как инструкцию, если внутри самого текста встретится что-то похожее на промпт.
  * Сэмплинг не передаём — параметры пресета настроены под RP и навредили бы переводу (см. вызов).
@@ -75,6 +76,7 @@ export function resolveTranslationReasoning(
  * всегда, эффорт — из пресета, там своего поля перевода для рассуждения нет).
  */
 export async function aiTranslate(
+  llm: ChatCompleter,
   systemPromptTemplate: string,
   text: string,
   targetLangName: string,
@@ -86,7 +88,7 @@ export async function aiTranslate(
   const template = systemPromptTemplate.trim() || DEFAULT_TRANSLATION_TEMPLATE;
   const system = template.replaceAll("{{target_lang}}", targetLangName);
 
-  const result = await chatCompletion({
+  const result = await llm.complete({
     messages: [
       { role: "system", content: system },
       { role: "user", content: `<text_to_translate>\n${text}\n</text_to_translate>` },

@@ -6,6 +6,7 @@ vi.mock("../../db/index.js", () => ({ db: {}, schema: {} }));
 const googleTranslate = vi.hoisted(() => vi.fn());
 vi.mock("../../translate/engine/index.js", async (importOriginal) => ({ ...(await importOriginal<object>()), googleTranslate }));
 const aiTranslateStoryText = vi.hoisted(() => vi.fn());
+const LLM = { complete: vi.fn() };
 vi.mock("./ai-translate-story-text.js", () => ({ aiTranslateStoryText }));
 
 const { MissingApiKeyError } = await import("../../llm/errors.js");
@@ -27,6 +28,7 @@ function setup(translations: Record<string, string> | null = null, translateMeth
     messages as unknown as A[1],
     settings as unknown as A[2],
     templates as unknown as A[3],
+    LLM as unknown as A[4],
   );
   return { service, messages, templates };
 }
@@ -48,6 +50,7 @@ describe("StoryTranslationService", () => {
     const { service, messages } = setup({ en: "cached" }, "ai");
     expect(await service.translateMessage(1, 5, 9, { targetLang: "en", force: true })).toBe("AI beat");
     expect(messages.saveTranslation).toHaveBeenCalledWith(1, 9, "en", "AI beat");
+    expect(aiTranslateStoryText.mock.lastCall![0]).toBe(LLM);
   });
 
   it("черновик без mode — Google, шаблон не читаем", async () => {

@@ -37,8 +37,8 @@ tg-rp-bot/
 │  │  ├─ characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ settings/ debug/ translate/ avatars/ me/ knowledge-books/ rp-chat/ narrator/  # доменные модули Nest: module/controller/service/repository/dto
 │  │  ├─ config.ts     # переменные окружения
 │  │  ├─ logger.ts     # pino
-│  │  ├─ db/           # drizzle: schema + клиент; settings/ — временный мост на Nest-репозиторий для llm/
-│  │  ├─ llm/          # клиент LLM (DeepSeek, ключ per-user BYOK через resolveProvider)
+│  │  ├─ db/           # drizzle: schema + клиент
+│  │  ├─ llm/          # LlmModule: вызов LLM (DeepSeek) с ключом пользователя (BYOK) + чистый клиент
 │  │  ├─ prompt/       # сборка промптов RP-чата и narrator (без Nest): promptBuilder, storyPromptBuilder, бюджет
 │  │  ├─ tavily/       # клиент Tavily (квота ключа, GET /usage), ключ per-user BYOK
 │  │  ├─ health/ webapp-static/  # GET /health (@Public); раздача сборки Mini App из ./public + SPA-fallback

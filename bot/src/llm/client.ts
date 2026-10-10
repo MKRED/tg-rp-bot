@@ -6,25 +6,12 @@ import { type LlmDebugResponse, recordLlmCall } from "./debugCapture.js";
 import { EmptyCompletionError, LlmHttpError } from "./errors.js";
 import type { LlmProvider } from "./providers.js";
 import { buildBody, makeHeaders } from "./request.js";
-import { resolveProvider } from "./resolveProvider.js";
 import type {
   ChatCompletionOptions,
   ChatCompletionResult,
   LlmResponse,
   LlmStreamDelta,
 } from "./types.js";
-
-/**
- * ВРЕМЕННАЯ обёртка для кода, ещё не получающего LlmService (ChatCompleter) параметром: ключ — через
- * мост db/settings. Удаляется вместе с resolveProvider.ts и мостом.
- */
-export async function chatCompletion(
-  options: ChatCompletionOptions,
-  onChunk?: (token: string) => void,
-  onReset?: () => void,
-): Promise<ChatCompletionResult> {
-  return requestChatCompletion(await resolveProvider(options.userId), options, onChunk, onReset);
-}
 
 /**
  * Chat completion у заданного провайдера (ключ/модель пользователя резолвит LlmService — BYOK).

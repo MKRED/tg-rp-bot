@@ -12,9 +12,13 @@
 Tavily (веб-поиск) устроен так же: per-user ключ в `bot/src/settings/tavily/`, `features/tavily-settings/`.
 
 ## Резолв провайдера
-За каждый запрос провайдер резолвится через `bot/src/llm/resolveProvider.ts` (`resolveProvider(userId)`).
-Без сохранённого ключа бросается `MissingApiKeyError` (`bot/src/llm/errors.ts`) — **без фоллбэка** на
-общий/env-ключ. `bot/src/llm/client.ts` — общий OpenAI-совместимый клиент.
+Вызов LLM — `LlmService.complete()` (`bot/src/llm/llm.service.ts`, модуль `LlmModule`): на **каждый**
+запрос читает ключ/модель пользователя из `LlmSettingsRepository` (модель не выбрана —
+`DEFAULT_DEEPSEEK_MODEL`, `llm/constants.ts`) и передаёт провайдера чистому клиенту
+`requestChatCompletion()` (`bot/src/llm/client.ts`, общий OpenAI-совместимый: стриминг, ретраи, перехват
+для экрана отладки). Без сохранённого ключа бросается `MissingApiKeyError` (`bot/src/llm/errors.ts`) —
+**без фоллбэка** на общий/env-ключ. Nest-сервисы инжектят `LlmService`; чистые функции (`streamCompletion`,
+`aiTranslate`, цикл инструментов карточек) получают его параметром как `ChatCompleter`.
 
 ## OpenRouter — запасной путь, не активен
 Фабрика `buildOpenRouterProvider()` (`providers.ts`) оставлена заделом и нигде не вызывается — пути

@@ -25,9 +25,9 @@ ssh -p 2222 aoshi@home.aoshiloli.ru 'docker logs --since 1h kvach_tg_rp_bot 2>&1
 
 ## Опорные места проекта
 - RP-генерация (SSE): `bot/src/rp-chat/generation/` (chat-generation.service, impersonate-generation.service, rp-completion), `common/stream-completion.ts`, `common/sse-observable.ts`, `prompt/promptBuilder/promptBuilder.ts`.
-- LLM: `bot/src/llm/client.ts` (стриминг, ретраи пустых/отказных ответов), `bot/src/llm/resolveProvider.ts` (резолв активного провайдера per-user — актуальный см. CLAUDE.md → «External APIs» или в коде, не полагайся на память).
+- LLM: `bot/src/llm/client.ts` (стриминг, ретраи пустых/отказных ответов), `bot/src/llm/llm.service.ts` (резолв активного провайдера per-user — актуальный см. CLAUDE.md → «External APIs» или в коде, не полагайся на память).
 - Граница webapp↔API: `webapp/src/shared/api/client.ts`, `bot/src/auth/initData.ts` + `auth/telegram-auth.guard.ts` (валидация подписи; в проде без подписи → 401).
-- БД: `bot/src/db/` (DAO по таблицам).
+- БД: `bot/src/db/` (схема + клиент), репозитории — в доменных модулях (`bot/src/<domain>/*.repository.ts`).
 - Прокси: grammY через node-fetch `agent` (`telegram/telegram-bot.factory.ts`) и Tavily через undici `ProxyAgent` (`tavily/tavilyUsage.ts`); LLM-провайдер идёт напрямую, без прокси.
 
 ## Что вернуть

@@ -96,14 +96,12 @@ bot/src/
                   photo-actions.handler (callback «Закрыть» под фото из лайтбокса)
   config.ts     — env vars (requireEnv для обязательных, process.env для опциональных)
   logger.ts     — pino logger (daily rolling, pino-pretty in TTY)
-  db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + клиент +
-                  DAO-папки по таблицам: settings/ (мост
-                  getDecryptedDeepSeekCredentials для resolveProvider) (у каждой DAO-файл + types.ts/constants.ts при наличии + barrel index.ts;
-                  типы контракта API перенесённых в Nest доменов — из @tg-rp-bot/shared)
-  llm/          — LLM client (client/request/errors/types/constants/completionGuard/providers/
-                  resolveProvider/deepseekModels) — серверно; единственный активный провайдер —
-                  DeepSeek, ключ/модель резолвятся per-user через resolveProvider(userId) из
-                  settings/llm (без ключа — MissingApiKeyError); фабрика buildOpenRouterProvider
+  db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + index.ts
+                  (клиент — только через DatabaseService; репозитории доменных модулей берут schema)
+  llm/          — LlmModule: LlmService.complete (ключ/модель пользователя из settings/llm на
+                  каждый вызов, без ключа — MissingApiKeyError) + чистый клиент (client/request/
+                  errors/types/constants/completionGuard/providers/deepseekModels) — серверно;
+                  единственный активный провайдер — DeepSeek; фабрика buildOpenRouterProvider
                   в providers.ts не задействована (задел, нет пути конфигурации);
                   debugCapture (+debug.types, debugSettings — кламп настроек) — in-memory перехват RAW-запросов
                   к LLM для экрана отладки (горячий путь каждого вызова; настройки — в debug/)

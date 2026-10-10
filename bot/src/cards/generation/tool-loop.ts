@@ -1,6 +1,6 @@
 import type { AskUserQuestion } from "@tg-rp-bot/shared";
-import { chatCompletion } from "../../llm/client.js";
 import type {
+  ChatCompleter,
   ChatCompletionOptions,
   ChatMessage,
   ToolCall,
@@ -56,6 +56,8 @@ async function runWebSearchCall(call: ToolCall, tavilyApiKey: string): Promise<W
 }
 
 export interface ToolLoopParams {
+  /** LlmService вызывающего сервиса — ключ DeepSeek пользователя. */
+  llm: ChatCompleter;
   baseOptions: Omit<ChatCompletionOptions, "messages" | "tools" | "toolChoice">;
   history: LoopMessage[];
   /** null — веб-поиск выключен на карточке или ключ Tavily не задан. */
@@ -94,7 +96,7 @@ export type ToolLoopOutcome = { done: true; content: string } | { done: false; q
  * maxSearchRounds + ASK_USER_MAX_ROUNDS ходов.
  */
 export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise<ToolLoopOutcome> {
-  const { baseOptions, tavilyApiKey, maxSearchRounds, askUserEnabled } = params;
+  const { llm, baseOptions, tavilyApiKey, maxSearchRounds, askUserEnabled } = params;
   const { userId } = baseOptions;
   const t0 = Date.now();
 
@@ -109,7 +111,7 @@ export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise
     const tools = [...(canSearch ? [WEB_SEARCH_TOOL] : []), ...(canAsk ? [ASK_USER_TOOL] : [])];
 
     llmCalls++;
-    const result = await chatCompletion({
+    const result = await llm.complete({
       ...baseOptions,
       messages: history,
       ...(tools.length > 0 ? { tools, toolChoice: "auto" as const } : {}),

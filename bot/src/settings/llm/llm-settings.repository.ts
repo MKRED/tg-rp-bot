@@ -6,7 +6,7 @@ import { schema } from "../../db/index.js";
 import logger from "../../logger.js";
 import { decryptField, encryptField, getUserEncryptionKey } from "../../utils/crypto.js";
 
-/** Колонки user_settings с персональным ключом и моделью DeepSeek (BYOK, см. llm/resolveProvider.ts). */
+/** Колонки user_settings с персональным ключом и моделью DeepSeek (BYOK, см. llm/llm.service.ts). */
 @Injectable()
 export class LlmSettingsRepository {
   constructor(private readonly database: DatabaseService) {}
@@ -22,7 +22,7 @@ export class LlmSettingsRepository {
   }
 
   /**
-   * Расшифрованный ключ + модель — для resolveProvider (один запрос на вызов LLM) и реверификации
+   * Расшифрованный ключ + модель — для LlmService (один запрос на вызов LLM) и реверификации
    * уже сохранённого ключа (verify без apiKey в теле). null — ключ не задан.
    */
   async getDecryptedCredentials(userId: number): Promise<{ apiKey: string; model: string | null } | null> {
@@ -46,7 +46,7 @@ export class LlmSettingsRepository {
     if (patch.model !== undefined) setFields.deepseekModel = patch.model;
     if (patch.apiKey !== undefined) {
       if (patch.apiKey === null) {
-        // Удаление ключа сносит и выбранную модель — иначе она висела бы без ключа, и resolveProvider
+        // Удаление ключа сносит и выбранную модель — иначе она висела бы без ключа, и LlmService
         // ошибся бы о причине сбоя (нет ключа, а не модели).
         setFields.deepseekApiKey = null;
         setFields.deepseekModel = null;

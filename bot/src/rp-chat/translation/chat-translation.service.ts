@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { ChatTranslateTextRequest, TranslateMessageRequest } from "@tg-rp-bot/shared";
 import { llmHttpError } from "../../common/llm-http-error.js";
 import { MissingApiKeyError } from "../../llm/errors.js";
+import { LlmService } from "../../llm/llm.service.js";
 import logger from "../../logger.js";
 import { PresetsRepository } from "../../presets/presets.repository.js";
 import { RpTemplatesRepository } from "../../rp-templates/rp-templates.repository.js";
@@ -25,6 +26,7 @@ export class ChatTranslationService {
     private readonly settings: ChatSettingsRepository,
     private readonly templates: RpTemplatesRepository,
     private readonly presets: PresetsRepository,
+    private readonly llm: LlmService,
   ) {}
 
   /**
@@ -74,6 +76,7 @@ export class ChatTranslationService {
       chat.presetId ? this.presets.findOne(userId, chat.presetId) : undefined,
     ]);
     return aiTranslate(
+      this.llm,
       template?.translationSystemPrompt ?? "",
       text,
       englishLangName(targetLang),

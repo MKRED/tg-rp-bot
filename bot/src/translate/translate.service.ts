@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { TranslateTextRequest } from "@tg-rp-bot/shared";
 import { llmHttpError } from "../common/llm-http-error.js";
 import { MissingApiKeyError } from "../llm/errors.js";
+import { LlmService } from "../llm/llm.service.js";
 import logger from "../logger.js";
 import { TranslateSettingsRepository } from "../settings/translate/translate-settings.repository.js";
 import { retry, runWithConcurrency } from "../utils/index.js";
@@ -23,7 +24,10 @@ import {
  */
 @Injectable()
 export class TranslateService {
-  constructor(private readonly translateSettings: TranslateSettingsRepository) {}
+  constructor(
+    private readonly translateSettings: TranslateSettingsRepository,
+    private readonly llm: LlmService,
+  ) {}
 
   async translateBlocks(userId: number, req: TranslateTextRequest): Promise<string[]> {
     const t0 = Date.now();
@@ -61,7 +65,7 @@ export class TranslateService {
     const targetLangName = englishLangName(targetLang);
     return (text) =>
       retry(
-        () => aiTranslate(template, text, targetLangName, userId, requestReasoning, reasoningEffort),
+        () => aiTranslate(this.llm, template, text, targetLangName, userId, requestReasoning, reasoningEffort),
         3,
         1500,
         "aiTranslate chunk",

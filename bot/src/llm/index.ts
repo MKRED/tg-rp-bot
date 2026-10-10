@@ -1,5 +1,7 @@
-export { chatCompletion } from "./client.js";
+export { LlmModule } from "./llm.module.js";
+export { LlmService } from "./llm.service.js";
 export type {
+  ChatCompleter,
   ChatCompletionOptions,
   ChatCompletionResult,
   ChatMessage,
