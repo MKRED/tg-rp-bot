@@ -23,7 +23,7 @@ export interface TavilyUsage {
 
 // Tavily (как и Telegram) недоступен напрямую из сети сервера — прямой запрос падает "403 Forbidden"
 // от awselb ещё до приложения. Переиспользуем тот же HTTP-прокси, что и grammY-клиент для Telegram
-// (config.telegramProxyUrl, см. proxy.ts) — вызываем fetch из самого пакета undici вместе с его
+// (config.telegramProxyUrl, см. telegram/telegram-proxy.ts) — вызываем fetch из самого пакета undici вместе с его
 // ProxyAgent, т.к. встроенный fetch на dispatcher из npm undici не заводится (несовместимая версия
 // undici внутри Node). DeepSeek при этом по-прежнему идёт напрямую, без прокси.
 const tavilyDispatcher = config.telegramProxyUrl ? new ProxyAgent(config.telegramProxyUrl) : undefined;

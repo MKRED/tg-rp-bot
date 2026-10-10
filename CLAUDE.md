@@ -22,8 +22,8 @@ serving both the API and the Mini App static files ([docs/deploy.md](docs/deploy
   SSH tunnel**. Running the bot locally, `drizzle-kit generate/migrate`, ad-hoc queries — all hit prod
   data. Migrations are forward-only; be careful with destructive operations. The tunnel must be up
   before `yarn dev` / `drizzle-kit`.
-- **Proxy only for services unreachable from the server network:** Telegram (`bot.ts` →
-  `baseFetchConfig.agent`, HttpsProxyAgent) and Tavily (`tavily/tavilyUsage.ts`, undici ProxyAgent),
+- **Proxy only for services unreachable from the server network:** Telegram
+  (`telegram/telegram-bot.factory.ts` → `baseFetchConfig.agent`, HttpsProxyAgent) and Tavily (`tavily/tavilyUsage.ts`, undici ProxyAgent),
   both via `TELEGRAM_PROXY_URL`. **NEVER** set a global proxy (`HTTPS_PROXY` / `ALL_PROXY`) — it would
   route LLM traffic through it too. Why `agent` and not `dispatcher` — [docs/architecture.md](docs/architecture.md).
 - **LLM/Tavily keys are server-side, per-user (BYOK).** Stored encrypted in `user_settings`
@@ -65,11 +65,12 @@ yarn build         # build bot (nest build) + webapp
 
 ## Architecture
 ```
-bot/src/    — main (Nest bootstrap + bot start) · app.module · bot.ts (grammY) · config · logger · proxy ·
-              Nest modules: auth/ database/ users/ common/ <domain>/ (characters, …) ·
+bot/src/    — main (Nest bootstrap) · app.module · config · logger ·
+              Nest modules: auth/ database/ users/ common/ telegram/ (grammY bot as a provider: handlers,
+              polling lifecycle, Telegram proxy) · <domain>/ (characters, …) ·
               db/ (schema + legacy DAO per table) · llm/ (LLM client, per-user provider) ·
               prompt/ (prompt assembly, no Nest) · tavily/ ·
-              handlers/ · server/ (legacy Hono: /health + Mini App static, behind legacyBridge) · utils/
+              server/ (legacy Hono: /health + Mini App static, behind legacyBridge) · utils/
 webapp/src/ — main/init (Telegram SDK) · app/ (shell, HashRouter) · pages/ (one screen per route) ·
               features/ (domain modules) · shared/ (cross-cutting)
 shared/src/ — @tg-rp-bot/shared: API contract types (JSON over the wire) + constants, one file per domain
@@ -115,7 +116,7 @@ Full tree, webapp layout rules, router/deep-link details — [docs/architecture.
   `@CurrentUser() userId: number` (internal id), never the Telegram profile. Only endpoints that are
   Telegram by nature (`me/`: initData profile, Bot API calls needing the Telegram id) use
   `@TelegramUser()`. The guard also ensures the
-  `users` row, so controllers don't call `ensureUser`.
+  `users` row, so controllers don't call `UsersService.ensureTelegramUser`.
 - **Response contract is the webapp's:** keep Hono-era codes and bodies (`201 {character}`,
   `200 {ok:true}`, never `204` — `apiFetch` parses every OK body as JSON). Errors go through the global
   `ApiExceptionFilter` → `{ error: string }`; custom bodies (`{ error: "no_api_key", message }`) pass through.

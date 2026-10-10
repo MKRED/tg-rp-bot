@@ -30,19 +30,17 @@ tg-rp-bot/
 │  └─ src/             #   (собирается tsc в shared/dist; корневые скрипты собирают его первым)
 ├─ bot/                # Telegram-бот + HTTP API для Mini App
 │  ├─ src/
-│  │  ├─ main.ts       # точка входа: bootstrap Nest (+ мост в legacy Hono), старт бота
+│  │  ├─ main.ts       # точка входа: bootstrap Nest (+ мост в legacy Hono)
 │  │  ├─ app.module.ts # корневой модуль Nest (глобальные guard/pipe/filter)
 │  │  ├─ auth/ database/ users/ common/  # общие модули Nest: initData-guard + @CurrentUser, БД, …
+│  │  ├─ telegram/     # бот grammY как провайдер Nest: обработчики (/start, «Закрыть»), запуск/остановка polling, прокси Telegram
 │  │  ├─ characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ settings/ debug/ translate/ avatars/ me/ knowledge-books/ rp-chat/ narrator/  # доменные модули Nest: module/controller/service/repository/dto
-│  │  ├─ bot.ts        # инстанс grammY (+ прокси для Telegram)
 │  │  ├─ config.ts     # переменные окружения
 │  │  ├─ logger.ts     # pino
-│  │  ├─ proxy.ts      # HttpsProxyAgent (https-proxy-agent) для Telegram; тот же прокси — и для Tavily
 │  │  ├─ db/           # drizzle: schema + клиент; settings/ — временный мост на Nest-репозиторий для llm/
 │  │  ├─ llm/          # клиент LLM (DeepSeek, ключ per-user BYOK через resolveProvider)
 │  │  ├─ prompt/       # сборка промптов RP-чата и narrator (без Nest): promptBuilder, storyPromptBuilder, бюджет
 │  │  ├─ tavily/       # клиент Tavily (квота ключа, GET /usage), ключ per-user BYOK
-│  │  ├─ handlers/     # обработчики команд бота (/start …)
 │  │  ├─ server/       # legacy Hono за мостом: /health + статика Mini App (всё API — в Nest)
 │  │  ├─ scripts/      # разовые скрипты (backfill шифрования сообщений)
 │  │  └─ utils/        # retry, crypto (per-user шифрование)

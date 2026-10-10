@@ -130,7 +130,12 @@ Nest поднимается на том же порту, текущее Hono-п�
   внутри advance, делить её между Hono и Nest нельзя); P3 — `@Sse` для advance/регенерации, сервис
   сжатия с блокировкой-полем, удаление `server/stories` и мостов `db/stories`, `db/presets`,
   `db/narratorTemplates` (`db/knowledge` удалён в P2) — P3 ✅; всё API Mini App теперь в Nest.
-- **Дальше** — бот grammY как provider и удаление Hono.
+- **Блок Q** — бот grammY и удаление Hono, по шагам: Q1 ✅ модуль `telegram/` — Bot и прокси-агент
+  как провайдеры, обработчики — провайдеры с регистрацией в `onModuleInit`, polling запускается и
+  останавливается хуками жизненного цикла (`enableShutdownHooks`), свой `bot.catch` (без него grammY
+  останавливает polling на первой ошибке обработчика); upsert пользователя — `UsersRepository`
+  (`db/users.ts` удалён); `me/media` — сервисы с ботом через DI. Q2 — `/health` и статика Mini App
+  в Nest, удаление `server/` и Hono.
 
 ### Контракт ответов не меняется
 webapp (`apiFetch`) читает тело любого успешного ответа как JSON и текст ошибки из `message ?? error`:
@@ -145,7 +150,7 @@ webapp (`apiFetch`) читает тело любого успешного отв
 пользователя Telegram. Тогда в шаге 3 достаточно добавить второй guard — контроллеры не трогаем.
 - Проверка initData (включая dev-обход и тексты 401) — одна чистая функция, её вызывают и
   Hono-middleware, и guard Nest.
-- `ensureUser` (строка в `users` для FK) делает guard с кэшем на процесс, а не каждый контроллер.
+- Строку в `users` для FK (`UsersService.ensureTelegramUser`) заводит guard с кэшем на процесс, а не каждый контроллер.
 
 ### Без проблем переносятся
 - SSE-стриминг генерации — штатный `@Sse` с методом POST (`@Sse(path, { [METHOD_METADATA]: RequestMethod.POST })`,

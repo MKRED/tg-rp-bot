@@ -73,8 +73,9 @@ bot/src/
                   compaction/story-compaction.service (проход сжатия; блокировка по истории — поле синглтона,
                   общая для ручного POST /compact и авто-сжатия; story-compaction-plan — чистый план)
   me/           — /api/me: профиль из initData, фото профиля (GET /photo) и фото из лайтбокса себе в
-                  чат (POST /send-photo) — controller / service / dto/; media/ — profilePhoto (Bot API +
-                  кэш на час) и photoToChat (sendPhoto с web_app-кнопкой deep link и «Закрыть»)
+                  чат (POST /send-photo) — controller / service / dto/; media/ — profile-photo (ProfilePhotoService:
+                  Bot API + кэш на час) и lightbox-photo (LightboxPhotoService: sendPhoto с web_app-кнопкой deep
+                  link и «Закрыть»); бот и прокси-агент — из telegram/ через DI
   translate/    — POST /api/translate/text: безэнтитный батч-перевод абзацев (режим перевода
                   PromptEditorOverlay) — controller / service / dto/ (+ DTO перевода сообщений, общие для rp-chat/ и
                   narrator/); engine/ — движок перевода без Nest
@@ -83,17 +84,19 @@ bot/src/
   prompt/       — сборка промптов без Nest: promptBuilder (RP-чат, impersonate, сэмплинг пресета) +
                   storyPromptBuilder (narrator) + общий budget, compactionPlan, keywordMatch,
                   storyPromptOrder, templateTokenWeight (у каждого constants/types/test рядом)
-  bot.ts        — grammY bot instance (+ прокси для Telegram через baseFetchConfig)
-  bot.constants.ts
+  telegram/     — бот grammY как провайдер Nest: экземпляр Bot (токен-класс; telegram-bot.factory — прокси
+                  через baseFetchConfig) и прокси-агент (TELEGRAM_PROXY_AGENT, telegram-proxy — HttpsProxyAgent;
+                  тот же TELEGRAM_PROXY_URL переиспользуется для Tavily, но через undici ProxyAgent, см. tavily/);
+                  telegram-polling.service (bot.catch, long polling из onApplicationBootstrap без ожидания,
+                  остановка в onApplicationShutdown); handlers/ — провайдеры, подключающиеся к боту в onModuleInit:
+                  start.handler (/start: профиль в users через UsersService, кнопка Mini App),
+                  photo-actions.handler (callback «Закрыть» под фото из лайтбокса)
   config.ts     — env vars (requireEnv для обязательных, process.env для опциональных)
   logger.ts     — pino logger (daily rolling, pino-pretty in TTY)
-  proxy.ts      — HttpsProxyAgent (https-proxy-agent) для Telegram; тот же TELEGRAM_PROXY_URL
-                  переиспользуется для Tavily, но через отдельный undici ProxyAgent (см. tavily/)
   db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + клиент +
                   DAO-папки по таблицам: settings/ (мост
                   getDecryptedDeepSeekCredentials для resolveProvider) (у каждой DAO-файл + types.ts/constants.ts при наличии + barrel index.ts;
-                  типы контракта API перенесённых в Nest доменов — из @tg-rp-bot/shared),
-                  users.ts
+                  типы контракта API перенесённых в Nest доменов — из @tg-rp-bot/shared)
   llm/          — LLM client (client/request/errors/types/constants/completionGuard/providers/
                   resolveProvider/deepseekModels) — серверно; единственный активный провайдер —
                   DeepSeek, ключ/модель резолвятся per-user через resolveProvider(userId) из
@@ -103,8 +106,6 @@ bot/src/
                   к LLM для экрана отладки (горячий путь каждого вызова; настройки — в debug/)
   tavily/       — Tavily API client (per-user BYOK): tavilyUsage.ts (getTavilyUsage — GET /usage,
                   через fetch/ProxyAgent из пакета undici, TELEGRAM_PROXY_URL), errors.ts (TavilyHttpError)
-  handlers/     — обработчики команд/кнопок бота (index = registerHandlers, start.ts,
-                  photoActions.ts — callback «Закрыть» под фото из лайтбокса)
   server/       — legacy Hono (уходит следующим блоком — docs/plan/roadmap.md): всё API Mini App уже
                   в Nest; legacyBridge.ts — express-middleware, отдающий в Hono всё вне NEST_ROUTE_PREFIXES
                   (+ LEGACY_ROUTES — исключения по методу и пути для переезда домена по частям; пусто);
@@ -202,8 +203,8 @@ lib/        — чистые хелперы и данные (форматтер�
 ⚠️ grammY в Node использует **node-fetch@2** (не нативный fetch!), который проксируется через
 option `agent`. undici `dispatcher` он **игнорирует** — хотя тип `baseFetchConfig` выведен из
 нативного fetch и обманчиво подсказывает `dispatcher`. Проверено рантайм-тестом: с `agent` getMe
-доходит до Telegram, с `dispatcher` — уходит напрямую в обход прокси. Отсюда каст в `bot.ts`
-(`proxy.ts` → `HttpsProxyAgent` → `client.baseFetchConfig.agent`).
+доходит до Telegram, с `dispatcher` — уходит напрямую в обход прокси. Отсюда каст в
+`telegram/telegram-bot.factory.ts` (`telegram-proxy.ts` → `HttpsProxyAgent` → `client.baseFetchConfig.agent`).
 
 Tavily-клиент (`bot/src/tavily/tavilyUsage.ts`) устроен иначе: он вызывает `fetch` и `ProxyAgent`
 из самого пакета **undici**, а не встроенный Node `fetch` с `dispatcher` — та комбинация не

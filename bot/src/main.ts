@@ -2,9 +2,7 @@ import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import { Logger } from "nestjs-pino";
 import { AppModule } from "./app.module.js";
-import { bot } from "./bot.js";
 import { config } from "./config.js";
-import { registerHandlers } from "./handlers/index.js";
 import logger from "./logger.js";
 import { createLegacyApp, createLegacyBridge } from "./server/index.js";
 
@@ -24,33 +22,11 @@ async function bootstrap(): Promise<void> {
   app.useBodyParser("json", { limit: JSON_BODY_LIMIT });
   app.setGlobalPrefix("api");
 
+  // SIGINT/SIGTERM → app.close(): хуки onApplicationShutdown (в т.ч. остановка long polling бота,
+  // telegram/telegram-polling.service.ts). Сам бот стартует из onApplicationBootstrap внутри listen().
+  app.enableShutdownHooks();
   await app.listen(config.port);
   logger.info({ port: config.port }, "HTTP server (Mini App API + webapp) started");
-
-  registerHandlers(bot);
-  startBot();
-
-  // Корректное завершение по сигналам ОС
-  const stop = () => {
-    logger.info("Shutting down");
-    void bot.stop();
-    app.close().catch((err) => logger.error({ err }, "HTTP server close failed"));
-  };
-  process.once("SIGINT", stop);
-  process.once("SIGTERM", stop);
-}
-
-function startBot(): void {
-  if (!config.botPolling) {
-    logger.info("Long polling disabled (dev) — set BOT_POLLING=true чтобы включить");
-    return;
-  }
-  // Запуск long polling. Прокси (если задан) уже встроен в bot.ts через baseFetchConfig.
-  bot
-    .start({
-      onStart: (botInfo) => logger.info({ username: botInfo.username }, "Bot started (long polling)"),
-    })
-    .catch((err) => logger.error({ err }, "Long polling stopped unexpectedly"));
 }
 
 bootstrap().catch((err) => {

@@ -19,6 +19,7 @@ import { NarratorModule } from "./narrator/narrator.module.js";
 import { RpChatModule } from "./rp-chat/rp-chat.module.js";
 import { RpTemplatesModule } from "./rp-templates/rp-templates.module.js";
 import { SettingsModule } from "./settings/settings.module.js";
+import { TelegramModule } from "./telegram/telegram.module.js";
 import { TranslateModule } from "./translate/translate.module.js";
 
 @Module({
@@ -29,6 +30,7 @@ import { TranslateModule } from "./translate/translate.module.js";
     LoggerModule.forRoot({ pinoHttp: { logger, autoLogging: false } }),
     DatabaseModule,
     AuthModule,
+    TelegramModule,
     CharactersModule,
     PersonasModule,
     PresetsModule,

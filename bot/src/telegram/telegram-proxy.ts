@@ -1,6 +1,6 @@
 import { HttpsProxyAgent } from "https-proxy-agent";
-import { config } from "./config.js";
-import logger from "./logger.js";
+import { config } from "../config.js";
+import logger from "../logger.js";
 
 /**
  * Создаёт HTTP-прокси-агент для запросов к Telegram Bot API.
