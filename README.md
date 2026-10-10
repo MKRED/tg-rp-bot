@@ -40,7 +40,7 @@ tg-rp-bot/
 │  │  ├─ db/           # drizzle: schema + клиент
 │  │  ├─ llm/          # LlmModule: вызов LLM (DeepSeek) с ключом пользователя (BYOK) + чистый клиент
 │  │  ├─ prompt/       # сборка промптов RP-чата и narrator (без Nest): promptBuilder, storyPromptBuilder, бюджет
-│  │  ├─ tavily/       # клиент Tavily (квота ключа, GET /usage), ключ per-user BYOK
+│  │  ├─ tavily/       # TavilyModule: клиент Tavily (веб-поиск, квота ключа), ключ per-user BYOK
 │  │  ├─ health/ webapp-static/  # GET /health (@Public); раздача сборки Mini App из ./public + SPA-fallback
 │  │  ├─ scripts/      # разовые скрипты (backfill шифрования сообщений)
 │  │  └─ utils/        # retry, crypto (per-user шифрование)

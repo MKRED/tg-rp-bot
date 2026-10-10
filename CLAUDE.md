@@ -22,7 +22,7 @@ serving both the API and the Mini App static files ([docs/deploy.md](docs/deploy
   data. Migrations are forward-only; be careful with destructive operations. The tunnel must be up
   before `yarn dev` / `drizzle-kit`.
 - **Proxy only for services unreachable from the server network:** Telegram
-  (`telegram/telegram-bot.factory.ts` → `baseFetchConfig.agent`, HttpsProxyAgent) and Tavily (`tavily/tavilyUsage.ts`, undici ProxyAgent),
+  (`telegram/telegram-bot.factory.ts` → `baseFetchConfig.agent`, HttpsProxyAgent) and Tavily (`tavily/tavily-proxy.ts`, undici ProxyAgent),
   both via `TELEGRAM_PROXY_URL`. **NEVER** set a global proxy (`HTTPS_PROXY` / `ALL_PROXY`) — it would
   route LLM traffic through it too. Why `agent` and not `dispatcher` — [docs/architecture.md](docs/architecture.md).
 - **LLM/Tavily keys are server-side, per-user (BYOK).** Stored encrypted in `user_settings`
@@ -68,7 +68,7 @@ bot/src/    — main (Nest bootstrap) · app.module · config · logger ·
               Nest modules: auth/ database/ users/ common/ telegram/ (grammY bot as a provider: handlers,
               polling lifecycle, Telegram proxy) · <domain>/ (characters, …) ·
               db/ (drizzle schema + client) · llm/ (LlmModule: LLM call with the user's key; pure client) ·
-              prompt/ (prompt assembly, no Nest) · tavily/ ·
+              prompt/ (prompt assembly, no Nest) · tavily/ (TavilyModule: Tavily client) ·
               health/ (GET /health, @Public) · webapp-static/ (Mini App static + SPA fallback) · utils/
 webapp/src/ — main/init (Telegram SDK) · app/ (shell, HashRouter) · pages/ (one screen per route) ·
               features/ (domain modules) · shared/ (cross-cutting)
@@ -110,7 +110,7 @@ Full tree, webapp layout rules, router/deep-link details — [docs/architecture.
 - **A new `/api/*` prefix = a new Nest module** (global prefix `api`; static files and the SPA fallback
   skip `/api` and `/health` — `webapp-static/spa-fallback.ts`). Pure (non-Nest) functions never build repositories/services
   themselves — the calling service passes the dependency as a parameter (e.g. `ChatCompleter` = injected
-  `LlmService` for LLM calls, the Tavily key for web search).
+  `LlmService` for LLM calls, `WebSearcher` = injected `TavilyService` with the user's key for web search).
 - **Auth:** global `TelegramAuthGuard` (`auth/`) — every controller is protected (only `@Public()` routes skip it — `/health`; don't add more without a
   reason); read the user with
   `@CurrentUser() userId: number` (internal id), never the Telegram profile. Only endpoints that are

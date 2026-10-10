@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { TavilyModule } from "../tavily/tavily.module.js";
 import { LlmSettingsController } from "./llm/llm-settings.controller.js";
 import { LlmSettingsRepository } from "./llm/llm-settings.repository.js";
 import { LlmSettingsService } from "./llm/llm-settings.service.js";
@@ -15,6 +16,7 @@ import { TranslateSettingsService } from "./translate/translate-settings.service
  * у них разная форма данных и разные внешние API проверки ключа.
  */
 @Module({
+  imports: [TavilyModule],
   controllers: [LlmSettingsController, TavilySettingsController, TranslateSettingsController],
   providers: [
     LlmSettingsService,

@@ -6,6 +6,7 @@ vi.mock("../../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), in
 vi.mock("../../db/index.js", () => ({ db: {}, schema: {} }));
 const runCardGenerationToolLoop = vi.fn();
 const LLM = { complete: vi.fn() };
+const tavily = { search: vi.fn().mockResolvedValue([]) };
 vi.mock("./tool-loop.js", () => ({ runCardGenerationToolLoop }));
 vi.mock("../../prompt/promptBuilder/index.js", () => ({ presetToCompletionOptions: () => ({ temperature: 0.5 }) }));
 
@@ -55,6 +56,7 @@ function setup(opts: { card?: ReturnType<typeof makeCard>; preset?: object } = {
     presets as unknown as Presets,
     tavilySettings as unknown as TavilySettings,
     LLM as unknown as ConstructorParameters<typeof CardGenerationService>[3],
+    tavily as unknown as ConstructorParameters<typeof CardGenerationService>[4],
   );
   return { service, cards, tavilySettings };
 }
@@ -88,7 +90,7 @@ describe("CardGenerationService.generate", () => {
     await expect(service.generate(1, CARD_ID)).resolves.toEqual({ status: "done", categoryId: "a", content: "text" });
     expect(cards.setCategoryContent).toHaveBeenCalledWith(1, CARD_ID, "a", "text");
     expect(runCardGenerationToolLoop).toHaveBeenCalledWith(
-      expect.objectContaining({ llm: LLM, tavilyApiKey: null, maxSearchRounds: 3, askUserEnabled: false }),
+      expect.objectContaining({ llm: LLM, webSearch: null, maxSearchRounds: 3, askUserEnabled: false }),
     );
     expect(lockFree()).toBe(true);
   });
@@ -153,14 +155,16 @@ describe("CardGenerationService.generate", () => {
     expect(runCardGenerationToolLoop).toHaveBeenCalledWith(expect.objectContaining({ askUserEnabled: false }));
   });
 
-  it("веб-поиск: ключ Tavily передаётся; без ключа — генерация без поиска", async () => {
+  it("веб-поиск: поиск идёт через TavilyService с ключом пользователя; без ключа — генерация без поиска", async () => {
     runCardGenerationToolLoop.mockResolvedValue({ done: true, content: "t" });
     const { service, tavilySettings } = setup({ card: makeCard({ useWebSearch: true }) });
     tavilySettings.getDecryptedKey.mockResolvedValueOnce("tvly-key").mockResolvedValueOnce(null);
     await service.generate(1, CARD_ID);
-    expect(runCardGenerationToolLoop).toHaveBeenLastCalledWith(expect.objectContaining({ tavilyApiKey: "tvly-key" }));
+    const { webSearch } = runCardGenerationToolLoop.mock.lastCall![0];
+    await webSearch.search("кто такой X");
+    expect(tavily.search).toHaveBeenCalledWith("tvly-key", "кто такой X");
     await service.generate(1, CARD_ID);
-    expect(runCardGenerationToolLoop).toHaveBeenLastCalledWith(expect.objectContaining({ tavilyApiKey: null }));
+    expect(runCardGenerationToolLoop).toHaveBeenLastCalledWith(expect.objectContaining({ webSearch: null }));
   });
 
   it("нет ключа DeepSeek — 400 { error: no_api_key, message }, лок снят", async () => {

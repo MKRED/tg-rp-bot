@@ -4,11 +4,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("../../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
 vi.mock("../../db/index.js", () => ({ db: {}, schema: {} }));
 const getTavilyUsage = vi.fn();
-vi.mock("../../tavily/tavilyUsage.js", () => ({ getTavilyUsage }));
 
 const { TavilySettingsService } = await import("./tavily-settings.service.js");
 const { TavilyHttpError } = await import("../../tavily/errors.js");
 type Repo = ConstructorParameters<typeof TavilySettingsService>[0];
+type Tavily = ConstructorParameters<typeof TavilySettingsService>[1];
 
 function setup(savedKey: string | null = "tvly-saved") {
   const repo = {
@@ -16,7 +16,7 @@ function setup(savedKey: string | null = "tvly-saved") {
     getDecryptedKey: vi.fn().mockResolvedValue(savedKey),
     upsert: vi.fn().mockResolvedValue({ hasKey: true, last4: "1234", maxSearchRounds: 4 }),
   };
-  return { service: new TavilySettingsService(repo as unknown as Repo), repo };
+  return { service: new TavilySettingsService(repo as unknown as Repo, { getUsage: getTavilyUsage } as unknown as Tavily), repo };
 }
 
 describe("TavilySettingsService.verify", () => {

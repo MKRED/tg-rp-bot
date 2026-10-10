@@ -36,7 +36,7 @@ bot/src/
                   генерация: card-generation.service (Nest-сервис) + prompt-assembly / tool-loop (web_search +
                   ask_user) / ask-user-tool
   settings/     — /api/settings (всё в строке user_settings): llm/ (ключ/модель DeepSeek, BYOK, шифруется
-                  ENCRYPTION_KEY; verify — /models, баланс), tavily/ (ключ Tavily + лимит раундов поиска),
+                  ENCRYPTION_KEY; verify — /models, баланс), tavily/ (ключ Tavily + лимит раундов поиска; verify — TavilyService),
                   translate/ (режим перевода PromptEditorOverlay) — у каждой controller/service/repository;
                   dto/ (снисходительные PATCH: невалидное поле игнорируется), key-format.ts (400
                   invalid_key_format); экспортирует TavilySettingsRepository (генерация карточек) и
@@ -105,8 +105,11 @@ bot/src/
                   в providers.ts не задействована (задел, нет пути конфигурации);
                   debugCapture (+debug.types, debugSettings — кламп настроек) — in-memory перехват RAW-запросов
                   к LLM для экрана отладки (горячий путь каждого вызова; настройки — в debug/)
-  tavily/       — Tavily API client (per-user BYOK): tavilyUsage.ts (getTavilyUsage — GET /usage,
-                  через fetch/ProxyAgent из пакета undici, TELEGRAM_PROXY_URL), errors.ts (TavilyHttpError)
+  tavily/       — TavilyModule: TavilyService (search — POST /search для web_search генерации карточек,
+                  getUsage — GET /usage для проверки ключа; ключ параметром вызова, per-user BYOK) через
+                  fetch из пакета undici + ProxyAgent-провайдер (tavily-proxy.ts, TELEGRAM_PROXY_URL);
+                  WebSearcher (поиск с подставленным ключом — параметр чистого tool-loop), схема
+                  инструмента web_search, errors.ts (TavilyHttpError), searchSettings (кламп раундов)
   health/       — GET /health → { ok: true } (вне префикса /api, @Public — для мониторинга)
   webapp-static/ — раздача собранной Mini App из ./public (cwd; в Docker — /app/bot/public), только если
                   каталог есть (в dev — Vite): файлы сборки, затем index.html на маршруты React;
@@ -208,7 +211,7 @@ option `agent`. undici `dispatcher` он **игнорирует** — хотя �
 доходит до Telegram, с `dispatcher` — уходит напрямую в обход прокси. Отсюда каст в
 `telegram/telegram-bot.factory.ts` (`telegram-proxy.ts` → `HttpsProxyAgent` → `client.baseFetchConfig.agent`).
 
-Tavily-клиент (`bot/src/tavily/tavilyUsage.ts`) устроен иначе: он вызывает `fetch` и `ProxyAgent`
+Tavily-клиент (`bot/src/tavily/tavily.service.ts`, диспетчер — `tavily-proxy.ts`) устроен иначе: он вызывает `fetch` и `ProxyAgent`
 из самого пакета **undici**, а не встроенный Node `fetch` с `dispatcher` — та комбинация не
 заводится из-за несовместимой версии undici внутри Node. Прокси там подключается через
 `dispatcher`, а не `agent` (в отличие от grammY выше).

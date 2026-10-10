@@ -1,14 +1,17 @@
 import { Injectable } from "@nestjs/common";
 import type { TavilySettingsPatch, TavilySettingsStatus, VerifyTavilyKeyResult } from "@tg-rp-bot/shared";
 import { TavilyHttpError } from "../../tavily/errors.js";
-import { getTavilyUsage } from "../../tavily/tavilyUsage.js";
+import { TavilyService } from "../../tavily/tavily.service.js";
 import { assertValidKeyFormat } from "../key-format.js";
 import { TavilySettingsRepository } from "./tavily-settings.repository.js";
 
 /** Персональный ключ Tavily (веб-поиск, BYOK) и лимит раундов поиска. */
 @Injectable()
 export class TavilySettingsService {
-  constructor(private readonly settings: TavilySettingsRepository) {}
+  constructor(
+    private readonly settings: TavilySettingsRepository,
+    private readonly tavily: TavilyService,
+  ) {}
 
   get(userId: number): Promise<TavilySettingsStatus> {
     return this.settings.getStatus(userId);
@@ -23,7 +26,7 @@ export class TavilySettingsService {
     const apiKey = typedKey || (await this.settings.getDecryptedKey(userId));
     if (!apiKey) return { ok: false, error: "no_key" };
     try {
-      return { ok: true, usage: await getTavilyUsage(apiKey) };
+      return { ok: true, usage: await this.tavily.getUsage(apiKey) };
     } catch (err) {
       if (err instanceof TavilyHttpError && err.status === 401) return { ok: false, error: "invalid_key" };
       throw err;

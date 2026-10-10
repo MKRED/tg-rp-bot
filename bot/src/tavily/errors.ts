@@ -1,4 +1,4 @@
-/** Ошибка с HTTP-статусом Tavily — по статусу решаем, ретраить ли (см. tavilyUsage.ts). */
+/** Ошибка с HTTP-статусом Tavily — по статусу решаем, ретраить ли (см. TavilyService.request). */
 export class TavilyHttpError extends Error {
   constructor(
     readonly status: number,

@@ -11,6 +11,8 @@ import logger from "../../logger.js";
 import { PresetsRepository } from "../../presets/presets.repository.js";
 import { presetToCompletionOptions } from "../../prompt/promptBuilder/index.js";
 import { TavilySettingsRepository } from "../../settings/tavily/tavily-settings.repository.js";
+import { TavilyService } from "../../tavily/tavily.service.js";
+import type { WebSearcher } from "../../tavily/tavily.types.js";
 import { tryLockCard, unlockCard } from "../card-lock.js";
 import { CardsRepository } from "../cards.repository.js";
 import { ASK_USER_DECLINED_ANSWER, ASK_USER_MAX_ANSWERED_QUESTIONS } from "./ask-user-tool.js";
@@ -35,6 +37,7 @@ export class CardGenerationService {
     private readonly presets: PresetsRepository,
     private readonly tavilySettings: TavilySettingsRepository,
     private readonly llm: LlmService,
+    private readonly tavily: TavilyService,
   ) {}
 
   /**
@@ -97,7 +100,7 @@ export class CardGenerationService {
         llm: this.llm,
         baseOptions: { userId, debugLabel: "cards", ...presetToCompletionOptions(preset) },
         history: assembled.messages,
-        tavilyApiKey,
+        webSearch: tavilyApiKey ? this.webSearcher(tavilyApiKey) : null,
         maxSearchRounds: await this.tavilySettings.getMaxSearchRounds(userId),
         askUserEnabled,
       });
@@ -187,6 +190,11 @@ export class CardGenerationService {
       "Ask_user: ответы сохранены, генерация блока резюмирована",
     );
     return result;
+  }
+
+  /** Поиск с ключом пользователя — в таком виде его получает цикл tool-calling. */
+  private webSearcher(apiKey: string): WebSearcher {
+    return { search: (query) => this.tavily.search(apiKey, query) };
   }
 }
 

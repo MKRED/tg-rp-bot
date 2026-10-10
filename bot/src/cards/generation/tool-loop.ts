@@ -9,7 +9,8 @@ import type {
 } from "../../llm/types.js";
 import logger from "../../logger.js";
 import { TavilyHttpError } from "../../tavily/errors.js";
-import { tavilySearch, WEB_SEARCH_TOOL, WEB_SEARCH_TOOL_NAME } from "../../tavily/webSearch.js";
+import type { WebSearcher } from "../../tavily/tavily.types.js";
+import { WEB_SEARCH_TOOL, WEB_SEARCH_TOOL_NAME } from "../../tavily/web-search-tool.js";
 import { ASK_USER_TOOL, ASK_USER_TOOL_NAME, parseAskUserArguments } from "./ask-user-tool.js";
 
 type LoopMessage = ChatMessage | ToolCallMessage | ToolResultMessage;
@@ -28,7 +29,7 @@ interface WebSearchOutcome {
 /** Выполняет один tool_call веб-поиска (или отвечает ошибкой на неизвестное имя инструмента).
  * Ошибки (битые аргументы, сбой Tavily) уходят в content — модель узнаёт о неудаче тем же путём,
  * что и об успехе, и может ответить без этого результата, а не всей генерацией. */
-async function runWebSearchCall(call: ToolCall, tavilyApiKey: string): Promise<WebSearchOutcome> {
+async function runWebSearchCall(call: ToolCall, webSearch: WebSearcher): Promise<WebSearchOutcome> {
   if (call.function.name !== WEB_SEARCH_TOOL_NAME) {
     return { content: JSON.stringify({ error: `unknown tool: ${call.function.name}` }), authFailed: false };
   }
@@ -44,7 +45,7 @@ async function runWebSearchCall(call: ToolCall, tavilyApiKey: string): Promise<W
   }
 
   try {
-    return { content: JSON.stringify(await tavilySearch(tavilyApiKey, query)), authFailed: false };
+    return { content: JSON.stringify(await webSearch.search(query)), authFailed: false };
   } catch (err) {
     const authFailed = err instanceof TavilyHttpError && (err.status === 401 || err.status === 403);
     logger.error({ err, query, authFailed }, "Tavily search failed during card generation");
@@ -60,8 +61,8 @@ export interface ToolLoopParams {
   llm: ChatCompleter;
   baseOptions: Omit<ChatCompletionOptions, "messages" | "tools" | "toolChoice">;
   history: LoopMessage[];
-  /** null — веб-поиск выключен на карточке или ключ Tavily не задан. */
-  tavilyApiKey: string | null;
+  /** TavilyService с ключом пользователя; null — веб-поиск выключен на карточке или ключ Tavily не задан. */
+  webSearch: WebSearcher | null;
   maxSearchRounds: number;
   askUserEnabled: boolean;
 }
@@ -96,7 +97,7 @@ export type ToolLoopOutcome = { done: true; content: string } | { done: false; q
  * maxSearchRounds + ASK_USER_MAX_ROUNDS ходов.
  */
 export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise<ToolLoopOutcome> {
-  const { llm, baseOptions, tavilyApiKey, maxSearchRounds, askUserEnabled } = params;
+  const { llm, baseOptions, webSearch, maxSearchRounds, askUserEnabled } = params;
   const { userId } = baseOptions;
   const t0 = Date.now();
 
@@ -106,7 +107,7 @@ export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise
   let llmCalls = 0;
 
   for (;;) {
-    const canSearch = tavilyApiKey !== null && searchesUsed < maxSearchRounds;
+    const canSearch = webSearch !== null && searchesUsed < maxSearchRounds;
     const canAsk = askUserEnabled && askUserRoundsUsed < ASK_USER_MAX_ROUNDS;
     const tools = [...(canSearch ? [WEB_SEARCH_TOOL] : []), ...(canAsk ? [ASK_USER_TOOL] : [])];
 
@@ -168,7 +169,11 @@ export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise
         continue;
       }
 
-      const outcome = await runWebSearchCall(call, tavilyApiKey ?? "");
+      // webSearch === null здесь не бывает в норме (без него web_search не предлагается), но модель
+      // может прислать tool_call и без предложенного инструмента — отвечаем ей ошибкой, не падаем.
+      const outcome = webSearch
+        ? await runWebSearchCall(call, webSearch)
+        : { content: JSON.stringify({ error: `tool unavailable: ${call.function.name}` }), authFailed: false };
       history.push({ role: "tool", tool_call_id: call.id, content: outcome.content });
       searchesUsed++;
       if (outcome.authFailed) authFailed = true;
