@@ -69,6 +69,6 @@ export type NarratorTemplate = {
   translatePerParagraph: boolean;
 };
 
-/** Дефолты маркеров — зеркало bot/src/server/prompt/storyPromptBuilder.constants.ts, для новой формы. */
+/** Дефолты маркеров — зеркало bot/src/prompt/storyPromptBuilder/storyPromptBuilder.constants.ts, для новой формы. */
 export const DEFAULT_CONTINUE_MARKER = "Continue the story.";
 export const DEFAULT_LEADING_USER_MARKER = "Begin the story.";

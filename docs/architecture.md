@@ -12,14 +12,17 @@ Mini App API). CLAUDE.md держит только верхнеуровневу�
 
 ```
 bot/src/
-  main.ts       — entry point: bootstrap Nest (мост в legacy Hono, лимит JSON-тела) + старт бота
+  main.ts       — entry point: bootstrap Nest (лимит JSON-тела, глобальный префикс api с исключением
+                  health, статика Mini App, enableShutdownHooks); бот стартует из telegram/
   app.module.ts — корневой модуль Nest: LoggerModule (nestjs-pino поверх logger.ts), глобальные
                   ValidationPipe (common/validation-pipe) и ApiExceptionFilter (common/), модули ниже
   auth/         — TelegramAuthGuard (глобальный APP_GUARD) + @CurrentUser() (внутренний userId) +
                   @TelegramUser() (профиль Telegram — только для me/, где нужен Telegram id для Bot API) +
-                  initData.ts — проверка initData, общая с Hono-middleware
+                  initData.ts — проверка initData (чистая функция) + @Public() (маршрут без авторизации —
+                  только health/)
   database/     — DatabaseModule (@Global) + DatabaseService поверх drizzle-клиента из db/index.ts
-  users/        — UsersService.ensureTelegramUser (upsert строки users, кэш на процесс)
+  users/        — UsersService (ensureTelegramUser для guard: upsert строки users с кэшем на процесс;
+                  saveTelegramProfile для /start: всегда) + UsersRepository
   common/       — ApiExceptionFilter (ошибки → { error }), createValidationPipe, found() (undefined → 404),
                   image-limits (лимиты полей-картинок data URL), fk-violation (FK 23503 → 409 in_use),
                   llm-http-error (ошибка не-стримингового LLM-вызова → 400 no_api_key / 500), query-int
@@ -27,7 +30,7 @@ bot/src/
                   decorators/ (IsDataImageUrl — поле-картинка data URL с лимитом; IsOptionalNote — сноска, пусто → null),
                   sse-observable (async-функция → Observable для Nest @Sse; отписка клиента генерацию не
                   прерывает), stream-completion (streamCompletion/writeGenerationError — LLM-генерация в SSE-события
-                  token/reset/error через интерфейс SseSink: годится и для Hono, и для Nest @Sse)
+                  token/reset/error через интерфейс SseSink)
   characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ — доменные модули Nest: controller / service / repository (бывший DAO) / dto/;
                   у cards/ ещё card-lock.ts (лок карточки, общий для PUT и генерации) и generation/ — поблочная
                   генерация: card-generation.service (Nest-сервис) + prompt-assembly / tool-loop (web_search +
@@ -106,11 +109,12 @@ bot/src/
                   к LLM для экрана отладки (горячий путь каждого вызова; настройки — в debug/)
   tavily/       — Tavily API client (per-user BYOK): tavilyUsage.ts (getTavilyUsage — GET /usage,
                   через fetch/ProxyAgent из пакета undici, TELEGRAM_PROXY_URL), errors.ts (TavilyHttpError)
-  server/       — legacy Hono (уходит следующим блоком — docs/plan/roadmap.md): всё API Mini App уже
-                  в Nest; legacyBridge.ts — express-middleware, отдающий в Hono всё вне NEST_ROUTE_PREFIXES
-                  (+ LEGACY_ROUTES — исключения по методу и пути для переезда домена по частям; пусто);
-                  index=createLegacyApp: /health, JSON 404 на неизвестный /api/*, раздача собранной
-                  статики Mini App из ./public (SPA-fallback) — один процесс
+  health/       — GET /health → { ok: true } (вне префикса /api, @Public — для мониторинга)
+  webapp-static/ — раздача собранной Mini App из ./public (cwd; в Docker — /app/bot/public), только если
+                  каталог есть (в dev — Vite): файлы сборки, затем index.html на маршруты React;
+                  spa-fallback — чистое решение «index.html или дальше в Nest» (/api и /health — в Nest,
+                  неизвестный /api/* → JSON 404). Express-middleware до маршрутов Nest, не контроллер —
+                  иначе глобальный guard отдал бы на страницу 401
   scripts/      — разовые скрипты (backfill-message-encryption)
   utils/        — retry, crypto (per-user шифрование сообщений и кэша переводов), concurrency (runWithConcurrency —
                   пул с ограниченной конкурентностью)

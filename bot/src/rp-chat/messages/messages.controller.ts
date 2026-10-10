@@ -3,8 +3,8 @@ import { CurrentUser } from "../../auth/current-user.decorator.js";
 import { MessagesService } from "./messages.service.js";
 
 /**
- * /api/chats/:id/messages — действия над сообщениями вне генерации. Стриминговые send/edit/regenerate
- * пока обслуживает legacy Hono (исключения в legacyBridge.ts).
+ * /api/chats/:id/messages — действия над сообщениями вне генерации. Стриминговые send/edit/regenerate —
+ * в generation/.
  */
 @Controller("chats/:id/messages")
 export class MessagesController {

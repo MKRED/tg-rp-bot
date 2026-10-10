@@ -489,11 +489,6 @@
   resolved "https://registry.yarnpkg.com/@grammyjs/types/-/types-3.27.3.tgz#93c8640d1ae5400e304950a1d89e7716e025ec78"
   integrity sha512-yUKMLliGsGbnxu96YUJ7km7B0zy4PzeH/Jvti5705R/LeKDMqkDV4DckMSt+OrliWQpTwQljHE0QLol5zgxBkg==
 
-"@hono/node-server@^2.0.4":
-  version "2.0.4"
-  resolved "https://registry.yarnpkg.com/@hono/node-server/-/node-server-2.0.4.tgz#22d7ae19fb961eaf189916014c707529fd667eca"
-  integrity sha512-Ut3y0dMMPWy6bZ2kVfx25EOVbZlm15dhF4mOsezMlhpNHy+4MkU1qN9Y6lnruYi4wPmFzimGX2X7LF/FwHli4A==
-
 "@inquirer/ansi@^2.0.9":
   version "2.0.9"
   resolved "https://registry.yarnpkg.com/@inquirer/ansi/-/ansi-2.0.9.tgz#eab42401397dae36e760ac08a6b8774994194d83"
@@ -2204,11 +2199,6 @@ help-me@^5.0.0:
   version "5.0.0"
   resolved "https://registry.yarnpkg.com/help-me/-/help-me-5.0.0.tgz#b1ebe63b967b74060027c2ac61f9be12d354a6f6"
   integrity sha512-7xgomUX6ADmcYzFik0HzAxh/73YlKR9bmFzf51CZwR+b6YtzU2m0u49hQCqV6SvlqIqsaxovfwdvbnsw3b/zpg==
-
-hono@^4.12.23:
-  version "4.12.23"
-  resolved "https://registry.yarnpkg.com/hono/-/hono-4.12.23.tgz#998b91651686149f0e6edbb8564d604da04f3cf8"
-  integrity sha512-eIaZ9qDgu7XV0pxOCrg7/WhnQ6Ivm22UcxhXx/A3dcbqbbYgBEkc6e/J/s7j2tS96zoB0S9VBdLwQNCWwUo4LA==
 
 http-errors@^2.0.0, http-errors@^2.0.1, http-errors@~2.0.1:
   version "2.0.1"

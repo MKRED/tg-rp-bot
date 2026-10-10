@@ -3,8 +3,8 @@ import { CurrentUser } from "../../auth/current-user.decorator.js";
 import { ImpersonationsService } from "./impersonations.service.js";
 
 /**
- * /api/chats/:id/impersonate — сохранённые варианты реплик игрока. Генерацию варианта (POST, SSE)
- * пока обслуживает legacy Hono (исключение в legacyBridge.ts).
+ * /api/chats/:id/impersonate — сохранённые варианты реплик игрока. Генерация варианта (POST, SSE) —
+ * в generation/.
  */
 @Controller("chats/:id/impersonate")
 export class ImpersonationsController {

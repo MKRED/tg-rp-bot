@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ============================================================================
-# tg-rp-bot — единый образ: Telegram-бот (grammY) + HTTP API (NestJS, с legacy Hono за мостом),
+# tg-rp-bot — единый образ: Telegram-бот (grammY) + HTTP API (NestJS),
 # который ТАКЖЕ раздаёт собранную статику Mini App (webapp). Node 24, native ESM.
 # Сборка из КОРНЯ монорепо: context=. , dockerfile=Dockerfile (лежит в корне).
 # ============================================================================
@@ -59,7 +59,8 @@ COPY --from=build /app/shared/package.json ./shared/package.json
 COPY --from=build /app/shared/dist ./shared/dist
 # В /app/bot к этому моменту только собранный dist + drizzle + конфиги (без .env).
 COPY --from=build /app/bot ./bot
-# Статику Mini App кладём туда, откуда её ждёт Hono (cwd процесса = /app/bot, root = ./public).
+# Статику Mini App кладём туда, откуда её раздаёт Nest (cwd процесса = /app/bot, каталог ./public —
+# bot/src/webapp-static/serve-webapp.ts).
 COPY --from=build /app/webapp/dist ./bot/public
 
 WORKDIR /app/bot

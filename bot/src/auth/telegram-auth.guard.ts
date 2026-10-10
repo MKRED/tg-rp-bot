@@ -1,9 +1,11 @@
 import { type CanActivate, type ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
 import { config } from "../config.js";
 import logger from "../logger.js";
 import { UsersService } from "../users/users.service.js";
 import type { AuthenticatedRequest } from "./auth.types.js";
 import { authenticateInitData } from "./initData.js";
+import { IS_PUBLIC_KEY } from "./public.decorator.js";
 
 /**
  * Глобальный guard API: пропускает запрос с валидным Telegram initData (или dev-обходом) и кладёт
@@ -15,9 +17,14 @@ import { authenticateInitData } from "./initData.js";
  */
 @Injectable()
 export class TelegramAuthGuard implements CanActivate {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly reflector: Reflector,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    if (this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [context.getHandler(), context.getClass()])) return true;
+
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const result = authenticateInitData(request.headers.authorization, {
       botToken: config.botToken,

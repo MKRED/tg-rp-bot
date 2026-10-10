@@ -4,9 +4,8 @@ import { MissingApiKeyError } from "../llm/errors.js";
 import type { ChatCompletionOptions, ChatCompletionResult } from "../llm/types.js";
 
 /**
- * Куда писать SSE-события генерации. Минимальный интерфейс без привязки к фреймворку: ему
- * структурно удовлетворяет SSEStreamingApi из Hono (legacy stories), а Nest-маршруты (@Sse,
- * Observable) передают обёртку над Subject. Так один хелпер обслуживает оба стека, пока идёт миграция.
+ * Куда писать SSE-события генерации. Минимальный интерфейс без привязки к Nest: маршруты @Sse
+ * передают обёртку над Subject (common/sse-observable.ts), а тесты — простой сборщик событий.
  */
 export interface SseSink {
   writeSSE(message: { event: string; data: string }): Promise<unknown>;

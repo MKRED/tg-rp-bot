@@ -8,7 +8,7 @@ Telegram-бот для ролевой игры (RP) с упором на **Teleg
 |---|---|
 | Монорепо | Yarn workspaces (`shared`, `bot`, `webapp`) |
 | Бот | Node 24 (native ESM, TypeScript), [grammY](https://grammy.dev) |
-| HTTP API | [NestJS](https://nestjs.com) (Express, class-validator, nestjs-pino); ещё не перенесённые маршруты — legacy [Hono](https://hono.dev) за мостом `getRequestListener` |
+| HTTP API | [NestJS](https://nestjs.com) (Express, class-validator, nestjs-pino); тот же процесс раздаёт статику Mini App |
 | БД | Postgres + [drizzle-orm](https://orm.drizzle.team) / drizzle-kit |
 | LLM | DeepSeek (OpenAI-совместимый API); ключ/модель — персональные (BYOK), задаются пользователем в Mini App |
 | Веб-поиск | Tavily (квота ключа); ключ — персональный (BYOK), задаётся пользователем в Mini App |
@@ -30,7 +30,7 @@ tg-rp-bot/
 │  └─ src/             #   (собирается tsc в shared/dist; корневые скрипты собирают его первым)
 ├─ bot/                # Telegram-бот + HTTP API для Mini App
 │  ├─ src/
-│  │  ├─ main.ts       # точка входа: bootstrap Nest (+ мост в legacy Hono)
+│  │  ├─ main.ts       # точка входа: bootstrap Nest (лимит JSON-тела, /health вне /api, статика Mini App)
 │  │  ├─ app.module.ts # корневой модуль Nest (глобальные guard/pipe/filter)
 │  │  ├─ auth/ database/ users/ common/  # общие модули Nest: initData-guard + @CurrentUser, БД, …
 │  │  ├─ telegram/     # бот grammY как провайдер Nest: обработчики (/start, «Закрыть»), запуск/остановка polling, прокси Telegram
@@ -41,7 +41,7 @@ tg-rp-bot/
 │  │  ├─ llm/          # клиент LLM (DeepSeek, ключ per-user BYOK через resolveProvider)
 │  │  ├─ prompt/       # сборка промптов RP-чата и narrator (без Nest): promptBuilder, storyPromptBuilder, бюджет
 │  │  ├─ tavily/       # клиент Tavily (квота ключа, GET /usage), ключ per-user BYOK
-│  │  ├─ server/       # legacy Hono за мостом: /health + статика Mini App (всё API — в Nest)
+│  │  ├─ health/ webapp-static/  # GET /health (@Public); раздача сборки Mini App из ./public + SPA-fallback
 │  │  ├─ scripts/      # разовые скрипты (backfill шифрования сообщений)
 │  │  └─ utils/        # retry, crypto (per-user шифрование)
 │  └─ drizzle/         # SQL-миграции

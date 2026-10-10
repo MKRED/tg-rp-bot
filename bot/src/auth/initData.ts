@@ -17,7 +17,7 @@ export interface InitDataAuthOptions {
  * Mini App шлёт подписанную строку в заголовке `Authorization: tma <initData>`. Доверяем
  * пользователю только после проверки HMAC-SHA256 по BOT_TOKEN (@tma.js/init-data-node).
  * Без заголовка: при заданном devUserId — фейковый пользователь с этим id, иначе отказ.
- * Логирование — на стороне вызывающего (у Hono и Nest свои ответы на отказ).
+ * Логирование — на стороне вызывающего (guard решает, что из отказа писать в лог).
  */
 export function authenticateInitData(
   authorization: string | undefined,

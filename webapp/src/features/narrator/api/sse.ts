@@ -2,8 +2,8 @@ import { getApiBase, getAuthHeader } from "../../../shared/api/client";
 
 /**
  * Самодостаточный POST-SSE-ридер для narrator-генерации (advance/regenerate). Намеренно не тянет
- * ридер rp-chat, чтобы фичи не были связаны. Формат событий hono streamSSE: блоки
- * «event: <name>\ndata: <json>\n\n».
+ * ридер rp-chat, чтобы фичи не были связаны. Формат событий Nest @Sse: блоки
+ * «event: <name>\nid: <n>\ndata: <json>\n\n» (строку id ридер пропускает).
  */
 export async function readStorySSE(
   path: string,

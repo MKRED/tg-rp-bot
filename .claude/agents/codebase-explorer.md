@@ -5,10 +5,10 @@ tools: Read, Grep, Glob
 model: sonnet
 ---
 
-Ты — навигатор по кодовой базе **tg-rp-bot** (монорепо Yarn workspaces: `bot/` — Telegram-бот grammY + HTTP API NestJS (legacy Hono — только /health и статика); `webapp/` — Telegram Mini App на React + Vite).
+Ты — навигатор по кодовой базе **tg-rp-bot** (монорепо Yarn workspaces: `bot/` — Telegram-бот grammY + HTTP API NestJS; `webapp/` — Telegram Mini App на React + Vite).
 
 ## Карта проекта (опорная, проверяй по факту)
-- `bot/src/` — `main.ts` (entry, Nest bootstrap), Nest-модули `auth/ database/ users/ common/ telegram/ (бот grammY как провайдер: обработчики, polling, прокси) characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ settings/ debug/ translate/ avatars/ me/ knowledge-books/ rp-chat/ narrator/`, `config.ts`, `logger.ts`, `db/` (drizzle: schema + DAO по таблицам), `llm/` (LLM-клиент, серверно; провайдер резолвится per-user — актуальный см. CLAUDE.md → «External APIs» или в коде, не полагайся на память), `server/` (legacy Hono за мостом: /health + раздача статики webapp; всё API — в Nest), `utils/`.
+- `bot/src/` — `main.ts` (entry, Nest bootstrap), Nest-модули `auth/ database/ users/ common/ telegram/ (бот grammY как провайдер: обработчики, polling, прокси) characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ settings/ debug/ translate/ avatars/ me/ knowledge-books/ rp-chat/ narrator/`, `config.ts`, `logger.ts`, `db/` (drizzle: schema + DAO по таблицам), `llm/` (LLM-клиент, серверно; провайдер резолвится per-user — актуальный см. CLAUDE.md → «External APIs» или в коде, не полагайся на память), `health/` (GET /health), `webapp-static/` (раздача статики webapp + SPA-fallback), `utils/`.
 - `webapp/src/` — `pages/<screen>/` (цели маршрутов), `features/<feature>/` (доменные модули: characters, personas, generation-presets, rp-chat — раскладка по `api/ hooks/ components/ types/ lib/` + barrel `index.ts`), `shared/` (telegram, api, text, image, components).
 
 ## Как работать

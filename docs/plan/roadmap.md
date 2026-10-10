@@ -5,7 +5,7 @@
 | # | Задача |
 |---|---|
 | 1 | Пакет `shared/` с общими модулями и типами для bot и webapp |
-| 2 | Перевод бэкенда (`bot/src/server/`, Hono) на NestJS |
+| 2 | Перевод бэкенда (был на Hono) на NestJS |
 | 3 | Необязательная авторизация через Telegram: в Mini App — автоматически по initData, в браузере — логин/пароль, с возможностью связать аккаунт с Telegram |
 | 4 | Возможность для Claude смотреть приложение в браузере через MCP |
 
@@ -58,108 +58,32 @@ dev-обход — при заданном `DEV_USER_ID` (`config.devUserId`) з
 
 ---
 
-## Шаг 2 — бэкенд на NestJS
+## Шаг 2 — бэкенд на NestJS ✅
 
-Самая крупная задача: `bot/src/server/` — около 6 500 строк в 102 файлах.
+**Готово:** весь бэкенд — приложение Nest 12 (Express, нативный ESM): доменные модули
+`bot/src/<домен>/` (module / controller / service / repository / dto, тесты рядом), бот grammY —
+провайдеры модуля `telegram/`, `/health` и раздача статики Mini App — тоже в Nest. Hono и мост в него
+удалены. Переезд шёл блоками A–Q (домен за блоком, тесты и проверка в браузере после каждого, прод
+работал между блоками); устройство — [docs/architecture.md](../architecture.md), правила — CLAUDE.md.
 
-**Цель — не просто перенести маршруты, а привести бэкенд к строгой архитектуре Nest** (модуль /
-контроллер / сервис / репозиторий / DTO, предсказуемые папки и файлы). Переписывать текущий код под
-эту архитектуру можно и нужно — небольшими блоками, каждый с тестами, прод работает между блоками.
+Образец стека — `D:\GitProject\dnd-online` (`apps/server`). Сборка и dev — только Nest CLI (`tsc` с
+`emitDecoratorMetadata`; `tsx`/esbuild метаданные не генерирует — DI получил бы `undefined`). Сервисы в
+тестах создаются напрямую с моком репозитория; `unplugin-swc` подключить, когда понадобится
+`@nestjs/testing` (e2e модуля).
 
-**Образец** — `D:\GitProject\dnd-online` (`apps/server`): тот же стек (Nest 12, нативный ESM `nodenext`,
-Express, Drizzle, pino, `shared/dist`), там рецепт сборки уже проверен:
-- сборка и dev — Nest CLI (`nest build` / `nest start --watch`, под капотом `tsc` с
-  `emitDecoratorMetadata`); `tsx`/esbuild метаданные декораторов не генерирует — DI получил бы `undefined`;
-- тесты — в dnd-online vitest + `unplugin-swc` (esbuild тоже не генерирует метаданные). У нас пока не нужен:
-  сервисы в тестах создаются напрямую с моком репозитория, без DI-контейнера. Подключить, когда
-  понадобится `@nestjs/testing` (e2e модуля);
-- валидация — DTO на `class-validator` + глобальный `ValidationPipe({ whitelist, transform })`;
-  DTO-класс `implements` тип контракта из `@tg-rp-bot/shared`;
-- логи — `nestjs-pino` поверх нашего pino-логгера; правила логирования из CLAUDE.md не меняются.
+### Что сохранено для webapp
+`apiFetch` читает тело любого успешного ответа как JSON и текст ошибки из `message ?? error`:
+- коды и тела ответов — прежние (`201 {character}`, `200 {ok:true}`, без `204`);
+- глобальный `ApiExceptionFilter` отдаёт `{ error: string }` (сообщения `ValidationPipe` склеиваются);
+- лимит JSON-тела задан явно (8 МБ): картинки персонажа идут data URL'ами;
+- SSE-генерация — `@Sse` на POST с `@HttpCode(200)`, ошибки до начала потока — обычный JSON.
 
-### Раскладка (как в dnd-online)
-Доменный модуль Nest — папка `bot/src/<домен>/`: `<домен>.module.ts`, `.controller.ts`, `.service.ts`,
-`.repository.ts` (доступ к БД, бывший DAO из `db/<домен>/`), `dto/`, тесты рядом. Общее —
-`bot/src/database/` (`DatabaseService` поверх текущего drizzle-клиента), `bot/src/auth/` (guard,
-`@CurrentUser()`). Перенесённый домен удаляется из `server/` и `db/`; когда `server/` опустеет — Hono уходит.
-
-### Переносить постепенно
-Nest поднимается на том же порту, текущее Hono-приложение подключено за ним через `getRequestListener`
-(`@hono/node-server`). Express-middleware без пути, до body-parser Nest, отдаёт в Hono всё, что не
-входит в явный список перенесённых префиксов (`/api/characters`, …) — включая статику Mini App и SSE.
-- **Блок A ✅** — каркас: Nest + мост в Hono, поведение не меняется.
-- **Блок B ✅** — characters (модуль/контроллер/сервис/репозиторий/DTO) + общие auth/ database/ users/
-  common/. Проверено: тесты, браузер (создание/правка/удаление с фото ~1 МБ), Docker-образ.
-- **Блок C ✅** — personas по тому же шаблону; общий декоратор поля-картинки `IsDataImageUrl` и
-  `found()` вынесены в `common/`.
-- **Блок D ✅** — presets: контракт (PresetInput, уровни рассуждения, SamplingKey) перенесён в
-  shared, валидация сэмплинга — декораторами DTO по SAMPLING_RANGES.
-- **Блок E ✅** — rp-templates: контракт и набор компонентов промпта (PROMPT_COMPONENT_IDS) — в
-  shared; вес шаблона в токенах считает сервис, тексты промптов в список не уходят.
-- **Блок F ✅** — narrator-templates: контракт, дефолтный порядок narrator-промптов и уровни
-  рассуждения перевода — в shared; порядок по-прежнему нормализуется (без 400).
-- **Блок G ✅** — cards, CRUD: контракт (форма, категории и ask_user, лимиты, дефолты новой карточки) —
-  в shared; весь `/api/cards` в Nest.
-- **Блок H ✅** — генерация карточек: `CardGenerationService` (DI репозиториев карточек и пресетов,
-  отказы — HttpException с кодом причины), сборка промпта и tool-loop — в `cards/generation/`;
-  контракт шага генерации и кодов отказа — в shared.
-- **Блок I ✅** — settings (ключ/модель DeepSeek, ключ Tavily, режим перевода): контракт и диапазон
-  раундов веб-поиска — в shared; генерация карточек получает ключ Tavily через DI; resolveProvider читает ключ DeepSeek
-  через временный мост db/settings (удалить, когда вызов LLM получит репозиторий через DI).
-- **Блок J ✅** — debug (экран отладки LLM): контракт записей перехвата и настроек — в shared; прайм
-  кэша настроек на старте — DebugService (OnApplicationBootstrap) вместо ручного вызова в main.ts.
-- **Блок K ✅** — translate (`POST /api/translate/text`): контракт запроса и лимит абзацев — в shared;
-  настройки перевода — через DI (мост db/settings больше их не отдаёт); движок перевода переехал из
-  `server/shared/` в `translate/engine/` — им пользуются и legacy chats/stories.
-- **Блок L ✅** — avatars (`POST /api/avatars/batch`, AvatarStack): контракт дескрипторов и лимит
-  батча — в shared; DAO `db/avatars` стал репозиторием модуля.
-- **Блок M ✅** — me (профиль, фото профиля, фото из лайтбокса в чат): контракт и deep link (параметр и
-  белый список путей) — в shared; `server/media` переехал в `me/media/`. Эндпоинтам Bot API нужен
-  Telegram id — для них `@TelegramUser()` (исключение из правила `@CurrentUser()`).
-- **Блок N ✅** — knowledge-books (`/api/books` и записи книги): контракт, лимиты и диапазон глубины
-  поиска триггеров — в shared; правила смысла записи — валидаторы DTO; персонажи и персоны — через
-  DI; `db/knowledge` — мост для stories.
-- **Блок O ✅** — chats, по шагам: O1 ✅ подготовка (`prompt/` из `server/`, `streamCompletion`
-  без привязки к Hono); O2 ✅ контракт RP-чата и имена SSE-событий — в shared; O3 ✅ модуль `rp-chat/`
-  с не-стриминговыми маршрутами (стриминговые POST временно остаются в Hono — `LEGACY_ROUTES` в мосту); O4 ✅ стриминг через
-  `@Sse` на POST (`common/sse-observable`), `server/chats` и мосты `db/chats`, `db/impersonations`,
-  `db/characters`, `db/personas`, `db/rpTemplates` удалены.
-- **Блок P ✅** — stories: модуль `narrator/` (как фича webapp), URL `/api/stories`. По шагам:
-  P1 ✅ контракт историй (типы, лимиты compact) — в shared; P2 ✅ модуль с не-стриминговыми маршрутами
-  (advance, регенерация и ручное сжатие — в `LEGACY_ROUTES`: блокировка сжатия общая с авто-сжатием
-  внутри advance, делить её между Hono и Nest нельзя); P3 — `@Sse` для advance/регенерации, сервис
-  сжатия с блокировкой-полем, удаление `server/stories` и мостов `db/stories`, `db/presets`,
-  `db/narratorTemplates` (`db/knowledge` удалён в P2) — P3 ✅; всё API Mini App теперь в Nest.
-- **Блок Q** — бот grammY и удаление Hono, по шагам: Q1 ✅ модуль `telegram/` — Bot и прокси-агент
-  как провайдеры, обработчики — провайдеры с регистрацией в `onModuleInit`, polling запускается и
-  останавливается хуками жизненного цикла (`enableShutdownHooks`), свой `bot.catch` (без него grammY
-  останавливает polling на первой ошибке обработчика); upsert пользователя — `UsersRepository`
-  (`db/users.ts` удалён); `me/media` — сервисы с ботом через DI. Q2 — `/health` и статика Mini App
-  в Nest, удаление `server/` и Hono.
-
-### Контракт ответов не меняется
-webapp (`apiFetch`) читает тело любого успешного ответа как JSON и текст ошибки из `message ?? error`:
-- коды и тела ответов — как в Hono (`201 {character}`, `200 {ok:true}`, без `204`);
-- глобальный exception filter отдаёт `{ error: string }` (сообщение `ValidationPipe` — массив, его
-  склеиваем), неожиданные ошибки логирует `logger.error` с контекстом запроса;
-- лимит JSON-тела задаётся явно: по умолчанию в Express 100 КБ, а картинки персонажа — до ~3,4 МБ.
-
-### Подготовить почву для авторизации
-Сейчас текущий пользователь Telegram (`c.get("tgUser")`) читается в 26 файлах, 118 раз. При переносе
-заменяем это на декоратор `@CurrentUser()`, который отдаёт **внутренний `userId`**, а не объект
-пользователя Telegram. Тогда в шаге 3 достаточно добавить второй guard — контроллеры не трогаем.
-- Проверка initData (включая dev-обход и тексты 401) — одна чистая функция, её вызывают и
-  Hono-middleware, и guard Nest.
-- Строку в `users` для FK (`UsersService.ensureTelegramUser`) заводит guard с кэшем на процесс, а не каждый контроллер.
-
-### Без проблем переносятся
-- SSE-стриминг генерации — штатный `@Sse` с методом POST (`@Sse(path, { [METHOD_METADATA]: RequestMethod.POST })`,
-  Nest 12): webapp стримит POST + fetch, тело запроса несёт текст реплики. Проверено: токены уходят по мере
-  появления, 404/400 до возврата Observable — обычный JSON через ApiExceptionFilter; POST по умолчанию
-  отвечает 201 — нужен `@HttpCode(200)`. Общая разводка генерации в события — `common/stream-completion.ts`.
-- Бот grammY — как отдельный сервис (provider) внутри приложения Nest.
-- Раздача статики Mini App — `@nestjs/serve-static` (только если `public` существует, исключая
-  `/api/{*path}`) или сырой обработчик с SPA-fallback.
+### Задел для шага 3
+- Контроллеры читают **внутренний `userId`** (`@CurrentUser()`), не профиль Telegram — второй способ
+  входа добавится вторым guard'ом без правки контроллеров.
+- Проверка initData — одна чистая функция (`auth/initData.ts`); строку `users` для FK заводит guard
+  (`UsersService.ensureTelegramUser`, кэш на процесс).
+- Публичные маршруты — `@Public()` (сейчас только `/health`; в шаге 3 — вход по логину).
 
 ### Осторожно
 - **helmet с настройками по умолчанию ломает Mini App в Telegram Web**: `X-Frame-Options: SAMEORIGIN`

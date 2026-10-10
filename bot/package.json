@@ -14,7 +14,6 @@
     "test-web-search": "tsx src/scripts/test-web-search.ts"
   },
   "dependencies": {
-    "@hono/node-server": "^2.0.4",
     "@nestjs/common": "~12.1.1",
     "@nestjs/core": "~12.1.1",
     "@nestjs/platform-express": "~12.1.1",
@@ -25,7 +24,6 @@
     "drizzle-orm": "^0.45.2",
     "gpt-tokenizer": "^3.4.0",
     "grammy": "^1.43.0",
-    "hono": "^4.12.23",
     "https-proxy-agent": "^9.0.0",
     "nestjs-pino": "^5.2.1",
     "pino": "^10.3.1",

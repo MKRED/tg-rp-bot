@@ -7,9 +7,8 @@
 
 ## Project
 Yarn-workspaces monorepo:
-- **`bot/`** — Telegram bot (grammY) + HTTP API for the Mini App (**NestJS**; not-yet-migrated routes are
-  all API routes are on Nest; legacy Hono behind a bridge only serves `/health` + static files until it is
-  removed — plan in [docs/plan/roadmap.md](docs/plan/roadmap.md)). Node 24, native ESM.
+- **`bot/`** — one **NestJS** app: Telegram bot (grammY, as Nest providers) + HTTP API for the Mini App
+  + `/health` + Mini App static files. Node 24, native ESM.
 - **`webapp/`** — Telegram Mini App (React + Vite).
 - **`shared/`** — `@tg-rp-bot/shared`: API contract types + constants used by both bot and webapp
   (built by `tsc` into `shared/dist`; both packages consume the built output).
@@ -70,7 +69,7 @@ bot/src/    — main (Nest bootstrap) · app.module · config · logger ·
               polling lifecycle, Telegram proxy) · <domain>/ (characters, …) ·
               db/ (schema + legacy DAO per table) · llm/ (LLM client, per-user provider) ·
               prompt/ (prompt assembly, no Nest) · tavily/ ·
-              server/ (legacy Hono: /health + Mini App static, behind legacyBridge) · utils/
+              health/ (GET /health, @Public) · webapp-static/ (Mini App static + SPA fallback) · utils/
 webapp/src/ — main/init (Telegram SDK) · app/ (shell, HashRouter) · pages/ (one screen per route) ·
               features/ (domain modules) · shared/ (cross-cutting)
 shared/src/ — @tg-rp-bot/shared: API contract types (JSON over the wire) + constants, one file per domain
@@ -108,11 +107,11 @@ Full tree, webapp layout rules, router/deep-link details — [docs/architecture.
   `DatabaseService`; the old `db/<domain>/` DAO moves here), `dto/` (class-validator, `implements` the
   `@tg-rp-bot/shared` contract type), tests beside. Reference project with the same stack:
   `D:\GitProject\dnd-online` (`apps/server`).
-- **All API domains are on Nest:** a new `/api/*` prefix goes into a Nest module and into
-  `NEST_ROUTE_PREFIXES` (`server/legacyBridge.ts`), otherwise the bridge hands it to Hono (JSON 404).
-  Non-Nest callers of a Nest repository go through a temporary shim in `db/<domain>/index.ts`
+- **A new `/api/*` prefix = a new Nest module** (global prefix `api`; static files and the SPA fallback
+  skip `/api` and `/health` — `webapp-static/spa-fallback.ts`). Non-Nest callers of a Nest repository go through a temporary shim in `db/<domain>/index.ts`
   (see `db/settings`), removed when they get the repository via DI.
-- **Auth:** global `TelegramAuthGuard` (`auth/`) — every controller is protected; read the user with
+- **Auth:** global `TelegramAuthGuard` (`auth/`) — every controller is protected (only `@Public()` routes skip it — `/health`; don't add more without a
+  reason); read the user with
   `@CurrentUser() userId: number` (internal id), never the Telegram profile. Only endpoints that are
   Telegram by nature (`me/`: initData profile, Bot API calls needing the Telegram id) use
   `@TelegramUser()`. The guard also ensures the
