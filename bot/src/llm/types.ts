@@ -123,3 +123,16 @@ export interface LlmStreamDelta {
     finish_reason?: string | null;
   }>;
 }
+
+/**
+ * Кто умеет выполнить chat completion для пользователя — LlmService (ключ/модель из его настроек).
+ * Чистые функции генерации и перевода получают его параметром, а не импортируют глобально, — так
+ * ключ читается через Nest DI, а в тестах вместо модуля подставляется простой фейк.
+ */
+export interface ChatCompleter {
+  complete(
+    options: ChatCompletionOptions,
+    onChunk?: (token: string) => void,
+    onReset?: () => void,
+  ): Promise<ChatCompletionResult>;
+}

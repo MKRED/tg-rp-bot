@@ -3,6 +3,7 @@ import { SSE_EVENTS } from "@tg-rp-bot/shared";
 import type { Observable } from "rxjs";
 import { sseObservable } from "../../common/sse-observable.js";
 import { type SseSink, streamCompletion, writeEvent, writeGenerationError } from "../../common/stream-completion.js";
+import { LlmService } from "../../llm/llm.service.js";
 import logger from "../../logger.js";
 import { NarratorTemplatesRepository } from "../../narrator-templates/narrator-templates.repository.js";
 import { resolveNarratorMarkers } from "../../prompt/storyPromptBuilder/index.js";
@@ -29,6 +30,7 @@ export class StoryGenerationService {
     private readonly messages: StoryMessagesRepository,
     private readonly templates: NarratorTemplatesRepository,
     private readonly compaction: StoryCompactionService,
+    private readonly llm: LlmService,
   ) {}
 
   /**
@@ -135,7 +137,7 @@ export class StoryGenerationService {
   /** Генерирует бит-ответ на ход steerId, сохраняет, ставит курсор на него, пишет done. */
   private async beat(sink: SseSink, userId: number, storyId: number, steerId: number, completion: StoryCompletion): Promise<void> {
     const t0 = Date.now();
-    const result = await streamCompletion(sink, { messages: completion.msgs, ...completion.samplingOpts, userId, debugLabel: "narrator" });
+    const result = await streamCompletion(this.llm, sink, { messages: completion.msgs, ...completion.samplingOpts, userId, debugLabel: "narrator" });
     const beat = await this.messages.insert(userId, storyId, steerId, "assistant", "beat", result.content);
     await this.messages.moveCursorToLeaf(storyId, beat.id);
     logger.info({ durationMs: Date.now() - t0, userId, storyId, messageId: beat.id }, "Story beat generated");

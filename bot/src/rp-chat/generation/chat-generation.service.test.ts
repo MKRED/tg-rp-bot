@@ -39,7 +39,7 @@ function setup() {
     setCursor: vi.fn(async (_c: number, id: number | null) => void calls.push(`setCursor:${id}`)),
     moveCursorToLeaf: vi.fn(async (_c: number, id: number) => void calls.push(`leaf:${id}`)),
   };
-  const service = new ChatGenerationService(access as unknown as Args[0], messages as unknown as Args[1]);
+  const service = new ChatGenerationService(access as unknown as Args[0], messages as unknown as Args[1], {} as Args[2]);
   return { service, access, messages, calls };
 }
 
@@ -55,7 +55,7 @@ function collect(obs: Observable<MessageEvent>) {
 
 /** Последняя user-реплика в запросе к LLM — проверка, что реплика игрока ровно одна и та, что надо. */
 const userTurns = () =>
-  (streamCompletion.mock.lastCall?.[1].messages as { role: string; content: string }[]).filter((m) => m.role === "user");
+  (streamCompletion.mock.lastCall?.[2].messages as { role: string; content: string }[]).filter((m) => m.role === "user");
 
 describe("ChatGenerationService.send", () => {
   beforeEach(() => streamCompletion.mockReset().mockResolvedValue({ content: "Ответ" }));

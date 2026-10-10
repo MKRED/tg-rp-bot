@@ -3,8 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
 vi.mock("../../db/index.js", () => ({ db: {}, schema: {} }));
-const chatCompletion = vi.hoisted(() => vi.fn());
-vi.mock("../../llm/client.js", () => ({ chatCompletion }));
+const chatCompletion = vi.fn();
 const plan = vi.hoisted(() => ({ compactBlockReason: vi.fn(), planStoryCompaction: vi.fn() }));
 vi.mock("./story-compaction-plan.js", async (importOriginal) => ({ ...(await importOriginal<object>()), ...plan }));
 vi.mock("../generation/story-completion.js", () => ({ buildStoryCompletion: () => ({ msgs: [], compactComponentEnabled: true }) }));
@@ -19,7 +18,7 @@ const seg = (anchorId: number) => ({ anchorId, beatTexts: [`b${anchorId}`], cove
 function setup() {
   const access = { requireContext: vi.fn().mockResolvedValue(CTX) };
   const compactions = { nextSeq: vi.fn().mockResolvedValue(3), insert: vi.fn() };
-  const service = new StoryCompactionService(access as unknown as A[0], compactions as unknown as A[1]);
+  const service = new StoryCompactionService(access as unknown as A[0], compactions as unknown as A[1], { complete: chatCompletion } as unknown as A[2]);
   return { service, access, compactions };
 }
 

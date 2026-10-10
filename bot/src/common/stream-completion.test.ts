@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const chatCompletion = vi.fn();
-vi.mock("../llm/client.js", () => ({ chatCompletion }));
+const llm = { complete: chatCompletion };
 
 const { MissingApiKeyError } = await import("../llm/errors.js");
 const { streamCompletion, writeGenerationError } = await import("./stream-completion.js");
@@ -26,7 +26,7 @@ describe("streamCompletion", () => {
       return { content: "вет" };
     });
     const s = sink();
-    await expect(streamCompletion(s, OPTIONS)).resolves.toEqual({ content: "вет" });
+    await expect(streamCompletion(llm, s, OPTIONS)).resolves.toEqual({ content: "вет" });
     expect(s.events).toEqual([
       { event: "token", data: '{"text":"При"}' },
       { event: "reset", data: "{}" },
@@ -37,7 +37,7 @@ describe("streamCompletion", () => {
   it("doStream=false — без callback'ов, поток молчит до done", async () => {
     chatCompletion.mockResolvedValue({ content: "x" });
     const s = sink();
-    await streamCompletion(s, OPTIONS, false);
+    await streamCompletion(llm, s, OPTIONS, false);
     expect(chatCompletion).toHaveBeenCalledWith(OPTIONS, undefined, undefined);
     expect(s.events).toEqual([]);
   });
@@ -48,7 +48,7 @@ describe("streamCompletion", () => {
       return { content: "a" };
     });
     const s = { writeSSE: vi.fn().mockRejectedValue(new Error("closed")) };
-    await expect(streamCompletion(s, OPTIONS)).resolves.toEqual({ content: "a" });
+    await expect(streamCompletion(llm, s, OPTIONS)).resolves.toEqual({ content: "a" });
   });
 });
 

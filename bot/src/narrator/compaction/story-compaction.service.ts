@@ -1,7 +1,7 @@
 import { ConflictException, HttpException, Injectable, NotFoundException } from "@nestjs/common";
 import { llmHttpError } from "../../common/llm-http-error.js";
 import { MissingApiKeyError } from "../../llm/errors.js";
-import { chatCompletion } from "../../llm/client.js";
+import { LlmService } from "../../llm/llm.service.js";
 import logger from "../../logger.js";
 import { retry } from "../../utils/index.js";
 import { buildStoryCompletion, type StoryContext } from "../generation/story-completion.js";
@@ -23,6 +23,7 @@ export class StoryCompactionService {
   constructor(
     private readonly access: StoryContextService,
     private readonly compactions: CompactionsRepository,
+    private readonly llm: LlmService,
   ) {}
 
   /**
@@ -77,7 +78,7 @@ export class StoryCompactionService {
         // Сжатие — задача на рассуждение (выделить главное, связать события): «мышление» просим всегда,
         // уровень — из пресета истории.
         () =>
-          chatCompletion({
+          this.llm.complete({
             messages: compactionRequest(prompt, priorSummaries, seg.beatTexts),
             userId,
             debugLabel: "compact",

@@ -40,6 +40,7 @@ function setup() {
     messages as unknown as A[1],
     templates as unknown as A[2],
     compaction as unknown as A[3],
+    {} as A[4],
   );
   return { service, access, messages, templates, compaction, calls };
 }

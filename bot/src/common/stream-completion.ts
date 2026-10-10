@@ -1,7 +1,6 @@
 import { SSE_EVENTS, type SseErrorData, type SseTokenData } from "@tg-rp-bot/shared";
-import { chatCompletion } from "../llm/client.js";
 import { MissingApiKeyError } from "../llm/errors.js";
-import type { ChatCompletionOptions, ChatCompletionResult } from "../llm/types.js";
+import type { ChatCompleter, ChatCompletionOptions, ChatCompletionResult } from "../llm/types.js";
 
 /**
  * Куда писать SSE-события генерации. Минимальный интерфейс без привязки к Nest: маршруты @Sse
@@ -12,7 +11,7 @@ export interface SseSink {
 }
 
 /**
- * Запускает chatCompletion со стандартной разводкой SSE-событий token/reset в поток.
+ * Запускает chat completion (llm — LlmService вызывающего сервиса) со стандартной разводкой SSE-событий token/reset в поток.
  * Это единственная общая часть всех стриминговых генераций (send/edit/regenerate/impersonate,
  * narrator); вставку сообщения/варианта, управление курсором и события done/error вызывающий
  * делает сам — там логика у каждого своя.
@@ -20,11 +19,12 @@ export interface SseSink {
  * doStream=false отключает token/reset (пресет без стриминга → клиент покажет спиннер).
  */
 export function streamCompletion(
+  llm: ChatCompleter,
   sink: SseSink,
   options: ChatCompletionOptions,
   doStream = true,
 ): Promise<ChatCompletionResult> {
-  return chatCompletion(
+  return llm.complete(
     options,
     doStream
       ? (token) => {

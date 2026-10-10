@@ -1,10 +1,8 @@
 import { getDecryptedDeepSeekCredentials } from "../db/settings/index.js";
+import { DEFAULT_DEEPSEEK_MODEL } from "./constants.js";
 import { MissingApiKeyError } from "./errors.js";
 import { buildDeepSeekProvider } from "./providers.js";
 import type { LlmProvider } from "./providers.types.js";
-
-/** Модель по умолчанию, если ключ уже задан, а модель пользователь ещё не выбрал в настройках. */
-export const DEFAULT_DEEPSEEK_MODEL = "deepseek-flash";
 
 /**
  * Резолвит провайдера для конкретного пользователя (BYOK — общего ключа из env больше нет).

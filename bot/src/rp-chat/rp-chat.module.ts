@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { CharactersModule } from "../characters/characters.module.js";
+import { LlmModule } from "../llm/llm.module.js";
 import { PersonasModule } from "../personas/personas.module.js";
 import { PresetsModule } from "../presets/presets.module.js";
 import { RpTemplatesModule } from "../rp-templates/rp-templates.module.js";
@@ -32,7 +33,7 @@ import { ChatTranslationService } from "./translation/chat-translation.service.j
  * Персонаж, персона, RP-шаблон и пресет чата — репозитории соседних модулей через DI.
  */
 @Module({
-  imports: [CharactersModule, PersonasModule, RpTemplatesModule, PresetsModule],
+  imports: [CharactersModule, LlmModule, PersonasModule, RpTemplatesModule, PresetsModule],
   controllers: [
     ChatsController,
     MessagesController,

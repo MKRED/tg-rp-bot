@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { KnowledgeBooksModule } from "../knowledge-books/knowledge-books.module.js";
+import { LlmModule } from "../llm/llm.module.js";
 import { NarratorTemplatesModule } from "../narrator-templates/narrator-templates.module.js";
 import { PresetsModule } from "../presets/presets.module.js";
 import { CompactionsController } from "./compaction/compactions.controller.js";
@@ -31,7 +32,7 @@ import { StoryTranslationService } from "./translation/story-translation.service
  * Книга знаний, narrator-шаблон и пресет — репозитории соседних модулей через DI.
  */
 @Module({
-  imports: [KnowledgeBooksModule, NarratorTemplatesModule, PresetsModule],
+  imports: [KnowledgeBooksModule, LlmModule, NarratorTemplatesModule, PresetsModule],
   controllers: [
     StoriesController,
     StoryMessagesController,

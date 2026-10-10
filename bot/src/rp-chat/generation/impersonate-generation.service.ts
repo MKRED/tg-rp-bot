@@ -3,6 +3,7 @@ import { SSE_EVENTS } from "@tg-rp-bot/shared";
 import type { Observable } from "rxjs";
 import { sseObservable } from "../../common/sse-observable.js";
 import { streamCompletion, writeEvent, writeGenerationError } from "../../common/stream-completion.js";
+import { LlmService } from "../../llm/llm.service.js";
 import logger from "../../logger.js";
 import { ChatContextService } from "../chat-context.service.js";
 import { ImpersonationsRepository } from "../impersonations/impersonations.repository.js";
@@ -17,6 +18,7 @@ export class ImpersonateGenerationService {
   constructor(
     private readonly access: ChatContextService,
     private readonly impersonations: ImpersonationsRepository,
+    private readonly llm: LlmService,
   ) {}
 
   async generate(userId: number, chatId: number): Promise<Observable<MessageEvent>> {
@@ -29,7 +31,7 @@ export class ImpersonateGenerationService {
     return sseObservable("impersonate", async (sink) => {
       try {
         const t0 = Date.now();
-        const result = await streamCompletion(sink, { messages, ...sampling, userId, debugLabel: "impersonate" }, doStream);
+        const result = await streamCompletion(this.llm, sink, { messages, ...sampling, userId, debugLabel: "impersonate" }, doStream);
         const variant = await this.impersonations.insert(userId, chatId, parentMessageId, result.content);
         logger.info({ durationMs: Date.now() - t0, userId, chatId, streamed: doStream }, "Impersonate variant generated");
         await writeEvent(sink, SSE_EVENTS.done, { variant });

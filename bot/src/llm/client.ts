@@ -15,9 +15,19 @@ import type {
 } from "./types.js";
 
 /**
- * Вызывает chat completion персонального LLM-провайдера пользователя (BYOK — ключ/модель из
- * userSettings, см. resolveProvider.ts; общего ключа из env больше нет). Бросает MissingApiKeyError,
- * если у пользователя ключ не задан.
+ * ВРЕМЕННАЯ обёртка для кода, ещё не получающего LlmService (ChatCompleter) параметром: ключ — через
+ * мост db/settings. Удаляется вместе с resolveProvider.ts и мостом.
+ */
+export async function chatCompletion(
+  options: ChatCompletionOptions,
+  onChunk?: (token: string) => void,
+  onReset?: () => void,
+): Promise<ChatCompletionResult> {
+  return requestChatCompletion(await resolveProvider(options.userId), options, onChunk, onReset);
+}
+
+/**
+ * Chat completion у заданного провайдера (ключ/модель пользователя резолвит LlmService — BYOK).
  *
  * Если передан `onChunk` — использует streaming (Server-Sent Events): каждый токен
  * передаётся в коллбэк, итоговая строка накапливается и возвращается как обычно.
@@ -26,12 +36,12 @@ import type {
  * Запрос идёт обычным fetch без undici-dispatcher, поэтому НЕ проходит через
  * Telegram-прокси (требование: через прокси только Telegram).
  */
-export async function chatCompletion(
+export async function requestChatCompletion(
+  provider: LlmProvider,
   options: ChatCompletionOptions,
   onChunk?: (token: string) => void,
   onReset?: () => void,
 ): Promise<ChatCompletionResult> {
-  const provider = await resolveProvider(options.userId);
   const model = options.model ?? provider.defaultModel;
   const url = `${provider.baseUrl}${CHAT_COMPLETIONS_PATH}`;
   const t0 = Date.now();

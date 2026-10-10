@@ -23,7 +23,7 @@ function setup(userPersonaStreaming: boolean | undefined) {
   };
   const access = { requireContext: vi.fn().mockResolvedValue(ctx) };
   const impersonations = { insert: vi.fn().mockResolvedValue({ id: 7, content: "Вариант" }) };
-  const service = new ImpersonateGenerationService(access as unknown as Args[0], impersonations as unknown as Args[1]);
+  const service = new ImpersonateGenerationService(access as unknown as Args[0], impersonations as unknown as Args[1], {} as Args[2]);
   return { service, impersonations };
 }
 
@@ -45,8 +45,8 @@ describe("ImpersonateGenerationService", () => {
   it("стриминг токенов — по флагу шаблона; без шаблона — включён", async () => {
     streamCompletion.mockResolvedValue({ content: "x" });
     await collect(await setup(false).service.generate(1, 5));
-    expect(streamCompletion.mock.lastCall?.[2]).toBe(false);
+    expect(streamCompletion.mock.lastCall?.[3]).toBe(false);
     await collect(await setup(undefined).service.generate(1, 5));
-    expect(streamCompletion.mock.lastCall?.[2]).toBe(true);
+    expect(streamCompletion.mock.lastCall?.[3]).toBe(true);
   });
 });

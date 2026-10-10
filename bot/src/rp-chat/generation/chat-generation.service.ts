@@ -3,6 +3,7 @@ import { SSE_EVENTS } from "@tg-rp-bot/shared";
 import type { Observable } from "rxjs";
 import { sseObservable } from "../../common/sse-observable.js";
 import { type SseSink, streamCompletion, writeEvent, writeGenerationError } from "../../common/stream-completion.js";
+import { LlmService } from "../../llm/llm.service.js";
 import logger from "../../logger.js";
 import type { TrimInfo } from "../../prompt/promptBuilder/index.js";
 import { type ChatContext, ChatContextService } from "../chat-context.service.js";
@@ -27,6 +28,7 @@ export class ChatGenerationService {
   constructor(
     private readonly access: ChatContextService,
     private readonly messages: MessagesRepository,
+    private readonly llm: LlmService,
   ) {}
 
   /** Новая реплика игрока в конец активной ветки + ответ ИИ. */
@@ -106,7 +108,7 @@ export class ChatGenerationService {
   /** Генерирует ответ на реплику parentId, сохраняет его, ставит курсор и пишет done. */
   private async reply(sink: SseSink, userId: number, chatId: number, parentId: number, completion: RpCompletion): Promise<void> {
     const t0 = Date.now();
-    const result = await streamCompletion(sink, { messages: completion.messages, ...completion.sampling, userId, debugLabel: "rp" });
+    const result = await streamCompletion(this.llm, sink, { messages: completion.messages, ...completion.sampling, userId, debugLabel: "rp" });
     const reply = await this.messages.insert(userId, chatId, parentId, "assistant", result.content);
     await this.messages.moveCursorToLeaf(chatId, reply.id);
     logger.info({ durationMs: Date.now() - t0, userId, chatId, messageId: reply.id }, "RP reply generated");
