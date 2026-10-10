@@ -5,6 +5,9 @@ import { PresetsModule } from "../presets/presets.module.js";
 import { CompactionsController } from "./compaction/compactions.controller.js";
 import { CompactionsRepository } from "./compaction/compactions.repository.js";
 import { CompactionsService } from "./compaction/compactions.service.js";
+import { StoryCompactionService } from "./compaction/story-compaction.service.js";
+import { StoryGenerationController } from "./generation/story-generation.controller.js";
+import { StoryGenerationService } from "./generation/story-generation.service.js";
 import { StoryMessagesController } from "./messages/story-messages.controller.js";
 import { StoryMessagesRepository } from "./messages/story-messages.repository.js";
 import { StoryMessagesService } from "./messages/story-messages.service.js";
@@ -23,15 +26,16 @@ import { StoryTranslationController } from "./translation/story-translation.cont
 import { StoryTranslationService } from "./translation/story-translation.service.js";
 
 /**
- * /api/stories — истории narrator («Режиссёр истории»): истории, сообщения дерева, перевод,
- * настройки, статистика, пересказы. Книга знаний, narrator-шаблон и пресет — репозитории соседних
- * модулей через DI. Стриминговые advance/регенерация и ручное сжатие пока в legacy Hono.
+ * /api/stories — истории narrator («Режиссёр истории»): истории, сообщения дерева, стриминговая
+ * генерация (advance, регенерация — SSE), сжатие и пересказы, перевод, настройки, статистика.
+ * Книга знаний, narrator-шаблон и пресет — репозитории соседних модулей через DI.
  */
 @Module({
   imports: [KnowledgeBooksModule, NarratorTemplatesModule, PresetsModule],
   controllers: [
     StoriesController,
     StoryMessagesController,
+    StoryGenerationController,
     StoryTranslationController,
     StorySettingsController,
     StoryStatsController,
@@ -50,6 +54,8 @@ import { StoryTranslationService } from "./translation/story-translation.service
     StoryStatsService,
     StoryStatsRepository,
     CompactionsService,
+    StoryCompactionService,
+    StoryGenerationService,
     CompactionsRepository,
   ],
 })

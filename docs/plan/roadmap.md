@@ -26,7 +26,7 @@
 SDK пропускает инициализацию с предупреждением, API отвечает от имени dev-пользователя.
 При выдаче id браузерным пользователям (шаг 3) не занимать `-1000000001`.
 
-Отдельная авторизация для этого не нужна: в `bot/src/server/middleware/initData.ts` уже есть
+Отдельная авторизация для этого не нужна: в `bot/src/auth/initData.ts` уже есть
 dev-обход — при заданном `DEV_USER_ID` (`config.devUserId`) запрос без подписи Telegram пропускается
 от имени этого пользователя.
 
@@ -124,12 +124,12 @@ Nest поднимается на том же порту, текущее Hono-п�
   с не-стриминговыми маршрутами (стриминговые POST временно остаются в Hono — `LEGACY_ROUTES` в мосту); O4 ✅ стриминг через
   `@Sse` на POST (`common/sse-observable`), `server/chats` и мосты `db/chats`, `db/impersonations`,
   `db/characters`, `db/personas`, `db/rpTemplates` удалены.
-- **Блок P (stories, в работе)** — модуль `narrator/` (как фича webapp), URL `/api/stories`. По шагам:
+- **Блок P ✅** — stories: модуль `narrator/` (как фича webapp), URL `/api/stories`. По шагам:
   P1 ✅ контракт историй (типы, лимиты compact) — в shared; P2 ✅ модуль с не-стриминговыми маршрутами
   (advance, регенерация и ручное сжатие — в `LEGACY_ROUTES`: блокировка сжатия общая с авто-сжатием
   внутри advance, делить её между Hono и Nest нельзя); P3 — `@Sse` для advance/регенерации, сервис
   сжатия с блокировкой-полем, удаление `server/stories` и мостов `db/stories`, `db/presets`,
-  `db/narratorTemplates` (`db/knowledge` удалён в P2).
+  `db/narratorTemplates` (`db/knowledge` удалён в P2) — P3 ✅; всё API Mini App теперь в Nest.
 - **Дальше** — бот grammY как provider и удаление Hono.
 
 ### Контракт ответов не меняется

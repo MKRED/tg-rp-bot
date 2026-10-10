@@ -4,9 +4,9 @@ import type { Hono } from "hono";
 import logger from "../logger.js";
 
 /**
- * Префиксы, уже перенесённые на Nest. Всё остальное (ещё не перенесённое API, /health, статика
- * Mini App) уходит в legacy Hono. Домен добавляется сюда в том же коммите, где его маршруты
- * появляются в Nest и удаляются из server/routes.ts.
+ * Префиксы, перенесённые на Nest (всё API Mini App). Остальное (/health, статика Mini App) уходит
+ * в legacy Hono. Домен добавляется сюда в том же коммите, где его маршруты
+ * появляются в Nest.
  */
 export const NEST_ROUTE_PREFIXES: readonly string[] = [
   "/api/characters",
@@ -29,15 +29,10 @@ export type LegacyRoute = { method: string; path: RegExp };
 
 /**
  * ВРЕМЕННЫЕ исключения внутри перенесённых префиксов: маршруты, которые ещё обслуживает Hono, пока
- * домен переезжает по частям (так переезжали chats: стриминговые POST — последним шагом). Сейчас —
- * stories: стриминговые advance и регенерация, и ручное сжатие — его блокировка общая с авто-сжатием
- * внутри advance, делить её между Hono и Nest нельзя.
+ * домен переезжает по частям (так переезжали chats и stories: стриминговые POST — последним шагом).
+ * Сейчас пусто; уходит вместе с Hono.
  */
-export const LEGACY_ROUTES: readonly LegacyRoute[] = [
-  { method: "POST", path: /^\/api\/stories\/[^/]+\/advance$/ },
-  { method: "POST", path: /^\/api\/stories\/[^/]+\/messages\/[^/]+\/regenerate$/ },
-  { method: "POST", path: /^\/api\/stories\/[^/]+\/compact$/ },
-];
+export const LEGACY_ROUTES: readonly LegacyRoute[] = [];
 
 /**
  * Обслуживает ли запрос Nest: путь совпадает с префиксом или вложен в него и не попадает в

@@ -1,6 +1,5 @@
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
-import { createApiRoutes } from "./routes.js";
 
 // Каталог собранной статики Mini App относительно cwd процесса (в контейнере cwd = /app/bot,
 // статика лежит в ./public). Локально в dev каталога нет — отдаётся 404, это нормально:
@@ -8,8 +7,8 @@ import { createApiRoutes } from "./routes.js";
 const WEBAPP_DIR = "./public";
 
 /**
- * Legacy Hono-приложение: ещё не перенесённое на Nest API Mini App + раздача собранной статики
- * webapp. Слушает не само — Nest передаёт сюда запросы через мост (legacyBridge.ts).
+ * Legacy Hono-приложение: /health и раздача собранной статики webapp (всё API Mini App — в Nest).
+ * Слушает не само — Nest передаёт сюда запросы через мост (legacyBridge.ts).
  */
 export function createLegacyApp(): Hono {
   const app = new Hono();
@@ -17,8 +16,8 @@ export function createLegacyApp(): Hono {
   // Health-check для мониторинга/доступности
   app.get("/health", (c) => c.json({ ok: true }));
 
-  // API Mini App — регистрируем ДО статики, чтобы catch-all ниже её не перехватывал
-  app.route("/api", createApiRoutes());
+  // Неизвестный /api/* (вне префиксов Nest) — JSON 404, а не index.html от SPA-fallback ниже.
+  app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
 
   // Статика Mini App: сначала отдаём реальные файлы (js/css/ассеты)…
   app.use("/*", serveStatic({ root: WEBAPP_DIR }));

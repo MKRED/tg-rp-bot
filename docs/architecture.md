@@ -68,8 +68,10 @@ bot/src/
                   compaction/ (пересказы: список/удаление каскадом; compact-gate, live-tail, compacted-ids —
                   чистые функции), generation/story-completion (сборка запроса к LLM из контекста истории);
                   story-context.service (история + шаблон/пресет/настройки/записи книги/пересказы с
-                  проверкой владельца), story-path.repository. Стриминговые advance/регенерация и ручное
-                  сжатие пока в legacy server/stories
+                  проверкой владельца), story-path.repository, generation/ (SSE через @Sse на POST: advance —
+                  ход + бит, регенерация бита с точным откатом курсора; авто-сжатие перед битом),
+                  compaction/story-compaction.service (проход сжатия; блокировка по истории — поле синглтона,
+                  общая для ручного POST /compact и авто-сжатия; story-compaction-plan — чистый план)
   me/           — /api/me: профиль из initData, фото профиля (GET /photo) и фото из лайтбокса себе в
                   чат (POST /send-photo) — controller / service / dto/; media/ — profilePhoto (Bot API +
                   кэш на час) и photoToChat (sendPhoto с web_app-кнопкой deep link и «Закрыть»)
@@ -88,8 +90,7 @@ bot/src/
   proxy.ts      — HttpsProxyAgent (https-proxy-agent) для Telegram; тот же TELEGRAM_PROXY_URL
                   переиспользуется для Tavily, но через отдельный undici ProxyAgent (см. tavily/)
   db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + клиент +
-                  DAO-папки по таблицам: presets/ narratorTemplates/ stories/ (временные мосты на
-                  репозитории Nest для legacy advance/регенерации/сжатия историй), settings/ (мост
+                  DAO-папки по таблицам: settings/ (мост
                   getDecryptedDeepSeekCredentials для resolveProvider) (у каждой DAO-файл + types.ts/constants.ts при наличии + barrel index.ts;
                   типы контракта API перенесённых в Nest доменов — из @tg-rp-bot/shared),
                   users.ts
@@ -104,16 +105,11 @@ bot/src/
                   через fetch/ProxyAgent из пакета undici, TELEGRAM_PROXY_URL), errors.ts (TavilyHttpError)
   handlers/     — обработчики команд/кнопок бота (index = registerHandlers, start.ts,
                   photoActions.ts — callback «Закрыть» под фото из лайтбокса)
-  server/       — legacy Hono HTTP API (переезжает на Nest по доменам — docs/plan/roadmap.md):
-                  legacyBridge.ts — express-middleware, отдающий в Hono всё вне NEST_ROUTE_PREFIXES
-                  (+ LEGACY_ROUTES — временные исключения внутри перенесённых префиксов по методу и пути,
-                  для переезда домена по частям; сейчас — advance, регенерация и сжатие историй);
-                  index=createLegacyApp,
-                  routes.ts — карта эндпоинтов (монтаж контроллеров), middleware/ (initData — валидация
-                  подписи), доменная папка stories/ — advance (SSE), регенерация бита (SSE) и ручное
-                  сжатие; storyContext — сборка входа через narrator/ (story-completion);
-                  shared/ — apiError (переиспользуемое между доменами)
-                  + раздача собранной статики Mini App из ./public (SPA-fallback) — один процесс
+  server/       — legacy Hono (уходит следующим блоком — docs/plan/roadmap.md): всё API Mini App уже
+                  в Nest; legacyBridge.ts — express-middleware, отдающий в Hono всё вне NEST_ROUTE_PREFIXES
+                  (+ LEGACY_ROUTES — исключения по методу и пути для переезда домена по частям; пусто);
+                  index=createLegacyApp: /health, JSON 404 на неизвестный /api/*, раздача собранной
+                  статики Mini App из ./public (SPA-fallback) — один процесс
   scripts/      — разовые скрипты (backfill-message-encryption)
   utils/        — retry, crypto (per-user шифрование сообщений и кэша переводов), concurrency (runWithConcurrency —
                   пул с ограниченной конкурентностью)
@@ -226,10 +222,9 @@ Tavily-клиент (`bot/src/tavily/tavilyUsage.ts`) устроен иначе:
 
 Запросы webapp → `/api/*` несут подписанный Telegram `initData` в заголовке
 `Authorization: tma <initData>` (webapp: `shared/api/client.ts`). Сервер
-(`auth/initData.ts` — общая функция для guard'а Nest `auth/telegram-auth.guard.ts` и Hono-middleware
-`server/middleware/initData.ts`) **проверяет HMAC-подпись** по `BOT_TOKEN` через
+(`auth/initData.ts` — функция для guard'а Nest `auth/telegram-auth.guard.ts`) **проверяет HMAC-подпись** по `BOT_TOKEN` через
 **`@tma.js/init-data-node`** (`validate` бросает при подделке/просрочке, `parse` достаёт юзера в
-`c.get("tgUser")` у Hono, в `request.userId` → `@CurrentUser()` у Nest). Без подписи: в проде → 401, в dev → пропускаем (отладка webapp из браузера).
+`request.userId` → `@CurrentUser()`). Без подписи: в проде → 401, в dev → пропускаем (отладка webapp из браузера).
 
 ⚠️ Серверный пакет — **`@tma.js/init-data-node`**, НЕ `@telegram-apps/init-data-node` (последний
 deprecated). Это противоположно выбору org для **webapp** (там `@telegram-apps/*` — см. README/стек):

@@ -38,15 +38,12 @@ tg-rp-bot/
 │  │  ├─ config.ts     # переменные окружения
 │  │  ├─ logger.ts     # pino
 │  │  ├─ proxy.ts      # HttpsProxyAgent (https-proxy-agent) для Telegram; тот же прокси — и для Tavily
-│  │  ├─ db/           # drizzle: schema + клиент; stories/ presets/ narratorTemplates/ settings/ — временные
-│  │  │                #   мосты на Nest-репозитории для legacy-кода
+│  │  ├─ db/           # drizzle: schema + клиент; settings/ — временный мост на Nest-репозиторий для llm/
 │  │  ├─ llm/          # клиент LLM (DeepSeek, ключ per-user BYOK через resolveProvider)
 │  │  ├─ prompt/       # сборка промптов RP-чата и narrator (без Nest): promptBuilder, storyPromptBuilder, бюджет
 │  │  ├─ tavily/       # клиент Tavily (квота ключа, GET /usage), ключ per-user BYOK
 │  │  ├─ handlers/     # обработчики команд бота (/start …)
-│  │  ├─ server/       # legacy Hono HTTP API (/health, /api; переезжает на Nest по доменам), routes —
-│  │  │                #   карта эндпоинтов; stories/ — SSE-генерация narrator и ручное сжатие; shared/ +
-│  │  │                #   статика
+│  │  ├─ server/       # legacy Hono за мостом: /health + статика Mini App (всё API — в Nest)
 │  │  ├─ scripts/      # разовые скрипты (backfill шифрования сообщений)
 │  │  └─ utils/        # retry, crypto (per-user шифрование)
 │  └─ drizzle/         # SQL-миграции

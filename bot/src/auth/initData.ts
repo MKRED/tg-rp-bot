@@ -12,7 +12,7 @@ export interface InitDataAuthOptions {
 }
 
 /**
- * Проверка Telegram Mini App initData — общая для Hono-middleware и guard'а Nest.
+ * Проверка Telegram Mini App initData для guard'а Nest (TelegramAuthGuard).
  *
  * Mini App шлёт подписанную строку в заголовке `Authorization: tma <initData>`. Доверяем
  * пользователю только после проверки HMAC-SHA256 по BOT_TOKEN (@tma.js/init-data-node).

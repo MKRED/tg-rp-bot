@@ -4,8 +4,8 @@ import { EditStoryBeatDto } from "./dto/edit-story-beat.dto.js";
 import { StoryMessagesService } from "./story-messages.service.js";
 
 /**
- * /api/stories/:id/messages — действия над сообщениями вне генерации. Стриминговую регенерацию
- * пока обслуживает legacy Hono (исключение в legacyBridge.ts).
+ * /api/stories/:id/messages — действия над сообщениями вне генерации (регенерация бита — в
+ * StoryGenerationController).
  */
 @Controller("stories/:id/messages")
 export class StoryMessagesController {

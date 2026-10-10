@@ -28,8 +28,8 @@ RP-чата), переиспользуя только реально переи�
 - **Сервер:** Nest-модули `narrator-templates/` (CRUD шаблонов), `knowledge-books/` (книги и записи) и
   `narrator/` (`/api/stories`: истории, сообщения, перевод, настройки, статистика, пересказы — зеркало
   `rp-chat/`; сборка запроса к LLM — `narrator/generation/story-completion.ts`, тест рядом);
-  `prompt/storyPromptBuilder/` (+тест). Стриминговые advance/регенерация и ручное сжатие пока в legacy
-  `server/stories/` (через мосты `db/stories`, `db/presets`, `db/narratorTemplates`).
+  `prompt/storyPromptBuilder/` (+тест); генерация (advance, регенерация — SSE через `@Sse`) —
+  `narrator/generation/story-generation.service.ts`.
 - **Webapp:** фичи `narrator`/`knowledge-books`/`narrator-templates`, страницы `pages/narrator/*`,
   `pages/knowledge-books/*`, `pages/narrator-templates/*`; кнопки на главной (Режим игры + Библиотека).
   Перевод истории — раздел в `StorySettingsPage` + кнопка-Globe на битах/директивах в ленте
@@ -107,10 +107,10 @@ postHistory`, где `postHistory` выключен. Фолбэк (истори�
   в `promptOrder` шаблона **и** `compactEnabled` чата. Выключение неразрушающе (пересказы остаются в БД,
   возвращаются при включении). Применение в `narrator/generation/story-completion.ts`; гейт+доступность —
   `narrator/compaction/compact-gate.ts` (`compactAvailable`: есть лимит и `>= MIN_COMPACT_CONTEXT` 4000).
-- **Операция** (`compact.handler.ts` `compactStory`): сегментирует живой хвост по ~`contextSize−floor`
+- **Операция** (`narrator/compaction/story-compaction.service.ts`, план — чистый `story-compaction-plan.ts`): сегментирует живой хвост по ~`contextSize−floor`
   токенов (чистая `planCompactionSegments`, тест), каждый сегмент → отдельный LLM-вызов (`debugLabel:
   "compact"`, прошлые пересказы как «story so far»), пока вход не упадёт ≤ floor. Текущий лист не сжимаем.
-  Lock по `storyId`. Триггеры: ручной `POST /compact` и авто перед битом в `handleAdvanceStory`
+  Lock по `storyId`. Триггеры: ручной `POST /compact` и авто перед битом в `StoryGenerationService.advance`
   (`shouldAutoCompact`, синхронно, fail-safe — падение не роняет advance, остаётся `trimHistoryToBudget`).
 - **Инвалидция:** `deleteStoryMessage` зовёт `invalidateCompactionsByRemovedIds` — каскад вперёд по seq,
   если якорь попал в удалённое (см. оговорку про глобальный seq в коде). Токены везде — `countTokens` (o200k).

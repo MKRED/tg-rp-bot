@@ -26,7 +26,7 @@ if (isProduction && devUserIdRaw) {
   throw new Error("DEV_USER_ID задан в production — небезопасно, убери переменную из окружения");
 }
 if (!isProduction && devUserIdRaw && !Number.isInteger(Number(devUserIdRaw))) {
-  // Иначе Number("abc") даёт NaN, devUserId !== undefined остаётся true, и requireInitData
+  // Иначе Number("abc") даёт NaN, devUserId !== undefined остаётся true, и guard авторизации
   // молча подставит сломанного юзера с id: NaN — падать лучше сразу на старте, с понятной причиной.
   throw new Error(`DEV_USER_ID должен быть числом, получено: "${devUserIdRaw}"`);
 }
@@ -58,8 +58,8 @@ export const config = {
 
   /**
    * Telegram-id реального прод-юзера для dev-обхода initData при открытии Mini App
-   * из браузера. undefined вне dev или если переменная не задана — тогда requireInitData
-   * ведёт себя как раньше (401 без подписи).
+   * из браузера. undefined вне dev или если переменная не задана — тогда TelegramAuthGuard
+   * без подписи отвечает 401.
    */
   devUserId: !isProduction && devUserIdRaw ? Number(devUserIdRaw) : undefined,
 

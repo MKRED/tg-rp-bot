@@ -1,4 +1,4 @@
-import type { TgUser } from "../server/middleware/initData.types.js";
+import type { TgUser } from "../auth/auth.types.js";
 import logger from "../logger.js";
 import { db, schema } from "./index.js";
 
