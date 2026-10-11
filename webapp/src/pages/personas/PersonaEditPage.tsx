@@ -1,9 +1,11 @@
-import { Spinner, Text } from "@telegram-apps/telegram-ui";
+import { Button } from "@mantine/core";
+import { UserRound } from "lucide-react";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { ROUTES } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
-import { PageTransition } from "../../shared/components/PageTransition";
+import { AppPage } from "../../shared/components/AppPage";
+import { EmptyState } from "../../shared/components/EmptyState";
 import {
   PersonaForm,
   createPersona,
@@ -16,7 +18,6 @@ import {
 import { ApiError } from "../../shared/api/client";
 import { confirmAction, showAlert } from "../../shared/telegram/confirm";
 import { useToast } from "../../shared/toast";
-import "./personas.css";
 
 /** Маппинг полной персоны в значения формы. */
 function toInput(p: Persona): PersonaInput {
@@ -81,34 +82,27 @@ export function PersonaEditPage() {
       });
   };
 
-  if (loading) {
+  if (error || (!loading && routeId !== undefined && !persona)) {
     return (
-      <PageTransition>
-        <div className="personas-page__fullcenter">
-          <Spinner size="m" />
-        </div>
-      </PageTransition>
-    );
-  }
-
-  if (error || (routeId !== undefined && !persona)) {
-    return (
-      <PageTransition>
-        <Text Component="div" className="personas-page__fullcenter">Персона не найдена</Text>
-      </PageTransition>
+      <AppPage centered>
+        <EmptyState
+          icon={UserRound}
+          title="Персона не найдена"
+          description="Возможно, её удалили."
+          action={<Button variant="default" onClick={() => navigate(ROUTES.personas)}>К списку персон</Button>}
+        />
+      </AppPage>
     );
   }
 
   return (
-    <PageTransition>
-      <div className="personas-page">
-        <PersonaForm
-          initial={persona ? toInput(persona) : undefined}
-          submitting={submitting}
-          onSubmit={handleSubmit}
-          onDelete={id === undefined ? undefined : handleDelete}
-        />
-      </div>
-    </PageTransition>
+    <AppPage title={id === undefined ? "Новая персона" : "Персона"} loading={loading}>
+      <PersonaForm
+        initial={persona ? toInput(persona) : undefined}
+        submitting={submitting}
+        onSubmit={handleSubmit}
+        onDelete={id === undefined ? undefined : handleDelete}
+      />
+    </AppPage>
   );
 }

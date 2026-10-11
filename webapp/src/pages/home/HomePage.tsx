@@ -1,9 +1,9 @@
-import { Avatar, Stack, Text, Title } from "@mantine/core";
+import { Avatar, Badge, Stack, Text, Title } from "@mantine/core";
 import { useState } from "react";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { useAuth } from "../../features/auth";
 import { AppPage } from "../../shared/components/AppPage";
-import { NavItem, NavList } from "../../shared/components/NavList";
+import { ListCard, ListRow } from "../../shared/components/ListCard";
 import { getTgUser } from "../../shared/telegram/initData";
 import { useProfilePhoto } from "../../shared/telegram/useProfilePhoto";
 import { randomGreeting } from "./greetings";
@@ -46,17 +46,27 @@ export function HomePage() {
       </Stack>
 
       {HOME_MENU.map((section, sectionIndex) => (
-        <NavList key={section.title} title={section.title}>
-          {section.items.map(({ route, ...item }, itemIndex) => (
-            <NavItem
-              key={item.label}
-              {...item}
+        <ListCard key={section.title} title={section.title}>
+          {section.items.map(({ route, icon: Icon, label, description }, itemIndex) => (
+            <ListRow
+              key={label}
+              // Иконка без плашки — в цвете акцента; у неготового пункта — приглушённая.
+              leading={<Icon size={24} color={route ? "var(--mantine-primary-color-filled)" : "var(--mantine-color-dimmed)"} aria-hidden />}
+              title={label}
+              description={description}
+              meta={
+                route ? undefined : (
+                  <Badge variant="light" color="gray">
+                    Скоро
+                  </Badge>
+                )
+              }
+              disabled={!route}
               index={SECTION_OFFSETS[sectionIndex]! + itemIndex}
-              soon={!route}
               onClick={route ? () => navigate(route) : undefined}
             />
           ))}
-        </NavList>
+        </ListCard>
       ))}
     </AppPage>
   );

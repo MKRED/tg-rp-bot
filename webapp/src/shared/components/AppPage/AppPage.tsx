@@ -1,4 +1,4 @@
-import { Container, Loader, Stack, Title } from "@mantine/core";
+import { Container, Group, Loader, Stack, Text, Title } from "@mantine/core";
 import type { ReactNode } from "react";
 import { useTelegramChrome } from "../../telegram/useTelegramChrome";
 import { useTheme } from "../../theme";
@@ -11,6 +11,10 @@ const CONTENT_WIDTH = 680;
 interface AppPageProps {
   /** Заголовок экрана над контентом. */
   title?: string;
+  /** Пояснение под заголовком — что это за экран. */
+  description?: string;
+  /** Справа от заголовка: главное действие экрана (например, «Создать»). */
+  actions?: ReactNode;
   /** Пока true — один лоадер на весь экран вместо частичного контента. */
   loading?: boolean;
   /** Ширина колонки, px — уже стандартной для экранов с одной короткой формой (вход). */
@@ -24,7 +28,7 @@ interface AppPageProps {
  * Каркас экрана на Mantine: фон страницы, отступы safe area, колонка ограниченной ширины, анимация
  * появления и цвета шапки Telegram под палитру. Каждый переехавший экран рендерится внутри него.
  */
-export function AppPage({ title, loading, width = CONTENT_WIDTH, centered, children }: AppPageProps) {
+export function AppPage({ title, description, actions, loading, width = CONTENT_WIDTH, centered, children }: AppPageProps) {
   const { appearance, surfaces } = useTheme();
   useTelegramChrome(surfaces[appearance].page);
 
@@ -39,7 +43,19 @@ export function AppPage({ title, loading, width = CONTENT_WIDTH, centered, child
             </div>
           ) : (
             <Stack gap="lg">
-              {title && <Title order={2}>{title}</Title>}
+              {title && (
+                <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
+                  <div className={styles.heading}>
+                    <Title order={2}>{title}</Title>
+                    {description && (
+                      <Text size="sm" c="dimmed">
+                        {description}
+                      </Text>
+                    )}
+                  </div>
+                  {actions && <div className={styles.actions}>{actions}</div>}
+                </Group>
+              )}
               {children}
             </Stack>
           )}

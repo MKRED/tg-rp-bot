@@ -1,16 +1,15 @@
-import { Button, Cell, Input, Section, Switch, Text } from "@telegram-apps/telegram-ui";
+import { Button, Stack, Switch, TextInput } from "@mantine/core";
 import { useState } from "react";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
 import { PromptEditorField } from "../../../shared/components/PromptEditorField";
 import { PromptOrderEditor } from "../../../shared/components/PromptOrderEditor";
-import { SectionActions } from "../../../shared/components/SectionActions";
+import { SettingsCard } from "../../../shared/components/SettingsCard";
 import { DEFAULT_IMPERSONATE_TEMPLATE } from "../lib/impersonateTemplate";
 import {
   DEFAULT_PROMPT_ORDER,
   PROMPT_COMPONENT_LABELS,
   PROMPT_COMPONENT_SOURCES,
   UNIMPLEMENTED_COMPONENTS,
-  type PromptOrderItem,
   type RpTemplate,
   type RpTemplateInput,
 } from "../types/template";
@@ -22,107 +21,104 @@ interface TemplateFormProps {
   onDelete?: () => void;
 }
 
-/** Форма RP-шаблона: имя + промпты + служебные (impersonate/перевод) + порядок промптов. */
-export function TemplateForm({ initial, submitting, onSubmit, onDelete }: TemplateFormProps) {
-  const [name, setName] = useState(initial?.name ?? "");
-  const [systemPrompt, setSystemPrompt] = useState(initial?.systemPrompt ?? "");
-  const [auxiliarySystemPrompt, setAuxiliarySystemPrompt] = useState(
-    initial?.auxiliarySystemPrompt ?? "",
-  );
-  const [postHistoryInstruction, setPostHistoryInstruction] = useState(
-    initial?.postHistoryInstruction ?? "",
-  );
-  const [userPersonaPrompt, setUserPersonaPrompt] = useState(initial?.userPersonaPrompt ?? "");
-  const [userPersonaStreaming, setUserPersonaStreaming] = useState(
-    initial?.userPersonaStreaming ?? true,
-  );
-  const [translationSystemPrompt, setTranslationSystemPrompt] = useState(
-    initial?.translationSystemPrompt ?? "",
-  );
-  const [promptOrder, setPromptOrder] = useState<PromptOrderItem[]>(
-    initial?.promptOrder ?? DEFAULT_PROMPT_ORDER,
-  );
+/** Значения формы: из сохранённого шаблона или пустые для нового. */
+function toDraft(initial?: RpTemplate): RpTemplateInput {
+  return {
+    name: initial?.name ?? "",
+    systemPrompt: initial?.systemPrompt ?? "",
+    auxiliarySystemPrompt: initial?.auxiliarySystemPrompt ?? "",
+    postHistoryInstruction: initial?.postHistoryInstruction ?? "",
+    userPersonaPrompt: initial?.userPersonaPrompt ?? "",
+    userPersonaStreaming: initial?.userPersonaStreaming ?? true,
+    translationSystemPrompt: initial?.translationSystemPrompt ?? "",
+    promptOrder: initial?.promptOrder ?? DEFAULT_PROMPT_ORDER,
+  };
+}
 
-  const valid = name.trim().length > 0;
+/** Форма RP-шаблона: название, промпты, ответ от лица пользователя, перевод и порядок промптов. */
+export function TemplateForm({ initial, submitting, onSubmit, onDelete }: TemplateFormProps) {
+  const [draft, setDraft] = useState(() => toDraft(initial));
+  const set = <K extends keyof RpTemplateInput>(key: K, value: RpTemplateInput[K]) =>
+    setDraft((d) => ({ ...d, [key]: value }));
+
+  const valid = draft.name.trim().length > 0;
 
   return (
-    <Section className="section-blend-inputs" header="RP-шаблон">
-      <Input
-        header="Название"
-        placeholder="Напр. «Стандартный ролевой промпт»"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
-      <PromptEditorField
-        header="Основной системный промпт"
-        hint="Базовые инструкции модели: задаёт роль, стиль и правила ответа."
-        placeholder="Обязательный промпт — нажмите, чтобы заполнить"
-        value={systemPrompt}
-        previewLines={6}
-        onChange={setSystemPrompt}
-      />
-      <PromptEditorField
-        header="Вспомогательный системный промпт"
-        hint="Дополнительные указания поверх основного — например, формат или ограничения."
-        value={auxiliarySystemPrompt}
-        onChange={setAuxiliarySystemPrompt}
-      />
-      <PromptEditorField
-        header="Инструкция после истории"
-        hint="Текст, вставляемый после истории чата — последнее напоминание модели перед ответом."
-        value={postHistoryInstruction}
-        onChange={setPostHistoryInstruction}
-      />
-      <PromptEditorField
-        header="Промпт для генерации ответа от лица пользователя"
-        hint="Шаблон системной инструкции. Плейсхолдеры: {{char}}, {{user}}, {{char_prompt}}, {{user_prompt}}, {{system_prompt}}, {{aux_prompt}}. История чата добавляется отдельным сообщением. Пусто → используется шаблон по умолчанию."
-        value={userPersonaPrompt}
-        placeholder={DEFAULT_IMPERSONATE_TEMPLATE}
-        onChange={setUserPersonaPrompt}
-      />
-      <Cell
-        after={
-          <Switch
-            checked={userPersonaStreaming}
-            onChange={(e) => setUserPersonaStreaming(e.target.checked)}
-          />
-        }
-        subtitle="Показывать текст по мере генерации варианта"
-      >
-        Стримить ответ от лица пользователя
-      </Cell>
-      <PromptEditorField
-        header="Промпт для перевода (ИИ-режим)"
-        hint="Системная инструкция для перевода черновика сообщения через нейросеть. Плейсхолдер {{target_lang}} — полное английское название выбранного языка. Пусто → используется шаблон по умолчанию."
-        value={translationSystemPrompt}
-        onChange={setTranslationSystemPrompt}
-      />
-      {/* Гуттер 22px — как у полей tgui внутри карточки (выравнивание заголовка с рядами ниже). */}
-      <Text weight="2" Component="div" style={{ padding: "12px 22px 0" }}>Порядок промптов</Text>
-      <PromptOrderEditor
-        order={promptOrder}
-        onChange={setPromptOrder}
-        labels={PROMPT_COMPONENT_LABELS}
-        sources={PROMPT_COMPONENT_SOURCES}
-        unimplemented={UNIMPLEMENTED_COMPONENTS}
-      />
-      <SectionActions>
+    <Stack gap="lg">
+      <SettingsCard title="Основное">
+        <TextInput
+          label="Название"
+          placeholder="Напр. «Стандартный ролевой промпт»"
+          withAsterisk
+          value={draft.name}
+          onChange={(e) => set("name", e.currentTarget.value)}
+        />
+      </SettingsCard>
+
+      <SettingsCard title="Промпты" description="Из чего собирается запрос к нейросети в RP-чате.">
+        <PromptEditorField
+          header="Основной системный промпт"
+          hint="Базовые инструкции модели: задаёт роль, стиль и правила ответа."
+          placeholder="Обязательный промпт — нажмите, чтобы заполнить"
+          value={draft.systemPrompt}
+          previewLines={6}
+          onChange={(v) => set("systemPrompt", v)}
+        />
+        <PromptEditorField
+          header="Вспомогательный системный промпт"
+          hint="Дополнительные указания поверх основного — например, формат или ограничения."
+          value={draft.auxiliarySystemPrompt}
+          onChange={(v) => set("auxiliarySystemPrompt", v)}
+        />
+        <PromptEditorField
+          header="Инструкция после истории"
+          hint="Текст, вставляемый после истории чата — последнее напоминание модели перед ответом."
+          value={draft.postHistoryInstruction}
+          onChange={(v) => set("postHistoryInstruction", v)}
+        />
+      </SettingsCard>
+
+      <SettingsCard title="Ответ от лица пользователя" description="Когда нейросеть предлагает реплику за вашу персону.">
+        <PromptEditorField
+          header="Промпт генерации"
+          hint="Шаблон системной инструкции. Плейсхолдеры: {{char}}, {{user}}, {{char_prompt}}, {{user_prompt}}, {{system_prompt}}, {{aux_prompt}}. История чата добавляется отдельным сообщением. Пусто → используется шаблон по умолчанию."
+          value={draft.userPersonaPrompt}
+          placeholder={DEFAULT_IMPERSONATE_TEMPLATE}
+          onChange={(v) => set("userPersonaPrompt", v)}
+        />
+        <Switch
+          label="Стримить ответ"
+          description="Показывать текст по мере генерации варианта"
+          checked={draft.userPersonaStreaming}
+          onChange={(e) => set("userPersonaStreaming", e.currentTarget.checked)}
+        />
+      </SettingsCard>
+
+      <SettingsCard title="Перевод">
+        <PromptEditorField
+          header="Промпт для перевода (ИИ-режим)"
+          hint="Системная инструкция для перевода черновика сообщения через нейросеть. Плейсхолдер {{target_lang}} — полное английское название выбранного языка. Пусто → используется шаблон по умолчанию."
+          value={draft.translationSystemPrompt}
+          onChange={(v) => set("translationSystemPrompt", v)}
+        />
+      </SettingsCard>
+
+      <SettingsCard title="Порядок промптов" description="В каком порядке части попадают в запрос; выключенные не отправляются.">
+        <PromptOrderEditor
+          order={draft.promptOrder}
+          onChange={(v) => set("promptOrder", v)}
+          labels={PROMPT_COMPONENT_LABELS}
+          sources={PROMPT_COMPONENT_SOURCES}
+          unimplemented={UNIMPLEMENTED_COMPONENTS}
+        />
+      </SettingsCard>
+
+      <Stack gap="sm">
         <Button
-          size="l"
-          stretched
-          disabled={!valid || submitting}
-          onClick={() =>
-            onSubmit({
-              name: name.trim(),
-              systemPrompt,
-              auxiliarySystemPrompt,
-              postHistoryInstruction,
-              userPersonaPrompt,
-              userPersonaStreaming,
-              translationSystemPrompt,
-              promptOrder,
-            })
-          }
+          fullWidth
+          disabled={!valid && !submitting}
+          loading={submitting}
+          onClick={() => onSubmit({ ...draft, name: draft.name.trim() })}
         >
           {initial ? "Сохранить" : "Создать шаблон"}
         </Button>
@@ -131,7 +127,7 @@ export function TemplateForm({ initial, submitting, onSubmit, onDelete }: Templa
             Удалить шаблон
           </DeleteButton>
         )}
-      </SectionActions>
-    </Section>
+      </Stack>
+    </Stack>
   );
 }

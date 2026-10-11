@@ -1,4 +1,4 @@
-import { Avatar } from "@telegram-apps/telegram-ui";
+import { Avatar } from "@mantine/core";
 import { AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { personaEditPath } from "../../../../app/routes";
@@ -37,7 +37,12 @@ export function PersonaAvatar({ id, hasImage, name, size = 40, enlargeable = fal
   // Лайтбокс доступен только когда картинка уже загружена
   const canEnlarge = enlargeable && Boolean(src);
 
-  const avatar = <Avatar size={size} src={src} acronym={nameInitials(name)} />;
+  // Инициалы — заглушка, пока картинки нет; цвет — акцент палитры.
+  const avatar = (
+    <Avatar size={size} src={src} color="accent">
+      {nameInitials(name)}
+    </Avatar>
+  );
 
   return (
     <>

@@ -1,0 +1,32 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  padding-block: var(--mantine-spacing-xs);
+}
+
+/* Разделитель между строками (не над первой). */
+.row + .row {
+  border-top: 1px solid var(--app-color-divider);
+}
+
+.buttons {
+  display: flex;
+  flex-shrink: 0;
+}
+
+/* Недоступная стрелка (край списка) — просто бледная, без серой плашки disabled от Mantine. */
+.arrow:disabled,
+.arrow[data-disabled] {
+  background-color: transparent;
+  opacity: 0.3;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+}
+
+.muted {
+  opacity: 0.55;
+}

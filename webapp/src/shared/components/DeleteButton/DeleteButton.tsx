@@ -1,5 +1,6 @@
-import { Button } from "@telegram-apps/telegram-ui";
+import { Button } from "@mantine/core";
 import type { ReactNode } from "react";
+import styles from "./DeleteButton.module.css";
 
 interface DeleteButtonProps {
   onClick: () => void;
@@ -7,13 +8,10 @@ interface DeleteButtonProps {
   children: ReactNode;
 }
 
-/**
- * Растянутая кнопка деструктивного действия («Удалить …») для подвала форм. Красный цвет —
- * класс .delete-button из глобального index.css (см. комментарий там же про причину).
- */
+/** Растянутая кнопка деструктивного действия («Удалить …») для подвала форм. */
 export function DeleteButton({ onClick, disabled, children }: DeleteButtonProps) {
   return (
-    <Button size="l" stretched mode="outline" className="delete-button" disabled={disabled} onClick={onClick}>
+    <Button fullWidth variant="subtle" color="red" className={styles.danger} disabled={disabled} onClick={onClick}>
       {children}
     </Button>
   );

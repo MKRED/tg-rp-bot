@@ -267,4 +267,3 @@
   color: var(--tgui--hint_color, #7d8b99);
 }
 
-/* Порядок промптов (.prompt-order) переехал в shared/components/PromptOrderEditor.css. */

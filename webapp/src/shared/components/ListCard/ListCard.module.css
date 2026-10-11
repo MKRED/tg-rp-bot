@@ -1,0 +1,91 @@
+/* Фон hover у крайних строк не вылезает за скругления карточки при любом радиусе темы. */
+.card {
+  overflow: hidden;
+}
+
+.row {
+  position: relative;
+  /* Свой контекст наложения: фон нажатия (.main::before, z-index -1) рисуется под текстом строки,
+     но над фоном карточки. */
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-md);
+  min-height: 44px;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+}
+
+/* Разделитель между строками внутри карточки (не над первой). */
+.row + .row {
+  border-top: 1px solid var(--app-color-divider);
+}
+
+/* Слева — над зоной нажатия строки: собственные кнопки (аватар → лайтбокс) ловят тап, а всё
+   остальное пропускает его насквозь к кнопке строки. */
+.leading {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  display: flex;
+  pointer-events: none;
+
+  & :is(button, a) {
+    pointer-events: auto;
+  }
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+
+  /* Зона нажатия и фон hover/нажатия — на всю строку, включая область слева. */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    transition: background-color 150ms ease;
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &:focus-visible::before {
+    outline: 2px solid var(--mantine-primary-color-filled);
+    outline-offset: -2px;
+  }
+
+  &[aria-disabled="true"] {
+    cursor: default;
+  }
+
+  /* hover — только на устройствах с мышью: на тач-экране он «залипает» после тапа. */
+  @media (hover: hover) {
+    &:not([aria-disabled="true"]):hover::before {
+      background-color: var(--mantine-color-default-hover);
+    }
+  }
+
+  &:not([aria-disabled="true"]):active::before {
+    background-color: var(--mantine-color-default-hover);
+  }
+}
+
+/* Неактивная строка: приглушены значок слева и текст, мета (бейдж «Скоро») — нет. */
+.row[data-disabled] :is(.leading, .text) {
+  opacity: 0.55;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--mantine-color-dimmed);
+}

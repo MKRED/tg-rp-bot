@@ -1,0 +1,26 @@
+/* На экранах tgui — отступ как у полей tgui; внутри AppPage переменная обнуляет его (убрать на шаге 8). */
+.root {
+  padding: var(--app-legacy-field-padding, var(--mantine-spacing-sm) 22px 0);
+}
+
+/* Аватар с фото — кнопка просмотра целиком (лайтбокс). */
+.zoom {
+  flex-shrink: 0;
+  border-radius: 50%;
+  cursor: zoom-in;
+  transition: opacity 150ms ease;
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
+/* «Удалить фото»: subtle Mantine в тёмной схеме почти белый — нужен заметно красный (как DeleteButton). */
+.danger {
+  color: light-dark(var(--mantine-color-red-7), var(--mantine-color-red-5));
+
+  &:disabled,
+  &[data-disabled] {
+    color: var(--mantine-color-dimmed);
+  }
+}

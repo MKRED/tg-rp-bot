@@ -1,9 +1,9 @@
-import { List, Spinner, Text } from "@telegram-apps/telegram-ui";
+import { Button } from "@mantine/core";
+import { ScrollText } from "lucide-react";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { ROUTES } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
-import { PageTransition } from "../../shared/components/PageTransition";
 import {
   TemplateForm,
   createTemplate,
@@ -12,14 +12,17 @@ import {
   useTemplate,
   type NarratorTemplateInput,
 } from "../../features/narrator-templates";
-import { confirmAction, showAlert } from "../../shared/telegram/confirm";
 import { ApiError } from "../../shared/api/client";
-import "./narrator-templates.css";
+import { AppPage } from "../../shared/components/AppPage";
+import { EmptyState } from "../../shared/components/EmptyState";
+import { confirmAction, showAlert } from "../../shared/telegram/confirm";
+import { useToast } from "../../shared/toast";
 
-/** Экран создания/редактирования narrator-шаблона. */
+/** Экран создания/редактирования narrator-шаблона. Сохранение возвращает к списку. */
 export function TemplateEditPage() {
   const navigate = useTransitionNavigate();
   const params = useParams();
+  const { showToast } = useToast();
   const id = params.id ? Number(params.id) : undefined;
 
   const { template, loading, error } = useTemplate(id);
@@ -28,7 +31,10 @@ export function TemplateEditPage() {
   const handleSubmit = (input: NarratorTemplateInput) => {
     setSubmitting(true);
     const op = id === undefined ? createTemplate(input) : updateTemplate(id, input);
-    op.then(() => navigate(ROUTES.narratorTemplates)).catch(() => setSubmitting(false));
+    op.then(() => navigate(ROUTES.narratorTemplates)).catch(() => {
+      setSubmitting(false);
+      showToast({ type: "error", message: "Не удалось сохранить шаблон" });
+    });
   };
 
   const handleDelete = async () => {
@@ -45,39 +51,37 @@ export function TemplateEditPage() {
         // 409 — FK нарушение: шаблон выбран в истории, сервер блокирует удаление.
         if (err instanceof ApiError && err.status === 409) {
           await showAlert("Шаблон используется в истории. Сначала удалите историю.", "Нельзя удалить");
+        } else {
+          showToast({ type: "error", message: "Не удалось удалить шаблон" });
         }
       });
   };
 
-  if (loading) {
+  if (error || (!loading && id !== undefined && !template)) {
     return (
-      <PageTransition>
-        <div className="nt-page__fullcenter">
-          <Spinner size="m" />
-        </div>
-      </PageTransition>
-    );
-  }
-  if (error || (id !== undefined && !template)) {
-    return (
-      <PageTransition>
-        <Text Component="div" className="nt-page__fullcenter">Шаблон не найден</Text>
-      </PageTransition>
+      <AppPage centered>
+        <EmptyState
+          icon={ScrollText}
+          title="Шаблон не найден"
+          description="Возможно, его удалили."
+          action={
+            <Button variant="default" onClick={() => navigate(ROUTES.narratorTemplates)}>
+              К списку шаблонов
+            </Button>
+          }
+        />
+      </AppPage>
     );
   }
 
   return (
-    <PageTransition>
-      <div className="nt-page">
-        <List>
-          <TemplateForm
-            initial={template}
-            submitting={submitting}
-            onSubmit={handleSubmit}
-            onDelete={id === undefined ? undefined : handleDelete}
-          />
-        </List>
-      </div>
-    </PageTransition>
+    <AppPage title={id === undefined ? "Новый narrator-шаблон" : "Narrator-шаблон"} loading={loading}>
+      <TemplateForm
+        initial={template}
+        submitting={submitting}
+        onSubmit={handleSubmit}
+        onDelete={id === undefined ? undefined : handleDelete}
+      />
+    </AppPage>
   );
 }

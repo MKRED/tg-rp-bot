@@ -1,11 +1,12 @@
-import { Avatar, Button, FileInput } from "@telegram-apps/telegram-ui";
+import { Avatar, Button, FileButton, Group, Stack, UnstyledButton } from "@mantine/core";
 import { AnimatePresence } from "framer-motion";
-import { type ChangeEvent, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { buildAvatarImages, type CropArea } from "../../image";
 import { nameInitials } from "../../text/initials";
+import { useToast } from "../../toast";
 import { ImageCropEditor } from "../ImageCropEditor";
 import { ImageLightbox } from "../ImageLightbox";
-import "./AvatarPicker.css";
+import styles from "./AvatarPicker.module.css";
 
 /** Пара картинок аватара: миниатюра (кроп) + полное фото (без кадрирования). */
 export interface AvatarValue {
@@ -30,14 +31,16 @@ interface AvatarPickerProps {
  * Лайтбокс показывает фото целиком (imageFull), а не кадрированный квадрат.
  */
 export function AvatarPicker({ image, imageFull, name, onChange }: AvatarPickerProps) {
+  const { showToast } = useToast();
   const [busy, setBusy] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   // object URL выбранного файла, пока открыт редактор кропа (null — редактор закрыт).
   const [cropSrc, setCropSrc] = useState<string | null>(null);
 
-  const handleFile = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = ""; // сброс — иначе повторный выбор того же файла не вызовет onChange
+  const resetFileRef = useRef<() => void>(null);
+
+  const handleFile = (file: File | null) => {
+    resetFileRef.current?.(); // сброс — иначе повторный выбор того же файла не вызовет onChange
     if (!file || !file.type.startsWith("image/")) return;
     setCropSrc(URL.createObjectURL(file));
   };
@@ -57,8 +60,10 @@ export function AvatarPicker({ image, imageFull, name, onChange }: AvatarPickerP
     try {
       const { thumb, full } = await buildAvatarImages(cropSrc, area);
       onChange({ image: thumb, imageFull: full });
-    } catch {
-      // тихо: некорректный/нечитаемый файл — просто не меняем аватар
+    } catch (err) {
+      // Некорректный/нечитаемый файл — аватар не меняем, но говорим почему.
+      console.warn("Не удалось подготовить аватар", err);
+      showToast({ type: "error", message: "Не удалось открыть фото — попробуйте другой файл" });
     } finally {
       setBusy(false);
       closeCropper();
@@ -69,31 +74,33 @@ export function AvatarPicker({ image, imageFull, name, onChange }: AvatarPickerP
   const lightboxSrc = imageFull ?? image;
 
   return (
-    <div className="avatar-picker">
+    <Group gap="md" wrap="nowrap" className={styles.root}>
+      {/* Инициалы — как у аватаров в списках (nameInitials); цвет — акцент палитры. */}
       {image ? (
-        <button
-          type="button"
-          className="avatar-picker__zoom"
-          onClick={() => setLightboxOpen(true)}
-        >
-          <Avatar size={96} src={image} acronym={nameInitials(name)} />
-        </button>
+        <UnstyledButton className={styles.zoom} onClick={() => setLightboxOpen(true)} aria-label="Открыть фото">
+          <Avatar size={96} src={image} color="accent">
+            {nameInitials(name)}
+          </Avatar>
+        </UnstyledButton>
       ) : (
-        <Avatar size={96} acronym={nameInitials(name)} />
+        <Avatar size={96} color="accent">
+          {nameInitials(name) || undefined}
+        </Avatar>
       )}
-      <div className="avatar-picker__actions">
-        <FileInput
-          accept="image/*"
-          disabled={busy}
-          onChange={handleFile}
-          label={image ? "Заменить фото" : "Загрузить фото"}
-        />
+      <Stack gap="xs" flex={1}>
+        <FileButton accept="image/*" onChange={handleFile} disabled={busy} resetRef={resetFileRef}>
+          {(props) => (
+            <Button {...props} variant="light" disabled={busy}>
+              {image ? "Заменить фото" : "Загрузить фото"}
+            </Button>
+          )}
+        </FileButton>
         {image && (
-          <Button size="s" mode="outline" disabled={busy} onClick={() => onChange(null)}>
+          <Button variant="subtle" color="red" className={styles.danger} disabled={busy} onClick={() => onChange(null)}>
             Удалить фото
           </Button>
         )}
-      </div>
+      </Stack>
       <AnimatePresence>
         {cropSrc && (
           <ImageCropEditor
@@ -107,6 +114,6 @@ export function AvatarPicker({ image, imageFull, name, onChange }: AvatarPickerP
           <ImageLightbox src={lightboxSrc} onClose={() => setLightboxOpen(false)} />
         )}
       </AnimatePresence>
-    </div>
+    </Group>
   );
 }

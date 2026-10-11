@@ -1,4 +1,4 @@
-import { Button, Caption, Input } from "@telegram-apps/telegram-ui";
+import { Button, Paper, Stack, Text, TextInput } from "@mantine/core";
 import { useMemo, useState } from "react";
 import { AvatarPicker, type AvatarValue } from "../../../shared/components/AvatarPicker";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
@@ -67,41 +67,49 @@ export function PersonaForm({ initial, submitting, onSubmit, onDelete }: Persona
   };
 
   return (
-    <div className="persona-form">
-      <AvatarPicker image={image} imageFull={imageFull} name={name} onChange={handleAvatar} />
+    <Stack gap="lg">
+      <Paper p="md">
+        <Stack gap="md">
+          <AvatarPicker image={image} imageFull={imageFull} name={name} onChange={handleAvatar} />
+          <TextInput
+            label="Имя"
+            placeholder="Имя персоны"
+            withAsterisk
+            value={name}
+            onChange={(e) => setName(e.currentTarget.value)}
+          />
+          <TextInput
+            label="Сноска"
+            description="Заметка для себя — в чат не попадает"
+            placeholder="Например, «для фэнтези-чатов»"
+            value={footnote}
+            onChange={(e) => setFootnote(e.currentTarget.value)}
+          />
+          <PromptEditorField
+            header="Промпт"
+            hint="Описание персоны для нейросети: кто вы в этом чате, внешность, характер."
+            placeholder="Описание персоны для нейросети…"
+            value={prompt}
+            onChange={setPrompt}
+          />
+        </Stack>
+      </Paper>
 
-      <Input
-        header="Имя"
-        placeholder="Имя персоны"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
-
-      <Input
-        header="Сноска"
-        placeholder="Заметка для себя (не влияет на чат)"
-        value={footnote}
-        onChange={(e) => setFootnote(e.target.value)}
-      />
-
-      <PromptEditorField
-        header="Промпт"
-        placeholder="Описание персоны для нейросети…"
-        value={prompt}
-        onChange={setPrompt}
-      />
-
-      <div className="persona-form__actions">
-        {isDirty && !submitting && <Caption level="1" className="persona-form__unsaved">Есть несохранённые изменения</Caption>}
-        <Button size="l" stretched disabled={!canSubmit} onClick={handleSubmit}>
-          {submitting ? "Сохранение…" : "Сохранить"}
+      <Stack gap="sm">
+        {isDirty && !submitting && (
+          <Text size="sm" c="dimmed" ta="center">
+            Есть несохранённые изменения
+          </Text>
+        )}
+        <Button fullWidth disabled={!canSubmit && !submitting} loading={submitting} onClick={handleSubmit}>
+          Сохранить
         </Button>
         {onDelete && (
           <DeleteButton disabled={submitting} onClick={onDelete}>
             Удалить персону
           </DeleteButton>
         )}
-      </div>
-    </div>
+      </Stack>
+    </Stack>
   );
 }

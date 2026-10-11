@@ -28,7 +28,6 @@ type TranslateSettingsSectionProps = Omit<ReturnType<typeof useTranslateSettings
  * Карточка «Перевод в редакторе» — дефолты режима перевода в PromptEditorOverlay (движок, целевой язык,
  * свой ИИ-промпт, рассуждение). Каждое поле сохраняется сразу при изменении. Свой промпт —
  * PromptEditorField: тап открывает полноэкранный редактор, пустое поле = дефолтный промпт.
- * PromptEditorField пока на tgui — переедет вместе с PromptEditorOverlay (шаг 7 плана Mantine).
  */
 export function TranslateSettingsSection({
   settings,

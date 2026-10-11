@@ -1,0 +1,61 @@
+/* На экранах tgui поле стоит прямо в Section без своих отступов — даём гуттер как у полей tgui.
+   Внутри AppPage (экраны Mantine) переменная обнуляет его. Убрать вместе с tgui (шаг 8). */
+.root {
+  padding: var(--app-legacy-field-padding, var(--mantine-spacing-sm) 22px var(--mantine-spacing-md));
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.labelText {
+  flex: 1;
+  min-width: 0;
+}
+
+.hintButton {
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.tokens {
+  white-space: nowrap;
+}
+
+/* Превью — как заполненное поле ввода темы (фон и радиус Input variant="filled"). */
+.field {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-md);
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
+  transition: background-color 150ms ease;
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+    }
+  }
+
+  &:active {
+    background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  }
+}
+
+.preview {
+  flex: 1;
+  min-width: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--mantine-color-dimmed);
+}

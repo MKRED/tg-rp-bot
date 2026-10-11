@@ -1,6 +1,8 @@
-import { Caption, Switch, Text } from "@telegram-apps/telegram-ui";
+import { ActionIcon, Switch, Text } from "@mantine/core";
 import { motion } from "framer-motion";
-import "./PromptOrderEditor.css";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { MOTION_TRANSITION } from "../../theme/motion";
+import styles from "./PromptOrderEditor.module.css";
 
 /** Элемент порядка: какой компонент запроса и включён ли он. Дженерик по набору id фичи. */
 export interface PromptOrderEntry<Id extends string> {
@@ -20,9 +22,9 @@ interface PromptOrderEditorProps<Id extends string> {
 }
 
 /**
- * Редактор порядка и включённости компонентов запроса (кросс-фичевый: настройки ответа ИИ и
- * narrator-шаблоны). Перестановка — кнопками ↑/↓ (надёжно в Telegram webview, в отличие от
- * drag-and-drop). Подписи/источники/заглушки приходят пропсами — компонент не знает о наборе id.
+ * Редактор порядка и включённости компонентов запроса (RP- и narrator-шаблоны). Перестановка —
+ * кнопками ↑/↓ (надёжно в Telegram webview, в отличие от drag-and-drop). Подписи/источники/заглушки
+ * приходят пропсами — компонент не знает о наборе id.
  */
 export function PromptOrderEditor<Id extends string>({
   order,
@@ -44,51 +46,57 @@ export function PromptOrderEditor<Id extends string>({
   };
 
   return (
-    <div className="prompt-order">
+    <div>
       {order.map((item, index) => {
         const isUnimplemented = unimplemented.includes(item.id);
+        const label = labels[item.id];
         return (
           // layout — при перестановке (key стабилен по item.id) строки плавно переезжают на новые
-          // позиции (FLIP), а не перескакивают. Так же реагируют на смену высоты соседей.
-          <motion.div
-            className="prompt-order__row"
-            key={item.id}
-            layout
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <div className="prompt-order__buttons">
-              <button
-                type="button"
-                className="prompt-order__btn"
+          // позиции (FLIP), а не перескакивают.
+          <motion.div className={styles.row} key={item.id} layout transition={MOTION_TRANSITION}>
+            <div className={styles.buttons}>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="xl"
+                className={styles.arrow}
                 disabled={index === 0}
                 onClick={() => move(index, -1)}
-                aria-label="Выше"
+                aria-label={`${label}: выше`}
               >
-                ↑
-              </button>
-              <button
-                type="button"
-                className="prompt-order__btn"
+                <ChevronUp size={20} />
+              </ActionIcon>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="xl"
+                className={styles.arrow}
                 disabled={index === order.length - 1}
                 onClick={() => move(index, 1)}
-                aria-label="Ниже"
+                aria-label={`${label}: ниже`}
               >
-                ↓
-              </button>
+                <ChevronDown size={20} />
+              </ActionIcon>
             </div>
-            <div className="prompt-order__text">
-              <Text className="prompt-order__label">
-                {labels[item.id]}
-                {isUnimplemented && <Caption level="1" className="prompt-order__soon"> · скоро</Caption>}
+            <div className={item.enabled ? styles.text : `${styles.text} ${styles.muted}`}>
+              <Text size="sm" fw={500}>
+                {label}
+                {isUnimplemented && (
+                  <Text span size="xs" c="dimmed">
+                    {" "}
+                    · скоро
+                  </Text>
+                )}
               </Text>
-              <Caption level="2" Component="span" className="prompt-order__source">
+              <Text size="xs" c="dimmed">
                 {sources[item.id]}
-              </Caption>
+              </Text>
             </div>
             <Switch
               checked={item.enabled}
               disabled={isUnimplemented}
               onChange={() => toggle(index)}
+              aria-label={label}
             />
           </motion.div>
         );
