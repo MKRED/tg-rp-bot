@@ -10,7 +10,12 @@ type Users = ConstructorParameters<typeof AuthService>[0];
 type Sessions = ConstructorParameters<typeof AuthService>[1];
 
 function setup() {
-  const users = { createWithLogin: vi.fn(), findLoginCredentials: vi.fn(), findProfile: vi.fn() };
+  const users = {
+    createWithLogin: vi.fn(),
+    setLoginCredentials: vi.fn(),
+    findLoginCredentials: vi.fn(),
+    findProfile: vi.fn(),
+  };
   const sessions = { create: vi.fn().mockResolvedValue("token-1"), revoke: vi.fn().mockResolvedValue(undefined) };
   return { users, sessions, service: new AuthService(users as unknown as Users, sessions as unknown as Sessions) };
 }
@@ -58,6 +63,29 @@ describe("AuthService.login", () => {
       expect((err as UnauthorizedException).getResponse()).toEqual({ error: "invalid_credentials", message: "Неверный логин или пароль" });
     }
     expect(sessions.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("AuthService.setCredentials", () => {
+  it("пишет логин и хэш пароля (не сам пароль) существующему пользователю", async () => {
+    const { users, service } = setup();
+    users.setLoginCredentials.mockResolvedValue("ok");
+    await service.setCredentials("u1", creds);
+    const [userId, login, hash] = users.setLoginCredentials.mock.calls[0]!;
+    expect([userId, login]).toEqual(["u1", "alice"]);
+    expect(hash).not.toContain("secret-123");
+    expect(await verifyPassword("secret-123", hash as string)).toBe(true);
+  });
+
+  it.each([
+    ["taken", "login_taken"],
+    ["already_set", "login_already_set"],
+  ])("%s — 409 %s", async (result, error) => {
+    const { users, service } = setup();
+    users.setLoginCredentials.mockResolvedValue(result);
+    const err = await service.setCredentials("u1", creds).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ConflictException);
+    expect((err as ConflictException).getResponse()).toMatchObject({ error });
   });
 });
 

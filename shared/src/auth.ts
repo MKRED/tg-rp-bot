@@ -18,7 +18,7 @@ export const PASSWORD_MAX_LENGTH = 128;
 export const CSRF_HEADER = "X-Requested-With";
 export const CSRF_HEADER_VALUE = "tg-rp-bot";
 
-/** Тело POST /api/auth/register и POST /api/auth/login. */
+/** Тело POST /api/auth/register, POST /api/auth/login и PUT /api/auth/credentials (задать вход из Mini App). */
 export interface AuthCredentials {
   login: string;
   password: string;

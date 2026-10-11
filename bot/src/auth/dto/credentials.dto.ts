@@ -12,7 +12,7 @@ import { IsString, Length, Matches } from "class-validator";
 const LOGIN_MESSAGE = `Login must be ${LOGIN_MIN_LENGTH}–${LOGIN_MAX_LENGTH} characters: a-z, 0-9, _ . -`;
 const PASSWORD_MESSAGE = `Password must be ${PASSWORD_MIN_LENGTH}–${PASSWORD_MAX_LENGTH} characters`;
 
-/** Тело POST /api/auth/register и /api/auth/login. Логин приводится к нижнему регистру. */
+/** Тело POST /api/auth/register, /api/auth/login и PUT /api/auth/credentials. Логин приводится к нижнему регистру. */
 export class CredentialsDto implements AuthCredentials {
   @Transform(({ value }) => (typeof value === "string" ? value.trim().toLowerCase() : value))
   @IsString({ message: LOGIN_MESSAGE })

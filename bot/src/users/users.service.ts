@@ -37,6 +37,11 @@ export class UsersService {
     return this.users.createWithLogin(login, passwordHash);
   }
 
+  /** Вход по логину для аккаунта из Telegram (логин задаётся один раз). */
+  setLoginCredentials(userId: string, login: string, passwordHash: string): Promise<"ok" | "taken" | "already_set"> {
+    return this.users.setLoginCredentials(userId, login, passwordHash);
+  }
+
   findLoginCredentials(login: string): Promise<{ id: string; passwordHash: string } | undefined> {
     return this.users.findLoginCredentials(login);
   }

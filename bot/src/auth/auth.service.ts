@@ -38,6 +38,18 @@ export class AuthService {
     return this.sessions.create(credentials.id, userAgent);
   }
 
+  /**
+   * Аккаунт из Telegram задаёт логин и пароль для входа в браузере. Старый пароль не спрашиваем —
+   * его нет; личность подтверждает initData (контроллер пускает сюда только Mini App).
+   */
+  async setCredentials(userId: string, { login, password }: AuthCredentials): Promise<void> {
+    const result = await this.users.setLoginCredentials(userId, login, await hashPassword(password));
+    if (result === "taken") throw new ConflictException({ error: "login_taken", message: "Этот логин уже занят" });
+    if (result === "already_set") {
+      throw new ConflictException({ error: "login_already_set", message: "Логин для входа уже задан" });
+    }
+  }
+
   async logout(token: string | undefined): Promise<void> {
     if (token) await this.sessions.revoke(token);
   }

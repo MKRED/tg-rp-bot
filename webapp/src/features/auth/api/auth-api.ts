@@ -14,6 +14,11 @@ export async function login(credentials: AuthCredentials): Promise<void> {
   await apiFetch("/auth/login", { method: "POST", body: JSON.stringify(credentials) });
 }
 
+/** Задать логин и пароль аккаунту из Telegram (только из Mini App, логин задаётся один раз). */
+export async function setCredentials(credentials: AuthCredentials): Promise<void> {
+  await apiFetch("/auth/credentials", { method: "PUT", body: JSON.stringify(credentials) });
+}
+
 export async function logout(): Promise<void> {
   await apiFetch("/auth/logout", { method: "POST" });
 }

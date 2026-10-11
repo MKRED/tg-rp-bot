@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { TgUser } from "../auth/auth.types.js";
 import { schema } from "../db/index.js";
 import { DatabaseService } from "../database/database.service.js";
@@ -62,6 +62,35 @@ export class UsersRepository {
       if (isUniqueViolation(err)) {
         logger.info({ durationMs: Date.now() - t0 }, "Registration rejected: login taken");
         return null;
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Задать вход по логину существующему пользователю (аккаунт из Telegram). Логин задаётся один раз:
+   * условие `login IS NULL` в том же UPDATE — без гонки «проверил → записал». "taken" — логин занят
+   * другим (UNIQUE users.login), "already_set" — у пользователя логин уже есть.
+   */
+  async setLoginCredentials(
+    userId: string,
+    login: string,
+    passwordHash: string,
+  ): Promise<"ok" | "taken" | "already_set"> {
+    const t0 = Date.now();
+    try {
+      const rows = await this.database.db
+        .update(schema.users)
+        .set({ login, passwordHash, updatedAt: new Date() })
+        .where(and(eq(schema.users.id, userId), isNull(schema.users.login)))
+        .returning({ id: schema.users.id });
+      const result = rows.length ? "ok" : "already_set";
+      logger.info({ durationMs: Date.now() - t0, userId, result }, "Login credentials set");
+      return result;
+    } catch (err) {
+      if (isUniqueViolation(err)) {
+        logger.info({ durationMs: Date.now() - t0, userId }, "Login credentials rejected: login taken");
+        return "taken";
       }
       throw err;
     }

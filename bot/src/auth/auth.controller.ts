@@ -1,13 +1,15 @@
-import { Body, Controller, Get, HttpCode, Post, Req, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Post, Put, Req, Res, UseGuards } from "@nestjs/common";
 import { SkipThrottle, ThrottlerGuard } from "@nestjs/throttler";
 import type { AuthSession } from "@tg-rp-bot/shared";
 import type { Request, Response } from "express";
 import { config } from "../config.js";
 import { AuthService } from "./auth.service.js";
+import type { TgUser } from "./auth.types.js";
 import { CurrentUser } from "./current-user.decorator.js";
 import { CredentialsDto } from "./dto/credentials.dto.js";
 import { Public } from "./public.decorator.js";
 import { clearSessionCookie, readCookie, setSessionCookie } from "./session/session-cookie.js";
+import { TelegramUser } from "./telegram-user.decorator.js";
 
 /**
  * /api/auth — вход по логину и паролю для браузера (в Mini App вход по initData, без этих маршрутов).
@@ -31,6 +33,21 @@ export class AuthController {
   @HttpCode(200)
   async login(@Body() dto: CredentialsDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     setSessionCookie(res, await this.auth.login(dto, userAgent(req)), config.isProduction);
+    return { ok: true };
+  }
+
+  /**
+   * Логин и пароль для входа в браузере — задаёт аккаунт из Telegram в настройках Mini App.
+   * @TelegramUser() здесь — проверка способа входа: по cookie (браузер) ответ 409 telegram_not_linked.
+   * Браузерный аккаунт логин уже имеет, а задать пароль чужому аккаунту по украденной cookie нельзя.
+   */
+  @Put("credentials")
+  async setCredentials(
+    @CurrentUser() userId: string,
+    @TelegramUser() _tgUser: NonNullable<TgUser>,
+    @Body() dto: CredentialsDto,
+  ) {
+    await this.auth.setCredentials(userId, dto);
     return { ok: true };
   }
 

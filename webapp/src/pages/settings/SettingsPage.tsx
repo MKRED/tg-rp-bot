@@ -1,7 +1,7 @@
 import { Button, Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { useAuth } from "../../features/auth";
+import { BrowserLoginSection, useAuth, useBrowserLogin } from "../../features/auth";
 import { LlmSettingsSection, useLlmSettings } from "../../features/llm-settings";
 import { TavilySettingsSection, useTavilySettings } from "../../features/tavily-settings";
 import { TranslateSettingsSection, useTranslateSettings } from "../../features/translate-settings";
@@ -12,7 +12,7 @@ import "./settings.css";
 const ITEM_T = { duration: 0.2, ease: "easeOut" as const };
 
 /**
- * Экран «Настройки»: тема оформления, персональные ключи ИИ (DeepSeek) + веб-поиска (Tavily) и
+ * Экран «Настройки»: тема оформления, аккаунт (выход в браузере / логин для браузера в Mini App), персональные ключи ИИ (DeepSeek) + веб-поиска (Tavily) и
  * дефолты режима перевода полноэкранного редактора промптов (PromptEditorOverlay).
  *
  * Статусы (useLlmSettings/useTavilySettings/useTranslateSettings) грузятся на уровне страницы:
@@ -24,9 +24,10 @@ export function SettingsPage() {
   const { loading: tavilyLoading, ...tavily } = useTavilySettings();
   const { loading: translateLoading, ...translate } = useTranslateSettings();
   const { mode, session, logout } = useAuth();
+  const { loading: browserLoginLoading, ...browserLogin } = useBrowserLogin();
   const [loggingOut, setLoggingOut] = useState(false);
 
-  if (llmLoading || tavilyLoading || translateLoading) {
+  if (llmLoading || tavilyLoading || translateLoading || browserLoginLoading) {
     return (
       <PageTransition>
         <div className="settings-page settings-page__loading">
@@ -71,6 +72,10 @@ export function SettingsPage() {
               </Cell>
             </Section>
           )}
+
+          {/* «Вход в браузере» — в Mini App; в браузере у аккаунта логин уже есть (кроме локального
+              dev-обхода — там секция тоже видна, чтобы её можно было проверить вне Telegram). */}
+          {(mode === "telegram" || !browserLogin.login) && <BrowserLoginSection {...browserLogin} />}
 
           <LlmSettingsSection {...llm} />
           <TavilySettingsSection {...tavily} />
