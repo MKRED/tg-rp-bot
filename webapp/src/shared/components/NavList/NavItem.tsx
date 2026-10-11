@@ -1,4 +1,4 @@
-import { Badge, Group, Text, ThemeIcon, UnstyledButton } from "@mantine/core";
+import { Badge, Group, Text, UnstyledButton } from "@mantine/core";
 import { motion } from "framer-motion";
 import { ChevronRight, type LucideIcon } from "lucide-react";
 import { MOTION_TRANSITION } from "../../theme/motion";
@@ -35,9 +35,7 @@ export function NavItem({ icon: Icon, label, description, onClick, soon, index =
       {/* aria-disabled, а не disabled: пункт остаётся в порядке фокуса и скринридер озвучит «Скоро». */}
       <UnstyledButton className={styles.item} onClick={soon ? undefined : onClick} aria-disabled={soon || undefined}>
         <Group wrap="nowrap" gap="md">
-          <ThemeIcon variant="light" size="lg" color={soon ? "gray" : undefined} className={soon ? styles.muted : undefined}>
-            <Icon size={20} />
-          </ThemeIcon>
+          <Icon size={24} className={soon ? styles.iconMuted : styles.icon} aria-hidden />
           <div className={soon ? `${styles.text} ${styles.muted}` : styles.text}>
             <Text fw={500}>{label}</Text>
             {description && (

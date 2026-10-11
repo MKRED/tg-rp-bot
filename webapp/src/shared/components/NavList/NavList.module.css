@@ -36,6 +36,17 @@
   opacity: 0.55;
 }
 
+/* Иконка без плашки — просто в цвете акцента (у неготового пункта — приглушённая). */
+.icon {
+  flex-shrink: 0;
+  color: var(--mantine-primary-color-filled);
+}
+
+.iconMuted {
+  flex-shrink: 0;
+  color: var(--mantine-color-dimmed);
+}
+
 .text {
   flex: 1;
   min-width: 0;
