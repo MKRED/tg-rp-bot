@@ -36,6 +36,8 @@ COPY bot/src bot/src
 # Исходники webapp.
 COPY webapp/tsconfig.json webapp/tsconfig.json
 COPY webapp/vite.config.ts webapp/vite.config.ts
+# PostCSS для Mantine (light-dark(), rem(), брейкпоинты в CSS-модулях).
+COPY webapp/postcss.config.cjs webapp/postcss.config.cjs
 COPY webapp/index.html webapp/index.html
 COPY webapp/src webapp/src
 
