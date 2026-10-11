@@ -1,4 +1,4 @@
-/** Вход в приложение: gate над роутером (Telegram — initData, браузер — логин и пароль) и его состояние. */
+/** Вход в приложение: gate над маршрутами (Telegram — initData, браузер — экран /login с возвратом) и его состояние. */
 export { AuthGate } from "./components/AuthGate";
 export { BrowserLoginSection } from "./components/BrowserLoginSection";
 export { useAuth } from "./hooks/useAuth";

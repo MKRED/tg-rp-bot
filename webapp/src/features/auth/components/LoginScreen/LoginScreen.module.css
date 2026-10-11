@@ -1,0 +1,11 @@
+/* Блок регистрации внутри Stack: отрицательный margin съедает gap перед блоком, а тот же отступ
+   возвращается padding'ом внутри — свёрнутый блок (height 0) не оставляет пустой щели и не дёргает
+   форму в конце анимации. overflow: hidden — чтобы содержимое не торчало при анимации высоты. */
+.collapse {
+  overflow: hidden;
+  margin-top: calc(-1 * var(--mantine-spacing-md));
+}
+
+.registerFields {
+  padding-top: var(--mantine-spacing-md);
+}

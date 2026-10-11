@@ -1,29 +1,37 @@
-import { Button, Placeholder, Spinner } from "@telegram-apps/telegram-ui";
+import { Button, Stack, Text, Title } from "@mantine/core";
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { Navigate, useLocation, useSearchParams } from "react-router-dom";
+import { ROUTES } from "../../../app/routes";
 import { ApiError } from "../../../shared/api/client";
 import { onUnauthorized } from "../../../shared/api/unauthorized";
+import { AppPage } from "../../../shared/components/AppPage";
 import { isInsideTelegram } from "../../../shared/telegram/initData";
 import { fetchSession, logout as logoutRequest } from "../api/auth-api";
 import { AuthContext, type AuthContextValue } from "../lib/authContext";
+import { FROM_PARAM, loginPath, safeReturnPath } from "../lib/returnPath";
 import type { AuthSession } from "../types/auth";
-import { AuthScreen } from "./AuthScreen";
-import "./AuthScreen.css";
+import { LoginScreen } from "./LoginScreen";
 
 type GateState =
   | { kind: "loading" }
-  | { kind: "anonymous" }
+  // returnHere — после входа вернуть на текущий маршрут (сессии не было или она истекла); после «Выйти» — нет.
+  | { kind: "anonymous"; returnHere: boolean }
   | { kind: "error"; message: string }
   | { kind: "ready"; session: AuthSession | null };
 
 /**
  * Вход в приложение. В Telegram — сразу приложение (вход по initData, сервер проверяет каждый запрос).
- * В браузере — проверка cookie сессии (GET /api/auth/session): есть — приложение, нет — экран входа
- * и регистрации. 401 от любого запроса позже (сессия истекла) возвращает на экран входа.
+ * В браузере — проверка cookie сессии (GET /api/auth/session): есть — приложение, нет — редирект на
+ * экран входа /login?from=<текущий маршрут>; после входа — обратно на from. 401 от любого запроса
+ * позже (сессия истекла) тоже уводит на вход с возвратом.
  *
- * Стоит над роутером: экран входа не маршрут, после входа пользователь остаётся на том же hash-пути.
+ * Стоит внутри роутера, но над маршрутами: /login рендерит сам gate (в AnimatedRoutes его нет — там
+ * catch-all увёл бы на главную и потерял from), а защищённые экраны без сессии не монтируются вовсе.
  */
 export function AuthGate({ children }: { children: ReactNode }) {
   const telegram = isInsideTelegram();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [state, setState] = useState<GateState>(() =>
     telegram ? { kind: "ready", session: null } : { kind: "loading" },
   );
@@ -33,7 +41,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     fetchSession()
       .then((session) => setState({ kind: "ready", session }))
       .catch((err: unknown) => {
-        if (err instanceof ApiError && err.status === 401) setState({ kind: "anonymous" });
+        if (err instanceof ApiError && err.status === 401) setState({ kind: "anonymous", returnHere: true });
         else setState({ kind: "error", message: err instanceof Error ? err.message : "Не удалось загрузить сессию" });
       });
   }, []);
@@ -41,12 +49,15 @@ export function AuthGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (telegram) return;
     loadSession();
-    return onUnauthorized(() => setState({ kind: "anonymous" }));
+    // Неверный пароль на экране входа — тоже 401: уже анонимны, состояние не трогаем.
+    return onUnauthorized(() =>
+      setState((prev) => (prev.kind === "anonymous" ? prev : { kind: "anonymous", returnHere: true })),
+    );
   }, [telegram, loadSession]);
 
   const logout = useCallback(async () => {
     await logoutRequest();
-    setState({ kind: "anonymous" });
+    setState({ kind: "anonymous", returnHere: false });
   }, []);
 
   const value = useMemo<AuthContextValue | null>(
@@ -57,28 +68,25 @@ export function AuthGate({ children }: { children: ReactNode }) {
     [state, telegram, logout],
   );
 
-  if (state.kind === "loading") {
-    return (
-      <div className="auth-screen">
-        <Spinner size="l" />
-      </div>
-    );
-  }
-  if (state.kind === "anonymous") return <AuthScreen onAuthenticated={loadSession} />;
+  const onLoginRoute = location.pathname === ROUTES.login;
+
+  if (state.kind === "loading") return <AppPage loading centered />;
   if (state.kind === "error") {
     return (
-      <div className="auth-screen">
-        <Placeholder
-          header="Сервер недоступен"
-          description={state.message}
-          action={
-            <Button size="m" onClick={loadSession}>
-              Повторить
-            </Button>
-          }
-        />
-      </div>
+      <AppPage centered>
+        <Stack align="center" ta="center">
+          <Title order={3}>Сервер недоступен</Title>
+          <Text c="dimmed">{state.message}</Text>
+          <Button onClick={loadSession}>Повторить</Button>
+        </Stack>
+      </AppPage>
     );
   }
+  if (state.kind === "anonymous") {
+    if (onLoginRoute) return <LoginScreen onAuthenticated={loadSession} />;
+    return <Navigate to={loginPath(state.returnHere ? location.pathname + location.search : undefined)} replace />;
+  }
+  // Вошли (или Telegram, или открыли /login уже с сессией) — уходим с экрана входа туда, откуда на него попали.
+  if (onLoginRoute) return <Navigate to={safeReturnPath(searchParams.get(FROM_PARAM))} replace />;
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

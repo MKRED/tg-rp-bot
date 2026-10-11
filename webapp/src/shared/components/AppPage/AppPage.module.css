@@ -14,6 +14,13 @@
   padding-bottom: calc(var(--mantine-spacing-xl) + var(--tg-viewport-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
 }
 
+/* Вертикальное центрирование: колонка (motion.div из PageTransition) — единственный flex-ребёнок. */
+.centered {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
 .loading {
   display: flex;
   align-items: center;

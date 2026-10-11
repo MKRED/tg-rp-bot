@@ -50,14 +50,15 @@ function AppInner() {
           {/* ToastProvider оборачивает всё приложение: тосты доступны на любом экране (в т.ч.
               поверх лайтбокса). */}
           <ToastProvider>
-            {/* Вход (вне Telegram — экран логина) — над роутером: экран входа не маршрут. */}
-            <AuthGate>
-              <HashRouter>
+            <HashRouter>
+              {/* Вход (вне Telegram — редирект на /login и обратно) — внутри роутера, над маршрутами:
+                  без сессии защищённые экраны не монтируются. */}
+              <AuthGate>
                 {/* Мост нативной кнопки «Назад» — внутри роутера, т.к. использует navigate/location. */}
                 <BackButtonBridge />
                 <AnimatedRoutes />
-              </HashRouter>
-            </AuthGate>
+              </AuthGate>
+            </HashRouter>
           </ToastProvider>
         </AppRoot>
       </MotionConfig>

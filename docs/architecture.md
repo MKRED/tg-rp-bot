@@ -185,8 +185,8 @@ webapp/src/
                   generation-presets/ rp-templates/ rp-chat/ narrator/
                   knowledge-books/ narrator-templates/ debug/ llm-settings/ (per-user ключ/модель
                   DeepSeek, BYOK, экран /settings) tavily-settings/ (per-user ключ Tavily + квота,
-                  BYOK, экран /settings) auth/ (AuthGate над роутером: в Telegram — сразу приложение, в
-                  браузере — сессия или экран входа/регистрации; useAuth — способ входа и сессия)
+                  BYOK, экран /settings) auth/ (AuthGate внутри роутера над маршрутами: в Telegram — сразу
+                  приложение, в браузере — сессия или редирект на /login?from=…; useAuth — способ входа и сессия)
   shared/       — кросс-каттинг: api/ (client с заголовками авторизации, сигнал 401 → экран входа),
                   telegram/ (initData + isInsideTelegram, confirm, profile
                   photo, platform), text/, image/, graph/, hooks/, constants/, toast/, components/,
@@ -219,6 +219,11 @@ lib/        — чистые хелперы и данные (форматтер�
   (после `initTelegram()`, который уже считал launch-данные из hash) и переписывает hash на маршрут —
   иначе catch-all успел бы увести на главную. Делать это в компоненте внутри роутера НЕЛЬЗЯ: эффект
   `<Navigate>` из catch-all в том же flush перебьёт переход.
+- **Экран входа `/login`** (только браузер): `features/auth/components/AuthGate.tsx` стоит внутри
+  `HashRouter` над `AnimatedRoutes`. Без сессии любой маршрут → `<Navigate>` на `/login?from=<путь+query>`
+  (после «Выйти» — без `from`), `/login` рендерит сам gate — в `AnimatedRoutes` его нет, иначе catch-all
+  увёл бы на главную. С сессией (и всегда в Telegram) `/login` → `from`; `from` проверяет
+  `lib/returnPath.ts` (только внутренний путь, не `//host`, не сам `/login`).
 
 ---
 
@@ -258,7 +263,7 @@ Guard — `auth/auth.guard.ts`, способ входа выбирается п�
 2. **Браузер.** Регистрация/вход (`POST /api/auth/register|login`) ставят httpOnly-cookie `tgrp_session`
    (`Secure` в проде, `SameSite=Lax`, `Path=/api`, 30 дней); в `user_sessions` — только SHA-256 токена,
    срок продлевается при использовании (не чаще раза в час, cookie переотправляется). Пароль — scrypt в
-   `users.password_hash`. Webapp вне Telegram сначала спрашивает `GET /api/auth/session`: 401 → экран входа.
+   `users.password_hash`. Webapp вне Telegram сначала спрашивает `GET /api/auth/session`: 401 → экран входа `/login?from=…`.
 3. **Без способа входа:** в dev при `DEV_USER_ID` — dev-пользователь (отладка webapp из браузера), иначе 401.
 
 **CSRF:** изменяющий запрос без `initData` обязан нести `X-Requested-With: tg-rp-bot` (`CSRF_HEADER` в
