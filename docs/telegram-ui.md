@@ -92,7 +92,7 @@ export function App() {
 }
 
 function AppInner() {
-  // appearance: дефолт из сигнала miniApp.isDark (реагирует на смену темы Telegram без
+  // appearance: дефолт из сигнала themeParams.isDark (реагирует на смену темы Telegram без
   // перезагрузки), с учётом ручного оверрайда пользователя (раздел 1.4.5).
   const { appearance } = useTheme();
   return (
@@ -536,7 +536,7 @@ padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 - **Каждый шаг SDK — под `isAvailable()`-гардом.** Вне Telegram (dev-браузер) часть компонентов
   недоступна; защита не даёт приложению упасть.
 - **Платформу читаем один раз** на уровне модуля (она не меняется), а не в `useEffect`.
-- **Тему берём из `useTheme()`** (`shared/theme`) — дефолт из сигнала `miniApp.isDark` (реагирует на
+- **Тему берём из `useTheme()`** (`shared/theme`) — дефолт из сигнала `themeParams.isDark` (реагирует на
   смену темы Telegram без перезагрузки), с учётом ручного оверрайда пользователя (раздел 1.4.5).
 - **`100dvh`, не `100vh`** для полноэкранных раскладок (высота вьюпорта динамическая).
 - **`stableHeight` для нижних панелей**, `height` для скролла (раздел 3.3).

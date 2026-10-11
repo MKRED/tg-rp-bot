@@ -37,7 +37,7 @@ Mantine сама построена на CSS-модулях и CSS-переме�
   фон/текст/рамки для каждой схемы). Поменять цвет = поправить один файл. Отличие от текущих цветов —
   не проблема, подстроим позже.
 - **Светлая/тёмная схема остаётся** с тем же выбором `system | light | dark`: в режиме system схема
-  берётся из `miniApp.isDark`, иначе — ручной выбор. ThemeProvider управляет схемой Mantine
+  берётся из `themeParams.isDark` (не `miniApp.isDark` — тот зависит от фона, который мы перекрашиваем), иначе — ручной выбор. ThemeProvider управляет схемой Mantine
   (`forceColorScheme` / `useMantineColorScheme`) вместо `appearance` у `AppRoot`.
 - **Шапка и фон Telegram под нашу палитру.** Раз цвета больше не из `themeParams`, вызываем
   `miniApp.setHeaderColor` / `setBackgroundColor` (и `setBottomBarColor`, если доступен) с цветами

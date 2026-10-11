@@ -35,7 +35,7 @@ export function App() {
  * window.Telegram.WebApp, которого у @telegram-apps/sdk-react нет, и сваливается на ОС-ную
  * matchMedia(prefers-color-scheme). Последствия на тёмной теме: на ПК со светлой ОС — белый
  * hover у кнопок; при сворачивании/разворачивании окна — мигание фона (AppRoot терял
- * dark-класс). appearance из useTheme() (дефолт — miniApp.isDark, с учётом ручного оверрайда
+ * dark-класс). appearance из useTheme() (дефолт — themeParams.isDark, с учётом ручного оверрайда
  * пользователя) убирает оба.
  */
 function AppInner() {

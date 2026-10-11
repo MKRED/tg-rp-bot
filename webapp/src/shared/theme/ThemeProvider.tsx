@@ -1,4 +1,4 @@
-import { miniApp, useSignal } from "@telegram-apps/sdk-react";
+import { themeParams, useSignal } from "@telegram-apps/sdk-react";
 import { createContext, useContext, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 import { THEME_MODE_KEY, TGUI_BG_DARK, TGUI_BG_LIGHT } from "./constants";
 import "./manualTheme.css";
@@ -37,7 +37,10 @@ function readStoredMode(): ThemeMode {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   // Вызывается безусловно (правила хуков) даже в режимах light/dark — иначе возврат
   // в "system" не подхватит живую смену темы Telegram без дополнительной подписки.
-  const isDarkFromTelegram = useSignal(miniApp.isDark);
+  // themeParams.isDark — по фону темы самого Telegram. НЕ miniApp.isDark: тот считается по фону Mini App,
+  // который мы сами перекрашиваем под палитру (useTelegramChrome), — «Авто» после «Светлой» видело бы
+  // свой же светлый фон и оставалось светлым в тёмном Telegram.
+  const isDarkFromTelegram = useSignal(themeParams.isDark);
   const [mode, setModeState] = useState<ThemeMode>(readStoredMode);
 
   const setMode = (next: ThemeMode) => {

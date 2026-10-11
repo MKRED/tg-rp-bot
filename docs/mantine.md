@@ -27,7 +27,7 @@ Webapp переезжает с tgui на Mantine (`@mantine/core`, `@mantine/hoo
 | `fonts.ts` | Семейства шрифтов (текст, заголовки). Сейчас системный стек |
 | `motion.ts` | Длительность и кривая анимаций — общие для framer-motion и переходов Mantine |
 | `theme.ts` | `createTheme`: цвета, шрифты, радиус, `respectReducedMotion`, `defaultProps` (поля и кнопки `size="md"` высотой 44px, переходы оверлеев) |
-| `ThemeProvider.tsx` | Режим `system | light | dark` (system — `miniApp.isDark` Telegram), одна схема на tgui и Mantine |
+| `ThemeProvider.tsx` | Режим `system | light | dark` (system — `themeParams.isDark`, тема самого Telegram; не `miniApp.isDark` — тот считается по фону Mini App, который красит `useTelegramChrome`), одна схема на tgui и Mantine |
 
 Свои CSS-переменные — с префиксом `--app-`.
 
