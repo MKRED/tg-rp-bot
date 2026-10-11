@@ -1,0 +1,4 @@
+/* Над системной полосой жестов и над лайтбоксом (z-index 9999 — zIndex задан пропом). */
+.root {
+  padding-bottom: var(--tg-viewport-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+}

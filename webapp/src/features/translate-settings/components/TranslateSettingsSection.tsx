@@ -1,8 +1,6 @@
-import { Cell, Section } from "@telegram-apps/telegram-ui";
-import { useState } from "react";
-import { ExpandableSelect } from "../../../shared/components/ExpandableSelect";
+import { Input, SegmentedControl, Select } from "@mantine/core";
 import { PromptEditorField } from "../../../shared/components/PromptEditorField";
-import { SegmentedToggle } from "../../../shared/components/SegmentedToggle";
+import { SettingsCard } from "../../../shared/components/SettingsCard";
 import { LANG_OPTIONS } from "../../../shared/constants/lang-options";
 import type { useTranslateSettings } from "../hooks/useTranslateSettings";
 import {
@@ -17,7 +15,9 @@ const ENGINE_OPTIONS = [
   { value: "ai", label: "ИИ" },
 ] as const satisfies { value: TranslateSettings["engine"]; label: string }[];
 
-const REASONING_OPTIONS = PROMPT_TRANSLATE_REASONING_LEVELS.map((level) => ({
+const LANG_DATA = LANG_OPTIONS.map(({ value, label }) => ({ value, label }));
+
+const REASONING_DATA = PROMPT_TRANSLATE_REASONING_LEVELS.map((level) => ({
   value: level,
   label: PROMPT_TRANSLATE_REASONING_LABELS[level],
 }));
@@ -25,11 +25,10 @@ const REASONING_OPTIONS = PROMPT_TRANSLATE_REASONING_LEVELS.map((level) => ({
 type TranslateSettingsSectionProps = Omit<ReturnType<typeof useTranslateSettings>, "loading" | "saving">;
 
 /**
- * Секция настроек «Перевод в редакторе» — дефолты режима перевода в PromptEditorOverlay (движок,
- * целевой язык, свой ИИ-промпт). Свой промпт — PromptEditorField (как translationSystemPrompt у
- * RP-шаблонов): тап открывает полноэкранный PromptEditorOverlay, сохранение — на «Готово» внутри
- * него; пустое поле = дефолтный промпт (плейсхолдер это и объясняет), отдельная кнопка «Сбросить»
- * не нужна — очистка текста в оверлее и есть сброс.
+ * Карточка «Перевод в редакторе» — дефолты режима перевода в PromptEditorOverlay (движок, целевой язык,
+ * свой ИИ-промпт, рассуждение). Каждое поле сохраняется сразу при изменении. Свой промпт —
+ * PromptEditorField: тап открывает полноэкранный редактор, пустое поле = дефолтный промпт.
+ * PromptEditorField пока на tgui — переедет вместе с PromptEditorOverlay (шаг 7 плана Mantine).
  */
 export function TranslateSettingsSection({
   settings,
@@ -38,35 +37,36 @@ export function TranslateSettingsSection({
   setPromptTemplate,
   setReasoningEffort,
 }: TranslateSettingsSectionProps) {
-  const [langSelectOpen, setLangSelectOpen] = useState(false);
-  const [reasoningSelectOpen, setReasoningSelectOpen] = useState(false);
-
   return (
-    <Section className="section-blend-inputs" header="Перевод в редакторе">
-      <Cell
-        subtitle="Движок по умолчанию в режиме перевода полноэкранного редактора"
-        after={
-          <SegmentedToggle
-            options={ENGINE_OPTIONS}
-            value={settings.engine}
-            onChange={setEngine}
-            ariaLabel="Движок перевода по умолчанию"
-          />
-        }
-      >
-        Движок
-      </Cell>
-      <ExpandableSelect
-        title="Целевой язык"
-        subtitle="Язык на который переводим"
-        options={LANG_OPTIONS}
+    <SettingsCard
+      title="Перевод в редакторе"
+      description="Настройки по умолчанию для режима перевода в полноэкранном редакторе промптов."
+    >
+      <Input.Wrapper label="Движок" description="Чем переводить по умолчанию">
+        <SegmentedControl
+          fullWidth
+          mt={6}
+          data={ENGINE_OPTIONS}
+          value={settings.engine}
+          onChange={(value) => setEngine(value as TranslateSettings["engine"])}
+          aria-label="Движок перевода по умолчанию"
+        />
+      </Input.Wrapper>
+      <Select
+        label="Целевой язык"
+        description="Язык, на который переводим"
+        data={LANG_DATA}
         value={settings.targetLang}
-        onChange={(value) => {
-          setTargetLang(value);
-          setLangSelectOpen(false);
-        }}
-        open={langSelectOpen}
-        onToggle={() => setLangSelectOpen((v) => !v)}
+        onChange={(value) => value && setTargetLang(value)}
+        allowDeselect={false}
+      />
+      <Select
+        label="Рассуждение для перевода"
+        description="Уровень «мышления» модели при ИИ-переводе, не зависит от настроек ответа ИИ"
+        data={REASONING_DATA}
+        value={settings.reasoningEffort}
+        onChange={(value) => value && setReasoningEffort(value as PromptTranslateReasoningEffort)}
+        allowDeselect={false}
       />
       <PromptEditorField
         header="Свой промпт ИИ-перевода"
@@ -76,18 +76,6 @@ export function TranslateSettingsSection({
         onChange={setPromptTemplate}
         previewLines={3}
       />
-      <ExpandableSelect<PromptTranslateReasoningEffort>
-        title="Рассуждение для перевода"
-        subtitle="Уровень «мышления» модели при ИИ-переводе, не зависит от настроек ответа ИИ"
-        options={REASONING_OPTIONS}
-        value={settings.reasoningEffort}
-        onChange={(value) => {
-          setReasoningEffort(value);
-          setReasoningSelectOpen(false);
-        }}
-        open={reasoningSelectOpen}
-        onToggle={() => setReasoningSelectOpen((v) => !v)}
-      />
-    </Section>
+    </SettingsCard>
   );
 }

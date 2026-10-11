@@ -128,7 +128,7 @@ Mantine сама построена на CSS-модулях и CSS-переме�
 
 | Шаг | Что | Статус |
 |---|---|---|
-| 0 | Фундамент + экран настроек | — |
+| 0 | Фундамент + экран настроек | сделано локально, ждёт проверки в Telegram |
 | 1 | Экран входа (`AuthScreen`) и главная | — |
 | 2 | Простые списки: персоны, RP-шаблоны, шаблоны рассказчика | — |
 | 3 | Персонажи, debug | — |
@@ -171,6 +171,22 @@ dnd-online, `^9.5`); dev: `postcss`, `postcss-preset-mantine`, `postcss-simple-v
    переделываемого кода); `docs/mantine.md` — краткий справочник: тема, где палитры, конвенции стилей,
    типовые паттерны экранов, как подключить Google Fonts, правила телефон/ПК.
 
+**Как сделано (отличия от исходного плана):**
+- Соседство стилей решено слоями: `@mantine/core/styles.layer.css` — reset Mantine в `@layer`,
+  неслоёная tgui сильнее. Проверено сравнением computed-стилей с отключёнными стилями Mantine на всех
+  экранах tgui (главная, списки, формы создания). Два глобальных правила Mantine всё же меняли tgui —
+  `font: inherit` у полей/кнопок и `antialiased` на body; `index.css` их нейтрализует (убрать на шаге 8),
+  после этого отличий нет.
+- Шапку/фон Telegram красит `AppPage` (`useTelegramChrome`), а не корень приложения: на
+  размонтировании возвращает цвета темы клиента, чтобы экраны на tgui остались в своих цветах. Фон
+  `body` (ThemeProvider + `index.css`) не трогали до шага 8 — `AppPage` сам красит фон на всю высоту.
+- В настройках общие tgui-компоненты (`SegmentedToggle`, `ExpandableSelect`, `DropdownPicker`) не
+  переделывались — у них есть другие потребители; на экране настроек их заменили `SegmentedControl` и
+  `Select` Mantine прямо на месте. `PromptEditorField` (свой промпт перевода) остался на tgui внутри
+  Mantine-карточки — переедет вместе с `PromptEditorOverlay` на шаге 7.
+- Новые общие компоненты: `AppPage`, `SettingsCard`, `ResponsiveSheet` (пока без потребителей),
+  `InfoRow`, `ApiKeyField`; `useToast` — на `@mantine/notifications`.
+
 **Проверка:** Playwright локально (светлая и тёмная схема, 390×844 и 1280×800), остальные
 экраны на tgui не поплыли; владелец смотрит в настоящем Telegram (iOS/Android/Desktop) — шапка,
 safe area, клавиатура в полях ввода. **Это контрольная точка:** если вид в Telegram не устраивает,
@@ -208,6 +224,8 @@ safe area, клавиатура в полях ввода. **Это контро�
   ThemeProvider, бинды `themeParams.bindCssVars()` в `init.ts`, если переменные `--tg-theme-*` больше
   нигде не читаются.
 - Включить глобальные стили Mantine целиком, если на шаге 0 их подключали покомпонентно.
+- Убрать из `index.css` нейтрализацию глобальных правил Mantine (`font: revert` у полей/кнопок,
+  `-webkit-font-smoothing: auto` на body), `.section-blend-inputs`, `.section-note`, `.delete-button`.
 - Удалить `docs/tgui-components.md`; `docs/telegram-ui.md` оставить только про SDK, viewport, safe area
   и платформы (или слить в `docs/mantine.md`); убрать из памяти заметки про баг Modal и force-click
   в Playwright.

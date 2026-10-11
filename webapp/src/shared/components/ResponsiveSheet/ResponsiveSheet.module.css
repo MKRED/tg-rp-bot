@@ -1,0 +1,9 @@
+/* Нижняя шторка: контент не уходит под системную полосу жестов. */
+.drawerBody {
+  padding-bottom: calc(var(--mantine-spacing-md) + var(--tg-viewport-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+}
+
+/* Скругляем только верхние углы — нижний край прилегает к краю экрана. */
+.drawerContent {
+  border-radius: var(--mantine-radius-lg) var(--mantine-radius-lg) 0 0;
+}

@@ -1,47 +1,34 @@
-import { DropdownPicker } from "../../../shared/components/DropdownPicker";
+import { Loader, Select } from "@mantine/core";
 
 interface DeepSeekModelPickerProps {
-  header: string;
-  subtitle?: string;
   value: string | null;
   options: string[];
   onChange: (value: string) => void;
+  /** Раскрытие списка запускает (ре)проверку ключа — так подтягивается актуальный список моделей. */
+  onOpen: () => void;
+  /** Идёт загрузка списка моделей. */
+  pending: boolean;
   disabled?: boolean;
-  className?: string;
-  onOpen?: () => void;
-  pending?: boolean;
 }
 
 /**
- * Выпадающий список моделей DeepSeek — тонкая обёртка над общим DropdownPicker. options приходят
- * из GET /models (см. useLlmSettings.verify) — заранее неизвестны и потенциально длинные, поэтому
- * список динамический, а не константа, как в EffortPicker. onOpen/pending — раскрытие списка само
- * запускает (ре)проверку ключа и подтягивает актуальный список моделей.
+ * Выбор модели DeepSeek. options приходят из GET /models (useLlmSettings.verify) — заранее неизвестны,
+ * поэтому список динамический; до первой проверки в нём только сохранённая модель.
  */
-export function DeepSeekModelPicker({
-  header,
-  subtitle,
-  value,
-  options,
-  onChange,
-  disabled,
-  className,
-  onOpen,
-  pending,
-}: DeepSeekModelPickerProps) {
+export function DeepSeekModelPicker({ value, options, onChange, onOpen, pending, disabled }: DeepSeekModelPickerProps) {
   return (
-    <DropdownPicker
-      className={className}
-      header={header}
-      subtitle={subtitle}
-      value={value}
-      options={options.map((model) => ({ value: model, label: model }))}
-      onChange={onChange}
+    <Select
+      label="Модель"
+      description={pending ? "Загрузка моделей…" : "Список моделей приходит от DeepSeek при открытии"}
       placeholder="Модель не выбрана"
+      data={options}
+      value={value}
+      onChange={(next) => next && onChange(next)}
+      onDropdownOpen={onOpen}
+      allowDeselect={false}
       disabled={disabled}
-      ariaLabel="Модель DeepSeek"
-      onOpen={onOpen}
-      pending={pending}
+      rightSection={pending ? <Loader size={16} /> : undefined}
+      aria-label="Модель DeepSeek"
     />
   );
 }

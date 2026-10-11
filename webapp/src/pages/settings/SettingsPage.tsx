@@ -1,23 +1,19 @@
-import { Button, Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
-import { motion } from "framer-motion";
+import { Button, Group, Text } from "@mantine/core";
 import { useState } from "react";
 import { BrowserLoginSection, useAuth, useBrowserLogin } from "../../features/auth";
 import { LlmSettingsSection, useLlmSettings } from "../../features/llm-settings";
 import { TavilySettingsSection, useTavilySettings } from "../../features/tavily-settings";
 import { TranslateSettingsSection, useTranslateSettings } from "../../features/translate-settings";
-import { PageTransition } from "../../shared/components/PageTransition";
+import { AppPage } from "../../shared/components/AppPage";
+import { SettingsCard } from "../../shared/components/SettingsCard";
 import { ThemeToggle } from "../../shared/theme";
-import "./settings.css";
-
-const ITEM_T = { duration: 0.2, ease: "easeOut" as const };
 
 /**
- * Экран «Настройки»: тема оформления, аккаунт (выход в браузере / логин для браузера в Mini App), персональные ключи ИИ (DeepSeek) + веб-поиска (Tavily) и
- * дефолты режима перевода полноэкранного редактора промптов (PromptEditorOverlay).
+ * Экран «Настройки»: тема оформления, аккаунт (выход в браузере / логин для браузера в Mini App),
+ * персональные ключи ИИ (DeepSeek) и веб-поиска (Tavily), дефолты перевода в редакторе промптов.
  *
- * Статусы (useLlmSettings/useTavilySettings/useTranslateSettings) грузятся на уровне страницы:
- * пока не пришли все ответы, показываем один спиннер на весь экран вместо частичного контента —
- * иначе секции появлялись бы позже темы и сдвигали бы уже отрисованный список.
+ * Статусы грузятся на уровне страницы: пока не пришли все ответы, AppPage показывает один лоадер
+ * вместо частичного контента — иначе карточки появлялись бы по очереди и сдвигали уже отрисованные.
  */
 export function SettingsPage() {
   const { loading: llmLoading, ...llm } = useLlmSettings();
@@ -27,61 +23,45 @@ export function SettingsPage() {
   const { loading: browserLoginLoading, ...browserLogin } = useBrowserLogin();
   const [loggingOut, setLoggingOut] = useState(false);
 
-  if (llmLoading || tavilyLoading || translateLoading || browserLoginLoading) {
-    return (
-      <PageTransition>
-        <div className="settings-page settings-page__loading">
-          <Spinner size="l" />
-        </div>
-      </PageTransition>
-    );
-  }
-
   return (
-    <PageTransition>
-      <div className="settings-page">
-        <List>
-          <Section header="Оформление">
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={ITEM_T}>
-              <Cell subtitle="По умолчанию — как в Telegram" after={<ThemeToggle />}>
-                Тема
-              </Cell>
-            </motion.div>
-          </Section>
+    <AppPage title="Настройки" loading={llmLoading || tavilyLoading || translateLoading || browserLoginLoading}>
+      <SettingsCard title="Оформление" description="«Авто» — светлая или тёмная, как в Telegram.">
+        <ThemeToggle />
+      </SettingsCard>
 
-          {/* Аккаунт — только в браузере: в Telegram вход по initData, выходить не из чего. */}
-          {mode === "browser" && (
-            <Section header="Аккаунт">
-              <Cell
-                subtitle={session?.login ? `Логин: ${session.login}` : undefined}
-                after={
-                  <Button
-                    size="s"
-                    mode="outline"
-                    loading={loggingOut}
-                    onClick={() => {
-                      setLoggingOut(true);
-                      logout().catch(() => setLoggingOut(false));
-                    }}
-                  >
-                    Выйти
-                  </Button>
-                }
-              >
-                {session?.displayName ?? "Вход по логину"}
-              </Cell>
-            </Section>
-          )}
+      {/* Аккаунт — только в браузере: в Telegram вход по initData, выходить не из чего. */}
+      {mode === "browser" && (
+        <SettingsCard title="Аккаунт">
+          <Group justify="space-between" wrap="nowrap">
+            <div>
+              <Text fw={500}>{session?.displayName ?? "Вход по логину"}</Text>
+              {session?.login && (
+                <Text size="sm" c="dimmed">
+                  Логин: {session.login}
+                </Text>
+              )}
+            </div>
+            <Button
+              variant="default"
+              loading={loggingOut}
+              onClick={() => {
+                setLoggingOut(true);
+                logout().catch(() => setLoggingOut(false));
+              }}
+            >
+              Выйти
+            </Button>
+          </Group>
+        </SettingsCard>
+      )}
 
-          {/* «Вход в браузере» — в Mini App; в браузере у аккаунта логин уже есть (кроме локального
-              dev-обхода — там секция тоже видна, чтобы её можно было проверить вне Telegram). */}
-          {(mode === "telegram" || !browserLogin.login) && <BrowserLoginSection {...browserLogin} />}
+      {/* «Вход в браузере» — в Mini App; в браузере у аккаунта логин уже есть (кроме локального
+          dev-обхода — там карточка тоже видна, чтобы её можно было проверить вне Telegram). */}
+      {(mode === "telegram" || !browserLogin.login) && <BrowserLoginSection {...browserLogin} />}
 
-          <LlmSettingsSection {...llm} />
-          <TavilySettingsSection {...tavily} />
-          <TranslateSettingsSection {...translate} />
-        </List>
-      </div>
-    </PageTransition>
+      <LlmSettingsSection {...llm} />
+      <TavilySettingsSection {...tavily} />
+      <TranslateSettingsSection {...translate} />
+    </AppPage>
   );
 }

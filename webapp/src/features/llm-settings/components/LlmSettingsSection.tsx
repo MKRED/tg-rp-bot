@@ -1,27 +1,23 @@
-import { Button, Cell, Input, Section, Spinner } from "@telegram-apps/telegram-ui";
+import { Stack } from "@mantine/core";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { ApiKeyField } from "../../../shared/components/ApiKeyField";
+import { InfoRow } from "../../../shared/components/InfoRow";
+import { SettingsCard } from "../../../shared/components/SettingsCard";
 import { confirmAction } from "../../../shared/telegram/confirm";
+import { MOTION_TRANSITION } from "../../../shared/theme/motion";
 import type { useLlmSettings } from "../hooks/useLlmSettings";
 import { formatBalanceDescription, formatBalanceSubtitle } from "../lib/formatBalance";
 import { DeepSeekModelPicker } from "./DeepSeekModelPicker";
-import "./LlmSettingsSection.css";
-
-const PICKER_T = { duration: 0.2, ease: "easeOut" as const };
 
 type LlmSettingsSectionProps = Omit<ReturnType<typeof useLlmSettings>, "loading">;
 
 /**
- * Секция настроек «ИИ (DeepSeek)»: персональный ключ + модель (BYOK — общего ключа из env нет,
- * без ключа генерация и ИИ-перевод падают с понятной ошибкой). Кнопка в after поля ввода —
- * условная: пока поле не пустое, она проверяет введённый ключ и сразу сохраняет его вместе с
- * резолвленной моделью (verifyAndSave); когда поле пустое, а ключ уже сохранён — превращается
- * в удаление ключа. Отдельной кнопки «Сохранить» нет — выбор модели в DeepSeekModelPicker сохраняет
- * её сразу (save с override, т.к. setSelectedModel ещё не осел в state в момент вызова).
+ * Карточка «ИИ (DeepSeek)»: персональный ключ + модель (BYOK — общего ключа нет, без ключа генерация
+ * и ИИ-перевод падают с понятной ошибкой). Ключ проверяется и сохраняется кнопкой в поле (verifyAndSave),
+ * модель сохраняется сразу при выборе (save с override — setSelectedModel ещё не осел в state).
+ * Модель и баланс появляются, только когда ключ сохранён.
  *
- * Состояние (useLlmSettings) поднято в SettingsPage — загрузка статуса показывается на весь
- * экран настроек, а не спиннером внутри секции, чтобы контент не «прыгал» при смене вкладки.
+ * Состояние (useLlmSettings) поднято в SettingsPage — экран показывает один лоадер, пока не загрузится всё.
  */
 export function LlmSettingsSection({
   status,
@@ -39,13 +35,6 @@ export function LlmSettingsSection({
   balance,
   balanceLoading,
 }: LlmSettingsSectionProps) {
-  const hasInput = keyInput.trim().length > 0;
-  const keyAction: "save" | "delete" | "none" = hasInput ? "save" : status.hasKey ? "delete" : "none";
-  // overflow:hidden нужен только пока идёт height-анимация (иначе схлопывание не увидеть); в
-  // раскрытом состоянии он обрезает абсолютно спозиционированное меню DropdownPicker внутри —
-  // поэтому снимаем его сразу после завершения анимации и возвращаем перед следующей (сворачивание).
-  const [pickerAnimating, setPickerAnimating] = useState(false);
-
   const handleDeleteKey = async () => {
     const confirmed = await confirmAction("Удалить ключ DeepSeek? Генерация перестанет работать.", {
       title: "Удалить ключ?",
@@ -54,63 +43,33 @@ export function LlmSettingsSection({
   };
 
   return (
-    <Section className="section-blend-inputs" header="ИИ (DeepSeek)">
-      <div className="llm-settings">
-        <Cell
-          subtitle={status.hasKey ? `Ключ сохранён, оканчивается на …${status.last4}` : "Ключ не задан"}
-        >
-          Ключ API
-        </Cell>
-        <Input
-          type="password"
-          placeholder={status.hasKey ? "Введите новый, чтобы заменить" : "sk-…"}
-          value={keyInput}
-          onChange={(e) => setKeyInput(e.target.value)}
-          autoComplete="off"
-          after={
-            keyAction === "none" ? null : (
-              <Button
-                size="s"
-                mode={keyAction === "delete" ? "outline" : "bezeled"}
-                className={
-                  keyAction === "delete" ? "llm-settings__key-action delete-button" : "llm-settings__key-action"
-                }
-                disabled={verifying || saving}
-                onClick={() => {
-                  if (keyAction === "save") void verifyAndSave();
-                  else void handleDeleteKey();
-                }}
-                aria-label={keyAction === "delete" ? "Удалить ключ" : "Сохранить ключ"}
-              >
-                {verifying || saving ? (
-                  <Spinner size="s" />
-                ) : keyAction === "delete" ? (
-                  <Trash2 size={14} />
-                ) : (
-                  <Check size={14} />
-                )}
-              </Button>
-            )
-          }
-        />
+    <SettingsCard title="ИИ (DeepSeek)" description="Свой ключ DeepSeek — на нём работают генерация и ИИ-перевод.">
+      <ApiKeyField
+        label="Ключ API"
+        description={status.hasKey ? `Ключ сохранён, оканчивается на …${status.last4}` : "Ключ не задан"}
+        placeholder={status.hasKey ? "Введите новый, чтобы заменить" : "sk-…"}
+        value={keyInput}
+        onChange={setKeyInput}
+        hasKey={status.hasKey}
+        busy={verifying || saving}
+        onSave={() => void verifyAndSave()}
+        onDelete={() => void handleDeleteKey()}
+      />
 
-        {/* initial={false} — без него пикер проигрывал бы анимацию появления при каждом заходе
-            на страницу настроек (SettingsPage монтирует секцию уже с готовым status.hasKey),
-            а не только в момент реального добавления ключа. */}
-        <AnimatePresence initial={false}>
-          {status.hasKey && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={PICKER_T}
-              style={{ overflow: pickerAnimating ? "hidden" : "visible" }}
-              onAnimationStart={() => setPickerAnimating(true)}
-              onAnimationComplete={() => setPickerAnimating(false)}
-            >
+      {/* initial={false} — блок не проигрывает появление при каждом заходе на экран (секция монтируется
+          уже с готовым status.hasKey), только когда ключ реально добавили или удалили. Список Select —
+          в портале, поэтому overflow:hidden на время анимации высоты его не обрезает. */}
+      <AnimatePresence initial={false}>
+        {status.hasKey && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={MOTION_TRANSITION}
+            style={{ overflow: "hidden" }}
+          >
+            <Stack gap="md">
               <DeepSeekModelPicker
-                header="Модель"
-                subtitle={verifying ? "Загрузка моделей…" : models ? "Список получен от DeepSeek" : "Откройте список, чтобы загрузить модели"}
                 value={selectedModel}
                 options={models ?? (status.model ? [status.model] : [])}
                 onChange={(model) => {
@@ -118,24 +77,22 @@ export function LlmSettingsSection({
                   void save(model);
                 }}
                 disabled={saving}
-                // Реверифай только сохранённого ключа: если поле не пустое, там ещё не
-                // сохранённый черновик замены — его не подсовываем как "текущий" при простом
-                // открытии списка моделей (иначе неполный/невалидный черновик всплывёт тостом-ошибкой).
+                // Перепроверяем только сохранённый ключ: непустое поле — несохранённый черновик замены,
+                // его не подсовываем как «текущий» при простом открытии списка (иначе тост-ошибка).
                 onOpen={() => {
-                  if (!hasInput) void verify({ silent: true });
+                  if (!keyInput.trim()) void verify({ silent: true });
                 }}
                 pending={verifying}
               />
-              <Cell
-                subtitle={formatBalanceSubtitle(balance, balanceLoading)}
-                description={formatBalanceDescription(balance)}
-              >
-                Баланс DeepSeek
-              </Cell>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </Section>
+              <InfoRow
+                label="Баланс DeepSeek"
+                value={formatBalanceSubtitle(balance, balanceLoading)}
+                hint={formatBalanceDescription(balance)}
+              />
+            </Stack>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </SettingsCard>
   );
 }

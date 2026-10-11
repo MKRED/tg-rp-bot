@@ -1,0 +1,19 @@
+/* Фон страницы на весь экран: под карточками и в зазорах при перерисовке webview. */
+.page {
+  min-height: 100dvh;
+  background: var(--app-color-page);
+  /* Full Screen: контент ниже системной панели и кнопок Telegram (вне Telegram — env(), иначе 0). */
+  padding-top: calc(
+    var(--mantine-spacing-md) +
+    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
+  padding-bottom: calc(var(--mantine-spacing-xl) + var(--tg-viewport-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50dvh;
+}

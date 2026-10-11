@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
+import { MOTION_TRANSITION } from "../theme/motion";
 
 interface PageTransitionProps {
   children: ReactNode;
@@ -24,7 +25,7 @@ export function PageTransition({ children, phase }: PageTransitionProps) {
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+      transition={MOTION_TRANSITION}
     >
       {children}
     </motion.div>

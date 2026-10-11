@@ -13,7 +13,7 @@ Telegram-бот для ролевой игры (RP) с упором на **Teleg
 | LLM | DeepSeek (OpenAI-совместимый API); ключ/модель — персональные (BYOK), задаются пользователем в Mini App |
 | Веб-поиск | Tavily (квота ключа); ключ — персональный (BYOK), задаётся пользователем в Mini App |
 | Логи | pino (+ pino-roll, pino-pretty) |
-| Mini App | React 19 + Vite + `@telegram-apps/sdk-react` + `@telegram-apps/telegram-ui` + `react-router-dom` (HashRouter) + `@xyflow/react` (граф диалога) + `framer-motion` + `react-easy-crop` (кроп аватара) |
+| Mini App | React 19 + Vite + `@telegram-apps/sdk-react` + Mantine (`@mantine/core`, переезд с `@telegram-apps/telegram-ui` — `docs/plan/mantine.md`) + `react-router-dom` (HashRouter) + `@xyflow/react` (граф диалога) + `framer-motion` + `react-easy-crop` (кроп аватара) |
 | Вход | Mini App — initData (подпись проверяется серверно через `@tma.js/init-data-node`); браузер — логин и пароль (scrypt, сессия в httpOnly-cookie, `@nestjs/throttler`) |
 | Прокси | `https-proxy-agent` (Telegram, agent) + `undici` `ProxyAgent` (Tavily, dispatcher) — оба сервиса недоступны напрямую с сети сервера |
 | Тесты | vitest (bot + webapp) |

@@ -1,13 +1,12 @@
-import { Button, Caption, Cell, Input, Section } from "@telegram-apps/telegram-ui";
-import { FieldHint } from "../../../shared/components/FieldHint";
-import { SectionActions } from "../../../shared/components/SectionActions";
+import { Button, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
+import { InfoRow } from "../../../shared/components/InfoRow";
+import { SettingsCard } from "../../../shared/components/SettingsCard";
 import type { useBrowserLogin } from "../hooks/useBrowserLogin";
-import "./BrowserLoginSection.css";
 
 type BrowserLoginSectionProps = Omit<ReturnType<typeof useBrowserLogin>, "loading">;
 
 /**
- * Секция настроек Mini App «Вход в браузере»: аккаунт из Telegram задаёт логин и пароль, чтобы
+ * Карточка настроек Mini App «Вход в браузере»: аккаунт из Telegram задаёт логин и пароль, чтобы
  * открывать приложение и вне Telegram (тот же аккаунт и данные). Логин задаётся один раз; после —
  * только показываем его и адрес для входа. Состояние (useBrowserLogin) поднято в SettingsPage.
  */
@@ -28,18 +27,17 @@ export function BrowserLoginSection({
 
   if (login) {
     return (
-      <Section header="Вход в браузере">
-        <Cell subtitle={`Входите на ${siteUrl} с этим логином и паролем`}>Логин: {login}</Cell>
-      </Section>
+      <SettingsCard title="Вход в браузере" description={`Входите на ${siteUrl} с этим логином и паролем.`}>
+        <InfoRow label="Логин" value={login} />
+      </SettingsCard>
     );
   }
 
   return (
-    <Section className="section-blend-inputs" header="Вход в браузере">
-      <FieldHint>
-        Задайте логин и пароль, чтобы открывать приложение в обычном браузере ({siteUrl}) — с тем же
-        аккаунтом и данными. Логин задаётся один раз.
-      </FieldHint>
+    <SettingsCard
+      title="Вход в браузере"
+      description={`Задайте логин и пароль, чтобы открывать приложение в обычном браузере (${siteUrl}) — с тем же аккаунтом и данными. Логин задаётся один раз.`}
+    >
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -47,42 +45,38 @@ export function BrowserLoginSection({
         }}
         noValidate
       >
-        <Input
-          header="Логин"
-          placeholder="login"
-          autoComplete="username"
-          autoCapitalize="none"
-          spellCheck={false}
-          value={loginInput}
-          onChange={(e) => setLoginInput(e.target.value)}
-        />
-        <Input
-          header="Пароль"
-          type="password"
-          placeholder="••••••••"
-          autoComplete="new-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <Input
-          header="Повторите пароль"
-          type="password"
-          placeholder="••••••••"
-          autoComplete="new-password"
-          value={repeat}
-          onChange={(e) => setRepeat(e.target.value)}
-        />
-        {error && (
-          <Caption level="1" className="browser-login__error" role="alert">
-            {error}
-          </Caption>
-        )}
-        <SectionActions>
-          <Button type="submit" size="m" stretched loading={saving}>
+        <Stack gap="sm">
+          <TextInput
+            label="Логин"
+            placeholder="login"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            value={loginInput}
+            onChange={(e) => setLoginInput(e.currentTarget.value)}
+          />
+          <PasswordInput
+            label="Пароль"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.currentTarget.value)}
+          />
+          <PasswordInput
+            label="Повторите пароль"
+            autoComplete="new-password"
+            value={repeat}
+            onChange={(e) => setRepeat(e.currentTarget.value)}
+          />
+          {error && (
+            <Text size="sm" c="red" role="alert">
+              {error}
+            </Text>
+          )}
+          <Button type="submit" fullWidth loading={saving} mt="xs">
             Сохранить
           </Button>
-        </SectionActions>
+        </Stack>
       </form>
-    </Section>
+    </SettingsCard>
   );
 }

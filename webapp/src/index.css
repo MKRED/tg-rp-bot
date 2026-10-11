@@ -28,6 +28,20 @@ body {
     AppRoot через ref — давало гонку на один рендер при частом переключении.
   */
   background: var(--tg-bg-color, var(--tg-theme-bg-color, #fff));
+  /* Mantine (global.css) включает antialiased на body — на macOS текст tgui становился тоньше.
+     До удаления tgui (шаг 8 docs/plan/mantine.md) оставляем браузерное сглаживание. */
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+}
+
+/*
+  Mantine глобально ставит `font: inherit` полям и кнопкам — поля/кнопки tgui и наши самописные без
+  своего шрифта унаследовали бы шрифт body. Возвращаем браузерный шрифт всем, кроме элементов Mantine
+  (у них классы mantine-*). :where() — нулевая специфичность: классы tgui со своим шрифтом по-прежнему
+  сильнее, а слой Mantine слабее любого неслоёного правила. Убрать вместе с tgui (шаг 8).
+*/
+:where(input, textarea, select, button):where(:not([class*="mantine-"])) {
+  font: revert;
 }
 
 /*

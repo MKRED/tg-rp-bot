@@ -1,8 +1,10 @@
+import { MantineProvider } from "@mantine/core";
 import { AppRoot } from "@telegram-apps/telegram-ui";
+import { MotionConfig } from "framer-motion";
 import { HashRouter } from "react-router-dom";
 import { AuthGate } from "../features/auth";
 import { getPlatform } from "../shared/telegram/platform";
-import { ThemeProvider, useTheme } from "../shared/theme";
+import { cssVariablesResolver, theme, ThemeProvider, useTheme } from "../shared/theme";
 import { ToastProvider } from "../shared/toast";
 import { AnimatedRoutes } from "./AnimatedRoutes";
 import { BackButtonBridge } from "./BackButtonBridge";
@@ -39,19 +41,26 @@ export function App() {
 function AppInner() {
   const { appearance } = useTheme();
   return (
-    <AppRoot appearance={appearance} platform={platform}>
-      {/* ToastProvider оборачивает всё приложение: тосты доступны на любом экране (в т.ч.
-          в порталах — лайтбокс), а Snackbar наследует тему AppRoot. */}
-      <ToastProvider>
-        {/* Вход (вне Telegram — экран логина) — над роутером: экран входа не маршрут. */}
-        <AuthGate>
-          <HashRouter>
-            {/* Мост нативной кнопки «Назад» — внутри роутера, т.к. использует navigate/location. */}
-            <BackButtonBridge />
-            <AnimatedRoutes />
-          </HashRouter>
-        </AuthGate>
-      </ToastProvider>
-    </AppRoot>
+    // Mantine — снаружи AppRoot: её порталы (Modal, Drawer, Select, тосты) уходят в body и берут
+    // тему из контекста. Схема одна на обе библиотеки — appearance из ThemeProvider.
+    <MantineProvider theme={theme} cssVariablesResolver={cssVariablesResolver} forceColorScheme={appearance}>
+      {/* reducedMotion="user" — системное «уменьшить движение» отключает анимации framer-motion. */}
+      <MotionConfig reducedMotion="user">
+        <AppRoot appearance={appearance} platform={platform}>
+          {/* ToastProvider оборачивает всё приложение: тосты доступны на любом экране (в т.ч.
+              поверх лайтбокса). */}
+          <ToastProvider>
+            {/* Вход (вне Telegram — экран логина) — над роутером: экран входа не маршрут. */}
+            <AuthGate>
+              <HashRouter>
+                {/* Мост нативной кнопки «Назад» — внутри роутера, т.к. использует navigate/location. */}
+                <BackButtonBridge />
+                <AnimatedRoutes />
+              </HashRouter>
+            </AuthGate>
+          </ToastProvider>
+        </AppRoot>
+      </MotionConfig>
+    </MantineProvider>
   );
 }
