@@ -70,6 +70,13 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   const onLoginRoute = location.pathname === ROUTES.login;
 
+  // «Без возврата» — только для одного редиректа сразу после «Выйти». Дошли до экрана входа — дальше
+  // снова с возвратом: иначе открытый потом адрес (#/personas) уводил бы на /login без from.
+  const dropReturn = state.kind === "anonymous" && !state.returnHere && onLoginRoute;
+  useEffect(() => {
+    if (dropReturn) setState({ kind: "anonymous", returnHere: true });
+  }, [dropReturn]);
+
   if (state.kind === "loading") return <AppPage loading centered />;
   if (state.kind === "error") {
     return (
