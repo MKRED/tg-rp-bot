@@ -1,4 +1,4 @@
-import { Avatar } from "@mantine/core";
+import { Avatar, UnstyledButton } from "@mantine/core";
 import { AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { characterEditPath } from "../../../../app/routes";
@@ -8,7 +8,7 @@ import { ImageLightbox } from "../../../../shared/components/ImageLightbox";
 import { nameInitials as characterInitials } from "../../../../shared/text/initials";
 import { useCharacterImage } from "../../hooks/useCharacterImage";
 import { useCharacterImageFull } from "../../hooks/useCharacterImageFull";
-import "./CharacterAvatar.css";
+import styles from "./CharacterAvatar.module.css";
 
 interface CharacterAvatarProps {
   id: number;
@@ -53,16 +53,16 @@ export function CharacterAvatar({
   return (
     <>
       {canEnlarge ? (
-        <button
-          type="button"
-          className="character-avatar__btn"
+        <UnstyledButton
+          className={styles.zoom}
+          aria-label={`Открыть фото: ${name}`}
           onClick={(e) => {
             e.stopPropagation(); // не передаём клик на Cell → не переходим на редактирование
             setOpen(true);
           }}
         >
           {avatar}
-        </button>
+        </UnstyledButton>
       ) : (
         avatar
       )}

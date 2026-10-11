@@ -1,0 +1,32 @@
+/* Фон раскрытой записи не вылезает за скругления карточки. */
+.records {
+  overflow: hidden;
+}
+
+/* Записи разделены той же линией, что строки списков (вместо рамки Accordion по умолчанию). */
+.item {
+  border-bottom: none;
+  border-top: 1px solid var(--app-color-divider);
+}
+
+.control {
+  min-height: 44px;
+}
+
+.summary {
+  flex: 1;
+  min-width: 0;
+}
+
+.sectionTitle {
+  margin-top: var(--mantine-spacing-sm);
+  margin-bottom: 4px;
+  letter-spacing: 0.04em;
+}
+
+/* RAW-тело и ответ: перенос длинных строк вместо горизонтального скролла на телефоне. */
+.code {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: var(--mantine-font-size-xs);
+}

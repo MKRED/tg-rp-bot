@@ -1,11 +1,12 @@
-import { Button, Caption, Input, Text } from "@telegram-apps/telegram-ui";
+import { Button, Stack, Text, TextInput } from "@mantine/core";
 import { useMemo, useState } from "react";
 import { AvatarPicker, type AvatarValue } from "../../../shared/components/AvatarPicker";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
 import { PromptEditorField } from "../../../shared/components/PromptEditorField";
+import { SettingsCard } from "../../../shared/components/SettingsCard";
 import { useUnsavedChangesGuard } from "../../../shared/telegram/useUnsavedChangesGuard";
 import { FirstMessagesEditor } from "./FirstMessagesEditor";
-import { TagsInput } from "./TagsInput";
+import { CharacterTagsInput } from "./CharacterTagsInput";
 import { hasUnsavedChanges, normalizeCharacterDraft } from "../lib/formDirty";
 import type { CharacterInput } from "../types/character";
 
@@ -88,55 +89,63 @@ export function CharacterForm({ initial, submitting, onSubmit, onDelete }: Chara
   };
 
   return (
-    <div className="char-form">
-      <AvatarPicker image={image} imageFull={imageFull} name={name} onChange={handleAvatar} />
+    <Stack gap="lg">
+      <SettingsCard title="Основное">
+        <AvatarPicker image={image} imageFull={imageFull} name={name} onChange={handleAvatar} />
+        <TextInput
+          label="Имя"
+          placeholder="Имя персонажа"
+          withAsterisk
+          value={name}
+          onChange={(e) => setName(e.currentTarget.value)}
+        />
+        <TextInput
+          label="Примечание"
+          description="Заметка для себя — в чат не попадает"
+          value={footnote}
+          onChange={(e) => setFootnote(e.currentTarget.value)}
+        />
+        <CharacterTagsInput tags={tags} onChange={setTags} />
+      </SettingsCard>
 
-      <Input
-        header="Название"
-        placeholder="Имя персонажа"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
+      <SettingsCard title="Промпты">
+        <PromptEditorField
+          header="Промпт"
+          hint="Описание персонажа для нейросети: кто он, внешность, характер, манера речи."
+          placeholder="Системный промпт персонажа…"
+          value={prompt}
+          previewLines={6}
+          onChange={setPrompt}
+        />
+        <PromptEditorField
+          header="Сценарий"
+          hint="Куда движется сюжет и какова цель сцены. Попадает в запрос, если в RP-шаблоне включён «Сценарий»."
+          placeholder="Куда движется сюжет, цель сцены…"
+          value={scenario}
+          previewLines={6}
+          onChange={setScenario}
+        />
+      </SettingsCard>
 
-      <Input
-        header="Примечание"
-        placeholder="Заметка для себя (не влияет на чат)"
-        value={footnote}
-        onChange={(e) => setFootnote(e.target.value)}
-      />
+      <SettingsCard title="Первое сообщение" description="С чего персонаж начинает новый чат — бот возьмёт один из вариантов.">
+        <FirstMessagesEditor messages={firstMessages} onChange={setFirstMessages} />
+      </SettingsCard>
 
-      <TagsInput tags={tags} onChange={setTags} />
-
-      <PromptEditorField
-        header="Промпт"
-        placeholder="Системный промпт персонажа…"
-        value={prompt}
-        previewLines={6}
-        onChange={setPrompt}
-      />
-
-      <PromptEditorField
-        header="Сценарий"
-        placeholder="Куда движется сюжет, цель сцены…"
-        value={scenario}
-        previewLines={6}
-        onChange={setScenario}
-      />
-
-      <Text weight="2" Component="div" className="char-form__section-title">Первое сообщение</Text>
-      <FirstMessagesEditor messages={firstMessages} onChange={setFirstMessages} />
-
-      <div className="char-form__actions">
-        {isDirty && !submitting && <Caption level="1" className="char-form__unsaved">Есть несохранённые изменения</Caption>}
-        <Button size="l" stretched disabled={!canSubmit} onClick={handleSubmit}>
-          {submitting ? "Сохранение…" : "Сохранить"}
+      <Stack gap="sm">
+        {isDirty && !submitting && (
+          <Text size="sm" c="dimmed" ta="center">
+            Есть несохранённые изменения
+          </Text>
+        )}
+        <Button fullWidth disabled={!canSubmit} loading={submitting} onClick={handleSubmit}>
+          Сохранить
         </Button>
         {onDelete && (
           <DeleteButton disabled={submitting} onClick={onDelete}>
             Удалить персонажа
           </DeleteButton>
         )}
-      </div>
-    </div>
+      </Stack>
+    </Stack>
   );
 }

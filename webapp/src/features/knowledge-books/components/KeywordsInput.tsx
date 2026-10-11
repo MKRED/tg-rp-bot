@@ -13,7 +13,7 @@ interface KeywordsInputProps {
 
 /**
  * Ввод триггер-слов записи книги знаний на базе tg-ui Multiselect: чипы + свободное создание
- * (creatable), без источника подсказок (в отличие от TagsInput тегов персонажей — общего
+ * (creatable), без источника подсказок (в отличие от CharacterTagsInput тегов персонажей — общего
  * справочника триггер-слов между записями нет).
  */
 export function KeywordsInput({ keywords, onChange }: KeywordsInputProps) {

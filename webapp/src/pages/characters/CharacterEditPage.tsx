@@ -1,9 +1,11 @@
-import { Spinner, Text } from "@telegram-apps/telegram-ui";
+import { Button } from "@mantine/core";
+import { Users } from "lucide-react";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { ROUTES } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
-import { PageTransition } from "../../shared/components/PageTransition";
+import { AppPage } from "../../shared/components/AppPage";
+import { EmptyState } from "../../shared/components/EmptyState";
 import {
   CharacterForm,
   createCharacter,
@@ -16,7 +18,6 @@ import {
 import { ApiError } from "../../shared/api/client";
 import { confirmAction, showAlert } from "../../shared/telegram/confirm";
 import { useToast } from "../../shared/toast";
-import "./characters.css";
 
 /** Маппинг полного персонажа в значения формы. */
 function toInput(c: Character): CharacterInput {
@@ -82,38 +83,37 @@ export function CharacterEditPage() {
         // 409 — FK нарушение: персонаж привязан к чату, сервер блокирует удаление.
         if (err instanceof ApiError && err.status === 409) {
           await showAlert("Персонаж используется в чате. Сначала удалите чат.", "Нельзя удалить");
+        } else {
+          showToast({ type: "error", message: "Не удалось удалить персонажа" });
         }
       });
   };
 
-  if (loading) {
+  if (error || (!loading && routeId !== undefined && !character)) {
     return (
-      <PageTransition>
-        <div className="characters-page__fullcenter">
-          <Spinner size="m" />
-        </div>
-      </PageTransition>
-    );
-  }
-
-  if (error || (routeId !== undefined && !character)) {
-    return (
-      <PageTransition>
-        <Text Component="div" className="characters-page__fullcenter">Персонаж не найден</Text>
-      </PageTransition>
+      <AppPage centered>
+        <EmptyState
+          icon={Users}
+          title="Персонаж не найден"
+          description="Возможно, его удалили."
+          action={
+            <Button variant="default" onClick={() => navigate(ROUTES.characters)}>
+              К списку персонажей
+            </Button>
+          }
+        />
+      </AppPage>
     );
   }
 
   return (
-    <PageTransition>
-      <div className="characters-page">
-        <CharacterForm
-          initial={character ? toInput(character) : undefined}
-          submitting={submitting}
-          onSubmit={handleSubmit}
-          onDelete={id === undefined ? undefined : handleDelete}
-        />
-      </div>
-    </PageTransition>
+    <AppPage title={id === undefined ? "Новый персонаж" : "Персонаж"} loading={loading}>
+      <CharacterForm
+        initial={character ? toInput(character) : undefined}
+        submitting={submitting}
+        onSubmit={handleSubmit}
+        onDelete={id === undefined ? undefined : handleDelete}
+      />
+    </AppPage>
   );
 }

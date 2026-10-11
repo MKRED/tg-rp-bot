@@ -38,6 +38,8 @@ export const buildTheme = (palette: Palette, fonts: FontPair) =>
       TagsInput: inputDefaults,
       Autocomplete: inputDefaults,
       SegmentedControl: { defaultProps: { size: "md" } },
+      // Подпись тумблера — того же размера, что у полей (md), и крупнее цель нажатия.
+      Switch: { defaultProps: { size: "md" } },
       Input: Input.extend({
         vars: (_theme, props) => ({ wrapper: props.size === "md" ? { "--input-height": TOUCH_TARGET } : {} }),
       }),

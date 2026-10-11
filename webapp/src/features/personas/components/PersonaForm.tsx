@@ -101,7 +101,7 @@ export function PersonaForm({ initial, submitting, onSubmit, onDelete }: Persona
             Есть несохранённые изменения
           </Text>
         )}
-        <Button fullWidth disabled={!canSubmit && !submitting} loading={submitting} onClick={handleSubmit}>
+        <Button fullWidth disabled={!canSubmit} loading={submitting} onClick={handleSubmit}>
           Сохранить
         </Button>
         {onDelete && (

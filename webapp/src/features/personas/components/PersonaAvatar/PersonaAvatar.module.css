@@ -1,0 +1,11 @@
+/* Аватар с картинкой — кнопка лайтбокса. */
+.zoom {
+  display: inline-flex;
+  border-radius: 50%;
+  cursor: zoom-in;
+  transition: opacity 150ms ease;
+
+  &:active {
+    opacity: 0.7;
+  }
+}

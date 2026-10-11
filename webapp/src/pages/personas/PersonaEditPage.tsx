@@ -78,6 +78,8 @@ export function PersonaEditPage() {
         setSubmitting(false);
         if (err instanceof ApiError && err.status === 409) {
           await showAlert("Персона используется в чате. Сначала удалите чат.", "Нельзя удалить");
+        } else {
+          showToast({ type: "error", message: "Не удалось удалить персону" });
         }
       });
   };

@@ -1,0 +1,22 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.input {
+  width: 56px;
+  text-align: center;
+  font-weight: 600;
+}

@@ -231,10 +231,7 @@ children: Children.map(children, (child, index) => <>
 `<Fragment>` — она непрозрачна) или в один тернарник, как в паттерне B.
 
 Ровно поэтому `HintedInput` (`webapp/src/shared/components/HintedInput/HintedInput.tsx`) оборачивает `Input` и его
-подсказку (`FieldHint`) в свой `<div>` — иначе между полем и его же подсказкой пролезла бы линия. По той
-же причине `SectionWithFooter` (`webapp/src/shared/components/SectionWithFooter.tsx`) кладёт заметку
-последним top-level ребёнком секции (получает разделитель сверху — это ожидаемо, отделяет её от
-последнего поля формы).
+подсказку (`FieldHint`) в свой `<div>` — иначе между полем и его же подсказкой пролезла бы линия.
 
 ### 1.4.3. `Button` не несёт своего гуттера — в отличие от `Cell`/`Input`/`Textarea`
 
@@ -302,10 +299,8 @@ ripple-волной поверх содержимого — `<span aria-hidden>`
 === 'background' && !readOnly`), но заодно гасит ripple-фидбек всей ячейки, а не только конфликт с
 кнопкой — обычно нежелательно, если сама ячейка тоже кликабельна и должна давать визуальный отклик.
 
-Применено в проекте: `.debug-stepper` (`webapp/src/features/debug/components/debug.css`) и
-`.kb-entry-order` (`webapp/src/pages/knowledge-books/knowledge-books.css`) — оба кладут нативные
-`<button>` в `after`-слот `Cell` для инлайновых мини-контролов (степпер настройки, стрелки порядка
-записи) и решают конфликт этим паттерном.
+Применено в проекте: `.kb-entry-order` (`webapp/src/pages/knowledge-books/knowledge-books.css`) кладёт
+нативные `<button>` в `after`-слот `Cell` (стрелки порядка записи) и решает конфликт этим паттерном.
 
 ### 1.4.5. Ручной оверрайд темы (в обход реальной темы Telegram-клиента)
 

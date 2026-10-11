@@ -15,12 +15,3 @@
   }
 }
 
-/* «Удалить фото»: subtle Mantine в тёмной схеме почти белый — нужен заметно красный (как DeleteButton). */
-.danger {
-  color: light-dark(var(--mantine-color-red-7), var(--mantine-color-red-5));
-
-  &:disabled,
-  &[data-disabled] {
-    color: var(--mantine-color-dimmed);
-  }
-}

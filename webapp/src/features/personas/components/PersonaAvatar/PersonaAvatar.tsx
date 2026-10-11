@@ -1,4 +1,4 @@
-import { Avatar } from "@mantine/core";
+import { Avatar, UnstyledButton } from "@mantine/core";
 import { AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { personaEditPath } from "../../../../app/routes";
@@ -8,7 +8,7 @@ import { ImageLightbox } from "../../../../shared/components/ImageLightbox";
 import { nameInitials } from "../../../../shared/text/initials";
 import { usePersonaImage } from "../../hooks/usePersonaImage";
 import { usePersonaImageFull } from "../../hooks/usePersonaImageFull";
-import "./PersonaAvatar.css";
+import styles from "./PersonaAvatar.module.css";
 
 interface PersonaAvatarProps {
   id: number;
@@ -47,16 +47,16 @@ export function PersonaAvatar({ id, hasImage, name, size = 40, enlargeable = fal
   return (
     <>
       {canEnlarge ? (
-        <button
-          type="button"
-          className="persona-avatar__btn"
+        <UnstyledButton
+          className={styles.zoom}
+          aria-label={`Открыть фото: ${name}`}
           onClick={(e) => {
             e.stopPropagation(); // не передаём клик на Cell → не переходим на редактирование
             setOpen(true);
           }}
         >
           {avatar}
-        </button>
+        </UnstyledButton>
       ) : (
         avatar
       )}

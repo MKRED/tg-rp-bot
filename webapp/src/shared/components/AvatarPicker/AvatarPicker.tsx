@@ -96,7 +96,7 @@ export function AvatarPicker({ image, imageFull, name, onChange }: AvatarPickerP
           )}
         </FileButton>
         {image && (
-          <Button variant="subtle" color="red" className={styles.danger} disabled={busy} onClick={() => onChange(null)}>
+          <Button variant="subtle" color="red" disabled={busy} onClick={() => onChange(null)}>
             Удалить фото
           </Button>
         )}
