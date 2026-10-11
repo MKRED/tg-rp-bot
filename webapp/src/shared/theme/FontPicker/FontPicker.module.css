@@ -1,0 +1,15 @@
+/* Семейства — из данных пары (превью и есть шрифт), через переменные на контейнере. */
+.preview {
+  padding: 2px var(--mantine-spacing-xs);
+  padding-right: 28px; /* место под галочку выбранного */
+}
+
+.heading {
+  font-family: var(--preview-headings);
+  font-size: var(--mantine-font-size-lg);
+  font-weight: 600;
+}
+
+.body {
+  font-family: var(--preview-body);
+}

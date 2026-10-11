@@ -1,0 +1,30 @@
+/* Мини-превью палитры: слева светлая схема, справа тёмная — фон страницы, карточка и акцент. */
+.swatch {
+  display: flex;
+  height: 56px;
+  overflow: hidden;
+  border-radius: var(--mantine-radius-sm);
+}
+
+.half {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  background-color: var(--swatch-page);
+}
+
+.bar {
+  height: 12px;
+  border-radius: 4px;
+  background-color: var(--swatch-surface);
+}
+
+.dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: var(--swatch-accent);
+}

@@ -1,10 +1,11 @@
 import { MantineProvider } from "@mantine/core";
 import { AppRoot } from "@telegram-apps/telegram-ui";
 import { MotionConfig } from "framer-motion";
+import { useMemo } from "react";
 import { HashRouter } from "react-router-dom";
 import { AuthGate } from "../features/auth";
 import { getPlatform } from "../shared/telegram/platform";
-import { cssVariablesResolver, theme, ThemeProvider, useTheme } from "../shared/theme";
+import { buildCssVariablesResolver, buildTheme, FONT_PAIRS, PALETTES, ThemeProvider, useTheme } from "../shared/theme";
 import { ToastProvider } from "../shared/toast";
 import { AnimatedRoutes } from "./AnimatedRoutes";
 import { BackButtonBridge } from "./BackButtonBridge";
@@ -39,7 +40,10 @@ export function App() {
  * пользователя) убирает оба.
  */
 function AppInner() {
-  const { appearance } = useTheme();
+  const { appearance, palette, fontPair } = useTheme();
+  // Палитру и шрифты пользователь меняет в настройках — тема Mantine пересобирается без перезагрузки.
+  const theme = useMemo(() => buildTheme(PALETTES[palette], FONT_PAIRS[fontPair]), [palette, fontPair]);
+  const cssVariablesResolver = useMemo(() => buildCssVariablesResolver(PALETTES[palette].surfaces), [palette]);
   return (
     // Mantine — снаружи AppRoot: её порталы (Modal, Drawer, Select, тосты) уходят в body и берут
     // тему из контекста. Схема одна на обе библиотеки — appearance из ThemeProvider.

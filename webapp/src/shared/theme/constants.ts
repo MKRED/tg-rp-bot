@@ -8,3 +8,9 @@ export const THEME_MODE_KEY = "theme-mode";
  */
 export const TGUI_BG_LIGHT = "#fff";
 export const TGUI_BG_DARK = "#212121";
+
+/** Ключ localStorage для выбранной палитры (palettes.ts). */
+export const PALETTE_KEY = "theme-palette";
+
+/** Ключ localStorage для выбранной пары шрифтов (fonts.ts). */
+export const FONT_PAIR_KEY = "theme-fonts";

@@ -11,7 +11,7 @@ interface SettingsCardProps {
 /** Карточка группы настроек: заголовок, пояснение и поля столбиком. */
 export function SettingsCard({ title, description, children }: SettingsCardProps) {
   return (
-    <Paper withBorder p="md">
+    <Paper p="md">
       <Stack gap="md">
         <div>
           <Title order={4}>{title}</Title>

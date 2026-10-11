@@ -1,6 +1,9 @@
 import { themeParams, useSignal } from "@telegram-apps/sdk-react";
-import { createContext, useContext, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
-import { THEME_MODE_KEY, TGUI_BG_DARK, TGUI_BG_LIGHT } from "./constants";
+import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
+import { FONT_PAIR_KEY, PALETTE_KEY, THEME_MODE_KEY, TGUI_BG_DARK, TGUI_BG_LIGHT } from "./constants";
+import { DEFAULT_FONT_PAIR, FONT_PAIRS, type FontPairId, loadFontPair } from "./fonts";
+import { DEFAULT_PALETTE, PALETTES, type Palette, type PaletteId } from "./palettes";
+import { parseStoredChoice } from "./storedChoice";
 import "./manualTheme.css";
 
 /** "system" — брать тему из Telegram (дефолт); "light"/"dark" — ручной оверрайд пользователя. */
@@ -12,6 +15,14 @@ interface ThemeContextValue {
   setMode: (mode: ThemeMode) => void;
   /** Итоговая тема для AppRoot: mode "system" деривится из Telegram, иначе — сам mode. */
   appearance: Appearance;
+  /** Палитра (выбор пользователя в настройках). */
+  palette: PaletteId;
+  setPalette: (palette: PaletteId) => void;
+  /** Поверхности выбранной палитры — фон страницы и шапки Telegram (AppPage). */
+  surfaces: Palette["surfaces"];
+  /** Пара шрифтов (выбор пользователя в настройках). */
+  fontPair: FontPairId;
+  setFontPair: (fontPair: FontPairId) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -28,8 +39,27 @@ function readStoredMode(): ThemeMode {
   }
 }
 
+/** Выбор из localStorage; недоступный localStorage или чужое значение — fallback. */
+function readStoredChoice<T extends string>(key: string, options: Record<T, unknown>, fallback: T): T {
+  try {
+    return parseStoredChoice(localStorage.getItem(key), options, fallback);
+  } catch (err) {
+    console.warn(`Не удалось прочитать ${key} из localStorage`, err);
+    return fallback;
+  }
+}
+
+function storeChoice(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch (err) {
+    console.warn(`Не удалось сохранить ${key} в localStorage`, err);
+  }
+}
+
 /**
- * Единый источник темы приложения. Стоит НАД AppRoot — и корневой AppRoot (App.tsx), и
+ * Единый источник темы приложения: режим (авто/светлая/тёмная), палитра и шрифты. Выбор хранится в
+ * localStorage — на устройстве, как и раньше режим темы. Стоит НАД AppRoot — и корневой AppRoot (App.tsx), и
  * вложенный в PromptEditorOverlay (уходит в портал, но не из React-дерева) читают один и тот
  * же resolved appearance через useTheme(). Без общего источника ручной оверрайд, применённый
  * на одном из них, не долетел бы до другого — оверлей «телепортировался» бы в другую тему.
@@ -42,15 +72,26 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // свой же светлый фон и оставалось светлым в тёмном Telegram.
   const isDarkFromTelegram = useSignal(themeParams.isDark);
   const [mode, setModeState] = useState<ThemeMode>(readStoredMode);
+  const [palette, setPaletteState] = useState<PaletteId>(() => readStoredChoice(PALETTE_KEY, PALETTES, DEFAULT_PALETTE));
+  const [fontPair, setFontPairState] = useState<FontPairId>(() =>
+    readStoredChoice(FONT_PAIR_KEY, FONT_PAIRS, DEFAULT_FONT_PAIR),
+  );
 
-  const setMode = (next: ThemeMode) => {
+  const setMode = useCallback((next: ThemeMode) => {
     setModeState(next);
-    try {
-      localStorage.setItem(THEME_MODE_KEY, next);
-    } catch (err) {
-      console.warn("Не удалось сохранить выбор темы в localStorage", err);
-    }
-  };
+    storeChoice(THEME_MODE_KEY, next);
+  }, []);
+  const setPalette = useCallback((next: PaletteId) => {
+    setPaletteState(next);
+    storeChoice(PALETTE_KEY, next);
+  }, []);
+  const setFontPair = useCallback((next: FontPairId) => {
+    setFontPairState(next);
+    storeChoice(FONT_PAIR_KEY, next);
+  }, []);
+
+  // В layout effect — до первой отрисовки, чтобы запрос шрифта ушёл как можно раньше.
+  useLayoutEffect(() => loadFontPair(fontPair), [fontPair]);
 
   const appearance: Appearance = mode === "system" ? (isDarkFromTelegram ? "dark" : "light") : mode;
 
@@ -72,7 +113,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.body.style.setProperty("background", `var(--tg-bg-color, var(--tg-theme-bg-color, ${fallback}))`);
   }, [appearance, mode]);
 
-  const value = useMemo(() => ({ mode, setMode, appearance }), [mode, appearance]);
+  const value = useMemo(
+    () => ({
+      mode,
+      setMode,
+      appearance,
+      palette,
+      setPalette,
+      surfaces: PALETTES[palette].surfaces,
+      fontPair,
+      setFontPair,
+    }),
+    [mode, setMode, appearance, palette, setPalette, fontPair, setFontPair],
+  );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

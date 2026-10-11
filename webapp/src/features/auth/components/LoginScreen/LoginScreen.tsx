@@ -63,7 +63,7 @@ export function LoginScreen({ onAuthenticated }: LoginScreenProps) {
       <Title order={2} ta="center">
         {isRegister ? "Регистрация" : "Вход"}
       </Title>
-      <Paper withBorder p="lg" component="form" onSubmit={(event) => void handleSubmit(event)} noValidate>
+      <Paper p="lg" component="form" onSubmit={(event) => void handleSubmit(event)} noValidate>
         <Stack>
           <SegmentedControl fullWidth data={MODE_OPTIONS} value={mode} onChange={switchMode} disabled={submitting} />
           <TextInput

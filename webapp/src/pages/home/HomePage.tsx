@@ -1,33 +1,18 @@
-import { Avatar, Caption, Cell, List, Section, Title } from "@telegram-apps/telegram-ui";
-import { MessageCircle, Users, User, Smile, SlidersHorizontal, Clapperboard, BookOpen, ScrollText, FileText, Settings, Bug, Sparkles } from "lucide-react";
-import { motion } from "framer-motion";
+import { Avatar, Stack, Text, Title } from "@mantine/core";
 import { useState } from "react";
-import { ROUTES } from "../../app/routes";
-import { useAuth } from "../../features/auth";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
-import { PageTransition } from "../../shared/components/PageTransition";
+import { useAuth } from "../../features/auth";
+import { AppPage } from "../../shared/components/AppPage";
+import { NavItem, NavList } from "../../shared/components/NavList";
 import { getTgUser } from "../../shared/telegram/initData";
 import { useProfilePhoto } from "../../shared/telegram/useProfilePhoto";
 import { randomGreeting } from "./greetings";
-import "./home.css";
+import { HOME_MENU } from "./homeMenu";
 
-function initialsOf(fullName: string): string {
-  return fullName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0]!.toUpperCase())
-    .join("");
-}
+/** Номер первой строки каждой группы — сквозная нумерация для поочерёдного появления сверху вниз. */
+const SECTION_OFFSETS = HOME_MENU.map((_, i) => HOME_MENU.slice(0, i).reduce((sum, s) => sum + s.items.length, 0));
 
-// Паттерн анимации для каждого пункта меню: каждый item — отдельный прямой child Section,
-// чтобы Section.React.Children.map мог вставить Divider между ними.
-// Задержки указаны явно (а не staggerChildren) по той же причине: stagger-контейнер
-// схлопывает все items в одного child и ломает вставку разделителей.
-const itemTransition = { duration: 0.2, ease: "easeOut" as const };
-const itemInitial = { opacity: 0, y: 8 };
-const itemAnimate = { opacity: 1, y: 0 };
-
+/** Главная: приветствие с профилем и меню всех экранов приложения. */
 export function HomePage() {
   const navigate = useTransitionNavigate();
   const user = getTgUser();
@@ -48,147 +33,31 @@ export function HomePage() {
       : "не в Telegram";
 
   return (
-    <PageTransition>
-      <div className="home">
-        <header className="home__greeting">
-          <Avatar size={96} src={photoUrl} acronym={fullName ? initialsOf(fullName) : undefined} />
-          <Title level="1" weight="2" className="home__name">
-            {greeting}, {displayName}!
-          </Title>
-          <Caption level="1" className="home__handle">
-            {handle}
-          </Caption>
-        </header>
+    <AppPage>
+      <Stack align="center" gap={4} ta="center" pb="xs">
+        {/* name — инициалы на заглушке (цвет — акцент палитры), пока фото грузится или его нет (браузер). */}
+        <Avatar src={photoUrl} name={fullName} color="accent" size={88} mb="xs" />
+        <Title order={2}>
+          {greeting}, {displayName}!
+        </Title>
+        <Text size="sm" c="dimmed">
+          {handle}
+        </Text>
+      </Stack>
 
-        <List>
-          <Section header="Режим игры">
-            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0 }}>
-              <Cell
-                before={<MessageCircle size={24} className="home__icon" />}
-                subtitle="Диалог с одним персонажем"
-                onClick={() => navigate(ROUTES.chats)}
-              >
-                Ролевой чат
-              </Cell>
-            </motion.div>
-            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.05 }}>
-              <Cell
-                before={<Clapperboard size={24} className="home__icon" />}
-                subtitle="ИИ ведёт историю, вы направляете"
-                onClick={() => navigate(ROUTES.stories)}
-              >
-                Режиссёр истории
-              </Cell>
-            </motion.div>
-            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.1 }}>
-              <Cell
-                before={<Users size={24} className="home__icon home__icon--muted" />}
-                subtitle="В разработке"
-                after={<Caption level="2" weight="2" Component="span" className="home__soon-badge">Скоро</Caption>}
-                className="home__cell--soon"
-              >
-                Группа персонажей
-              </Cell>
-            </motion.div>
-          </Section>
-
-          <Section header="Библиотека">
-            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.1 }}>
-              <Cell
-                before={<User size={24} className="home__icon" />}
-                subtitle="Ваши персонажи"
-                onClick={() => navigate(ROUTES.characters)}
-              >
-                Персонажи
-              </Cell>
-            </motion.div>
-            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.15 }}>
-              <Cell
-                before={<Smile size={24} className="home__icon" />}
-                subtitle="Ваши персоны (от чьего лица вы играете)"
-                onClick={() => navigate(ROUTES.personas)}
-              >
-                Персоны
-              </Cell>
-            </motion.div>
-            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.2 }}>
-              <Cell
-                before={<BookOpen size={24} className="home__icon" />}
-                subtitle="Персонажи и факты мира для историй"
-                onClick={() => navigate(ROUTES.books)}
-              >
-                Книги знаний
-              </Cell>
-            </motion.div>
-          </Section>
-
-          <Section header="Мастерская">
-            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.25 }}>
-              <Cell
-                before={<Sparkles size={24} className="home__icon" />}
-                subtitle="Крафт карточек персонажей и персон"
-                onClick={() => navigate(ROUTES.cards)}
-              >
-                Карточки
-              </Cell>
-            </motion.div>
-          </Section>
-
-          <Section header="Конфигурация">
-            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.3 }}>
-              <Cell
-                before={<SlidersHorizontal size={24} className="home__icon" />}
-                subtitle="Пресеты параметров генерации"
-                onClick={() => navigate(ROUTES.presets)}
-              >
-                Настройки ответа ИИ
-              </Cell>
-            </motion.div>
-            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.35 }}>
-              <Cell
-                before={<FileText size={24} className="home__icon" />}
-                subtitle="Промпты RP-чата"
-                onClick={() => navigate(ROUTES.rpTemplates)}
-              >
-                RP-шаблоны
-              </Cell>
-            </motion.div>
-            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.4 }}>
-              <Cell
-                before={<ScrollText size={24} className="home__icon" />}
-                subtitle="Инструкции нарратора"
-                onClick={() => navigate(ROUTES.narratorTemplates)}
-              >
-                Narrator-шаблоны
-              </Cell>
-            </motion.div>
-          </Section>
-
-          <Section header="Настройки">
-            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.45 }}>
-              <Cell
-                before={<Settings size={24} className="home__icon" />}
-                subtitle="Тема оформления"
-                onClick={() => navigate(ROUTES.settings)}
-              >
-                Настройки
-              </Cell>
-            </motion.div>
-          </Section>
-
-          <Section header="Отладка">
-            <motion.div initial={itemInitial} animate={itemAnimate} transition={{ ...itemTransition, delay: 0.5 }}>
-              <Cell
-                before={<Bug size={24} className="home__icon" />}
-                subtitle="RAW-запросы к ИИ (последние запросы и настройки перехвата)"
-                onClick={() => navigate(ROUTES.debugLlm)}
-              >
-                Запросы к ИИ
-              </Cell>
-            </motion.div>
-          </Section>
-        </List>
-      </div>
-    </PageTransition>
+      {HOME_MENU.map((section, sectionIndex) => (
+        <NavList key={section.title} title={section.title}>
+          {section.items.map(({ route, ...item }, itemIndex) => (
+            <NavItem
+              key={item.label}
+              {...item}
+              index={SECTION_OFFSETS[sectionIndex]! + itemIndex}
+              soon={!route}
+              onClick={route ? () => navigate(route) : undefined}
+            />
+          ))}
+        </NavList>
+      ))}
+    </AppPage>
   );
 }

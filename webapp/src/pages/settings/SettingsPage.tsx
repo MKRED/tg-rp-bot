@@ -1,15 +1,34 @@
-import { Button, Group, Text } from "@mantine/core";
-import { useState } from "react";
+import { Button, Group, Stack, Text } from "@mantine/core";
+import { type ReactNode, useState } from "react";
 import { BrowserLoginSection, useAuth, useBrowserLogin } from "../../features/auth";
 import { LlmSettingsSection, useLlmSettings } from "../../features/llm-settings";
 import { TavilySettingsSection, useTavilySettings } from "../../features/tavily-settings";
 import { TranslateSettingsSection, useTranslateSettings } from "../../features/translate-settings";
 import { AppPage } from "../../shared/components/AppPage";
 import { SettingsCard } from "../../shared/components/SettingsCard";
-import { ThemeToggle } from "../../shared/theme";
+import { FontPicker, PalettePicker, ThemeToggle } from "../../shared/theme";
+
+/** Подпись и пояснение над группой выбора (не <label>: подписывать нечего, у групп свой aria-label). */
+function AppearanceField({ label, description, children }: { label: string; description?: string; children: ReactNode }) {
+  return (
+    <Stack gap="xs">
+      <div>
+        <Text size="sm" fw={500}>
+          {label}
+        </Text>
+        {description && (
+          <Text size="xs" c="dimmed">
+            {description}
+          </Text>
+        )}
+      </div>
+      {children}
+    </Stack>
+  );
+}
 
 /**
- * Экран «Настройки»: тема оформления, аккаунт (выход в браузере / логин для браузера в Mini App),
+ * Экран «Настройки»: оформление (тема, палитра, шрифты), аккаунт (выход в браузере / логин для браузера в Mini App),
  * персональные ключи ИИ (DeepSeek) и веб-поиска (Tavily), дефолты перевода в редакторе промптов.
  *
  * Статусы грузятся на уровне страницы: пока не пришли все ответы, AppPage показывает один лоадер
@@ -25,8 +44,16 @@ export function SettingsPage() {
 
   return (
     <AppPage title="Настройки" loading={llmLoading || tavilyLoading || translateLoading || browserLoginLoading}>
-      <SettingsCard title="Оформление" description="«Авто» — светлая или тёмная, как в Telegram.">
-        <ThemeToggle />
+      <SettingsCard title="Оформление" description="Сохраняется на этом устройстве.">
+        <AppearanceField label="Тема" description="«Авто» — светлая или тёмная, как в Telegram.">
+          <ThemeToggle />
+        </AppearanceField>
+        <AppearanceField label="Палитра">
+          <PalettePicker />
+        </AppearanceField>
+        <AppearanceField label="Шрифты">
+          <FontPicker />
+        </AppearanceField>
       </SettingsCard>
 
       {/* Аккаунт — только в браузере: в Telegram вход по initData, выходить не из чего. */}

@@ -1,6 +1,6 @@
 .characters-page {
   min-height: 100dvh;
-  /* Верхний отступ под Full Screen — тот же приём, что в home.css/rp-chat.css. */
+  /* Верхний отступ под Full Screen — тот же приём, что в rp-chat.css. */
   padding-top: calc(
     8px +
     var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +

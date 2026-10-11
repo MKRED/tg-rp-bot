@@ -1,0 +1,36 @@
+/* Невыбранный — заливка как у полей ввода (без рамки); выбранный — обводка акцентом. Обводка через
+   box-shadow, а не border: толщина меняется без сдвига содержимого. */
+.card {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--mantine-spacing-xs);
+  border-radius: var(--mantine-radius-md);
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+  transition:
+    box-shadow 150ms ease,
+    transform 150ms ease;
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &[data-selected] {
+    box-shadow: 0 0 0 2px var(--mantine-primary-color-filled);
+  }
+}
+
+.check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
+}

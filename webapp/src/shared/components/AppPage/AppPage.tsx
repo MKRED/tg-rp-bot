@@ -1,7 +1,7 @@
 import { Container, Loader, Stack, Title } from "@mantine/core";
 import type { ReactNode } from "react";
 import { useTelegramChrome } from "../../telegram/useTelegramChrome";
-import { surfaces, useTheme } from "../../theme";
+import { useTheme } from "../../theme";
 import { PageTransition } from "../PageTransition";
 import styles from "./AppPage.module.css";
 
@@ -25,7 +25,7 @@ interface AppPageProps {
  * появления и цвета шапки Telegram под палитру. Каждый переехавший экран рендерится внутри него.
  */
 export function AppPage({ title, loading, width = CONTENT_WIDTH, centered, children }: AppPageProps) {
-  const { appearance } = useTheme();
+  const { appearance, surfaces } = useTheme();
   useTelegramChrome(surfaces[appearance].page);
 
   return (
