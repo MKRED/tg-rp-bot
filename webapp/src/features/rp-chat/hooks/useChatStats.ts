@@ -32,13 +32,16 @@ export function useChatStats(chatId: number) {
     reload();
   }, [reload]);
 
-  const clearVariants = useCallback(async () => {
+  // false — не удалось, экран покажет тост.
+  const clearVariants = useCallback(async (): Promise<boolean> => {
     setClearing(true);
     try {
       await clearImpersonations(chatId);
       setStats((prev) => ({ ...prev, impersonationCount: 0 }));
+      return true;
     } catch (err) {
       console.error("Failed to clear impersonation variants", err);
+      return false;
     } finally {
       setClearing(false);
     }

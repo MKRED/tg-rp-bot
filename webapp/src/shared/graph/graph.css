@@ -1,5 +1,5 @@
 /*
- * Общие стили графа веток (React Flow), нужные обеим страницам — RP-чату и narrator-истории.
+ * Общие стили графа веток (React Flow) — RP-чата и narrator-истории.
  * Лежат рядом с treeLayout.ts, потому что часть из них — прямое следствие раскладки.
  */
 
@@ -9,27 +9,28 @@
  * фиксированной, а хэндлы (точки соединения линий) сидят по горизонтальному центру узла.
  * Если ширина плавающая (узкий «▸ продолжение» против широкого бита), центр узла перестаёт
  * совпадать с тем, что заложила раскладка, и линии косят. Поэтому ширину жёстко фиксируем.
+ * Узел RP-чата (ChatGraphNode) задаёт её сам из NODE_W; узел истории — здесь, до шага 7 плана Mantine.
  */
-.rp-chat-graph-node,
 .story-graph-node {
   box-sizing: border-box;
   width: 220px;
 }
 
-/* Controls (зум/центрирование) — адаптация под тему Telegram (по умолчанию белые на тёмном фоне). */
+/* Controls (зум/центрирование) — в цветах палитры приложения (по умолчанию белые и на тёмной теме).
+   Переменные Mantine заданы на :root, поэтому работают и на экране истории, ещё живущем на tgui. */
 .react-flow__controls {
-  background: var(--tgui--secondary_bg_color, #f4f4f5) !important;
-  border: 1px solid var(--tgui--hint_color, #999) !important;
-  border-radius: 8px !important;
+  background: var(--mantine-color-body) !important;
+  border: 1px solid var(--mantine-color-default-border) !important;
+  border-radius: var(--mantine-radius-md) !important;
   overflow: hidden;
   box-shadow: none !important;
 }
 
 .react-flow__controls-button {
-  background: var(--tgui--secondary_bg_color, #f4f4f5) !important;
-  border-bottom: 1px solid var(--tgui--hint_color, #999) !important;
-  fill: var(--tgui--text_color, #000) !important;
-  color: var(--tgui--text_color, #000) !important;
+  background: var(--mantine-color-body) !important;
+  border-bottom: 1px solid var(--mantine-color-default-border) !important;
+  fill: var(--mantine-color-text) !important;
+  color: var(--mantine-color-text) !important;
 }
 
 .react-flow__controls-button:last-child {
@@ -37,11 +38,11 @@
 }
 
 .react-flow__controls-button:hover {
-  background: var(--tgui--bg_color, #fff) !important;
+  background: var(--mantine-color-default-hover) !important;
 }
 
 .react-flow__controls-button svg {
-  fill: var(--tgui--text_color, #000) !important;
+  fill: var(--mantine-color-text) !important;
   max-width: 14px;
   max-height: 14px;
 }

@@ -1,0 +1,4 @@
+/* В карточке Mantine (AppPage) отступов нет; в секции tgui (настройки истории, до шага 7) — гуттер ячеек. */
+.root {
+  padding: var(--app-legacy-field-padding, var(--mantine-spacing-xs) 24px var(--mantine-spacing-sm));
+}

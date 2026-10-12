@@ -1,0 +1,5 @@
+.root {
+  display: flex;
+  justify-content: center;
+  padding-block: var(--mantine-spacing-md);
+}

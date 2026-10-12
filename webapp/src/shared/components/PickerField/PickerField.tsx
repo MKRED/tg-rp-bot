@@ -1,9 +1,10 @@
-import { Input, Loader, Text, UnstyledButton } from "@mantine/core";
-import { Check, ChevronRight } from "lucide-react";
+import { Loader, Text } from "@mantine/core";
+import { Check } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { ListRow } from "../ListCard";
 import { ResponsiveSheet } from "../ResponsiveSheet";
 import styles from "./PickerField.module.css";
+import { PickerTrigger } from "./PickerTrigger";
 
 export interface PickerOption {
   id: number;
@@ -55,23 +56,16 @@ export function PickerField({
 
   return (
     <>
-      {/* size md — подпись того же размера, что у полей ввода (их размер задан в теме). */}
-      <Input.Wrapper label={label} description={description} withAsterisk={required} size="md">
-        <UnstyledButton className={styles.field} onClick={() => setOpened(true)} aria-haspopup="dialog">
-          {selected?.leading}
-          <div className={styles.text}>
-            <Text c={selected ? undefined : "dimmed"} truncate>
-              {selected?.title ?? placeholder}
-            </Text>
-            {selected?.description && (
-              <Text size="sm" c="dimmed" truncate>
-                {selected.description}
-              </Text>
-            )}
-          </div>
-          <ChevronRight size={18} className={styles.chevron} aria-hidden />
-        </UnstyledButton>
-      </Input.Wrapper>
+      <PickerTrigger
+        label={label}
+        description={description}
+        required={required}
+        leading={selected?.leading}
+        title={selected?.title}
+        subtitle={selected?.description}
+        placeholder={placeholder}
+        onClick={() => setOpened(true)}
+      />
 
       <ResponsiveSheet opened={opened} onClose={() => setOpened(false)} title={label}>
         {loading ? (

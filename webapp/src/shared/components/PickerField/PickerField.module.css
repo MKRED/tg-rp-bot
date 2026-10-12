@@ -11,13 +11,18 @@
   transition: background-color 150ms ease;
 
   @media (hover: hover) {
-    &:hover {
+    &:hover:not(:disabled) {
       background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
     }
   }
 
-  &:active {
+  &:active:not(:disabled) {
     background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  }
+
+  /* Выбирать не из чего: поле как есть, без отклика на нажатие (не бледнеет — текст в нём пояснение). */
+  &:disabled {
+    cursor: default;
   }
 }
 

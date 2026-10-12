@@ -12,16 +12,19 @@ interface PageTransitionProps {
    * проявляется без движения. Без пропа поведение прежнее (единый инстанс).
    */
   phase?: string;
+  /** Класс обёртки — например, растянуть её по высоте в экране на весь экран (FullHeightPage). */
+  className?: string;
 }
 
 /**
  * Обёртка для плавного появления/ухода страницы.
  * AnimatePresence в AnimatedRoutes координирует выход перед монтированием новой страницы.
  */
-export function PageTransition({ children, phase }: PageTransitionProps) {
+export function PageTransition({ children, phase, className }: PageTransitionProps) {
   return (
     <motion.div
       key={phase}
+      className={className}
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}

@@ -1,61 +1,28 @@
-import {
-  Background,
-  Controls,
-  Handle,
-  Position,
-  ReactFlow,
-  type Edge,
-  type Node,
-  type NodeProps,
-  type ReactFlowInstance,
-} from "@xyflow/react";
+import { Loader } from "@mantine/core";
+import { Background, Controls, ReactFlow, type Edge, type Node, type ReactFlowInstance } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Spinner } from "@telegram-apps/telegram-ui";
+import { GitBranch } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { chatViewPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
-import { PageTransition } from "../../shared/components/PageTransition";
+import { EmptyState } from "../../shared/components/EmptyState";
+import { FullHeightPage } from "../../shared/components/FullHeightPage";
 import { NODE_H, NODE_W, layoutTreeNodes } from "../../shared/graph/treeLayout";
 import "../../shared/graph/graph.css";
-import { useChatTree } from "../../features/rp-chat";
-import { switchBranch } from "../../features/rp-chat/api/messages-api";
-import type { TreeNode } from "../../features/rp-chat";
-import "./rp-chat.css";
+import { useToast } from "../../shared/toast";
+import { ChatGraphNode, switchBranch, useChatTree, type ChatGraphNodeData, type TreeNode } from "../../features/rp-chat";
+import styles from "./RpChatGraphPage.module.css";
 
-// ─── Кастомный тип узла ────────────────────────────────────────────────────────
+const nodeTypes = { chatNode: ChatGraphNode };
 
-type ChatNodeData = {
-  node: TreeNode;
-};
-
-function ChatNode({ data }: NodeProps<Node<ChatNodeData>>) {
-  const { node } = data;
-  const preview = node.content.length > 60
-    ? `${node.content.slice(0, 60)}…`
-    : node.content;
-
-  return (
-    <div className={`rp-chat-graph-node${node.isOnActivePath ? " rp-chat-graph-node--active" : ""}`}>
-      <Handle type="target" position={Position.Top} className="rp-chat-graph-node__handle" />
-      <div className="rp-chat-graph-node__role">
-        {node.role === "assistant" ? "ИИ" : "Игрок"}
-      </div>
-      <div className="rp-chat-graph-node__text">{preview}</div>
-      <Handle type="source" position={Position.Bottom} className="rp-chat-graph-node__handle" />
-    </div>
-  );
-}
-
-const nodeTypes = { chatNode: ChatNode };
-
-// ─── Страница ─────────────────────────────────────────────────────────────────
-
+/** Граф веток чата: каждое сообщение — узел; нажатие делает ветку узла активной и возвращает в чат. */
 export function RpChatGraphPage() {
   const { id } = useParams<{ id: string }>();
   const chatId = Number(id);
   const navigate = useTransitionNavigate();
-  const { nodes: treeNodes, loading } = useChatTree(chatId);
+  const { showToast } = useToast();
+  const { nodes: treeNodes, loading, error } = useChatTree(chatId);
 
   const positions = useMemo(() => layoutTreeNodes(treeNodes), [treeNodes]);
 
@@ -65,7 +32,7 @@ export function RpChatGraphPage() {
         id: String(n.id),
         type: "chatNode",
         position: positions.get(n.id) ?? { x: 0, y: 0 },
-        data: { node: n } satisfies ChatNodeData,
+        data: { node: n } satisfies ChatGraphNodeData,
       })),
     [treeNodes, positions],
   );
@@ -78,12 +45,12 @@ export function RpChatGraphPage() {
           id: `${n.parentId}-${n.id}`,
           source: String(n.parentId),
           target: String(n.id),
-          style: { stroke: "var(--tgui--hint_color, #999)", strokeWidth: 1.5 },
+          style: { stroke: "var(--mantine-color-dimmed)", strokeWidth: 1.5 },
         })),
     [treeNodes],
   );
 
-  // Текущая активная ячейка = самый глубокий узел активного пути (его и центрируем при открытии).
+  // Текущая позиция = самый глубокий узел активного пути (его и центрируем при открытии).
   const activeNode = useMemo(() => {
     let best: TreeNode | null = null;
     for (const n of treeNodes) {
@@ -95,21 +62,18 @@ export function RpChatGraphPage() {
     return best;
   }, [treeNodes, positions]);
 
-  // При инициализации сразу центрируемся на активной ячейке (zoom 1, без анимации),
-  // чтобы граф не «разъезжался» от первого узла ко всему дереву на большой истории.
+  // Сразу центрируемся на активном узле (zoom 1, без анимации), чтобы граф большой истории
+  // не «разъезжался» от первого узла ко всему дереву.
   const handleInit = useCallback(
     (instance: ReactFlowInstance) => {
       const p = activeNode ? positions.get(activeNode.id) : null;
-      if (p) {
-        instance.setCenter(p.x + NODE_W / 2, p.y + NODE_H / 2, { zoom: 1, duration: 0 });
-      } else {
-        instance.fitView({ padding: 0.2 });
-      }
+      if (p) instance.setCenter(p.x + NODE_W / 2, p.y + NODE_H / 2, { zoom: 1, duration: 0 });
+      else instance.fitView({ padding: 0.2 });
     },
     [activeNode, positions],
   );
 
-  // При ошибке переключения остаёмся в графе (не уходим в чат с устаревшим активным путём) и логируем.
+  // Ошибка переключения — остаёмся в графе: в чат с устаревшей веткой не уходим.
   const handleNodeClick = useCallback(
     async (_: React.MouseEvent, node: Node) => {
       try {
@@ -117,38 +81,45 @@ export function RpChatGraphPage() {
         navigate(chatViewPath(chatId));
       } catch (err) {
         console.error("Failed to switch chat branch", err);
+        showToast({ type: "error", message: "Не удалось переключить ветку" });
       }
     },
-    [chatId, navigate],
+    [chatId, navigate, showToast],
   );
 
   return (
-    <PageTransition>
-      <div className="rp-chat-graph-page">
-        {loading ? (
-          <div className="rp-chat-loading">
-            <Spinner size="m" />
-          </div>
-        ) : (
-          <div className="rp-chat-graph-page__flow">
-            <ReactFlow
-              nodes={rfNodes}
-              edges={rfEdges}
-              nodeTypes={nodeTypes}
-              onInit={handleInit}
-              onNodeClick={handleNodeClick}
-              nodesDraggable={false}
-              nodesConnectable={false}
-              onlyRenderVisibleElements
-              minZoom={0.1}
-              proOptions={{ hideAttribution: true }}
-            >
-              <Background color="var(--tgui--hint_color, #ccc)" gap={20} size={1} />
-              <Controls showInteractive={false} />
-            </ReactFlow>
-          </div>
-        )}
-      </div>
-    </PageTransition>
+    <FullHeightPage phase={loading ? "loading" : "ready"}>
+      {loading ? (
+        <div className={styles.center}>
+          <Loader />
+        </div>
+      ) : error ? (
+        <div className={styles.center}>
+          <EmptyState icon={GitBranch} title="Не удалось загрузить ветки" description="Проверьте соединение и откройте экран снова." />
+        </div>
+      ) : treeNodes.length === 0 ? (
+        <div className={styles.center}>
+          <EmptyState icon={GitBranch} title="Сообщений пока нет" description="Ветки появятся, когда вы начнёте диалог." />
+        </div>
+      ) : (
+        <div className={styles.flow}>
+          <ReactFlow
+            nodes={rfNodes}
+            edges={rfEdges}
+            nodeTypes={nodeTypes}
+            onInit={handleInit}
+            onNodeClick={handleNodeClick}
+            nodesDraggable={false}
+            nodesConnectable={false}
+            onlyRenderVisibleElements
+            minZoom={0.1}
+            proOptions={{ hideAttribution: true }}
+          >
+            <Background color="var(--mantine-color-default-border)" gap={20} size={1} />
+            <Controls showInteractive={false} />
+          </ReactFlow>
+        </div>
+      )}
+    </FullHeightPage>
   );
 }

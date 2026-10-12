@@ -1,33 +1,28 @@
-import { Button, Cell, List, Modal, Section, Spinner } from "@telegram-apps/telegram-ui";
-import { ChevronRight, FileText, MessageSquareText, SlidersHorizontal, Smile, User } from "lucide-react";
-import { motion } from "framer-motion";
+import { Box, Button, Collapse } from "@mantine/core";
+import { MessageSquarePlus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { ROUTES, chatViewPath } from "../../app/routes";
+import { chatViewPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
-import { PageTransition } from "../../shared/components/PageTransition";
-import { CharacterAvatar, useCharacters, useCharacter } from "../../features/characters";
+import { AppPage } from "../../shared/components/AppPage";
+import { PickerField, type PickerOption } from "../../shared/components/PickerField";
+import { SettingsCard } from "../../shared/components/SettingsCard";
+import { useToast } from "../../shared/toast";
+import { CharacterAvatar, useCharacter, useCharacters } from "../../features/characters";
 import { PersonaAvatar, usePersonas } from "../../features/personas";
 import { presetSummary, usePresets } from "../../features/generation-presets";
 import { useRpTemplates } from "../../features/rp-templates";
-import { createChat } from "../../features/rp-chat";
-import "./rp-chat.css";
+import {
+  GreetingField,
+  createChat,
+  defaultGreeting,
+  resolveGreetingIndex,
+  type GreetingChoice,
+} from "../../features/rp-chat";
 
-// null = ещё не выбрано (блокирует сабмит). Персона, RP-шаблон и пресет обязательны.
-type PersonaChoice = number | null;
-type TemplateChoice = number | null;
-type PresetChoice = number | null;
-// Выбор приветствия: индекс в firstMessages, "random" = случайное, null = у персонажа нет приветствий.
-type GreetingChoice = number | "random" | null;
-
-const ITEM_TRANSITION = { duration: 0.2, ease: "easeOut" as const };
-
-/** Усекает длинный текст приветствия для превью в ячейке/модале. */
-const truncate = (s: string, n = 60): string =>
-  s.length > n ? `${s.slice(0, n).trimEnd()}…` : s;
-
-/** Форма создания нового чата: персонаж, приветствие, персона, RP-шаблон, пресет ИИ. */
+/** Форма создания чата: с кем говорим (персонаж, приветствие, своя персона) и как (RP-шаблон, пресет ИИ). */
 export function RpChatNewPage() {
   const navigate = useTransitionNavigate();
+  const { showToast } = useToast();
 
   const { items: characters, loading: charsLoading } = useCharacters();
   const { items: personas, loading: personasLoading } = usePersonas();
@@ -35,412 +30,140 @@ export function RpChatNewPage() {
   const { items: presets, loading: presetsLoading } = usePresets();
 
   const [charId, setCharId] = useState<number | null>(null);
-  const [personaChoice, setPersonaChoice] = useState<PersonaChoice>(null);
-  const [templateChoice, setTemplateChoice] = useState<TemplateChoice>(null);
-  const [presetChoice, setPresetChoice] = useState<PresetChoice>(null);
-  const [greetingChoice, setGreetingChoice] = useState<GreetingChoice>(null);
+  const [personaId, setPersonaId] = useState<number | null>(null);
+  const [templateId, setTemplateId] = useState<number | null>(null);
+  const [presetId, setPresetId] = useState<number | null>(null);
+  const [greeting, setGreeting] = useState<GreetingChoice>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const [charOpen, setCharOpen] = useState(false);
-  const [personaOpen, setPersonaOpen] = useState(false);
-  const [templateOpen, setTemplateOpen] = useState(false);
-  const [presetOpen, setPresetOpen] = useState(false);
-  const [greetingOpen, setGreetingOpen] = useState(false);
+  // Полный персонаж — ради firstMessages (строка списка их не отдаёт). Перезапрос при смене.
+  const { character: fullChar, loading: fullCharLoading } = useCharacter(charId ?? undefined);
+  // Только если загружен именно выбранный: при смене персонажа (или ошибке загрузки) хук ещё держит
+  // прежнего — его приветствия чужие.
+  const greetings = fullChar?.id === charId ? fullChar.firstMessages : [];
 
-  // Полный выбранный персонаж — ради firstMessages (строка списка их не отдаёт). Перезапрос при смене.
-  const { character: selectedCharFull, loading: charFullLoading } = useCharacter(charId ?? undefined);
-  const firstMessages = selectedCharFull?.firstMessages ?? [];
-
-  // При смене персонажа сбрасываем выбор приветствия на дефолт (первое), либо null если их нет.
+  // Сменили персонажа — выбор приветствия снова по умолчанию (первое или «нет»).
   useEffect(() => {
-    setGreetingChoice(firstMessages.length >= 1 ? 0 : null);
-  }, [selectedCharFull?.id, firstMessages.length]);
+    setGreeting(defaultGreeting(greetings.length));
+  }, [fullChar?.id, greetings.length]);
 
-  const selectedChar = characters.find((c) => c.id === charId) ?? null;
-  const selectedPersona = personas.find((p) => p.id === personaChoice) ?? null;
-  const selectedTemplate = templates.find((t) => t.id === templateChoice) ?? null;
-  const selectedPreset = presets.find((p) => p.id === presetChoice) ?? null;
-
+  // Пока персонаж грузится, приветствия неизвестны — индекс считать не из чего.
   const canSubmit =
-    charId !== null &&
-    personaChoice !== null &&
-    templateChoice !== null &&
-    presetChoice !== null &&
-    !submitting;
+    charId !== null && personaId !== null && templateId !== null && presetId !== null && !fullCharLoading;
 
   const handleSubmit = async () => {
-    if (
-      !canSubmit ||
-      charId === null ||
-      personaChoice === null ||
-      templateChoice === null ||
-      presetChoice === null
-    )
-      return;
+    if (charId === null || personaId === null || templateId === null || presetId === null) return;
     setSubmitting(true);
     try {
-      const count = firstMessages.length;
-      // Разрешаем выбор в конкретный индекс: "random" → случайный (только если есть из чего выбирать),
-      // null (нет приветствий) → 0 (сервер вернёт firstMessages[0] ?? null, т.е. чат без стартового).
-      const firstMessageIndex =
-        greetingChoice === "random" && count > 0
-          ? Math.floor(Math.random() * count)
-          : typeof greetingChoice === "number"
-            ? greetingChoice
-            : 0;
       const chat = await createChat({
         characterId: charId,
-        personaId: personaChoice,
-        templateId: templateChoice,
-        presetId: presetChoice,
-        firstMessageIndex,
+        personaId,
+        templateId,
+        presetId,
+        firstMessageIndex: resolveGreetingIndex(greeting, greetings.length),
       });
-      navigate(chatViewPath(chat.id));
+      // replace: «Назад» из нового чата ведёт к списку чатов, а не обратно в форму создания.
+      navigate(chatViewPath(chat.id), { replace: true });
     } catch (err) {
-      // Создание не удалось (сеть/валидация) — логируем и возвращаемся на хаб чатов
-      console.error("Не удалось создать чат", err);
-      navigate(ROUTES.chats);
-    } finally {
+      // Остаёмся в форме с выбранным — можно повторить.
+      console.error("Failed to create chat", err);
+      showToast({ type: "error", message: "Не удалось создать чат" });
       setSubmitting(false);
     }
   };
 
-  // Подпись и заголовок ячейки приветствия для текущего выбора.
-  const hasGreetings = firstMessages.length >= 1;
-  const greetingTitle =
-    greetingChoice === "random"
-      ? "Случайное"
-      : typeof greetingChoice === "number"
-        ? truncate(firstMessages[greetingChoice] ?? "")
-        : "Без приветствия";
-  const greetingSubtitle =
-    greetingChoice === "random"
-      ? "Будет выбрано случайно"
-      : typeof greetingChoice === "number"
-        ? `Приветствие ${greetingChoice + 1} из ${firstMessages.length}`
-        : "У персонажа нет приветствия — чат начнётся пустым";
+  const characterOptions: PickerOption[] = characters.map((c) => ({
+    id: c.id,
+    title: c.name,
+    description: c.tags.length > 0 ? c.tags.join(", ") : undefined,
+    leading: <CharacterAvatar id={c.id} hasImage={c.hasImage} name={c.name} />,
+  }));
+  const personaOptions: PickerOption[] = personas.map((p) => ({
+    id: p.id,
+    title: p.name,
+    description: p.footnote ?? undefined,
+    leading: <PersonaAvatar id={p.id} hasImage={p.hasImage} name={p.name} />,
+  }));
+  const templateOptions: PickerOption[] = templates.map((t) => ({ id: t.id, title: t.name }));
+  const presetOptions: PickerOption[] = presets.map((p) => ({
+    id: p.id,
+    title: p.name,
+    description: presetSummary(p),
+  }));
 
   return (
-    <PageTransition>
-      <div className="rp-chat-new-page">
-        <List>
-          <Section header="Новый чат">
-            {/* Персонаж */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ ...ITEM_TRANSITION, delay: 0 }}
-            >
-              <Cell
-                before={
-                  selectedChar ? (
-                    <CharacterAvatar
-                      id={selectedChar.id}
-                      hasImage={selectedChar.hasImage}
-                      name={selectedChar.name}
-                      size={40}
-                    />
-                  ) : (
-                    <User size={24} className="rp-chat-new-page__icon rp-chat-new-page__icon--hint" />
-                  )
-                }
-                after={<ChevronRight size={20} className="rp-chat-new-page__chevron" />}
-                subtitle={
-                  selectedChar
-                    ? selectedChar.tags.length > 0
-                      ? selectedChar.tags.join(", ")
-                      : "Персонаж"
-                    : "Обязательно"
-                }
-                onClick={() => setCharOpen(true)}
-              >
-                {selectedChar?.name ?? "Выберите персонажа"}
-              </Cell>
-            </motion.div>
+    <AppPage title="Новый чат" description="С кем говорим и по каким правилам">
+      <SettingsCard title="Собеседники">
+        {/* Приветствие — в одном блоке с персонажем: раскрывается после выбора, без двойного отступа Stack. */}
+        <div>
+          <PickerField
+            label="Персонаж"
+            required
+            placeholder="Выберите персонажа"
+            options={characterOptions}
+            value={charId}
+            loading={charsLoading}
+            emptyText="Персонажей пока нет — создайте их в разделе «Персонажи»."
+            onChange={setCharId}
+          />
+          <Collapse expanded={charId !== null}>
+            <Box pt="md">
+              <GreetingField
+                greetings={greetings}
+                loading={fullCharLoading}
+                value={greeting}
+                onChange={setGreeting}
+              />
+            </Box>
+          </Collapse>
+        </div>
+        <PickerField
+          label="Ваша персона"
+          description="От чьего лица вы пишете"
+          required
+          placeholder="Выберите персону"
+          options={personaOptions}
+          value={personaId}
+          loading={personasLoading}
+          emptyText="Персон пока нет — создайте их в разделе «Персоны»."
+          onChange={setPersonaId}
+        />
+      </SettingsCard>
 
-            {/* Приветствие — видно только после выбора персонажа */}
-            {selectedChar && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ ...ITEM_TRANSITION, delay: 0.05 }}
-              >
-                <Cell
-                  before={
-                    <MessageSquareText
-                      size={24}
-                      className={`rp-chat-new-page__icon${hasGreetings || charFullLoading ? "" : " rp-chat-new-page__icon--hint"}`}
-                    />
-                  }
-                  after={
-                    hasGreetings && !charFullLoading ? (
-                      <ChevronRight size={20} className="rp-chat-new-page__chevron" />
-                    ) : undefined
-                  }
-                  // Пока грузим полного персонажа — нейтральное «Загрузка…», чтобы не мигала ложная
-                  // подсказка «нет приветствия» (firstMessages подтянутся только после fetch).
-                  subtitle={charFullLoading ? "Загрузка…" : greetingSubtitle}
-                  multiline
-                  // Кликабельна только когда персонаж загружен и у него есть приветствия
-                  onClick={hasGreetings && !charFullLoading ? () => setGreetingOpen(true) : undefined}
-                >
-                  {charFullLoading ? "Приветствие" : greetingTitle}
-                </Cell>
-              </motion.div>
-            )}
+      <SettingsCard title="Правила">
+        <PickerField
+          label="RP-шаблон"
+          description="Промпты, по которым ИИ ведёт ролевую игру"
+          required
+          placeholder="Выберите RP-шаблон"
+          options={templateOptions}
+          value={templateId}
+          loading={templatesLoading}
+          emptyText="RP-шаблонов пока нет — создайте их в разделе «RP-шаблоны»."
+          onChange={setTemplateId}
+        />
+        <PickerField
+          label="Настройки ИИ"
+          description="Пресет генерации: контекст, длина ответа, температура"
+          required
+          placeholder="Выберите пресет"
+          options={presetOptions}
+          value={presetId}
+          loading={presetsLoading}
+          emptyText="Пресетов пока нет — создайте их в разделе «Настройки ответа ИИ»."
+          onChange={setPresetId}
+        />
+      </SettingsCard>
 
-            {/* Персона */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ ...ITEM_TRANSITION, delay: 0.1 }}
-            >
-              <Cell
-                before={
-                  selectedPersona ? (
-                    <PersonaAvatar
-                      id={selectedPersona.id}
-                      hasImage={selectedPersona.hasImage}
-                      name={selectedPersona.name}
-                      size={40}
-                    />
-                  ) : (
-                    <Smile
-                      size={24}
-                      className={`rp-chat-new-page__icon${personaChoice === null ? " rp-chat-new-page__icon--hint" : ""}`}
-                    />
-                  )
-                }
-                after={<ChevronRight size={20} className="rp-chat-new-page__chevron" />}
-                subtitle={
-                  personaChoice === null ? "Обязательно" : (selectedPersona?.footnote ?? "Персона")
-                }
-                onClick={() => setPersonaOpen(true)}
-              >
-                {selectedPersona?.name ?? "Выберите персону"}
-              </Cell>
-            </motion.div>
-
-            {/* RP-шаблон (промпты) */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ ...ITEM_TRANSITION, delay: 0.15 }}
-            >
-              <Cell
-                before={
-                  <FileText
-                    size={24}
-                    className={`rp-chat-new-page__icon${templateChoice === null ? " rp-chat-new-page__icon--hint" : ""}`}
-                  />
-                }
-                after={<ChevronRight size={20} className="rp-chat-new-page__chevron" />}
-                subtitle={templateChoice === null ? "Обязательно" : "RP-шаблон"}
-                onClick={() => setTemplateOpen(true)}
-              >
-                {selectedTemplate?.name ?? "Выберите RP-шаблон"}
-              </Cell>
-            </motion.div>
-
-            {/* Пресет ИИ */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ ...ITEM_TRANSITION, delay: 0.2 }}
-            >
-              <Cell
-                before={
-                  <SlidersHorizontal
-                    size={24}
-                    className={`rp-chat-new-page__icon${presetChoice === null ? " rp-chat-new-page__icon--hint" : ""}`}
-                  />
-                }
-                after={<ChevronRight size={20} className="rp-chat-new-page__chevron" />}
-                subtitle={
-                  presetChoice === null
-                    ? "Обязательно"
-                    : (selectedPreset ? presetSummary(selectedPreset) : "Пресет ИИ")
-                }
-                onClick={() => setPresetOpen(true)}
-              >
-                {selectedPreset?.name ?? "Выберите настройки ИИ"}
-              </Cell>
-            </motion.div>
-          </Section>
-        </List>
-
-        <motion.div
-          className="rp-chat-new-page__submit"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ ...ITEM_TRANSITION, delay: 0.21 }}
-        >
-          <Button size="l" stretched disabled={!canSubmit} onClick={handleSubmit}>
-            {submitting ? <Spinner size="s" /> : "Начать чат"}
-          </Button>
-        </motion.div>
-
-        {/* Модал выбора персонажа */}
-        <Modal
-          open={charOpen}
-          onOpenChange={setCharOpen}
-          header={<Modal.Header>Персонаж</Modal.Header>}
-        >
-          {charsLoading && (
-            <div className="rp-chat-new-page__center">
-              <Spinner size="m" />
-            </div>
-          )}
-          {!charsLoading && characters.length === 0 && (
-            <Cell subtitle="Сначала создайте персонажа">Нет персонажей</Cell>
-          )}
-          <List>
-            {characters.map((c) => (
-              <Cell
-                key={c.id}
-                before={
-                  <CharacterAvatar id={c.id} hasImage={c.hasImage} name={c.name} size={40} />
-                }
-                subtitle={c.tags.length > 0 ? c.tags.join(", ") : undefined}
-                onClick={() => {
-                  setCharId(c.id);
-                  setCharOpen(false);
-                }}
-              >
-                {c.name}
-              </Cell>
-            ))}
-          </List>
-        </Modal>
-
-        {/* Модал выбора приветствия */}
-        <Modal
-          open={greetingOpen}
-          onOpenChange={setGreetingOpen}
-          header={<Modal.Header>Приветствие</Modal.Header>}
-        >
-          <List>
-            {/* «Случайное» имеет смысл только при 2+ вариантах */}
-            {firstMessages.length >= 2 && (
-              <Cell
-                before={<MessageSquareText size={24} className="rp-chat-new-page__icon" />}
-                subtitle="Выбрать одно из приветствий наугад"
-                onClick={() => {
-                  setGreetingChoice("random");
-                  setGreetingOpen(false);
-                }}
-              >
-                Случайное
-              </Cell>
-            )}
-            {firstMessages.map((msg, i) => (
-              <Cell
-                key={`${charId}-${i}`}
-                subtitle={`Приветствие ${i + 1}`}
-                multiline
-                onClick={() => {
-                  setGreetingChoice(i);
-                  setGreetingOpen(false);
-                }}
-              >
-                {truncate(msg, 120)}
-              </Cell>
-            ))}
-          </List>
-        </Modal>
-
-        {/* Модал выбора персоны */}
-        <Modal
-          open={personaOpen}
-          onOpenChange={setPersonaOpen}
-          header={<Modal.Header>Персона</Modal.Header>}
-        >
-          {personasLoading && (
-            <div className="rp-chat-new-page__center">
-              <Spinner size="m" />
-            </div>
-          )}
-          {!personasLoading && personas.length === 0 && (
-            <Cell subtitle="Сначала создайте персону">Нет персон</Cell>
-          )}
-          <List>
-            {personas.map((p) => (
-              <Cell
-                key={p.id}
-                before={
-                  <PersonaAvatar id={p.id} hasImage={p.hasImage} name={p.name} size={40} />
-                }
-                subtitle={p.footnote ?? undefined}
-                onClick={() => {
-                  setPersonaChoice(p.id);
-                  setPersonaOpen(false);
-                }}
-              >
-                {p.name}
-              </Cell>
-            ))}
-          </List>
-        </Modal>
-
-        {/* Модал выбора RP-шаблона */}
-        <Modal
-          open={templateOpen}
-          onOpenChange={setTemplateOpen}
-          header={<Modal.Header>RP-шаблон</Modal.Header>}
-        >
-          {templatesLoading && (
-            <div className="rp-chat-new-page__center">
-              <Spinner size="m" />
-            </div>
-          )}
-          {!templatesLoading && templates.length === 0 && (
-            <Cell subtitle="Сначала создайте RP-шаблон">Нет шаблонов</Cell>
-          )}
-          <List>
-            {templates.map((t) => (
-              <Cell
-                key={t.id}
-                onClick={() => {
-                  setTemplateChoice(t.id);
-                  setTemplateOpen(false);
-                }}
-              >
-                {t.name}
-              </Cell>
-            ))}
-          </List>
-        </Modal>
-
-        {/* Модал выбора пресета ИИ */}
-        <Modal
-          open={presetOpen}
-          onOpenChange={setPresetOpen}
-          header={<Modal.Header>Настройки ИИ</Modal.Header>}
-        >
-          {presetsLoading && (
-            <div className="rp-chat-new-page__center">
-              <Spinner size="m" />
-            </div>
-          )}
-          {!presetsLoading && presets.length === 0 && (
-            <Cell subtitle="Сначала создайте пресет">Нет пресетов</Cell>
-          )}
-          <List>
-            {presets.map((p) => (
-              <Cell
-                key={p.id}
-                subtitle={presetSummary(p)}
-                onClick={() => {
-                  setPresetChoice(p.id);
-                  setPresetOpen(false);
-                }}
-              >
-                {p.name}
-              </Cell>
-            ))}
-          </List>
-        </Modal>
-      </div>
-    </PageTransition>
+      <Button
+        fullWidth
+        leftSection={<MessageSquarePlus size={18} />}
+        disabled={!canSubmit}
+        loading={submitting}
+        onClick={handleSubmit}
+      >
+        Начать чат
+      </Button>
+    </AppPage>
   );
 }

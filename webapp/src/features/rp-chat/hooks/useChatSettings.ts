@@ -18,19 +18,26 @@ export function useChatSettings(chatId: number) {
     setLoading(true);
     getChatSettings(chatId)
       .then(setSettings)
-      .catch(() => {})
+      // Остаёмся на настройках по умолчанию — чат работает и без них (перевод выключен).
+      .catch((err) => console.error("Failed to load chat settings", err))
       .finally(() => setLoading(false));
   }, [chatId]);
 
+  // Оптимистично применяет patch; при ошибке откатывает и возвращает false — экран покажет тост.
   const update = useCallback(
-    async (patch: Partial<ChatSettings>) => {
+    async (patch: Partial<ChatSettings>): Promise<boolean> => {
       const optimistic = { ...settings, ...patch };
       setSettings(optimistic);
       try {
         const updated = await updateChatSettings(chatId, patch);
         setSettings(updated);
-      } catch {
-        setSettings(settings);
+        return true;
+      } catch (err) {
+        console.error("Failed to update chat settings", err);
+        // Откатываем только поля этого patch: другие правки, сделанные пока запрос шёл, не трогаем.
+        const revert = Object.fromEntries(Object.keys(patch).map((k) => [k, settings[k as keyof ChatSettings]]));
+        setSettings((cur) => ({ ...cur, ...revert }));
+        return false;
       }
     },
     [chatId, settings],

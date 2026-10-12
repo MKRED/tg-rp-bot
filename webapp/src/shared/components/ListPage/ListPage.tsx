@@ -14,10 +14,10 @@ interface ListPageProps {
   error: boolean;
   /** Сколько элементов в списке: 0 — заглушка «пусто» с кнопкой создания вместо карточки. */
   count: number;
-  /** Лимит элементов на пользователя: при достижении создание недоступно. */
-  limit: number;
+  /** Лимит элементов на пользователя: при достижении создание недоступно. Нет — список без лимита. */
+  limit?: number;
   /** Подпись под списком при достижении лимита. */
-  limitText: string;
+  limitText?: string;
   /** Подпись кнопки создания на пустом экране («Создать персону»). */
   createLabel: string;
   emptyTitle: string;
@@ -25,6 +25,8 @@ interface ListPageProps {
   onCreate: () => void;
   /** Строки списка — ListRow. */
   children: ReactNode;
+  /** Под карточкой списка: маячок догрузки страниц (InfiniteSentinel). */
+  footer?: ReactNode;
 }
 
 /**
@@ -45,8 +47,9 @@ export function ListPage({
   emptyDescription,
   onCreate,
   children,
+  footer,
 }: ListPageProps) {
-  const atLimit = count >= limit;
+  const atLimit = limit !== undefined && count >= limit;
 
   return (
     <AppPage
@@ -80,6 +83,7 @@ export function ListPage({
       ) : (
         <>
           <ListCard>{children}</ListCard>
+          {footer}
           {atLimit && (
             <Text size="sm" c="dimmed" ta="center">
               {limitText}

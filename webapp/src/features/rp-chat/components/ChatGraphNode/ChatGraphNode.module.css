@@ -1,0 +1,48 @@
+.node {
+  box-sizing: border-box;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border: 2px solid transparent;
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-body);
+  color: var(--mantine-color-text);
+  cursor: pointer;
+  transition: border-color 150ms ease;
+
+  &[data-active] {
+    border-color: var(--mantine-primary-color-filled);
+  }
+
+  @media (hover: hover) {
+    &:hover:not([data-active]) {
+      border-color: var(--mantine-color-default-border);
+    }
+  }
+}
+
+.role {
+  margin-bottom: 4px;
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dimmed);
+}
+
+.text {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: var(--mantine-font-size-sm);
+  line-height: var(--mantine-line-height-sm);
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Точки соединения невидимы — линии рисуются и без них. !important — поверх стилей React Flow. */
+.handle {
+  width: 1px !important;
+  min-width: 0 !important;
+  height: 1px !important;
+  min-height: 0 !important;
+  border: none !important;
+  background: transparent !important;
+}

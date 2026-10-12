@@ -1,0 +1,15 @@
+/* Холст графа — на всю высоту под шапкой Telegram, с отступом под полосу жестов снизу (там кнопки зума). */
+.flow {
+  flex: 1;
+  min-height: 0;
+  /* Сдвинутый (transform) слой узлов React Flow иначе выступает за холст и даёт прокрутку страницы. */
+  overflow: hidden;
+  padding-bottom: var(--tg-viewport-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+}
+
+.center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

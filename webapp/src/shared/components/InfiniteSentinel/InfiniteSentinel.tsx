@@ -1,6 +1,6 @@
-import { Caption, Spinner } from "@telegram-apps/telegram-ui";
+import { Button, Loader } from "@mantine/core";
 import { useEffect, useRef } from "react";
-import "./InfiniteSentinel.css";
+import styles from "./InfiniteSentinel.module.css";
 
 interface InfiniteSentinelProps {
   hasMore: boolean;
@@ -11,12 +11,12 @@ interface InfiniteSentinelProps {
 }
 
 /**
- * Маячок бесконечного скролла — рендерится последним элементом списка. root:null (viewport)
- * корректно клипается промежуточным overflow-y:auto контейнером секции tgui, поэтому не нужен
- * ref на её внутренний DOM. onLoadMore сам гардит повторные вызовы (см. useInfiniteList), так
- * что здесь можно не следить за loadingMore при повторной инициализации observer'а —
- * пересборка эффекта при смене onLoadMore (после каждой успешной подгрузки) и есть механизм
- * «каскадной» подгрузки: пока маячок не уехал за пределы экрана, он продолжит запускать loadMore.
+ * Маячок бесконечного скролла — рендерится последним (или первым, для ленты чата) элементом списка.
+ * root:null (viewport) корректно клипается промежуточным overflow-y:auto контейнером, поэтому не нужен
+ * ref на скролл-контейнер. onLoadMore сам гардит повторные вызовы (см. useInfiniteList), так что здесь
+ * можно не следить за loadingMore при повторной инициализации observer'а — пересборка эффекта при смене
+ * onLoadMore (после каждой успешной подгрузки) и есть механизм «каскадной» подгрузки: пока маячок не
+ * уехал за пределы экрана, он продолжит запускать loadMore.
  *
  * После ОШИБКИ подгрузки onLoadMore не меняет свою ссылку (page не увеличился), поэтому эффект
  * не пересоздаст observer и автоматического повтора не будет, пока маячок не покинет и не
@@ -42,13 +42,13 @@ export function InfiniteSentinel({ hasMore, loading, error = false, onLoadMore }
 
   if (!hasMore) return null;
   return (
-    <div ref={ref} className="infinite-sentinel">
+    <div ref={ref} className={styles.root}>
       {error ? (
-        <button type="button" className="infinite-sentinel__retry" onClick={onLoadMore}>
-          <Caption level="1" Component="span">Не удалось загрузить — повторить</Caption>
-        </button>
+        <Button variant="subtle" size="compact-sm" onClick={onLoadMore}>
+          Не удалось загрузить — повторить
+        </Button>
       ) : loading ? (
-        <Spinner size="s" />
+        <Loader size="sm" />
       ) : null}
     </div>
   );

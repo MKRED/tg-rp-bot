@@ -221,7 +221,7 @@ children: Children.map(children, (child, index) => <>
 В проекте на это напоролась `CompactSettingsSection` (`webapp/src/features/narrator/components/CompactSettingsSection.tsx`):
 была собрана по паттерну A — несколько соседних условных `{}` прямо в `Section` — и получала паразитный
 `Divider` сразу после главного тумблера. Исправлено оборачиванием всего тела секции в один `<>...</>`
-(паттерн B), как уже было в секциях «Перевод» (`RpChatSettingsPage.tsx`, `StorySettingsPage.tsx`). Это
+(паттерн B), как уже было в секции «Перевод» (`StorySettingsPage.tsx`). Это
 не осознанный дизайн, а побочный эффект структуры JSX — при правках подобных секций сверяться, какой
 паттерн уже есть в файле, и не смешивать A и B внутри одной секции.
 
@@ -451,7 +451,7 @@ Mini App может открываться по-разному, и от конт
 - `viewport.expand()` зовите при инициализации, чтобы стартовать на полной высоте.
 
 Для верстки на весь экран используйте `height: 100dvh` (динамическая высота вьюпорта) — в проекте так
-сделаны полноэкранные экраны (например, [webapp/src/pages/rp-chat/rp-chat.css](../webapp/src/pages/rp-chat/rp-chat.css)).
+сделаны полноэкранные экраны (общий каркас [webapp/src/shared/components/FullHeightPage/FullHeightPage.module.css](../webapp/src/shared/components/FullHeightPage/FullHeightPage.module.css)).
 
 ### 3.4. Safe area insets — два разных вида
 
@@ -470,8 +470,8 @@ SDK биндит обе группы на `:root` с префиксом `--tg-vi
 ```
 
 **Рекомендуемый паттерн в CSS** (цепочка фоллбэков: SDK-переменная → нативный `env()` для вне-Telegram →
-`0px` для десктопа). Из проекта ([webapp/src/pages/rp-chat/rp-chat.css](../webapp/src/pages/rp-chat/rp-chat.css),
-[webapp/src/shared/components/ImageLightbox/ImageLightbox.css](../webapp/src/shared/components/ImageLightbox/ImageLightbox.css)):
+`0px` для десктопа). Из проекта ([webapp/src/shared/components/AppPage/AppPage.module.css](../webapp/src/shared/components/AppPage/AppPage.module.css),
+[webapp/src/shared/components/FullHeightPage/FullHeightPage.module.css](../webapp/src/shared/components/FullHeightPage/FullHeightPage.module.css)):
 
 ```css
 padding-top: calc(

@@ -1,0 +1,46 @@
+/* Список во всю ширину шторки/окна поверх их внутреннего отступа — как у PickerField. */
+.list {
+  margin-inline: calc(-1 * var(--mantine-spacing-md));
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  transition: background-color 150ms ease;
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--mantine-color-default-hover);
+    }
+  }
+
+  &:active {
+    background-color: var(--mantine-color-default-hover);
+  }
+
+  & + & {
+    border-top: 1px solid var(--app-color-divider);
+  }
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  /* Приветствия — с переносами строк автора. */
+  white-space: pre-line;
+}
+
+.icon {
+  flex-shrink: 0;
+  color: light-dark(var(--mantine-color-accent-8), var(--mantine-color-accent-4));
+}
+
+/* Галочка выбранного — текстовый оттенок акцента, как у PickerField. */
+.check {
+  flex-shrink: 0;
+  color: light-dark(var(--mantine-color-accent-8), var(--mantine-color-accent-4));
+}
