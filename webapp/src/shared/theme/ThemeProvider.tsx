@@ -1,10 +1,9 @@
 import { themeParams, useSignal } from "@telegram-apps/sdk-react";
 import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
-import { FONT_PAIR_KEY, PALETTE_KEY, THEME_MODE_KEY, TGUI_BG_DARK, TGUI_BG_LIGHT } from "./constants";
+import { FONT_PAIR_KEY, PALETTE_KEY, THEME_MODE_KEY } from "./constants";
 import { DEFAULT_FONT_PAIR, FONT_PAIRS, type FontPairId, loadFontPair } from "./fonts";
 import { DEFAULT_PALETTE, PALETTES, type Palette, type PaletteId } from "./palettes";
 import { parseStoredChoice } from "./storedChoice";
-import "./manualTheme.css";
 
 /** "system" — брать тему из Telegram (дефолт); "light"/"dark" — ручной оверрайд пользователя. */
 export type ThemeMode = "system" | "light" | "dark";
@@ -13,12 +12,12 @@ type Appearance = "light" | "dark";
 interface ThemeContextValue {
   mode: ThemeMode;
   setMode: (mode: ThemeMode) => void;
-  /** Итоговая тема для AppRoot: mode "system" деривится из Telegram, иначе — сам mode. */
+  /** Итоговая схема для Mantine: mode "system" деривится из Telegram, иначе — сам mode. */
   appearance: Appearance;
   /** Палитра (выбор пользователя в настройках). */
   palette: PaletteId;
   setPalette: (palette: PaletteId) => void;
-  /** Поверхности выбранной палитры — фон страницы и шапки Telegram (AppPage). */
+  /** Поверхности выбранной палитры — фон страницы и шапки Telegram (App.tsx). */
   surfaces: Palette["surfaces"];
   /** Пара шрифтов (выбор пользователя в настройках). */
   fontPair: FontPairId;
@@ -59,8 +58,8 @@ function storeChoice(key: string, value: string): void {
 
 /**
  * Единый источник темы приложения: режим (авто/светлая/тёмная), палитра и шрифты. Выбор хранится в
- * localStorage — на устройстве, как и раньше режим темы. Стоит НАД AppRoot и MantineProvider (App.tsx) —
- * обе библиотеки читают один и тот же resolved appearance через useTheme().
+ * localStorage — на устройстве, как и раньше режим темы. Стоит НАД MantineProvider (App.tsx) —
+ * тот берёт схему, палитру и шрифты через useTheme().
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
   // Вызывается безусловно (правила хуков) даже в режимах light/dark — иначе возврат
@@ -92,24 +91,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useLayoutEffect(() => loadFontPair(fontPair), [fontPair]);
 
   const appearance: Appearance = mode === "system" ? (isDarkFromTelegram ? "dark" : "light") : mode;
-
-  // Ручной оверрайд (mode !== "system") глушит --tg-theme-*/--tg-bg-color на <html> через
-  // initial !important (manualTheme.css) — иначе внутри настоящего Telegram эти переменные
-  // всегда забинжены на реальную тему клиента и appearance ниже красит только фоллбэк, который
-  // никогда не используется. См. подробное обоснование в manualTheme.css.
-  //
-  // Красим body синхронно из appearance (не читаем DOM/computed style AppRoot): чтение
-  // --tgui--bg_color с реального DOM-узла AppRoot через getComputedStyle давало гонку —
-  // значение отставало от appearance на один рендер (переключение темы туда-сюда быстро
-  // расходилось с фактическим AppRoot). TGUI_BG_LIGHT/TGUI_BG_DARK — литералы дефолтов
-  // --tgui--bg_color самой библиотеки (сверено с исходником telegram-ui@2.1.13), не наша
-  // догадка. --tg-bg-color (miniApp, отдельно от themeParams) — первым приоритетом, он точнее
-  // в Full Screen после сворачивания/разворачивания (см. комментарий в index.css).
-  useLayoutEffect(() => {
-    document.documentElement.classList.toggle("theme-override", mode !== "system");
-    const fallback = appearance === "dark" ? TGUI_BG_DARK : TGUI_BG_LIGHT;
-    document.body.style.setProperty("background", `var(--tg-bg-color, var(--tg-theme-bg-color, ${fallback}))`);
-  }, [appearance, mode]);
 
   const value = useMemo(
     () => ({

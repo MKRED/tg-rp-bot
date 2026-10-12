@@ -6,8 +6,6 @@
   /* Страница не прокручивается никогда — в том числе пока анимация появления сдвигает контент вниз. */
   overflow: hidden;
   background: var(--app-color-page);
-  /* Свой цвет текста — иначе Text Mantine наследует его от AppRoot tgui (см. AppPage.module.css). */
-  color: var(--mantine-color-text);
   padding-top: calc(
     var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
     var(--tg-viewport-content-safe-area-inset-top, 0px)

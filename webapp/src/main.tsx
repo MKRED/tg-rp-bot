@@ -1,10 +1,9 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-// Стили Mantine — в CSS-слоях (@layer): пока рядом живёт tgui, её неслоёные стили и наш index.css
-// выигрывают у reset'а Mantine, и экраны на tgui не меняются.
+// Стили Mantine — в CSS-слоях (@layer): неслоёные index.css и наши .module.css всегда сильнее их,
+// переопределения обходятся без !important.
 import "@mantine/core/styles.layer.css";
 import "@mantine/notifications/styles.layer.css";
-import "@telegram-apps/telegram-ui/dist/styles.css";
 import "./index.css";
 import { App } from "./app/App";
 import { resolveDeepLink } from "./app/deepLink";

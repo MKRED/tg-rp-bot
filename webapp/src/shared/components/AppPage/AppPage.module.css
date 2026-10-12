@@ -2,9 +2,6 @@
 .page {
   min-height: 100dvh;
   background: var(--app-color-page);
-  /* Цвет текста — свой: иначе Text/Title Mantine наследуют цвет от AppRoot tgui, а тот берёт его из
-     темы Telegram (в тёмном Telegram при нашей светлой схеме — белый текст на светлом фоне). */
-  color: var(--mantine-color-text);
   /* Full Screen: контент ниже системной панели и кнопок Telegram (вне Telegram — env(), иначе 0). */
   padding-top: calc(
     var(--mantine-spacing-md) +

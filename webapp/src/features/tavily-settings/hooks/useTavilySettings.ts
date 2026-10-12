@@ -139,30 +139,25 @@ export function useTavilySettings() {
     }
   }, [showToast]);
 
-  // Локальное значение слайдера — для отклика на каждый шаг перетаскивания; PATCH уходит с
-  // дебаунсом (у Slider tgui нет отдельного onChangeEnd), а не на каждый промежуточный шаг.
-  const [maxSearchRounds, setMaxSearchRoundsLocal] = useState(DEFAULT_SEARCH_ROUNDS);
+  // Локальное значение ползунка — отклик на каждый шаг перетаскивания; PATCH — один, когда палец отпущен
+  // (onChangeEnd), а не на каждый промежуточный шаг.
+  const [maxSearchRounds, setMaxSearchRounds] = useState(DEFAULT_SEARCH_ROUNDS);
   useEffect(() => {
-    setMaxSearchRoundsLocal(status.maxSearchRounds);
+    setMaxSearchRounds(status.maxSearchRounds);
   }, [status.maxSearchRounds]);
 
-  const saveRoundsTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => () => clearTimeout(saveRoundsTimer.current), []);
-
-  const setMaxSearchRounds = useCallback(
+  const saveMaxSearchRounds = useCallback(
     (value: number) => {
-      setMaxSearchRoundsLocal(value);
-      clearTimeout(saveRoundsTimer.current);
-      saveRoundsTimer.current = setTimeout(() => {
-        saveTavilySettings({ maxSearchRounds: value })
-          .then(setStatus)
-          .catch((err) => {
-            console.error("Failed to save max search rounds", err);
-            showToast({ type: "error", message: "Не удалось сохранить лимит раундов поиска." });
-          });
-      }, 500);
+      saveTavilySettings({ maxSearchRounds: value })
+        .then(setStatus)
+        .catch((err) => {
+          console.error("Failed to save max search rounds", err);
+          showToast({ type: "error", message: "Не удалось сохранить лимит раундов поиска." });
+          // Ползунок возвращаем к сохранённому значению — не показываем то, чего на сервере нет.
+          setMaxSearchRounds(status.maxSearchRounds);
+        });
     },
-    [showToast],
+    [showToast, status.maxSearchRounds],
   );
 
   return {
@@ -178,5 +173,6 @@ export function useTavilySettings() {
     clearKey,
     maxSearchRounds,
     setMaxSearchRounds,
+    saveMaxSearchRounds,
   };
 }

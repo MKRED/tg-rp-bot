@@ -14,33 +14,10 @@ body {
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
   /*
-    Заливаем фон webview цветом темы Telegram. Без этого незакрашенные области
-    (например, главная: .home прозрачна) показывают чёрную подложку webview —
-    особенно заметно при перерисовке в Full Screen после сворачивания/разворачивания.
-    --tg-bg-color ставит miniApp.bindCssVars(), --tg-theme-bg-color — themeParams.bindCssVars()
-    (обе на :root, в отличие от --tgui--bg_color, который живёт только на <AppRoot>).
-    Этот background — фоллбэк на самый первый рендер/на случай, если JS-эффект ниже почему-то
-    не отработал. Основной источник истины — shared/theme/ThemeProvider: он синхронно (из
-    appearance, без чтения DOM) перезаписывает background body инлайн-стилем — литералы
-    фоллбэка сверены с дефолтами --tgui--bg_color самой библиотеки (см. shared/theme/constants.ts).
-    Не CSS-селектором по теме — тот ненадёжно повёл себя в dev (Vite CSS HMR не всегда доносит
-    новое правило до живого CSSOM, хотя текст в <style> обновляется); не чтением computed style
-    AppRoot через ref — давало гонку на один рендер при частом переключении.
+    Фон webview — цвет страницы палитры (reset Mantine красит body в --mantine-color-body, а это фон
+    карточек): он виден в зазорах при перерисовке Full Screen и под страницей во время перехода.
+    До монтирования MantineProvider переменной нет — фон body прозрачный (не белый фон светлой схемы
+    Mantine по умолчанию); после монтирования фон webview красит ещё и useTelegramChrome.
   */
-  background: var(--tg-bg-color, var(--tg-theme-bg-color, #fff));
-  /* Mantine (global.css) включает antialiased на body — на macOS текст tgui становился тоньше.
-     До удаления tgui (шаг 8 docs/plan/mantine.md) оставляем браузерное сглаживание. */
-  -webkit-font-smoothing: auto;
-  -moz-osx-font-smoothing: auto;
+  background: var(--app-color-page);
 }
-
-/*
-  Mantine глобально ставит `font: inherit` полям и кнопкам — поля/кнопки tgui и наши самописные без
-  своего шрифта унаследовали бы шрифт body. Возвращаем браузерный шрифт всем, кроме элементов Mantine
-  (у них классы mantine-*). :where() — нулевая специфичность: классы tgui со своим шрифтом по-прежнему
-  сильнее, а слой Mantine слабее любого неслоёного правила. Убрать вместе с tgui (шаг 8).
-*/
-:where(input, textarea, select, button):where(:not([class*="mantine-"])) {
-  font: revert;
-}
-

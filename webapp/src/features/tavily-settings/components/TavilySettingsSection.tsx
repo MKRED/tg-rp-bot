@@ -29,6 +29,7 @@ export function TavilySettingsSection({
   clearKey,
   maxSearchRounds,
   setMaxSearchRounds,
+  saveMaxSearchRounds,
 }: TavilySettingsSectionProps) {
   const handleDeleteKey = async () => {
     const confirmed = await confirmAction("Удалить ключ Tavily? Веб-поиск перестанет работать.", {
@@ -82,6 +83,7 @@ export function TavilySettingsSection({
                   step={1}
                   value={maxSearchRounds}
                   onChange={setMaxSearchRounds}
+                  onChangeEnd={saveMaxSearchRounds}
                   label={null}
                   aria-label="Лимит раундов веб-поиска"
                 />

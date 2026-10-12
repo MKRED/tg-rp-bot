@@ -1,330 +1,40 @@
-# Telegram UI (tgui) — гайд по стилям и режимам Mini App
+# Telegram Mini App — платформы, режимы, viewport
 
-Документация по библиотеке стилей, на которой построен webapp этого проекта, и по
-тому, как корректно вести себя в разных клиентах и режимах открытия Mini App.
+Как webapp ведёт себя в разных клиентах и режимах открытия Mini App: тема клиента, платформа,
+Full Screen, viewport и safe area. UI — на Mantine, его соглашения — [mantine.md](mantine.md).
 
 **Стек, к которому относится документ:**
 
 | Пакет | Версия в проекте | Роль |
 |---|---|---|
-| [`@telegram-apps/telegram-ui`](https://www.npmjs.com/package/@telegram-apps/telegram-ui) | `2.1.13` | Библиотека UI-компонентов и стилей (далее **tgui**) |
 | [`@telegram-apps/sdk-react`](https://www.npmjs.com/package/@telegram-apps/sdk-react) | `3.3.9` | Доступ к Telegram WebApp (тема, viewport, платформа, safe area) |
 
 Где это в коде:
-- Корень приложения и проброс темы/платформы — [webapp/src/app/App.tsx](../webapp/src/app/App.tsx)
 - Инициализация SDK — [webapp/src/init.ts](../webapp/src/init.ts)
 - Определение платформы — [webapp/src/shared/telegram/platform.ts](../webapp/src/shared/telegram/platform.ts)
-- Импорт стилей и порядок запуска — [webapp/src/main.tsx](../webapp/src/main.tsx)
-- Фон webview и глобальные стили — [webapp/src/index.css](../webapp/src/index.css)
-- Ручной оверрайд темы — [webapp/src/shared/theme/](../webapp/src/shared/theme/) (`ThemeProvider.tsx`,
-  `manualTheme.css`, раздел 1.4.5)
+- Порядок запуска — [webapp/src/main.tsx](../webapp/src/main.tsx)
+- Тема и цвет шапки Telegram — [webapp/src/shared/theme/ThemeProvider.tsx](../webapp/src/shared/theme/ThemeProvider.tsx),
+  [webapp/src/shared/telegram/useTelegramChrome.ts](../webapp/src/shared/telegram/useTelegramChrome.ts)
 
 > ⚠️ Версии в этом файле — справочные на момент написания. Источник правды — `webapp/package.json`.
-> Перед обновлением tgui/SDK сверяйтесь с официальными доками (ссылки в конце).
+> Перед обновлением SDK сверяйтесь с официальными доками (ссылки в конце).
 
 ---
 
-## 1. Что такое tgui и как его правильно подключать
+## 1. Тема клиента и цвета Telegram
 
-tgui — React-библиотека компонентов, повторяющих нативный UI Telegram (списки, ячейки
-`Cell`, кнопки, модалки, `Snackbar` и т. д.). Она сама подтягивает цвета темы Telegram в
-свои CSS-переменные, поэтому компоненты выглядят «как родные» и в светлой, и в тёмной теме,
-и по-разному на iOS / Android-оформлении.
-
-- Репозиторий: <https://github.com/Telegram-Mini-Apps/TelegramUI>
-- Песочница компонентов: <https://tgui.xelene.me/>
-
-### 1.1. Импорт стилей — обязателен и идёт первым
-
-CSS библиотеки должен быть импортирован **до** любых компонентов, иначе `--tgui--*`-переменные
-не определены и компоненты рисуются неоформленными. В проекте это сделано в точке входа
-([webapp/src/main.tsx](../webapp/src/main.tsx)):
-
-```ts
-import "@telegram-apps/telegram-ui/dist/styles.css";
-import "./index.css";
-```
-
-### 1.2. `<AppRoot>` — обязательная обёртка всего приложения
-
-`AppRoot` — контекст-провайдер tgui. Без него дочерние компоненты не получают класс платформы
-и темы, а компоненты на порталах (`Modal`, `Snackbar`) «тихо» ломаются. Оборачиваем им всё
-приложение **один раз** ([webapp/src/app/App.tsx](../webapp/src/app/App.tsx)).
-
-Ключевые пропсы:
-
-| Проп | Значения | Что делает |
-|---|---|---|
-| `platform` | `"ios"` \| `"base"` | Выбор оформления: `"ios"` — iOS-стиль (типографика, скругления), `"base"` — Android/прочее |
-| `appearance` | `"light"` \| `"dark"` | Светлая/тёмная тема |
-| `portalContainer` | `RefObject<HTMLElement>` | Куда монтировать порталы (по умолчанию — div самого AppRoot) |
-
-### 1.3. Главный подводный камень: задавать `platform` и `appearance` ЯВНО
-
-Если не передать пропсы, tgui пытается определить тему и платформу сам — но читает **legacy-глобал**
-`window.Telegram.WebApp`, которого `@telegram-apps/sdk-react` v3 **не создаёт**. В итоге tgui
-сваливается на ОС-ную `matchMedia('(prefers-color-scheme: dark)')` — то есть на тему операционной
-системы, а не Telegram. Симптомы (наблюдались в этом проекте):
-
-- неверная тема на ПК, если тема ОС не совпадает с темой Telegram (например, белый hover у кнопок
-  на тёмной теме Telegram при светлой ОС);
-- мигание фона при сворачивании/разворачивании окна (AppRoot терял dark-класс).
-
-**Решение — передавать оба пропса явно** (как в [webapp/src/app/App.tsx](../webapp/src/app/App.tsx)):
-
-```tsx
-import { AppRoot } from "@telegram-apps/telegram-ui";
-import { getPlatform } from "../shared/telegram/platform";
-import { ThemeProvider, useTheme } from "../shared/theme";
-
-// Платформа сессии не меняется — маппим один раз на уровне модуля.
-// macos/ios → "ios"-оформление, всё прочее (включая dev-браузер) → "base".
-const rawPlatform = getPlatform();
-const platform: "ios" | "base" =
-  rawPlatform === "ios" || rawPlatform === "macos" ? "ios" : "base";
-
-export function App() {
-  return (
-    <ThemeProvider>
-      <AppInner />
-    </ThemeProvider>
-  );
-}
-
-function AppInner() {
-  // appearance: дефолт из сигнала themeParams.isDark (реагирует на смену темы Telegram без
-  // перезагрузки), с учётом ручного оверрайда пользователя (раздел 1.4.5).
-  const { appearance } = useTheme();
-  return (
-    <AppRoot appearance={appearance} platform={platform}>
-      {/* ... */}
-    </AppRoot>
-  );
-}
-```
-
-> Платформенная логика — та же, что у tgui внутри (`ios`/`macos` → `ios`, остальное → `base`),
-> но на достоверном источнике — launch-параметрах SDK, а не на отсутствующем глобале.
-> `ThemeProvider` ([webapp/src/shared/theme/ThemeProvider.tsx](../webapp/src/shared/theme/ThemeProvider.tsx))
-> стоит НАД `AppRoot` и `MantineProvider` — обе библиотеки читают один `appearance`.
-
-### 1.4. CSS-переменные: два слоя
-
-Цвета приходят двумя «слоями», важно не путать.
-
-**Слой 1 — нативная тема Telegram (`--tg-theme-*` / `--tg-*`).** Ставит SDK вызовами
-`themeParams.bindCssVars()` и `miniApp.bindCssVars()` на `:root`. Примеры:
-`--tg-theme-bg-color`, `--tg-theme-text-color`, `--tg-theme-button-color`,
-`--tg-theme-secondary-bg-color`, `--tg-theme-hint-color`, `--tg-theme-link-color` и т. д.
-(`miniApp` дополнительно даёт `--tg-bg-color` и подобные).
-
-**Слой 2 — дизайн-токены tgui (`--tgui--*`).** Живут в `dist/styles.css` и **только на `<AppRoot>`**.
-Именно их используют компоненты tgui; внутри они ссылаются на `--tg-theme-*`. Примеры из проекта:
-`--tgui--secondary_bg_color`, `--tgui--hint_color`, `--tgui--text_color`, `--tgui--destructive_text_color`,
-`--tgui--secondary_fill`.
-
-Практические следствия:
-- **Свой CSS — ВСЕГДА через `--tgui--*` с фоллбэком, никогда напрямую `--tg-theme-*`:**
-  `var(--tgui--hint_color, #7d8b99)`, не `var(--tg-theme-hint-color, #7d8b99)`
-  (см. [webapp/src/shared/components/PromptField/PromptField.css](../webapp/src/shared/components/PromptField/PromptField.css)).
-  Это не только эстетика: `--tg-theme-*` в реальном Telegram всегда забинжен на настоящую тему
-  клиента, и только `--tgui--*` умеет корректно уходить в фоллбэк при ручном оверрайде темы
-  (раздел 1.4.5) — весь код в `webapp/src` переведён на это правило именно поэтому.
-- **Фон самого webview** красьте через `--tg-*` (они на `:root`), а не через `--tgui--*` (их на `:root` нет).
-  В проекте: `background: var(--tg-bg-color, var(--tg-theme-bg-color, #17212b))`
-  ([webapp/src/index.css](../webapp/src/index.css)). Иначе непокрашенные области показывают чёрную
-  подложку webview — особенно заметно в Full Screen после сворачивания. Это единственное
-  оправданное прямое использование `--tg-theme-*`/`--tg-*` в собственном CSS.
-
-### 1.4.1. Засада: фон поля (`bg_color`) ≠ фон карточки (`section_bg_color`)
-
-`bg_color`, `section_bg_color`, `secondary_bg_color` — **разные** токены темы Telegram (а не оттенки
-одного): `bg_color` — фон экрана и **фон поля ввода**; `section_bg_color` — фон карточек `Section`;
-`secondary_bg_color` — подложка под сгруппированным списком. tgui `Input`/`Textarea` красит свой фон
-`--tgui--bg_color`, а `Section` — `--tgui--section_bg_color`.
-
-На большинстве тем `bg_color ≈ section_bg_color`, поэтому рассинхрон не виден. Но на темах, где они
-различаются (некоторые мобильные тёмные), поле, лежащее **прямо внутри `Section`**, «выпрыгивает» из
-карточки по фону. Идиоматично формы делают плоскими (голые поля на фоне страницы `bg_color`, как
-`CharacterForm`/`PersonaForm`/`PresetForm`) — там поле и страница оба `bg_color` и сливаются.
-
-Если форма всё же на `Section` (карточный вид) — приравниваем `bg_color` к `section_bg_color`
-**в пределах секции**: `--tgui--bg_color: var(--tgui--section_bg_color)` на классе секции (не на
-странице: standalone-поля на фоне страницы должны остаться `bg_color`). Сейчас таких форм нет — все
-формы на Mantine.
-
-**Footer секции — отдельная засада.** `SectionFooter` (проп `footer`) рендерит `<footer>` **вне**
-карточки, без своего фона → он показывает фон страницы (`bg_color`), отличный от карточки, и «выбивается».
-Заголовок же лежит внутри карточки. Если нужен текст-пояснение «на карточке» — не используем проп
-`footer`, а рендерим последним ребёнком секции свой `<p>` с отступами ячейки.
-
-### 1.4.2. `Section` сама вставляет разделители между детьми — и это зависит от формы `children`
-
-`Section` (см. `node_modules/@telegram-apps/telegram-ui/dist/components/Blocks/Section/Section.js`)
-проходит по своим **прямым** детям через `React.Children.map` и кладёт `<Divider>` (`<hr>`) между
-каждой соседней парой:
-
-```js
-children: Children.map(children, (child, index) => <>
-  {child}
-  {index < Children.count(children) - 1 && <Divider />}
-</>)
-```
-
-Два факта про `React.Children.map/count` (проверено в `node_modules/react/cjs/react.development.js`,
-`mapIntoArray`), которые здесь ловушка:
-
-- **`false`/`null`/`undefined` всё равно занимают позицию.** `Children.count`/`Children.map` их не
-  пропускают — просто рендерят пустоту на этом месте. Условный рендер `{cond && <X/>}`, когда `cond`
-  ложный, — это не «нет ребёнка», а «ребёнок есть, просто пустой», и разделитель после него
-  **всё равно вставится**, если это не последний элемент.
-- **`<Fragment>` (в т. ч. `<>...</>`) не разворачивается.** Это `REACT_ELEMENT_TYPE`, как и обычный
-  `<div>`, — для `Section` это один непрозрачный узел, что бы внутри него ни лежало. Разворачивается
-  вглубь **только настоящий JS-массив** (несколько JSX-соседей `Section` компилируются именно в него).
-
-**Практическое следствие — два разных паттерна дают разное число разделителей:**
-
-```tsx
-// Паттерн A: несколько соседних top-level выражений → компилируется в МАССИВ →
-// Section видит несколько «слотов», разделитель ставится по позиции, даже если слот пуст.
-<Section header="…">
-  <Cell>…</Cell>
-  {!available && <p>причина недоступности</p>}   {/* слот 2: даже когда false — «слот» есть */}
-  {available && (<>…остальной контент…</>)}       {/* слот 3 */}
-</Section>
-// → Cell, Divider, (пусто), Divider, контент — т.е. фактически ДВА <hr> подряд сразу после Cell,
-//   когда слот 2 пуст (визуально сливаются в одну линию, но по DOM их два).
-
-// Паттерн B: всё содержимое — ОДИН тернарник/фрагмент → Section видит один непрозрачный узел →
-// Children.count === 1 → разделитель не вставляется НИКОГДА, и всё вложенное (Cell, дочерние
-// компоненты) для Section невидимо.
-<Section header="…">
-  {loading ? (<Spinner/>) : (<>
-    <Cell>…</Cell>
-    {enabled && (<>…</>)}
-  </>)}
-</Section>
-```
-
-На это напоролась прежняя tgui-секция «Сжатие истории»: несколько соседних условных `{}` прямо в
-`Section` давали паразитный `Divider` после главного тумблера; лечилось оборачиванием тела в один
-`<>...</>` (паттерн B). Это не осознанный дизайн, а побочный эффект структуры JSX.
-
-**Проп на выключение разделителей отсутствует** — `SectionProps` даёт только `header`/`footer` +
-стандартные HTML-атрибуты, вставка `<Divider>` зашита в реализацию `Section` жёстко. Единственный
-рычаг — форма `children`: оборачивать то, что должно считаться одним «слотом», в общий элемент (`<div>`,
-`<Fragment>` — она непрозрачна) или в один тернарник, как в паттерне B.
-
-Поэтому поле и его подсказку внутри `Section` оборачивают в общий `<div>` — иначе между ними пролезла бы линия.
-
-### 1.4.3. `Button` не несёт своего гуттера — в отличие от `Cell`/`Input`/`Textarea`
-
-`Cell`, `Input`, `Textarea` сами кладут внутренний `padding` под 22px-гуттер карточки — поставленные
-прямо в `Section`, они сами выравниваются по её краям. `Button` — нет: в исходнике
-(`node_modules/@telegram-apps/telegram-ui/dist/components/Blocks/Button/Button.js`) это `Tappable`
-с `display: inline-flex`, без единого `padding`/`margin` по горизонтали; `stretched` лишь растягивает
-его на 100% ширины **родителя**. Родитель у `Button` внутри `Section` — сама карточка без отступов
-(раздел 1.4 показывает: `.tgui-4b78bed6e925088e{background:...;border-radius:12px}` — фона и радиуса
-достаточно для полей, которые несут padding сами, но не для голых блоков вроде кнопок).
-
-Следствие: `Button`, положенная в `Section` без обёртки, прижимается к боковым краям карточки, а если
-она ещё и последний ребёнок — прижимается и к нижнему краю. На оставшихся экранах tgui кнопкам в
-`Section` нужна обёртка с тем же 22px-гуттером по бокам и отступом сверху/снизу (общий компонент для
-этого удалён вместе с последним потребителем — экраны переезжают на Mantine).
-
-### 1.4.4. Ripple-оверлей `Tappable`/`Cell` перекрывает клики по вложенным интерактивным элементам
-
-`Cell` внутри — это `Tappable` (`node_modules/@telegram-apps/telegram-ui/dist/components/Service/Tappable/Tappable.js`):
-контейнер с `position: relative` и (на платформе `"base"`, дефолтный `interactiveAnimation="background"`)
-ripple-волной поверх содержимого — `<span aria-hidden>` с CSS `position: absolute; inset: 0`, **без**
-`pointer-events: none`. Ripple рендерится раньше слотов `before`/детей/`after` в JSX, но так как он
-`position: absolute`, а слоты — обычный поток (`position: static`), по правилам CSS stacking он всё равно
-красится **поверх** них (позиционированные элементы без `z-index` рисуются после непозиционированных,
-независимо от порядка в DOM) — и, что важнее, **перехватывает hit-test**: клик по нативной кнопке,
-положенной в `after`/`before`, на самом деле попадает в ripple-span, а не в кнопку. Событие всплывает
-к `Tappable`, и срабатывает `onClick` самого `Cell` — вложенный `onClick` (даже со `stopPropagation()`)
-до кнопки не долетает, потому что кнопка вообще не была целью события.
-
-Симптом на практике: кнопки внутри `after`/`before` слота `Cell` либо не реагируют на клик вовсе, либо
-клик «проваливается» на сам `Cell` (открывает то, что вешает на него `onClick`) — воспроизводится на
-десктопе/вебе (`platform === "base"`), где ripple активен; на iOS-оформлении эффекта нет (там ripple
-не рендерится).
-
-**Решение — поднять вложенный интерактив в свой позиционированный слой поверх ripple:**
-
-```css
-.my-cell-inline-controls {
-  position: relative;
-  z-index: 1;
-}
-```
-
-Это официально нейтральный обход (не завязан на хэш CSS-класса ripple, который может смениться при
-обновлении пакета). Альтернатива — проп `interactiveAnimation="opacity"` у `Cell`/`Tappable` вовсе
-отключает рендер ripple (`Tappable.js`: `hasRippleEffect = platform === 'base' && interactiveAnimation
-=== 'background' && !readOnly`), но заодно гасит ripple-фидбек всей ячейки, а не только конфликт с
-кнопкой — обычно нежелательно, если сама ячейка тоже кликабельна и должна давать визуальный отклик.
-
-### 1.4.5. Ручной оверрайд темы (в обход реальной темы Telegram-клиента)
-
-`ThemeProvider` ([webapp/src/shared/theme/ThemeProvider.tsx](../webapp/src/shared/theme/ThemeProvider.tsx))
-даёт пользователю выбрать тему вручную (Система/Светлая/Тёмная), а не только наследовать её от
-Telegram. Наивная реализация — просто прокинуть нужный `appearance` в `<AppRoot>` — **не работает**
-внутри настоящего Telegram, хотя отлично работает в dev-браузере. Причина: `--tgui--*` определены как
-`var(--tg-theme-X, <литерал-фоллбэк-по-классу-light/dark>)` — класс `AppRoot` задаёт только фоллбэк,
-который используется, ЛИШЬ если `--tg-theme-X` не определена. Внутри настоящего Telegram
-`themeParams.bindCssVars()`/`miniApp.bindCssVars()` держат `--tg-theme-*` забинженными на реальную
-тему клиента ВСЕГДА — так что фоллбэк никогда не используется, и `appearance` фактически ничего не
-красит (кроме горстки токенов tgui без пары `--tg-theme-*`, например декоративный hover-фон — по нему
-это и было замечено на практике).
-
-**Решение** ([webapp/src/shared/theme/manualTheme.css](../webapp/src/shared/theme/manualTheme.css)):
-при ручном оверрайде (`mode !== "system"`) навешивать на `<html>` класс `theme-override`, который
-глушит `--tg-theme-*` (все 13 токенов) и `--tg-bg-color` через `initial !important`:
-
-```css
-html.theme-override {
-  --tg-theme-bg-color: initial !important;
-  /* … остальные --tg-theme-* … */
-  --tg-bg-color: initial !important;
-}
-```
-
-`initial` откатывает custom property к guaranteed-invalid значению — тогда `var(--tg-theme-X, …)`
-везде переключается на фоллбэк-литерал, который уже верно выбран классом `light`/`dark` на `AppRoot`
-(его ставит `appearance` из `useTheme()`). `!important` бьёт инлайн-стиль без `!important` (SDK его
-не ставит), независимо от порядка применения.
-
-**Почему это работает без дублирования палитры цветов** — только потому, что **весь** собственный CSS
-проекта читает цвета через `--tgui--*`, а не `--tg-theme-*` напрямую (правило раздела 1.4). Если бы
-свой CSS обращался к `--tg-theme-*` напрямую с ОДНИМ литералом-фоллбэком (не парным light/dark, как у
-самой tgui) — `initial`-глушение откатывало бы такие места всегда на один и тот же (светлый) цвет,
-независимо от выбранной темы, и получился бы вперемешку светлый/тёмный UI. Именно поэтому правило
-«свой CSS — только через `--tgui--*`» в разделе 1.4 не косметическое: нарушение его в новом файле
-незаметно сломает эту фичу. **При добавлении нового CSS с цветом Telegram-темы — только `--tgui--*`.**
-
-Единственное намеренное исключение — фон `body` (см. правило раздела 1.4 про `index.css`): он вне
-`<AppRoot>`, поэтому использует `--tg-bg-color`/`--tg-theme-bg-color` напрямую со своим фоллбэком
-(`TGUI_BG_LIGHT`/`TGUI_BG_DARK` в `webapp/src/shared/theme/constants.ts`) — учтено отдельной строкой
-в `manualTheme.css`.
-
-### 1.5. Порталы выходят из-под `<AppRoot>` — гочта
-
-Компонент, отрисованный через `createPortal(..., document.body)`, **покидает поддерево AppRoot**,
-где определены `--tgui--*`. tgui-компонент в таком портале нарисуется неоформленным. Варианты:
-- держать `Snackbar`/модалки внутри дерева AppRoot (tgui сам делает портал в свой контейнер) —
-  так сделан `ToastProvider`;
-- если портал в `body` неизбежен (лайтбокс, кроп-редактор) — не использовать там tgui-компоненты
-  и задавать фиксированные цвета, а не `var(--tgui--…)` (см.
-  [webapp/src/shared/components/ImageCropEditor/ImageCropEditor.css](../webapp/src/shared/components/ImageCropEditor/ImageCropEditor.css)).
-
-### 1.6. Совместимость
-
-- tgui `2.1.13` объявляет `peerDependencies: react ^18.2.0`. Проект работает на **React 19** —
-  формально вне диапазона peer-зависимости, на практике работает. При обновлении tgui сверяйтесь
-  с его peer-range.
-- `@telegram-apps/sdk-react` `3.x` официально поддерживает React 17/18/19.
-- Vite — без известных проблем; импорт `dist/styles.css` делаем из точки входа, не из компонента.
+- **Схема (светлая/тёмная)** — из `useTheme()` (`shared/theme`): в режиме «Авто» — сигнал
+  `themeParams.isDark` (по фону темы самого Telegram, реагирует на смену темы без перезагрузки), иначе —
+  ручной выбор пользователя из настроек (localStorage). Схема уходит в `MantineProvider`
+  (`forceColorScheme`) — ручная тема работает и внутри настоящего Telegram.
+- **`themeParams.isDark`, а не `miniApp.isDark`:** второй считается по фону Mini App, который мы сами
+  красим под палитру, — «Авто» после «Светлой» видело бы свой же светлый фон.
+- **Цвета клиента (`--tg-theme-*`) не используем** — все цвета даёт палитра Mantine (`shared/theme`).
+  `themeParams.bindCssVars()`/`miniApp.bindCssVars()` не вызываются.
+- **Шапка и фон Telegram** — `useTelegramChrome` в корне (`App.tsx`) красит их в цвет страницы палитры
+  (`miniApp.setHeaderColor`/`setBackgroundColor`, под `isAvailable()`): иначе над палитрой висела бы шапка
+  цвета темы клиента, а в Full Screen иконки статус-бара сливались бы с фоном.
+- **Нативные попапы** (`popup.open`, подтверждения) рисует сам Telegram — в теме клиента, не палитры.
 
 ---
 
@@ -488,18 +198,15 @@ padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 ## 4. Чек-лист и прочие практики
 
 - **Порядок инициализации — до `render()`.** В [webapp/src/init.ts](../webapp/src/init.ts):
-  `init()` → `initData.restore()` → `themeParams.mountSync()`+`bindCssVars()` →
-  `miniApp.mountSync()`+`bindCssVars()` → `viewport.mount()`+`bindCssVars()`. Если переменные темы не
-  привязаны до первого кадра, будет вспышка неправильных цветов / нулевых insets.
+  `init()` → `initData.restore()` → `themeParams.mountSync()` → `miniApp.mountSync()` →
+  `viewport.mount()`+`bindCssVars()` (insets для `--tg-viewport-*`).
 - **Каждый шаг SDK — под `isAvailable()`-гардом.** Вне Telegram (dev-браузер) часть компонентов
   недоступна; защита не даёт приложению упасть.
 - **Платформу читаем один раз** на уровне модуля (она не меняется), а не в `useEffect`.
 - **Тему берём из `useTheme()`** (`shared/theme`) — дефолт из сигнала `themeParams.isDark` (реагирует на
-  смену темы Telegram без перезагрузки), с учётом ручного оверрайда пользователя (раздел 1.4.5).
+  смену темы Telegram без перезагрузки), с учётом ручного выбора пользователя (раздел 1).
 - **`100dvh`, не `100vh`** для полноэкранных раскладок (высота вьюпорта динамическая).
 - **`stableHeight` для нижних панелей**, `height` для скролла (раздел 3.3).
-- **Доступность (a11y)** tgui отдельно не документирует — интерактивные компоненты рендерятся семантичными
-  тегами, но управление фокусом/проверку скринридером делайте вручную.
 
 ---
 
@@ -510,7 +217,4 @@ padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 - Telegram Mini Apps (официально) — <https://core.telegram.org/bots/webapps>
 - Mini Apps 2.0: Full-Screen Mode — <https://telegram.org/blog/fullscreen-miniapps-and-more>
 - Документация комьюнити (platform/viewport/methods) — <https://docs.telegram-mini-apps.com/>
-- TelegramUI (репозиторий) — <https://github.com/Telegram-Mini-Apps/TelegramUI>
-- TelegramUI (песочница) — <https://tgui.xelene.me/>
-- npm `@telegram-apps/telegram-ui` — <https://www.npmjs.com/package/@telegram-apps/telegram-ui>
 - npm `@telegram-apps/sdk-react` — <https://www.npmjs.com/package/@telegram-apps/sdk-react>

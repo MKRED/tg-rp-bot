@@ -176,7 +176,7 @@ shared/src/
 webapp/src/
   main.tsx      — точка входа: initTelegram() + рендер <App/>
   init.ts       — инициализация @telegram-apps SDK (защищённая) + initData.restore()
-  app/          — оболочка: App.tsx (AppRoot + HashRouter), routes.ts, BackButtonBridge, deepLink.ts
+  app/          — оболочка: App.tsx (ThemeProvider + MantineProvider + HashRouter), routes.ts, BackButtonBridge, deepLink.ts
   pages/        — экраны-маршруты (один на маршрут): home/ characters/ personas/ cards/
                   generation-presets/ rp-templates/ rp-chat/ narrator/ knowledge-books/
                   narrator-templates/ debug/

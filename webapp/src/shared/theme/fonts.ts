@@ -9,7 +9,7 @@
   из ссылки Google Fonts).
 */
 
-/** Системный стек (как был у tgui): SF на Apple, Roboto на Android, Segoe UI на Windows. Он же фоллбэк. */
+/** Системный стек, как у нативного Telegram: SF на Apple, Roboto на Android, Segoe UI на Windows. Он же фоллбэк. */
 const SYSTEM_STACK = 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
 const SERIF_FALLBACK = 'Georgia, "Times New Roman", serif';
 

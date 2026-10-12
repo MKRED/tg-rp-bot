@@ -6,7 +6,8 @@ import { isMobilePlatform } from "./shared/telegram/platform";
  *
  * Каждый шаг обёрнут защитой: вне Telegram (обычный браузер при разработке) часть
  * компонентов недоступна — тогда просто пропускаем их, не роняя приложение.
- * bindCssVars прокидывает тему Telegram в CSS-переменные, чтобы UI совпадал с клиентом.
+ * Тему Telegram в CSS-переменные не прокидываем: цвета даёт палитра Mantine, из themeParams нужен только
+ * isDark (ThemeProvider). viewport.bindCssVars — для --tg-viewport-* (safe area в модулях).
  */
 export function initTelegram(): void {
   try {
@@ -22,12 +23,11 @@ export function initTelegram(): void {
 
   if (themeParams.mountSync.isAvailable()) {
     themeParams.mountSync();
-    themeParams.bindCssVars();
   }
 
   if (miniApp.mountSync.isAvailable()) {
+    // Нужен для покраски шапки и фона Telegram под палитру (useTelegramChrome).
     miniApp.mountSync();
-    miniApp.bindCssVars();
   }
 
   if (viewport.mount.isAvailable()) {

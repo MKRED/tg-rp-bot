@@ -1,7 +1,5 @@
 import { Container, Group, Loader, Stack, Text, Title } from "@mantine/core";
 import type { ReactNode } from "react";
-import { useTelegramChrome } from "../../telegram/useTelegramChrome";
-import { useTheme } from "../../theme";
 import { PageTransition } from "../PageTransition";
 import styles from "./AppPage.module.css";
 
@@ -25,13 +23,10 @@ interface AppPageProps {
 }
 
 /**
- * Каркас экрана на Mantine: фон страницы, отступы safe area, колонка ограниченной ширины, анимация
- * появления и цвета шапки Telegram под палитру. Каждый переехавший экран рендерится внутри него.
+ * Каркас экрана: фон страницы, отступы safe area, колонка ограниченной ширины, анимация
+ * появления. Каждый экран рендерится внутри него (или FullHeightPage).
  */
 export function AppPage({ title, description, actions, loading, width = CONTENT_WIDTH, centered, children }: AppPageProps) {
-  const { appearance, surfaces } = useTheme();
-  useTelegramChrome(surfaces[appearance].page);
-
   return (
     <div className={centered ? `${styles.page} ${styles.centered}` : styles.page}>
       {/* phase перезапускает анимацию появления, когда лоадер сменяется контентом. */}

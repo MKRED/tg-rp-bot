@@ -1,20 +1,20 @@
 # Mantine в webapp
 
-Webapp переезжает с tgui на Mantine (`@mantine/core`, `@mantine/hooks`, `@mantine/notifications`,
-версии закреплены точно) — экран за экраном, план и статус — [plan/mantine.md](plan/mantine.md).
-Здесь — как устроено и как писать новые экраны.
+UI webapp — на Mantine (`@mantine/core`, `@mantine/hooks`, `@mantine/notifications`, версии закреплены
+точно) и CSS-модулях. Здесь — как устроено и как писать новые экраны. Telegram-специфика (тема клиента,
+платформы, viewport, safe area) — [telegram-ui.md](telegram-ui.md).
 
 ## Подключение
 
 - `main.tsx` импортирует `@mantine/core/styles.layer.css` и `@mantine/notifications/styles.layer.css` —
-  стили Mantine в CSS-слоях (`@layer`). Неслоёные стили (tgui, `index.css`, наши `.module.css`)
-  всегда сильнее: пока рядом живёт tgui, reset Mantine её экраны не меняет, а свои модули перекрывают
-  Mantine без `!important`. Два глобальных правила Mantine всё же доставали до tgui — `font: inherit` у
-  полей/кнопок и `-webkit-font-smoothing: antialiased` на body; `index.css` возвращает им прежнее
-  поведение до удаления tgui.
-- `App.tsx`: `MantineProvider` (тема, `cssVariablesResolver`, `forceColorScheme` из `ThemeProvider`)
-  → `MotionConfig reducedMotion="user"` → `AppRoot` tgui. Mantine снаружи `AppRoot`: её порталы
-  (Modal, Drawer, Select, тосты) уходят в `body` и берут тему из контекста.
+  стили Mantine в CSS-слоях (`@layer`). Неслоёные `index.css` и наши `.module.css` всегда сильнее —
+  модули перекрывают Mantine без `!important`.
+- `App.tsx`: `ThemeProvider` → `MantineProvider` (тема, `cssVariablesResolver`, `forceColorScheme` из
+  `ThemeProvider`) → `MotionConfig reducedMotion="user"` → тосты, роутер. Там же `useTelegramChrome` —
+  шапка и фон Telegram в цвет страницы палитры. Порталы Mantine (Modal, Drawer, Select, тосты) уходят в
+  `body` и берут тему из контекста.
+- `index.css` — reset и фон body (`--app-color-page`; до монтирования Mantine — прозрачный, а не белый
+  фон светлой схемы Mantine по умолчанию).
 - `webapp/postcss.config.cjs`: `postcss-preset-mantine` (`light-dark()`, `rem()`, миксины) и
   `postcss-simple-vars` (переменные брейкпоинтов `$mantine-breakpoint-*`).
 
@@ -23,7 +23,7 @@ Webapp переезжает с tgui на Mantine (`@mantine/core`, `@mantine/hoo
 | Файл | Что |
 |---|---|
 | `palettes.ts` | Палитры (`PALETTES`: нейтральная, янтарная, фиолетовая, бирюзовая; по умолчанию — `DEFAULT_PALETTE`): кортежи `accent` (primary), `gray`, `dark` + `surfaces` (фон страницы и карточек по схемам). Новая палитра — объект + строка в `PALETTES`, в выборе появится сама |
-| `fonts.ts` | Пары шрифтов (`FONT_PAIRS`: системный — как был у tgui, Manrope + Lora, Onest; по умолчанию — `DEFAULT_FONT_PAIR`). `loadFontPair` подключает `<link>` Google Fonts только для выбранной пары |
+| `fonts.ts` | Пары шрифтов (`FONT_PAIRS`: системный — как у нативного Telegram, Manrope + Lora, Onest; по умолчанию — `DEFAULT_FONT_PAIR`). `loadFontPair` подключает `<link>` Google Fonts только для выбранной пары |
 | `cssVariables.ts` | `buildCssVariablesResolver(surfaces)`: `--mantine-color-body` (карточки), `--app-color-page` (фон страницы), `--app-shadow-card` (тень карточки), `--app-color-divider` (линии внутри карточек) для светлой и тёмной схемы |
 | `motion.ts` | Длительность и кривая анимаций — общие для framer-motion и переходов Mantine |
 | `theme.ts` | `buildTheme(palette, fonts)` → `createTheme`: цвета, `primaryShade`, `autoContrast`, радиусы (поля/кнопки 12px, карточки 16px), `respectReducedMotion`, `defaultProps` (поля `filled` и кнопки `size="md"` высотой 44px, `Paper` без рамки с тенью, переходы оверлеев) |
@@ -39,12 +39,11 @@ Webapp переезжает с tgui на Mantine (`@mantine/core`, `@mantine/hoo
 
 - **`AppPage`** (`shared/components/AppPage`) — обязательная обёртка экрана: фон страницы, отступы
   safe area (Full Screen), колонка шириной до 680px по центру, заголовок, общий лоадер (`loading`),
-  анимация появления (`PageTransition`) и цвет шапки/фона Telegram под палитру (`useTelegramChrome`;
-  на размонтировании возвращает цвета темы клиента — для экранов ещё на tgui). `width` — уже колонка
+  анимация появления (`PageTransition`). `width` — уже колонка
   (форма входа), `centered` — контент по центру экрана по вертикали, `description` — пояснение под
   заголовком, `actions` — главное действие справа от заголовка (не ужимается).
 - **`FullHeightPage`** — каркас экрана ровно на высоту окна без прокрутки страницы (граф веток, экран
-  RP-чата: шапка, лента с собственной прокруткой, поле ввода): то же, что у `AppPage` (фон, цвет текста, шапка Telegram, верхний safe area, анимация), но
+  RP-чата: шапка, лента с собственной прокруткой, поле ввода): то же, что у `AppPage` (фон, верхний safe area, анимация), но
   дети — flex-колонкой, растягиваемый ребёнок ставит `flex: 1; min-height: 0`; нижний safe area — забота
   нижнего элемента (поле ввода).
 - **`ListCard` + `ListRow`** — список строк (меню главной, списки сущностей): подпись группы, карточка со
@@ -111,6 +110,15 @@ Webapp переезжает с tgui на Mantine (`@mantine/core`, `@mantine/hoo
   намеренно тёмные в любой схеме (как фоторедактор), стили — в модулях. **`DeleteButton`** — текстовая красная кнопка удаления в подвале формы.
 - **Тосты** — прежний `useToast().showToast({ message, type })`, внутри `@mantine/notifications`
   (снизу по центру, один за раз, поверх лайтбокса).
+
+## Новый экран
+
+- Экран переосмысляется, а не переносится: сохраняются смысл и функции, не разметка. Перед переделкой —
+  чек-лист функций по коду (действия, состояния загрузка/пусто/ошибка/нет ключа, deep-link'и,
+  BackButton, анимации), после — сверка по нему.
+- Сначала компоненты Mantine; нет подходящего — свой в `shared/components/` поверх примитивов Mantine
+  (`Paper`, `UnstyledButton`, `Group`, `Stack`) с `.module.css`.
+- Анимации — обязательная часть экрана (см. «Анимации»), не «потом».
 
 ## Стили
 

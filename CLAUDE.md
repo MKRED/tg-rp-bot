@@ -134,15 +134,13 @@ Full tree, webapp layout rules, router/deep-link details — [docs/architecture.
 - **No `helmet` with defaults** — its `X-Frame-Options`/`frame-ancestors` break the Mini App in Telegram Web.
 
 ### webapp — mandatory
-- **Mantine first (migration from tgui in progress — [docs/plan/mantine.md](docs/plan/mantine.md)).**
-  New and reworked screens use **Mantine** (`@mantine/core`); a screen moves entirely, rethought rather
-  than ported (don't carry tgui workarounds over). Wrap the screen in `shared/components/AppPage`.
-  No suitable component → build one in `shared/components/` on top of Mantine primitives. Styles go in
-  a co-located `Component.module.css` (camelCase classes), colors/spacing/fonts only via Mantine CSS
-  variables — never hardcoded; palette/fonts/motion live in `shared/theme/`. Mobile-first, decent on
-  desktop. Conventions — [docs/mantine.md](docs/mantine.md). Screens not yet migrated stay on tgui
-  (`@telegram-apps/telegram-ui`, catalog [docs/tgui-components.md](docs/tgui-components.md)) — small
-  fixes there keep using tgui. Viewport/safe area/platforms — [docs/telegram-ui.md](docs/telegram-ui.md).
+- **UI = Mantine** (`@mantine/core`). Wrap a screen in `shared/components/AppPage` (or `FullHeightPage`
+  for fixed-height screens). No suitable component → build one in `shared/components/` on top of
+  Mantine primitives. Styles go in a co-located `Component.module.css` (camelCase classes),
+  colors/spacing/fonts only via Mantine CSS variables — never hardcoded, never Telegram's
+  `--tg-theme-*`; palette/fonts/motion live in `shared/theme/`. Mobile-first, decent on desktop;
+  animations are part of the screen. Conventions — [docs/mantine.md](docs/mantine.md).
+  Telegram theme/viewport/safe area/platforms — [docs/telegram-ui.md](docs/telegram-ui.md).
 - **`pages/<screen>/`** = thin route target; **`features/<feature>/`** = self-contained domain module.
 - **Feature files go into `api/ hooks/ components/ types/ lib/`** subfolders, not loose in the root.
   Don't create empty categories.
@@ -288,8 +286,8 @@ Docs describe the **current** state, not history — what's removed from code is
   API/model, new mandatory rule, significant structure change.
 - **docs/** — reference narratives; when editing a feature, update its file and keep only a thin link here:
   `architecture.md` (tree, webapp layout, router, proxy/Mini App boundaries), `llm.md` (provider, BYOK),
-  `narrator.md` (story director mode + compact), `testing.md`, `deploy.md`, `mantine.md`, `telegram-ui.md`,
-  `tgui-components.md`; `plan/` — roadmaps of upcoming large changes (update or remove as steps land).
+  `narrator.md` (story director mode + compact), `testing.md`, `deploy.md`, `mantine.md`, `telegram-ui.md`
+  (Telegram theme, platforms, viewport); `plan/` — roadmaps of upcoming large changes (update or remove as steps land).
 - **`.claude/agents/*.md`** — only replace stale literal facts (provider name, env var, path, command)
   that the diff changed; never rewrite agent frontmatter/role/instructions. Full rules live in
   `.claude/agents/docs-updater.md`.
