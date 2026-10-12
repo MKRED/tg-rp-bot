@@ -1,6 +1,7 @@
 import { Accordion, Code, Group, Text } from "@mantine/core";
 import { CircleCheck, CircleX } from "lucide-react";
 import { elideRequest, unescapeNewlines } from "../lib/elide";
+import { describeToolUsage, toolUsageDetails, toolUsageSummary } from "../lib/toolUsage";
 import type { LlmDebugRecord } from "../types/debug";
 import styles from "./DebugLlmView.module.css";
 
@@ -29,14 +30,11 @@ export function DebugRecordItem({ record, headK, tailK }: { record: LlmDebugReco
 
   const requestJson = unescapeNewlines(JSON.stringify(elideRequest(record.request, headK, tailK), null, 2));
 
-  // tools в RAW-теле значит лишь то, что инструмент был ПРЕДЛОЖЕН — tool-loop карточек кладёт его,
-  // пока не исчерпан бюджет раундов, даже если модель в итоге не позвала поиск. Поэтому смотрим
-  // на факт использования: либо сама модель в этом раунде запросила инструмент (response.toolCalls),
-  // либо в history уже лежит результат поиска (role: "tool") из более раннего раунда цикла.
-  const requestMessages = record.request.messages;
-  const hasSearchResultInHistory =
-    Array.isArray(requestMessages) && requestMessages.some((m) => (m as { role?: string })?.role === "tool");
-  const usedWebSearch = Boolean(r.toolCalls?.length) || hasSearchResultInHistory;
+  // Имена инструментов, а не просто «были tool_calls»: ask_user и реплей сохранённого контекста блока
+  // иначе выглядели бы в шапке как веб-поиск (см. lib/toolUsage.ts).
+  const toolUsage = describeToolUsage(record);
+  const toolSummary = toolUsageSummary(toolUsage);
+  const toolDetails = toolUsageDetails(toolUsage);
 
   // content и tool_calls не взаимоисключающие — DeepSeek может отдать короткую преамбулу текстом
   // и tool_calls в одном ответе, || скрыл бы вызов инструмента, раз текст уже непустой.
@@ -51,7 +49,7 @@ export function DebugRecordItem({ record, headK, tailK }: { record: LlmDebugReco
           <div className={styles.summary}>
             <Text fw={500}>{LABEL_TEXT[record.label]}</Text>
             <Text size="sm" c="dimmed" truncate>
-              {usedWebSearch ? `${record.model} · веб-поиск` : record.model}
+              {toolSummary ? `${record.model} · ${toolSummary}` : record.model}
               {!r.ok && ` · ${statusTitle}`}
             </Text>
           </div>
@@ -70,6 +68,11 @@ export function DebugRecordItem({ record, headK, tailK }: { record: LlmDebugReco
           {record.provider} · {record.streaming ? "stream" : "single"} · {record.durationMs} мс
           {r.usage ? ` · ${r.usage.promptTokens}+${r.usage.completionTokens} ток.` : ""}
         </Text>
+        {toolDetails && (
+          <Text size="xs" c="dimmed">
+            {toolDetails}
+          </Text>
+        )}
 
         <Text size="xs" fw={600} tt="uppercase" c="dimmed" className={styles.sectionTitle}>
           Запрос
