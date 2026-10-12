@@ -1,10 +1,12 @@
 import {
   MAX_TRANSLATE_BLOCKS_PER_REQUEST,
+  PROMPT_TRANSLATE_ENGINES,
   type PromptTranslateEngine,
   type TranslateTextRequest,
 } from "@tg-rp-bot/shared";
 import { Transform } from "class-transformer";
 import { ArrayMaxSize, ArrayMinSize, IsIn, IsNotEmpty } from "class-validator";
+import { toTranslateEngine } from "./translate-engine.transform.js";
 
 /** Одно сообщение на любую ошибку тела — как у Hono-контроллера (webapp показывает его как есть). */
 const INVALID = {
@@ -34,7 +36,7 @@ export class TranslateTextDto implements TranslateTextRequest {
   @IsNotEmpty(INVALID)
   targetLang!: string;
 
-  @Transform(({ value }: { value: unknown }) => (value === "ai" ? "ai" : "google"))
-  @IsIn(["google", "ai"])
+  @Transform(toTranslateEngine)
+  @IsIn(PROMPT_TRANSLATE_ENGINES)
   mode: PromptTranslateEngine = "google";
 }

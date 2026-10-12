@@ -93,7 +93,7 @@ export async function switchBranch(chatId: number, messageId: number): Promise<v
 }
 
 /**
- * Переводит сообщение и кэширует результат на сервере (метод google/ai берётся из настроек чата).
+ * Переводит сообщение и кэширует результат на сервере (метод google/yandex/ai берётся из настроек чата).
  * force=true пропускает кэш и пересчитывает перевод заново, перезаписывая его.
  */
 export async function translateMessage(

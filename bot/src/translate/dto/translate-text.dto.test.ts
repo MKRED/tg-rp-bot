@@ -4,7 +4,7 @@ import { TranslateTextDto } from "./translate-text.dto.js";
 
 /**
  * Характеризационная таблица: тело запроса → разобранный запрос или 400, как у Hono-контроллера.
- * Не-строки в blocks молча выкидываются, языки обрезаются, любой mode кроме "ai" — google.
+ * Не-строки в blocks молча выкидываются, языки обрезаются, mode вне google/yandex/ai — google.
  */
 const MSG = "blocks (1..500), sourceLang and targetLang are required";
 const pipe = createValidationPipe();
@@ -24,7 +24,9 @@ describe("TranslateTextDto", () => {
   it.each([
     { body: ok, out: { ...ok, mode: "google" } },
     { body: { ...ok, mode: "ai" }, out: { ...ok, mode: "ai" } },
+    { body: { ...ok, mode: "yandex" }, out: { ...ok, mode: "yandex" } },
     { body: { ...ok, mode: "AI" }, out: { ...ok, mode: "google" } },
+    { body: { ...ok, mode: "Yandex" }, out: { ...ok, mode: "google" } },
     { body: { ...ok, mode: 1 }, out: { ...ok, mode: "google" } },
     { body: { ...ok, sourceLang: "  ru ", targetLang: "\ten\n" }, out: { ...ok, mode: "google" } },
     { body: { ...ok, blocks: ["a", 1, null, "", "b"] }, out: { ...ok, blocks: ["a", "", "b"], mode: "google" } },

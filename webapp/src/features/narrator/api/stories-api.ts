@@ -107,7 +107,7 @@ export function switchBranch(storyId: number, msgId: number): Promise<void> {
 }
 
 /**
- * Переводит бит/директиву; сервер кэширует результат в translations сообщения (метод google/ai —
+ * Переводит бит/директиву; сервер кэширует результат в translations сообщения (метод google/yandex/ai —
  * из настроек истории). force=true пропускает кэш и пересчитывает перевод заново.
  */
 export async function translateStoryMessage(
@@ -157,7 +157,7 @@ export function editStoryBeat(
 
 /**
  * Перевод черновика директивы перед отправкой (эфемерно, без кэша). mode переключает
- * Google ↔ ИИ-промпт перевода из narrator-шаблона истории. Зеркало composeTranslate из RP.
+ * Google, Яндекс или ИИ-промпт перевода из narrator-шаблона истории. Зеркало composeTranslate из RP.
  */
 export async function composeStoryTranslate(
   storyId: number,

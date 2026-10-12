@@ -87,10 +87,11 @@ bot/src/
   translate/    — POST /api/translate/text: безэнтитный батч-перевод абзацев (режим перевода
                   PromptEditorOverlay) — controller / service / dto/ (+ DTO перевода сообщений, общие для rp-chat/ и
                   narrator/); engine/ — движок перевода без Nest
-                  (googleTranslate — неофициальный endpoint без ключа: повтор только 429/5xx/сети с
-                  нарастающей паузой или по Retry-After, в батче абзацы по одному; aiTranslate,
-                  resolveTranslationReasoning, чанкинг блока, разбивка на абзацы, константы), общий с
-                  переводом в rp-chat/ и narrator/
+                  (machineTranslate → googleTranslate / yandexTranslate — неофициальные API без
+                  ключа; translatorRetry: повтор только 429/5xx/сети/капчи с нарастающей паузой или по
+                  Retry-After, в батче абзацы по одному; у Яндекса format=html, *действия* уходят тегами
+                  <i> (yandexMarkup), иначе он портит звёздочки; aiTranslate, resolveTranslationReasoning,
+                  чанкинг блока, разбивка на абзацы, константы), общий с переводом в rp-chat/ и narrator/
   prompt/       — сборка промптов без Nest: promptBuilder (RP-чат, impersonate, сэмплинг пресета) +
                   storyPromptBuilder (narrator) + общий budget, compactionPlan, keywordMatch,
                   storyPromptOrder, templateTokenWeight (у каждого constants/types/test рядом)

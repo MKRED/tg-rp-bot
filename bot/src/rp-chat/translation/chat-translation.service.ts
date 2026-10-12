@@ -6,7 +6,7 @@ import { LlmService } from "../../llm/llm.service.js";
 import logger from "../../logger.js";
 import { PresetsRepository } from "../../presets/presets.repository.js";
 import { RpTemplatesRepository } from "../../rp-templates/rp-templates.repository.js";
-import { aiTranslate, englishLangName, googleTranslate } from "../../translate/engine/index.js";
+import { aiTranslate, englishLangName, machineTranslate } from "../../translate/engine/index.js";
 import { ChatContextService } from "../chat-context.service.js";
 import type { ChatRow } from "../chats/chats.repository.js";
 import { MessagesService } from "../messages/messages.service.js";
@@ -31,7 +31,7 @@ export class ChatTranslationService {
 
   /**
    * Перевод сообщения. Кэш есть и не force — отдаём его; иначе переводим методом из настроек чата
-   * (google/ai) и перезаписываем кэш для языка.
+   * (google/yandex/ai) и перезаписываем кэш для языка.
    */
   async translateMessage(userId: string, chatId: number, msgId: number, req: TranslateMessageRequest): Promise<string> {
     const { targetLang, force } = req;
@@ -44,7 +44,7 @@ export class ChatTranslationService {
       const translation =
         translateMethod === "ai"
           ? await this.aiTranslate(userId, chat, msg.content, targetLang)
-          : await googleTranslate(msg.content, targetLang);
+          : await machineTranslate(translateMethod, msg.content, targetLang);
       await this.messages.saveTranslation(userId, msgId, targetLang, translation);
       return translation;
     } catch (err) {
@@ -63,7 +63,7 @@ export class ChatTranslationService {
     const { text, targetLang, mode } = req;
     const chat = await this.access.requireRow(userId, chatId);
     try {
-      return mode === "ai" ? await this.aiTranslate(userId, chat, text, targetLang) : await googleTranslate(text, targetLang);
+      return mode === "ai" ? await this.aiTranslate(userId, chat, text, targetLang) : await machineTranslate(mode ?? "google", text, targetLang);
     } catch (err) {
       this.logFailure(err, { userId, chatId }, "Failed to translate draft text");
       throw llmHttpError(err);

@@ -5,7 +5,7 @@ import { MissingApiKeyError } from "../../llm/errors.js";
 import { LlmService } from "../../llm/llm.service.js";
 import logger from "../../logger.js";
 import { NarratorTemplatesRepository } from "../../narrator-templates/narrator-templates.repository.js";
-import { englishLangName, googleTranslate, resolveTranslationReasoning } from "../../translate/engine/index.js";
+import { englishLangName, machineTranslate, resolveTranslationReasoning } from "../../translate/engine/index.js";
 import { StoryMessagesRepository } from "../messages/story-messages.repository.js";
 import { StorySettingsRepository } from "../settings/story-settings.repository.js";
 import { StoryContextService } from "../story-context.service.js";
@@ -40,7 +40,7 @@ export class StoryTranslationService {
       const translation =
         translateMethod === "ai"
           ? await this.aiTranslate(userId, story, msg.content, targetLang)
-          : await googleTranslate(msg.content, targetLang);
+          : await machineTranslate(translateMethod, msg.content, targetLang);
       await this.messages.saveTranslation(userId, msgId, targetLang, translation);
       logger.info({ durationMs: Date.now() - t0, userId, storyId, msgId, targetLang, translateMethod }, "Story message translated");
       return translation;
@@ -62,7 +62,7 @@ export class StoryTranslationService {
     const t0 = Date.now();
     try {
       const translation =
-        mode === "ai" ? await this.aiTranslate(userId, story, text, targetLang) : await googleTranslate(text, targetLang);
+        mode === "ai" ? await this.aiTranslate(userId, story, text, targetLang) : await machineTranslate(mode ?? "google", text, targetLang);
       logger.info({ durationMs: Date.now() - t0, userId, storyId, targetLang, mode }, "Story draft translated");
       return translation;
     } catch (err) {

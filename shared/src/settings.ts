@@ -87,7 +87,11 @@ export const PROMPT_TRANSLATE_REASONING_LEVELS = TRANSLATION_REASONING_LEVELS;
 export type PromptTranslateReasoningEffort = (typeof PROMPT_TRANSLATE_REASONING_LEVELS)[number];
 export const DEFAULT_PROMPT_TRANSLATE_REASONING_EFFORT: PromptTranslateReasoningEffort = "off";
 
-export const PROMPT_TRANSLATE_ENGINES = ["google", "ai"] as const;
+/**
+ * Методы перевода: google и yandex — неофициальные бесплатные API без ключа (с сервера бота), ai — запрос
+ * к LLM с ключом пользователя. Неизвестное значение в запросе приводится к google.
+ */
+export const PROMPT_TRANSLATE_ENGINES = ["google", "yandex", "ai"] as const;
 export type PromptTranslateEngine = (typeof PROMPT_TRANSLATE_ENGINES)[number];
 
 export interface TranslateSettings {

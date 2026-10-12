@@ -239,6 +239,7 @@ vitest in both packages, pool `forks`. Details and "why" — [docs/testing.md](d
 | Telegram | Bot API (via HTTP proxy) | `BOT_TOKEN`, `TELEGRAM_PROXY_URL` |
 | DeepSeek | LLM chat completion — the **only active provider**, server-side, per-user (BYOK) | in DB, not env |
 | Tavily | Web search (quota), server-side, per-user (BYOK), via HTTP proxy | in DB, not env |
+| Google / Yandex Translate | Machine translation — **unofficial keyless** endpoints, server-side, direct (no proxy); rate-limited per server IP | none |
 | Postgres | DB (drizzle) | `DATABASE_URL` |
 
 Provider resolution, `MissingApiKeyError`, dormant OpenRouter path and its untouchable request body,

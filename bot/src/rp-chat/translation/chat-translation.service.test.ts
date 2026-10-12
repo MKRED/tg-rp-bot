@@ -5,7 +5,7 @@ vi.mock("../../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), in
 vi.mock("../../db/index.js", () => ({ db: {}, schema: {} }));
 const engine = vi.hoisted(() => ({
   aiTranslate: vi.fn(),
-  googleTranslate: vi.fn(),
+  machineTranslate: vi.fn(),
   englishLangName: (code: string) => `lang:${code}`,
 }));
 const LLM = { complete: vi.fn() };
@@ -17,7 +17,7 @@ type Args = ConstructorParameters<typeof ChatTranslationService>;
 
 const CHAT = { id: 5, activeMessageId: 1, templateId: 3, presetId: 4 };
 
-function setup(method: "google" | "ai" = "google", translations: Record<string, string> | null = null) {
+function setup(method: "google" | "yandex" | "ai" = "google", translations: Record<string, string> | null = null) {
   const access = {
     requireRow: vi.fn().mockResolvedValue(CHAT),
     requireMessage: vi.fn().mockResolvedValue({ chat: CHAT, msg: { id: 9, chatId: 5, content: "Текст", translations } }),
@@ -49,15 +49,23 @@ async function httpError(promise: Promise<unknown>) {
 describe("ChatTranslationService.translateMessage", () => {
   beforeEach(() => {
     engine.aiTranslate.mockReset().mockResolvedValue("AI");
-    engine.googleTranslate.mockReset().mockResolvedValue("GOOGLE");
+    engine.machineTranslate.mockReset().mockResolvedValue("MT");
   });
 
   it("кэш есть и не force — без перевода и записи; force — пересчёт и перезапись", async () => {
     const { service, messages } = setup("google", { en: "cached" });
     await expect(service.translateMessage(1, 5, 9, { targetLang: "en", force: false })).resolves.toBe("cached");
-    expect(engine.googleTranslate).not.toHaveBeenCalled();
-    await expect(service.translateMessage(1, 5, 9, { targetLang: "en", force: true })).resolves.toBe("GOOGLE");
-    expect(messages.saveTranslation).toHaveBeenCalledWith(1, 9, "en", "GOOGLE");
+    expect(engine.machineTranslate).not.toHaveBeenCalled();
+    await expect(service.translateMessage(1, 5, 9, { targetLang: "en", force: true })).resolves.toBe("MT");
+    expect(messages.saveTranslation).toHaveBeenCalledWith(1, 9, "en", "MT");
+    expect(engine.machineTranslate).toHaveBeenCalledWith("google", "Текст", "en");
+  });
+
+  it("метод yandex — машинный перевод Яндексом, без шаблона и пресета", async () => {
+    const { service, templates } = setup("yandex");
+    await expect(service.translateMessage(1, 5, 9, { targetLang: "en" })).resolves.toBe("MT");
+    expect(engine.machineTranslate).toHaveBeenCalledWith("yandex", "Текст", "en");
+    expect(templates.findOne).not.toHaveBeenCalled();
   });
 
   it("метод ai — промпт перевода из RP-шаблона, эффорт из пресета", async () => {
@@ -81,21 +89,23 @@ describe("ChatTranslationService.translateMessage", () => {
 describe("ChatTranslationService.translateText", () => {
   beforeEach(() => {
     engine.aiTranslate.mockReset().mockResolvedValue("AI");
-    engine.googleTranslate.mockReset().mockResolvedValue("GOOGLE");
+    engine.machineTranslate.mockReset().mockResolvedValue("MT");
   });
 
   it("google — без шаблона и пресета; ai — с ними; чат проверяется в обоих", async () => {
     const { service, access, templates } = setup();
-    await expect(service.translateText(1, 5, { text: "a", targetLang: "en", mode: "google" })).resolves.toBe("GOOGLE");
+    await expect(service.translateText(1, 5, { text: "a", targetLang: "en", mode: "google" })).resolves.toBe("MT");
     expect(templates.findOne).not.toHaveBeenCalled();
     await expect(service.translateText(1, 5, { text: "a", targetLang: "en", mode: "ai" })).resolves.toBe("AI");
     expect(templates.findOne).toHaveBeenCalledWith(1, 3);
     expect(access.requireRow).toHaveBeenCalledTimes(2);
+    await expect(service.translateText(1, 5, { text: "b", targetLang: "en", mode: "yandex" })).resolves.toBe("MT");
+    expect(engine.machineTranslate).toHaveBeenLastCalledWith("yandex", "b", "en");
   });
 
-  it("сбой Google — 500 Internal error", async () => {
+  it("сбой машинного переводчика — 500 Internal error", async () => {
     const { service } = setup();
-    engine.googleTranslate.mockRejectedValueOnce(new Error("Google Translate HTTP 429"));
+    engine.machineTranslate.mockRejectedValueOnce(new Error("Google Translate HTTP 429"));
     expect((await httpError(service.translateText(1, 5, { text: "a", targetLang: "en", mode: "google" }))).status).toBe(500);
   });
 

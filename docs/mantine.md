@@ -81,7 +81,7 @@ UI webapp — на Mantine (`@mantine/core`, `@mantine/hooks`, `@mantine/notific
 - **`RpText`** — RP-текст с выделением *действий* и «мыслей»: строчные `span` без своего шрифта (размер
   и цвет — у контейнера), цвета токенов — переменные `--rp-action-color`/`--rp-thought-color` контейнера
   (акцентный пузырь задаёт свои).
-- **`TranslateSheet`** — шторка перевода черновика (Google/ИИ, язык, общий черновик в localStorage),
+- **`TranslateSheet`** — шторка перевода черновика (Google/Яндекс/ИИ — `TRANSLATE_ENGINE_OPTIONS` из `shared/constants`, язык, общий черновик в localStorage),
   `opened`/`onClose`, результат по нажатию вставляется в поле ввода. **`TranslateActionModal`** — «перевести
   заново / удалить перевод» по долгому нажатию там, где нет нативного попапа Telegram. Тоггл перевода
   сообщения — хук `shared/hooks/useTranslatable` (RP-чат и история).

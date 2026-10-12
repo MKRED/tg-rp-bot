@@ -3,16 +3,13 @@ import { ArrowLeftRight, Check, ChevronLeft, Languages } from "lucide-react";
 import { useState } from "react";
 import type { PromptTranslateEngine } from "../../api/promptTranslate";
 import { LANG_OPTIONS } from "../../constants/lang-options";
+import { parseTranslateEngine, TRANSLATE_ENGINE_OPTIONS } from "../../constants/translate-engines";
 import styles from "./PromptEditorOverlay.module.css";
 
 export type TranslateBuffer = "source" | "translation";
 
 const ICON = 20;
 
-const ENGINE_OPTIONS = [
-  { value: "google", label: "Google" },
-  { value: "ai", label: "ИИ" },
-] satisfies { value: PromptTranslateEngine; label: string }[];
 
 const BUFFER_OPTIONS = [
   { value: "source", label: "Оригинал" },
@@ -106,20 +103,20 @@ export function PromptEditorTranslateToolbar({
 
   return (
     <div className={styles.translateToolbar}>
-      <div className={styles.row}>
+      <div className={`${styles.row} ${styles.wrapRow}`}>
         <ActionIcon variant="subtle" className={styles.tool} color="gray" size="lg" onClick={onBack} aria-label="К инструментам текста">
           <ChevronLeft size={ICON} />
         </ActionIcon>
         <SegmentedControl
           size="sm"
-          data={ENGINE_OPTIONS}
+          data={TRANSLATE_ENGINE_OPTIONS}
           value={engine}
-          onChange={(v) => onEngineChange(v as PromptTranslateEngine)}
+          onChange={(v) => onEngineChange(parseTranslateEngine(v))}
           aria-label="Движок перевода"
         />
         <SegmentedControl
           size="sm"
-          className={styles.grow}
+          className={styles.buffer}
           data={BUFFER_OPTIONS}
           value={activeBuffer}
           onChange={(v) => onActiveBufferChange(v as TranslateBuffer)}

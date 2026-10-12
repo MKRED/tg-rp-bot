@@ -3,12 +3,13 @@ import type { PromptTranslateEngine } from "@tg-rp-bot/shared";
 import { Eraser, Languages, SendHorizontal } from "lucide-react";
 import { useState } from "react";
 import type { LangOption } from "../../constants/lang-options";
+import { parseTranslateEngine, TRANSLATE_ENGINE_OPTIONS } from "../../constants/translate-engines";
 import { ResponsiveSheet } from "../ResponsiveSheet";
 import { RpText } from "../RpText";
 import { useComposeTranslate, type ComposeTranslateParams } from "../../hooks/useComposeTranslate";
 import styles from "./TranslateSheet.module.css";
 
-/** Режим перевода черновика: обычный Google Translate либо запрос к нейросети. */
+/** Режим перевода черновика: машинный (Google, Яндекс) либо запрос к нейросети. */
 export type TranslateMode = PromptTranslateEngine;
 
 interface TranslateSheetProps {
@@ -26,14 +27,9 @@ const LANG_KEY = "translate-lang";
 // Единый черновик поля ввода на все чаты/истории (не привязан к конкретному чату).
 const DRAFT_KEY = "translate-draft-text";
 
-const MODE_OPTIONS = [
-  { value: "google", label: "Google" },
-  { value: "ai", label: "ИИ" },
-] satisfies { value: TranslateMode; label: string }[];
-
 /**
  * Шторка перевода черновика сообщения: снизу — поле исходного текста, над ним — результат (нажатие
- * вставляет его в поле ввода чата). Режим Google ↔ ИИ, язык и сам текст поля хранятся в localStorage —
+ * вставляет его в поле ввода чата). Метод (Google / Яндекс / ИИ), язык и сам текст поля хранятся в localStorage —
  * один черновик на все чаты и истории. Содержимое монтируется при открытии.
  */
 export function TranslateSheet({ opened, translate, langOptions, onPick, onClose }: TranslateSheetProps) {
@@ -48,7 +44,7 @@ function TranslateSheetBody({ translate: translateFn, langOptions, onPick }: Omi
   const { loading, result, error, translate, reset } = useComposeTranslate(translateFn);
   // Черновик поля — общий на все чаты/истории, переживает закрытие шторки и перезагрузку.
   const [text, setText] = useState(() => localStorage.getItem(DRAFT_KEY) ?? "");
-  const [mode, setMode] = useState<TranslateMode>(() => (localStorage.getItem(MODE_KEY) === "ai" ? "ai" : "google"));
+  const [mode, setMode] = useState<TranslateMode>(() => parseTranslateEngine(localStorage.getItem(MODE_KEY)));
   const [targetLang, setTargetLang] = useState(() => localStorage.getItem(LANG_KEY) ?? "en");
 
   const changeText = (t: string) => {
@@ -76,7 +72,7 @@ function TranslateSheetBody({ translate: translateFn, langOptions, onPick }: Omi
       <Group gap="xs" wrap="nowrap">
         <SegmentedControl
           size="sm"
-          data={MODE_OPTIONS}
+          data={TRANSLATE_ENGINE_OPTIONS}
           value={mode}
           onChange={(v) => changeMode(v as TranslateMode)}
           aria-label="Способ перевода"

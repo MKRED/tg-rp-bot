@@ -1,6 +1,7 @@
 import { Collapse, Input, SegmentedControl, Select, Stack, Switch } from "@mantine/core";
 import type { AutoTranslateScope, PromptTranslateEngine, TranslateScope } from "@tg-rp-bot/shared";
 import { LANG_OPTIONS } from "../../constants/lang-options";
+import { parseTranslateEngine, TRANSLATE_ENGINE_OPTIONS } from "../../constants/translate-engines";
 import { SettingsCard } from "../SettingsCard";
 
 /** Настройки перевода сообщений — общая часть настроек RP-чата и истории рассказчика. */
@@ -22,10 +23,6 @@ interface TranslateSettingsCardProps {
   description: string;
 }
 
-const METHOD_OPTIONS = [
-  { value: "google", label: "Google" },
-  { value: "ai", label: "ИИ" },
-] satisfies { value: PromptTranslateEngine; label: string }[];
 
 /** Перевод сообщений: тумблер, а под ним — метод, язык, где показывать кнопку и автоперевод. */
 export function TranslateSettingsCard({
@@ -47,13 +44,13 @@ export function TranslateSettingsCard({
         />
         <Collapse expanded={settings.translateEnabled}>
           <Stack gap="md" pt="md">
-            <Input.Wrapper label="Метод" description="Google Translate или запрос к ИИ" size="md">
+            <Input.Wrapper label="Метод" description="Google, Яндекс или запрос к ИИ" size="md">
               <SegmentedControl
                 fullWidth
                 mt={6}
-                data={METHOD_OPTIONS}
+                data={TRANSLATE_ENGINE_OPTIONS}
                 value={settings.translateMethod}
-                onChange={(v) => onUpdate({ translateMethod: v as PromptTranslateEngine })}
+                onChange={(v) => onUpdate({ translateMethod: parseTranslateEngine(v) })}
               />
             </Input.Wrapper>
             <Select

@@ -9,5 +9,5 @@ export {
 } from "./translate.constants.js";
 export { chunkText, joinChunks, translateChunked } from "./translateChunking.js";
 export { joinParagraphs, splitParagraphs, type TextParagraph } from "./translateParagraphs.js";
-export { googleTranslate } from "./googleTranslate.js";
+export { machineTranslate, type MachineTranslateEngine } from "./machineTranslate.js";
 export { aiTranslate, englishLangName, resolveTranslationReasoning } from "./translators.js";

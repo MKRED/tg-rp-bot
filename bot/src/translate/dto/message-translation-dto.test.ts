@@ -38,6 +38,7 @@ const REQUIRED = "text and targetLang are required";
 export const TRANSLATE_TEXT_CASES: { body: unknown; out: object | string }[] = [
   { body: { text: "Привет", targetLang: "en" }, out: { text: "Привет", targetLang: "en", mode: "google" } },
   { body: { text: " a\n\nb ", targetLang: " en ", mode: "ai" }, out: { text: " a\n\nb ", targetLang: "en", mode: "ai" } },
+  { body: { text: "a", targetLang: "en", mode: "yandex" }, out: { text: "a", targetLang: "en", mode: "yandex" } },
   { body: { text: "a", targetLang: "en", mode: "AI" }, out: { text: "a", targetLang: "en", mode: "google" } },
   { body: { text: "a", targetLang: "en", mode: 1 }, out: { text: "a", targetLang: "en", mode: "google" } },
   { body: {}, out: REQUIRED },

@@ -4,7 +4,7 @@ import type { TranslateMode } from "../../../shared/components/TranslateSheet";
 
 /**
  * Перевод черновика сообщения перед отправкой (эфемерно, без кэша). Тот же эндпоинт, что и у
- * перевода вариантов impersonate; mode переключает Google ↔ ИИ-промпт перевода из пресета.
+ * перевода вариантов impersonate; mode — Google, Яндекс или ИИ-промпт перевода из пресета.
  */
 export async function composeTranslate(
   chatId: number,

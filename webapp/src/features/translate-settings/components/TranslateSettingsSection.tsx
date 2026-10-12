@@ -2,18 +2,13 @@ import { Input, SegmentedControl, Select } from "@mantine/core";
 import { PromptEditorField } from "../../../shared/components/PromptEditorField";
 import { SettingsCard } from "../../../shared/components/SettingsCard";
 import { LANG_OPTIONS } from "../../../shared/constants/lang-options";
+import { parseTranslateEngine, TRANSLATE_ENGINE_OPTIONS } from "../../../shared/constants/translate-engines";
 import type { useTranslateSettings } from "../hooks/useTranslateSettings";
 import {
   PROMPT_TRANSLATE_REASONING_LABELS,
   PROMPT_TRANSLATE_REASONING_LEVELS,
   type PromptTranslateReasoningEffort,
-  type TranslateSettings,
 } from "../types/translateSettings";
-
-const ENGINE_OPTIONS = [
-  { value: "google", label: "Google" },
-  { value: "ai", label: "ИИ" },
-] as const satisfies { value: TranslateSettings["engine"]; label: string }[];
 
 const LANG_DATA = LANG_OPTIONS.map(({ value, label }) => ({ value, label }));
 
@@ -45,9 +40,9 @@ export function TranslateSettingsSection({
         <SegmentedControl
           fullWidth
           mt={6}
-          data={ENGINE_OPTIONS}
+          data={TRANSLATE_ENGINE_OPTIONS}
           value={settings.engine}
-          onChange={(value) => setEngine(value as TranslateSettings["engine"])}
+          onChange={(value) => setEngine(parseTranslateEngine(value))}
           aria-label="Движок перевода по умолчанию"
         />
       </Input.Wrapper>

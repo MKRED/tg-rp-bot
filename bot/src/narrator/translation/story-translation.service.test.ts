@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
 vi.mock("../../db/index.js", () => ({ db: {}, schema: {} }));
-const googleTranslate = vi.hoisted(() => vi.fn());
-vi.mock("../../translate/engine/index.js", async (importOriginal) => ({ ...(await importOriginal<object>()), googleTranslate }));
+const machineTranslate = vi.hoisted(() => vi.fn());
+vi.mock("../../translate/engine/index.js", async (importOriginal) => ({ ...(await importOriginal<object>()), machineTranslate }));
 const aiTranslateStoryText = vi.hoisted(() => vi.fn());
 const LLM = { complete: vi.fn() };
 vi.mock("./ai-translate-story-text.js", () => ({ aiTranslateStoryText }));
@@ -35,14 +35,14 @@ function setup(translations: Record<string, string> | null = null, translateMeth
 
 describe("StoryTranslationService", () => {
   beforeEach(() => {
-    googleTranslate.mockReset().mockResolvedValue("Beat");
+    machineTranslate.mockReset().mockResolvedValue("Beat");
     aiTranslateStoryText.mockReset().mockResolvedValue("AI beat");
   });
 
   it("кэш есть и не force — без переводчика", async () => {
     const { service, messages } = setup({ en: "cached" });
     expect(await service.translateMessage(1, 5, 9, { targetLang: "en" })).toBe("cached");
-    expect(googleTranslate).not.toHaveBeenCalled();
+    expect(machineTranslate).not.toHaveBeenCalled();
     expect(messages.saveTranslation).not.toHaveBeenCalled();
   });
 
@@ -56,7 +56,15 @@ describe("StoryTranslationService", () => {
   it("черновик без mode — Google, шаблон не читаем", async () => {
     const { service, templates } = setup();
     expect(await service.translateText(1, 5, { text: "Привет", targetLang: "en" })).toBe("Beat");
+    expect(machineTranslate).toHaveBeenCalledWith("google", "Привет", "en");
     expect(templates.findOne).not.toHaveBeenCalled();
+  });
+
+  it("метод yandex в настройках — бит переводит Яндекс", async () => {
+    const { service, messages } = setup(null, "yandex");
+    expect(await service.translateMessage(1, 5, 9, { targetLang: "en" })).toBe("Beat");
+    expect(machineTranslate).toHaveBeenCalledWith("yandex", "Бит", "en");
+    expect(messages.saveTranslation).toHaveBeenCalledWith(1, 9, "en", "Beat");
   });
 
   it("нет ключа DeepSeek — 400 no_api_key с подсказкой", async () => {

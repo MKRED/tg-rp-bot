@@ -5,6 +5,7 @@ vi.mock("../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), info:
 vi.mock("../db/index.js", () => ({ db: {}, schema: {} }));
 const engine = vi.hoisted(() => ({
   googleTranslate: vi.fn(),
+  yandexTranslate: vi.fn(),
   aiTranslate: vi.fn(),
 }));
 vi.mock("./engine/translators.js", async (importOriginal) => ({
@@ -12,6 +13,7 @@ vi.mock("./engine/translators.js", async (importOriginal) => ({
   aiTranslate: engine.aiTranslate,
 }));
 vi.mock("./engine/googleTranslate.js", () => ({ googleTranslate: engine.googleTranslate }));
+vi.mock("./engine/yandexTranslate.js", () => ({ yandexTranslate: engine.yandexTranslate }));
 
 const { TranslateService } = await import("./translate.service.js");
 const { MissingApiKeyError } = await import("../llm/errors.js");
@@ -23,7 +25,7 @@ function setup(settings: object = SETTINGS) {
   const repo = { get: vi.fn().mockResolvedValue(settings) };
   return { service: new TranslateService(repo as unknown as Args[0], LLM as unknown as Args[1]), repo };
 }
-const req = (mode: "google" | "ai", blocks = ["один", "два"]) => ({ blocks, sourceLang: "ru", targetLang: "en", mode });
+const req = (mode: "google" | "yandex" | "ai", blocks = ["один", "два"]) => ({ blocks, sourceLang: "ru", targetLang: "en", mode });
 
 async function httpError(promise: Promise<unknown>) {
   const err = await promise.catch((e: unknown) => e);
@@ -35,6 +37,7 @@ describe("TranslateService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     engine.googleTranslate.mockImplementation(async (text: string) => `g:${text}`);
+    engine.yandexTranslate.mockImplementation(async (text: string) => `y:${text}`);
     engine.aiTranslate.mockImplementation(async (_llm: unknown, _t: string, text: string) => `ai:${text}`);
   });
 
@@ -42,6 +45,14 @@ describe("TranslateService", () => {
     const { service, repo } = setup();
     await expect(service.translateBlocks(1, req("google"))).resolves.toEqual(["g:один", "g:два"]);
     expect(engine.googleTranslate).toHaveBeenCalledWith("один", "en");
+    expect(repo.get).not.toHaveBeenCalled();
+  });
+
+  it("yandex: переводы 1:1 по порядку, Google не зовётся, настройки не читаются", async () => {
+    const { service, repo } = setup();
+    await expect(service.translateBlocks(1, req("yandex"))).resolves.toEqual(["y:один", "y:два"]);
+    expect(engine.yandexTranslate).toHaveBeenCalledWith("один", "en");
+    expect(engine.googleTranslate).not.toHaveBeenCalled();
     expect(repo.get).not.toHaveBeenCalled();
   });
 

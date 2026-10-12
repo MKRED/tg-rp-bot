@@ -10,7 +10,7 @@ import {
   aiTranslate,
   DEFAULT_TRANSLATION_TEMPLATE,
   englishLangName,
-  googleTranslate,
+  machineTranslate,
   MAX_CHARS_PER_CALL,
   resolveTranslationReasoning,
   TRANSLATE_BLOCK_CONCURRENCY,
@@ -57,7 +57,7 @@ export class TranslateService {
     userId: string,
     { targetLang, mode }: TranslateTextRequest,
   ): Promise<(text: string) => Promise<string>> {
-    if (mode === "google") return (text) => googleTranslate(text, targetLang);
+    if (mode !== "ai") return (text) => machineTranslate(mode, text, targetLang);
 
     const settings = await this.translateSettings.get(userId);
     const template = settings.promptTemplate?.trim() || DEFAULT_TRANSLATION_TEMPLATE;

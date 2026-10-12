@@ -1,6 +1,7 @@
 import { type ChatTranslateTextRequest, PROMPT_TRANSLATE_ENGINES, type PromptTranslateEngine } from "@tg-rp-bot/shared";
 import { Transform } from "class-transformer";
 import { IsIn, ValidateBy } from "class-validator";
+import { toTranslateEngine } from "./translate-engine.transform.js";
 
 const REQUIRED = "text and targetLang are required";
 
@@ -17,7 +18,7 @@ const NotBlank = () =>
 /**
  * Тело POST /api/chats/:id/translate-text и /api/stories/:id/translate-text — эфемерный перевод
  * черновика (и вариантов impersonate в RP).
- * text уходит в перевод как есть (без trim — важны переносы); без mode — Google Translate.
+ * text уходит в перевод как есть (без trim — важны переносы); без mode (или с неизвестным) — Google Translate.
  */
 export class MessageTranslateTextDto implements ChatTranslateTextRequest {
   @Transform(({ value }) => (typeof value === "string" ? value : ""))
@@ -28,7 +29,7 @@ export class MessageTranslateTextDto implements ChatTranslateTextRequest {
   @NotBlank()
   targetLang: string = "";
 
-  @Transform(({ value }) => (value === "ai" ? "ai" : "google"))
+  @Transform(toTranslateEngine)
   @IsIn(PROMPT_TRANSLATE_ENGINES)
   mode: PromptTranslateEngine = "google";
 }
