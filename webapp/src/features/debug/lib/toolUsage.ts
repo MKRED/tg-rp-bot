@@ -18,11 +18,9 @@ export interface ToolUsage {
 type RawToolCall = { id?: unknown; function?: { name?: unknown } };
 type RawMessage = { role?: unknown; tool_calls?: unknown; tool_call_id?: unknown };
 
-const WEB_SEARCH = "web_search";
-
 /** Человекочитаемые подписи известных инструментов; неизвестное имя показываем как есть. */
 const TOOL_LABELS: Record<string, string> = {
-  [WEB_SEARCH]: "веб-поиск",
+  web_search: "веб-поиск",
   ask_user: "вопрос пользователю",
 };
 
@@ -73,20 +71,24 @@ export function describeToolUsage(record: Pick<LlmDebugRecord, "request" | "resp
 }
 
 /**
- * Короткая пометка для шапки записи: что модель вызвала в этом раунде и опирался ли запрос на
- * результаты поиска. Реплей ask_user в шапку не выносим — это не событие раунда, а постоянный фон
- * всех запросов блока после ответа. undefined — помечать нечего.
+ * Короткая пометка для шапки записи: только то, что модель вызвала в ЭТОМ раунде. Результаты
+ * инструментов в истории в шапку не выносим — контекст блока (поиски, ответы ask_user) сохраняется и
+ * реплеится во все следующие запросы карточки, так что пометка висела бы на каждой записи и ничего
+ * не сообщала. Они видны в развёрнутой записи (toolUsageDetails). undefined — помечать нечего.
  */
 export function toolUsageSummary(usage: ToolUsage): string | undefined {
-  const parts: string[] = [];
-  if (usage.called.length > 0) parts.push(`вызов: ${usage.called.map(toolLabel).join(", ")}`);
-  if (usage.resultsInHistory.includes(WEB_SEARCH)) parts.push("с результатами поиска");
-  return parts.length > 0 ? parts.join(" · ") : undefined;
+  return usage.called.length > 0 ? `вызов: ${usage.called.map(toolLabel).join(", ")}` : undefined;
 }
 
-/** Строка для развёрнутой записи: предложенные и вызванные инструменты. undefined — инструментов не было. */
+/**
+ * Строка для развёрнутой записи: предложенные и вызванные инструменты и чьи результаты уже лежат в
+ * истории запроса. undefined — инструменты в записи никак не участвуют.
+ */
 export function toolUsageDetails(usage: ToolUsage): string | undefined {
-  if (usage.offered.length === 0 && usage.called.length === 0) return undefined;
+  const { offered, called, resultsInHistory } = usage;
+  if (offered.length === 0 && called.length === 0 && resultsInHistory.length === 0) return undefined;
   const list = (items: string[]) => (items.length > 0 ? items.join(", ") : "нет");
-  return `Инструменты: предложены — ${list(usage.offered)}; вызваны — ${list(usage.called)}`;
+  const parts = [`предложены — ${list(offered)}`, `вызваны — ${list(called)}`];
+  if (resultsInHistory.length > 0) parts.push(`результаты в контексте — ${list(resultsInHistory)}`);
+  return `Инструменты: ${parts.join("; ")}`;
 }

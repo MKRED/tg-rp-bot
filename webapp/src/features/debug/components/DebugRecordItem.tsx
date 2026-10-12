@@ -48,10 +48,17 @@ export function DebugRecordItem({ record, headK, tailK }: { record: LlmDebugReco
         <Group wrap="nowrap" gap="sm">
           <div className={styles.summary}>
             <Text fw={500}>{LABEL_TEXT[record.label]}</Text>
-            <Text size="sm" c="dimmed" truncate>
-              {toolSummary ? `${record.model} · ${toolSummary}` : record.model}
+            {/* Без truncate и пометка инструментов отдельной строкой: на телефоне под текст остаётся
+                ~190px, и одна строка «модель · вызов · статус» обрезалась многоточием. */}
+            <Text size="sm" c="dimmed">
+              {record.model}
               {!r.ok && ` · ${statusTitle}`}
             </Text>
+            {toolSummary && (
+              <Text size="sm" c="dimmed">
+                {toolSummary}
+              </Text>
+            )}
           </div>
           <Text size="xs" c="dimmed">
             {fmtTime(record.at)}

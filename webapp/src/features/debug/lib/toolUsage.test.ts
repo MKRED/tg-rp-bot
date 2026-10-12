@@ -31,7 +31,25 @@ describe("describeToolUsage", () => {
     );
     expect(usage).toEqual({ offered: [], called: [], resultsInHistory: ["ask_user"] });
     expect(toolUsageSummary(usage)).toBeUndefined();
-    expect(toolUsageDetails(usage)).toBeUndefined();
+    expect(toolUsageDetails(usage)).toBe(
+      "Инструменты: предложены — нет; вызваны — нет; результаты в контексте — ask_user",
+    );
+  });
+
+  it("сохранённые результаты поиска в истории без вызова в этом раунде — шапка пустая", () => {
+    const usage = describeToolUsage(
+      record({
+        messages: [
+          { role: "assistant", content: null, tool_calls: [call("web_search_base_0", "web_search")] },
+          { role: "tool", tool_call_id: "web_search_base_0", content: "[]" },
+        ],
+        tools: [tool("web_search")],
+      }),
+    );
+    expect(toolUsageSummary(usage)).toBeUndefined();
+    expect(toolUsageDetails(usage)).toBe(
+      "Инструменты: предложены — web_search; вызваны — нет; результаты в контексте — web_search",
+    );
   });
 
   it("результат web_search в истории + новый вызов поиска в этом раунде", () => {
@@ -49,8 +67,10 @@ describe("describeToolUsage", () => {
       ),
     );
     expect(usage).toEqual({ offered: ["web_search"], called: ["web_search"], resultsInHistory: ["web_search"] });
-    expect(toolUsageSummary(usage)).toBe("вызов: веб-поиск · с результатами поиска");
-    expect(toolUsageDetails(usage)).toBe("Инструменты: предложены — web_search; вызваны — web_search");
+    expect(toolUsageSummary(usage)).toBe("вызов: веб-поиск");
+    expect(toolUsageDetails(usage)).toBe(
+      "Инструменты: предложены — web_search; вызваны — web_search; результаты в контексте — web_search",
+    );
   });
 
   it("инструмент предложен, но не вызван — в шапке пусто, в деталях видно", () => {
