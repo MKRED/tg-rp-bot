@@ -23,8 +23,7 @@ interface LangPickerProps {
 /**
  * Пикер целевого языка перевода. Вместо нативного <select> рисует свой список прямо в интерфейсе
  * шторы (нативное меню в Telegram webview выглядит чужеродно). Направление раскрытия и высота —
- * общий useDropdownPosition (тот же кусок использует DropdownPicker в generation-presets/
- * llm-settings); здесь остаётся свой компактный pill-вариант разметки/CSS. Закрывается по выбору,
+ * useDropdownPosition; здесь — компактный pill-вариант разметки/CSS. Закрывается по выбору,
  * клику вне или скролл.
  */
 export function LangPicker({ value, onChange, options, compact }: LangPickerProps) {

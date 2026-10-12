@@ -4,21 +4,15 @@ import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { CharacterAvatar, MAX_CHARACTERS_PER_USER, useCharacters } from "../../features/characters";
 import { ListRow } from "../../shared/components/ListCard";
 import { ListPage } from "../../shared/components/ListPage";
-
-/** Русское склонение слова «приветствие» по числу (1 приветствие, 2 приветствия, 5 приветствий). */
-function pluralGreetings(n: number): string {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return "приветствие";
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "приветствия";
-  return "приветствий";
-}
+import { pluralRu } from "../../shared/text/pluralRu";
 
 /** Подпись строки списка: теги через запятую + число вариантов первого сообщения. */
 function subtitleOf(tags: string[], firstMessageCount: number): string {
   const parts: string[] = [];
   if (tags.length > 0) parts.push(tags.join(", "));
-  parts.push(`${firstMessageCount} ${pluralGreetings(firstMessageCount)}`);
+  parts.push(
+    `${firstMessageCount} ${pluralRu(firstMessageCount, ["приветствие", "приветствия", "приветствий"])}`,
+  );
   return parts.join(" · ");
 }
 

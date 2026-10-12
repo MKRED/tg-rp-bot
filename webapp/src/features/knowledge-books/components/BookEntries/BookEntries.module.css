@@ -1,0 +1,16 @@
+/* Строки — во всю ширину карточки (поверх её внутреннего отступа): разделители и фон нажатия
+   доходят до краёв, как в обычном списке. */
+.rows {
+  margin-inline: calc(-1 * var(--mantine-spacing-md));
+}
+
+.order {
+  display: flex;
+}
+
+/* Недоступная стрелка (край списка) — просто бледная, без серой плашки disabled от Mantine. */
+.arrow:disabled,
+.arrow[data-disabled] {
+  background-color: transparent;
+  opacity: 0.3;
+}

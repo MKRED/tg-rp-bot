@@ -34,7 +34,6 @@ export function ResponsiveSheet({ opened, onClose, title, children }: Responsive
       onClose={onClose}
       title={title}
       position="bottom"
-      size="auto"
       classNames={{ body: styles.drawerBody, content: styles.drawerContent }}
     >
       {children}

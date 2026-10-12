@@ -3,8 +3,7 @@ import { computeDropPosition, type DropPosition } from "./computeDropPosition";
 
 const MENU_GAP = 6;
 const VIEWPORT_MARGIN = 8;
-// Ширина "таблетки" LangPicker (см. min-width в LangPicker.css) — DropdownPicker меню full-width
-// и это значение не использует, но общая геометрия для обоих потребителей.
+// Ширина "таблетки" LangPicker (см. min-width в LangPicker.css).
 const MIN_MENU_WIDTH = 160;
 
 function safeAreaInset(varName: string): number {
@@ -17,9 +16,9 @@ function safeAreaInset(varName: string): number {
  * Управляет открытием выпадающего меню поверх триггера: перед открытием меряет реальное место
  * вокруг триггера (getBoundingClientRect) и выбирает сторону/высоту через computeDropPosition,
  * закрывает меню по клику вне и по скроллу (меню — position:absolute и после прокрутки страницы
- * съезжает вместе с триггером, рискуя зависнуть за краем вьюпорта). Общий кусок для всех
- * "самодельных" выпадающих списков проекта (замена нативного <select>, который Telegram webview
- * на ПК рисует системно-белым popup — см. DropdownPicker/LangPicker).
+ * съезжает вместе с триггером, рискуя зависнуть за краем вьюпорта). Нужен самодельному списку
+ * LangPicker (замена нативного <select>, который Telegram webview на ПК рисует системно-белым
+ * popup); на Mantine-экранах вместо него — Select.
  */
 export function useDropdownPosition() {
   const [open, setOpen] = useState(false);

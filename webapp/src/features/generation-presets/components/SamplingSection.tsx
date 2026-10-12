@@ -1,3 +1,4 @@
+import { SettingsCard } from "../../../shared/components/SettingsCard";
 import { SAMPLING_SPECS, type SamplingKey, type SamplingState } from "../lib/param-specs";
 import { SamplingSlider } from "./SamplingSlider";
 
@@ -6,10 +7,13 @@ interface SamplingSectionProps {
   onChange: (key: SamplingKey, value: number, enabled: boolean) => void;
 }
 
-/** Секция параметров сэмплинга: рендерит слайдер на каждый SAMPLING_SPECS. */
+/** Карточка параметров сэмплинга: тумблер + слайдер на каждый SAMPLING_SPECS. */
 export function SamplingSection({ state, onChange }: SamplingSectionProps) {
   return (
-    <div className="preset-sampling">
+    <SettingsCard
+      title="Сэмплинг"
+      description="Тонкая настройка выбора слов. Выключенные параметры не передаются — модель берёт свои значения."
+    >
       {SAMPLING_SPECS.map((spec) => {
         const field = state[spec.key];
         return (
@@ -23,6 +27,6 @@ export function SamplingSection({ state, onChange }: SamplingSectionProps) {
           />
         );
       })}
-    </div>
+    </SettingsCard>
   );
 }

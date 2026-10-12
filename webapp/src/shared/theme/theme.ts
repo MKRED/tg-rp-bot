@@ -55,5 +55,8 @@ export const buildTheme = (palette: Palette, fonts: FontPair) =>
       Popover: { defaultProps: { transitionProps: overlayTransition } },
       Menu: { defaultProps: { transitionProps: overlayTransition } },
       Tooltip: { defaultProps: { transitionProps: overlayTransition } },
+      Collapse: {
+        defaultProps: { transitionDuration: MOTION_DURATION_MS, transitionTimingFunction: MOTION_EASE_CSS },
+      },
     },
   });

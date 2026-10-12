@@ -139,7 +139,7 @@ tgui-компонента под конкретную задачу — орие�
 - `SectionActions` — гуттер для `Button` внутри `Section` (§1.4.3 telegram-ui.md).
 - `RpText` — не обёртка над tgui, а парсер разметки ролеплей-текста (курсив/действия); используется
   **внутри** `Text`/`Caption` как children, а не вместо них.
-- `TranslateSheet`, `PageStateBoundary`, `DropdownPicker` и т. п. — компонуют `Cell`/`Section`/
+- `TranslateSheet` и т. п. — компонуют `Cell`/`Section`/
   `Spinner`/Typography под конкретный доменный сценарий, не изобретая новую типографику или карточную
   раскладку с нуля.
 

@@ -1,12 +1,12 @@
-import { Slider, Switch, Text } from "@telegram-apps/telegram-ui";
-import { FieldHint } from "../../../shared/components/FieldHint";
+import { Collapse, Slider, Switch, Text } from "@mantine/core";
 import type { SamplingSpec } from "../lib/param-specs";
+import styles from "./SamplingSlider.module.css";
 
 interface SamplingSliderProps {
   spec: SamplingSpec;
   /** Текущее значение (сохраняется даже когда тумблер выключен — чтобы off→on не терял ввод). */
   value: number;
-  /** Включена ли передача параметра в запрос. Выключен → слайдер неактивен, в payload уйдёт null. */
+  /** Включена ли передача параметра в запрос. Выключен → слайдер спрятан, в payload уйдёт null. */
   enabled: boolean;
   onValue: (value: number) => void;
   onEnabled: (enabled: boolean) => void;
@@ -18,32 +18,45 @@ function formatValue(value: number, step: number): string {
 }
 
 /**
- * Один параметр сэмплинга: подпись + тумблер «передавать» + слайдер с видимым диапазоном
- * и текущим значением + подсказка. Значение и флаг включения — независимые поля состояния
- * (хранятся в PresetForm), поэтому выключение тумблера не стирает выбранное число.
+ * Один параметр сэмплинга: тумблер «передавать» с подсказкой и текущим значением справа, под ним —
+ * слайдер, раскрывающийся только у включённых параметров (выключенных большинство — так карточка
+ * остаётся короткой). Значение и флаг включения — независимые поля состояния PresetForm, поэтому
+ * выключение тумблера не стирает выбранное число.
  */
 export function SamplingSlider({ spec, value, enabled, onValue, onEnabled }: SamplingSliderProps) {
+  const format = (v: number) => formatValue(v, spec.step);
   return (
-    <div className="preset-slider">
-      <div className="preset-slider__head">
-        <Text className="preset-slider__label">{spec.label}</Text>
-        <Text className="preset-slider__value">
-          {enabled ? formatValue(value, spec.step) : "—"}
-        </Text>
-        {/* Обёртка с flex-shrink:0 — чтобы Switch не сжимался рядом с подписью/значением. */}
-        <span className="preset-switch">
-          <Switch checked={enabled} onChange={(e) => onEnabled(e.target.checked)} />
-        </span>
+    <div>
+      <div className={styles.head}>
+        <Switch
+          className={styles.switch}
+          label={spec.label}
+          description={spec.hint}
+          checked={enabled}
+          onChange={(e) => onEnabled(e.currentTarget.checked)}
+        />
+        {enabled && (
+          <Text fw={500} className={styles.value}>
+            {format(value)}
+          </Text>
+        )}
       </div>
-      <Slider
-        min={spec.min}
-        max={spec.max}
-        step={spec.step}
-        value={value}
-        disabled={!enabled}
-        onChange={(v) => onValue(v)}
-      />
-      <FieldHint>{spec.hint}</FieldHint>
+      <Collapse expanded={enabled}>
+        <Slider
+          className={styles.slider}
+          min={spec.min}
+          max={spec.max}
+          step={spec.step}
+          value={value}
+          label={format}
+          thumbLabel={spec.label}
+          marks={[
+            { value: spec.min, label: format(spec.min) },
+            { value: spec.max, label: format(spec.max) },
+          ]}
+          onChange={onValue}
+        />
+      </Collapse>
     </div>
   );
 }

@@ -1,22 +1,31 @@
-import { Input } from "@telegram-apps/telegram-ui";
-import { HintedInput } from "../../../shared/components/HintedInput";
-import { SwitchRow } from "./SwitchRow";
+import { Collapse, NumberInput, Switch, TextInput } from "@mantine/core";
+import { SettingsCard } from "../../../shared/components/SettingsCard";
 
 interface BasicsSectionProps {
   name: string;
   contextUnlimited: boolean;
-  /** Хранятся строками, чтобы поле можно было очистить (пусто → null на submit). */
-  contextSize: string;
-  maxTokens: string;
+  /** Пустая строка — поле очищено (на submit уйдёт null). */
+  contextSize: string | number;
+  maxTokens: string | number;
   streaming: boolean;
   onName: (value: string) => void;
   onContextUnlimited: (value: boolean) => void;
-  onContextSize: (value: string) => void;
-  onMaxTokens: (value: string) => void;
+  onContextSize: (value: string | number) => void;
+  onMaxTokens: (value: string | number) => void;
   onStreaming: (value: boolean) => void;
 }
 
-/** Базовые поля: название, лимиты токенов (контекст/ответ), стриминг. */
+/** Общие лимиты токенов, целое ≥ 1 с разделителем разрядов (8 192 читается лучше 8192). */
+const tokenInputProps = {
+  allowDecimal: false,
+  allowNegative: false,
+  min: 1,
+  thousandSeparator: " ",
+  hideControls: true,
+  inputMode: "numeric",
+} as const;
+
+/** Карточка «Основное»: название, лимиты токенов (контекст/ответ), стриминг. */
 export function BasicsSection({
   name,
   contextUnlimited,
@@ -30,50 +39,51 @@ export function BasicsSection({
   onStreaming,
 }: BasicsSectionProps) {
   return (
-    <>
-      <Input
-        header="Название"
+    <SettingsCard title="Основное">
+      <TextInput
+        label="Название"
         placeholder="Название пресета"
+        withAsterisk
         value={name}
-        onChange={(e) => onName(e.target.value)}
+        onChange={(e) => onName(e.currentTarget.value)}
       />
-
-      <SwitchRow
-        label="Неограниченный размер контекста"
-        hint="Не урезать историю — отправлять модели всё, что помещается в её окно."
-        checked={contextUnlimited}
-        onChange={onContextUnlimited}
-      />
-
-      {/* Размер контекста скрыт, когда выбран неограниченный. */}
-      {!contextUnlimited && (
-        <HintedInput
-          header="Размер контекста (токены)"
-          type="number"
-          inputMode="numeric"
-          placeholder="Например, 8192"
-          hint="Сколько токенов истории удерживать в запросе."
-          value={contextSize}
-          onChange={(e) => onContextSize(e.target.value)}
+      {/* Тумблер и раскрывашка — один ребёнок Stack: свёрнутый Collapse отдельным ребёнком всё равно
+          получил бы gap и дал двойной отступ. Поэтому отступ — внутри раскрываемого блока. */}
+      <div>
+        <Switch
+          label="Неограниченный контекст"
+          description="Не урезать историю — отправлять модели всё, что помещается в её окно."
+          checked={contextUnlimited}
+          onChange={(e) => onContextUnlimited(e.currentTarget.checked)}
         />
-      )}
-
-      <HintedInput
-        header="Максимальная длина ответа (токены)"
-        type="number"
-        inputMode="numeric"
-        placeholder="Например, 1024"
-        hint="Верхняя граница длины ответа модели в токенах."
+        {/* Размер контекста не нужен при неограниченном — прячем с анимацией высоты; значение остаётся
+            в состоянии формы, так что повторное выключение тумблера его не теряет. */}
+        <Collapse expanded={!contextUnlimited}>
+          <NumberInput
+            pt="md"
+            label="Размер контекста, токенов"
+            description="Сколько токенов истории удерживать в запросе."
+            placeholder="Например, 8 192"
+            value={contextSize}
+            onChange={onContextSize}
+            {...tokenInputProps}
+          />
+        </Collapse>
+      </div>
+      <NumberInput
+        label="Максимальная длина ответа, токенов"
+        description="Верхняя граница длины ответа модели."
+        placeholder="Например, 1 024"
         value={maxTokens}
-        onChange={(e) => onMaxTokens(e.target.value)}
+        onChange={onMaxTokens}
+        {...tokenInputProps}
       />
-
-      <SwitchRow
+      <Switch
         label="Стриминг текста"
-        hint="Показывать ответ по мере генерации, а не целиком в конце."
+        description="Показывать ответ по мере генерации, а не целиком в конце."
         checked={streaming}
-        onChange={onStreaming}
+        onChange={(e) => onStreaming(e.currentTarget.checked)}
       />
-    </>
+    </SettingsCard>
   );
 }

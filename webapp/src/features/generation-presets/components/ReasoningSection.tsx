@@ -1,6 +1,11 @@
-import { EffortPicker } from "./EffortPicker";
-import { SwitchRow } from "./SwitchRow";
-import { type ReasoningEffort } from "../types/preset";
+import { Collapse, Select, Switch } from "@mantine/core";
+import { SettingsCard } from "../../../shared/components/SettingsCard";
+import { REASONING_EFFORTS, REASONING_EFFORT_LABELS, type ReasoningEffort } from "../types/preset";
+
+const EFFORT_OPTIONS = REASONING_EFFORTS.map((effort) => ({
+  value: effort,
+  label: REASONING_EFFORT_LABELS[effort],
+}));
 
 interface ReasoningSectionProps {
   requestReasoning: boolean;
@@ -9,7 +14,7 @@ interface ReasoningSectionProps {
   onReasoningEffort: (value: ReasoningEffort) => void;
 }
 
-/** Секция рассуждения: тумблер «запрашивать рассуждение» + выбор уровня (виден при включении). */
+/** Карточка «Рассуждение»: тумблер «запрашивать» + уровень (раскрывается при включении). */
 export function ReasoningSection({
   requestReasoning,
   reasoningEffort,
@@ -17,14 +22,28 @@ export function ReasoningSection({
   onReasoningEffort,
 }: ReasoningSectionProps) {
   return (
-    <>
-      <SwitchRow
-        label="Запрашивать рассуждение"
-        hint="Просит модель «думать» перед ответом (только для reasoning-моделей)."
-        checked={requestReasoning}
-        onChange={onRequestReasoning}
-      />
-      {requestReasoning && <EffortPicker value={reasoningEffort} onChange={onReasoningEffort} />}
-    </>
+    <SettingsCard title="Рассуждение">
+      {/* Отступ над списком — внутри Collapse, а не gap карточки: иначе в свёрнутом виде под
+          тумблером оставалась бы пустая полоса. */}
+      <div>
+        <Switch
+          label="Запрашивать рассуждение"
+          description="Модель «думает» перед ответом (только reasoning-модели)."
+          checked={requestReasoning}
+          onChange={(e) => onRequestReasoning(e.currentTarget.checked)}
+        />
+        <Collapse expanded={requestReasoning}>
+          <Select
+            pt="md"
+            label="Уровень рассуждения"
+            data={EFFORT_OPTIONS}
+            value={reasoningEffort}
+            // Значение обязательно: при включённом рассуждении уровень уходит в запрос.
+            allowDeselect={false}
+            onChange={(v) => v && onReasoningEffort(v as ReasoningEffort)}
+          />
+        </Collapse>
+      </div>
+    </SettingsCard>
   );
 }

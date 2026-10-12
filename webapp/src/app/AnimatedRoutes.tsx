@@ -88,6 +88,9 @@ const BooksListPage = lazy(() =>
 const BookEditPage = lazy(() =>
   import("../pages/knowledge-books/BookEditPage").then((m) => ({ default: m.BookEditPage }))
 );
+const EntryEditPage = lazy(() =>
+  import("../pages/knowledge-books/EntryEditPage").then((m) => ({ default: m.EntryEditPage }))
+);
 const TemplatesListPage = lazy(() =>
   import("../pages/narrator-templates/TemplatesListPage").then((m) => ({ default: m.TemplatesListPage }))
 );
@@ -157,6 +160,8 @@ export function AnimatedRoutes() {
           <Route path={ROUTES.books} element={<BooksListPage />} />
           <Route path={ROUTES.bookNew} element={<BookEditPage />} />
           <Route path={ROUTES.bookEdit} element={<BookEditPage />} />
+          <Route path={ROUTES.bookEntryNew} element={<EntryEditPage />} />
+          <Route path={ROUTES.bookEntryEdit} element={<EntryEditPage />} />
           <Route path={ROUTES.narratorTemplates} element={<TemplatesListPage />} />
           <Route path={ROUTES.narratorTemplateNew} element={<TemplateEditPage />} />
           <Route path={ROUTES.narratorTemplateEdit} element={<TemplateEditPage />} />

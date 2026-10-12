@@ -299,9 +299,6 @@ ripple-волной поверх содержимого — `<span aria-hidden>`
 === 'background' && !readOnly`), но заодно гасит ripple-фидбек всей ячейки, а не только конфликт с
 кнопкой — обычно нежелательно, если сама ячейка тоже кликабельна и должна давать визуальный отклик.
 
-Применено в проекте: `.kb-entry-order` (`webapp/src/pages/knowledge-books/knowledge-books.css`) кладёт
-нативные `<button>` в `after`-слот `Cell` (стрелки порядка записи) и решает конфликт этим паттерном.
-
 ### 1.4.5. Ручной оверрайд темы (в обход реальной темы Telegram-клиента)
 
 `ThemeProvider` ([webapp/src/shared/theme/ThemeProvider.tsx](../webapp/src/shared/theme/ThemeProvider.tsx))

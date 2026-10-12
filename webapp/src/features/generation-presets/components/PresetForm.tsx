@@ -1,13 +1,8 @@
-import { Button, Text } from "@telegram-apps/telegram-ui";
+import { Button, Stack } from "@mantine/core";
 import { useState } from "react";
-import { BasicsSection } from "./BasicsSection";
-import { CollapsibleSection } from "./CollapsibleSection";
-import {
-  SAMPLING_SPECS,
-  type SamplingKey,
-  type SamplingState,
-} from "../lib/param-specs";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
+import { BasicsSection } from "./BasicsSection";
+import { SAMPLING_SPECS, type SamplingKey, type SamplingState } from "../lib/param-specs";
 import { ReasoningSection } from "./ReasoningSection";
 import { SamplingSection } from "./SamplingSection";
 import type { PresetInput, ReasoningEffort } from "../types/preset";
@@ -34,24 +29,18 @@ function initSampling(initial?: PresetInput): SamplingState {
   return state;
 }
 
-/** Число из строки поля: пусто/некорректно → null (целое ≥ 1). Сервер валидирует повторно. */
-function parseIntField(value: string): number | null {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  const n = Number(trimmed);
-  return Number.isInteger(n) && n >= 1 ? n : null;
+/** Значение NumberInput → целое ≥ 1 или null (пусто/некорректно). Сервер валидирует повторно. */
+function toPositiveInt(value: string | number): number | null {
+  const n = typeof value === "number" ? value : Number(value.replace(/\s/g, ""));
+  return value !== "" && Number.isInteger(n) && n >= 1 ? n : null;
 }
 
-/** Форма создания/редактирования пресета сэмплинга. Состояние держим локально (паттерн CharacterForm). */
+/** Форма создания/редактирования пресета генерации. Состояние держим локально (паттерн CharacterForm). */
 export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
   const [contextUnlimited, setContextUnlimited] = useState(initial?.contextUnlimited ?? false);
-  const [contextSize, setContextSize] = useState(
-    initial?.contextSize != null ? String(initial.contextSize) : "",
-  );
-  const [maxTokens, setMaxTokens] = useState(
-    initial?.maxTokens != null ? String(initial.maxTokens) : "",
-  );
+  const [contextSize, setContextSize] = useState<string | number>(initial?.contextSize ?? "");
+  const [maxTokens, setMaxTokens] = useState<string | number>(initial?.maxTokens ?? "");
   const [streaming, setStreaming] = useState(initial?.streaming ?? false);
   const [sampling, setSampling] = useState<SamplingState>(() => initSampling(initial));
   const [requestReasoning, setRequestReasoning] = useState(initial?.requestReasoning ?? false);
@@ -79,8 +68,8 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
       name: name.trim(),
       contextUnlimited,
       // при «неограниченном» размер контекста не нужен
-      contextSize: contextUnlimited ? null : parseIntField(contextSize),
-      maxTokens: parseIntField(maxTokens),
+      contextSize: contextUnlimited ? null : toPositiveInt(contextSize),
+      maxTokens: toPositiveInt(maxTokens),
       streaming,
       ...samplingPayload,
       requestReasoning,
@@ -89,7 +78,7 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
   };
 
   return (
-    <div className="preset-form">
+    <Stack gap="lg">
       <BasicsSection
         name={name}
         contextUnlimited={contextUnlimited}
@@ -102,29 +91,24 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
         onMaxTokens={setMaxTokens}
         onStreaming={setStreaming}
       />
-
-      <CollapsibleSection title="Параметры сэмплинга">
-        <SamplingSection state={sampling} onChange={updateSampling} />
-      </CollapsibleSection>
-
-      <Text weight="2" Component="div" className="preset-form__section-title">Рассуждение</Text>
       <ReasoningSection
         requestReasoning={requestReasoning}
         reasoningEffort={reasoningEffort}
         onRequestReasoning={setRequestReasoning}
         onReasoningEffort={setReasoningEffort}
       />
+      <SamplingSection state={sampling} onChange={updateSampling} />
 
-      <div className="preset-form__actions">
-        <Button size="l" stretched disabled={!canSubmit} onClick={handleSubmit}>
-          {submitting ? "Сохранение…" : "Сохранить"}
+      <Stack gap="sm">
+        <Button fullWidth disabled={!canSubmit} loading={submitting} onClick={handleSubmit}>
+          {initial ? "Сохранить" : "Создать пресет"}
         </Button>
         {onDelete && (
           <DeleteButton disabled={submitting} onClick={onDelete}>
             Удалить пресет
           </DeleteButton>
         )}
-      </div>
-    </div>
+      </Stack>
+    </Stack>
   );
 }

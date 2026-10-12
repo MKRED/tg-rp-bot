@@ -1,72 +1,41 @@
-import { Banner, Button, Cell, List, Section, Spinner } from "@telegram-apps/telegram-ui";
-import { motion } from "framer-motion";
 import { BookOpen } from "lucide-react";
 import { ROUTES, bookEditPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
-import { PageTransition } from "../../shared/components/PageTransition";
-import { BookCard, MAX_BOOKS_PER_USER, useBooks } from "../../features/knowledge-books";
-import "./knowledge-books.css";
+import { MAX_BOOKS_PER_USER, useBooks } from "../../features/knowledge-books";
+import { ListRow } from "../../shared/components/ListCard";
+import { ListPage } from "../../shared/components/ListPage";
+import { pluralRu } from "../../shared/text/pluralRu";
 
-/**
- * Хаб «Книги знаний»: все книги + кнопка создания. Страница НЕ скроллится целиком —
- * две секции в одном List: секция списка растянута на всю высоту (скролл ВНУТРИ её карточки),
- * секция кнопки докнута к нижней кромке. Между ними — штатный 12px-отступ List («логичный
- * разрыв»). Заголовок и описание — в Banner-шапке сверху.
- */
+/** Хаб «Книги знаний»: все книги пользователя и создание новой. */
 export function BooksListPage() {
   const navigate = useTransitionNavigate();
   const { items, loading, error } = useBooks();
-  const atLimit = items.length >= MAX_BOOKS_PER_USER;
 
   return (
-    <PageTransition>
-      <div className="kb-hub">
-        <Banner
-          type="section"
-          before={<BookOpen size={28} className="kb-hub__banner-icon" />}
-          header="Книги знаний"
-          description="Персонажи и факты мира для режима «Режиссёр истории»"
+    <ListPage
+      title="Книги знаний"
+      description="Персонажи и факты мира для режима «Режиссёр истории»"
+      icon={BookOpen}
+      loading={loading}
+      error={error}
+      count={items.length}
+      limit={MAX_BOOKS_PER_USER}
+      limitText={`Достигнут лимит в ${MAX_BOOKS_PER_USER} книг`}
+      createLabel="Создать книгу"
+      emptyTitle="Пока нет книг"
+      emptyDescription="Книга знаний — набор записей о персонажах, местах и фактах мира, которые рассказчик держит в памяти."
+      onCreate={() => navigate(ROUTES.bookNew)}
+    >
+      {items.map((b, i) => (
+        <ListRow
+          key={b.id}
+          index={i}
+          title={b.name}
+          // Описание книги, если задано; иначе — сколько в ней записей.
+          description={b.description || `${b.entryCount} ${pluralRu(b.entryCount, ["запись", "записи", "записей"])}`}
+          onClick={() => navigate(bookEditPath(b.id))}
         />
-
-        <List className="kb-hub__list">
-          {/* Section вставляет Divider между прямыми детьми по позиции — единственное top-level
-              выражение (тернарник) не даёт паразитных пустых слотов между loading/error/пусто;
-              для списка книг ветка возвращает items.map(...) НЕ обёрнутым во Fragment, чтобы
-              Section развернул его как массив и расставил разделители между карточками. */}
-          <Section className="kb-hub__list-section">
-            {loading ? (
-              <div className="kb-hub__center">
-                <Spinner size="m" />
-              </div>
-            ) : error ? (
-              <Cell subtitle="Не удалось загрузить список">Ошибка</Cell>
-            ) : items.length === 0 ? (
-              <Cell subtitle="Пока нет книг — создайте первую">Пусто</Cell>
-            ) : (
-              items.map((b, i) => (
-                <motion.div
-                  key={b.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05, duration: 0.2, ease: "easeOut" }}
-                >
-                  <BookCard book={b} onClick={() => navigate(bookEditPath(b.id))} />
-                </motion.div>
-              ))
-            )}
-          </Section>
-
-          {/* Вторая секция — кнопка создания. Один div-ребёнок: Section вставляет Divider между
-              несколькими детьми, а тут нужен цельный блок без разделителя. */}
-          <Section className="kb-hub__actions-section">
-            <div className="kb-hub__actions">
-              <Button size="l" stretched disabled={atLimit} onClick={() => navigate(ROUTES.bookNew)}>
-                + Создать книгу
-              </Button>
-            </div>
-          </Section>
-        </List>
-      </div>
-    </PageTransition>
+      ))}
+    </ListPage>
   );
 }

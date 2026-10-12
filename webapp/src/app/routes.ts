@@ -61,6 +61,10 @@ export const ROUTES = {
   bookNew: "/books/new",
   /** Форма редактирования книги знаний по id (статический `new` приоритетнее `:id`). */
   bookEdit: "/books/:id",
+  /** Новая запись книги знаний (статический `new` приоритетнее `:entryId`). */
+  bookEntryNew: "/books/:id/entries/new",
+  /** Редактирование записи книги знаний. */
+  bookEntryEdit: "/books/:id/entries/:entryId",
   /** Список narrator-шаблонов. */
   narratorTemplates: "/narrator-templates",
   /** Форма создания нового narrator-шаблона. */
@@ -93,6 +97,13 @@ export const storyGraphPath = (id: number): string => `/stories/${id}/graph`;
 
 /** Путь к редактированию книги знаний. */
 export const bookEditPath = (id: number): string => `/books/${id}`;
+
+/** Путь к новой записи книги знаний. */
+export const bookEntryNewPath = (bookId: number): string => `/books/${bookId}/entries/new`;
+
+/** Путь к редактированию записи книги знаний. */
+export const bookEntryEditPath = (bookId: number, entryId: number): string =>
+  `/books/${bookId}/entries/${entryId}`;
 
 /** Путь к редактированию narrator-шаблона. */
 export const narratorTemplateEditPath = (id: number): string => `/narrator-templates/${id}`;
@@ -152,6 +163,11 @@ export function parentPath(pathname: string): string {
     return `/stories/${id}`;
   }
   if (pathname.startsWith("/stories/")) return ROUTES.stories;
+  if (/^\/books\/\d+\/entries\//.test(pathname)) {
+    // Запись → назад к своей книге
+    const id = pathname.split("/")[2];
+    return `/books/${id}`;
+  }
   if (pathname.startsWith("/books/")) return ROUTES.books;
   if (pathname.startsWith("/narrator-templates/")) return ROUTES.narratorTemplates;
   if (pathname.startsWith("/rp-templates/")) return ROUTES.rpTemplates;

@@ -3,7 +3,11 @@
   padding-bottom: calc(var(--mantine-spacing-md) + var(--tg-viewport-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
 }
 
-/* Скругляем только верхние углы — нижний край прилегает к краю экрана. */
+/* Скругляем только верхние углы — нижний край прилегает к краю экрана.
+   Высота — по содержимому, но не выше 85% экрана (дальше скролл внутри): у Drawer Mantine 9 нет
+   size="auto" — такой size превращается в несуществующую переменную, и шторка встаёт на весь экран. */
 .drawerContent {
+  height: auto;
+  max-height: 85dvh;
   border-radius: var(--mantine-radius-lg) var(--mantine-radius-lg) 0 0;
 }

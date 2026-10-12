@@ -1,0 +1,25 @@
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mantine-spacing-sm);
+}
+
+.switch {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Значение в строку с подписью тумблера; цифры одной ширины — число не «дрожит» при перетаскивании. */
+.value {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  /* Акцент потемнее в светлой схеме: заливочный оттенок (янтарь) на светлом фоне читается плохо. */
+  color: light-dark(var(--mantine-color-accent-8), var(--mantine-color-accent-4));
+}
+
+/* Сверху — воздух от подсказки, снизу — место под подписи краёв диапазона (marks рисуются абсолютно
+   и в высоту слайдера не входят). */
+.slider {
+  padding-top: var(--mantine-spacing-md);
+  padding-bottom: var(--mantine-spacing-xl);
+}

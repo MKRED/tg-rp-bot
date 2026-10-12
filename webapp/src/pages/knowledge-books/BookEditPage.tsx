@@ -1,48 +1,96 @@
-import { Button, Cell, List, Section } from "@telegram-apps/telegram-ui";
-import { AnimatePresence, motion } from "framer-motion";
-import { Plus, FileText, ChevronUp, ChevronDown } from "lucide-react";
+import { Button } from "@mantine/core";
+import { BookOpen } from "lucide-react";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { ROUTES, bookEditPath } from "../../app/routes";
+import { ROUTES, bookEditPath, bookEntryEditPath, bookEntryNewPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
-import { PageStateBoundary } from "../../shared/components/PageStateBoundary";
-import { CharacterAvatar } from "../../features/characters";
-import { PersonaAvatar } from "../../features/personas";
 import {
+  BookEntries,
   BookForm,
-  EntryEditor,
-  MAX_ENTRIES_PER_BOOK,
   createBook,
   removeBook,
   updateBook,
   useBookEditor,
   type BookInput,
-  type Entry,
 } from "../../features/knowledge-books";
 import { ApiError } from "../../shared/api/client";
+import { AppPage } from "../../shared/components/AppPage";
+import { DeleteButton } from "../../shared/components/DeleteButton";
+import { EmptyState } from "../../shared/components/EmptyState";
 import { confirmAction, showAlert } from "../../shared/telegram/confirm";
-import "./knowledge-books.css";
+import { useToast } from "../../shared/toast";
 
-/** «new» при создании, объект Entry при правке записи, null — список без редактора. */
-type EntryEdit = "new" | Entry | null;
-
-// Анимация свапа «список записей ⇄ редактор записи»: лёгкий fade+slide, как у ExpandableSelect.
-const swapAnim = {
-  initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: 8 },
-  transition: { duration: 0.2, ease: "easeOut" as const },
-};
-
-/** Экран создания/редактирования книги знаний: форма книги + список записей с редактором. */
+/**
+ * Экран книги знаний: название и описание, записи (у сохранённой книги) и удаление. Каждая запись
+ * правится на своём экране; сохранение книги не уводит с экрана — записи остаются под рукой.
+ */
 export function BookEditPage() {
   const navigate = useTransitionNavigate();
   const params = useParams();
+  const { showToast } = useToast();
   const id = params.id ? Number(params.id) : undefined;
 
-  const { book, entries, loading, error, reloadEntries, reorder } = useBookEditor(id);
+  const { book, entries, loading, error, reorder } = useBookEditor(id);
   const [submitting, setSubmitting] = useState(false);
-  const [entryEdit, setEntryEdit] = useState<EntryEdit>(null);
+  const [bookDirty, setBookDirty] = useState(false);
+
+  const handleSubmitBook = (input: BookInput): Promise<void> => {
+    setSubmitting(true);
+    if (id === undefined) {
+      return (
+        createBook(input)
+          // Сразу на экран созданной книги — добавлять записи. replace: «Назад» оттуда ведёт к списку,
+          // а не на пустую форму создания.
+          .then((res) => navigate(bookEditPath(res.book.id), { replace: true }))
+          .catch((err) => {
+            setSubmitting(false);
+            showToast({ type: "error", message: "Не удалось создать книгу" });
+            throw err;
+          })
+      );
+    }
+    return updateBook(id, input)
+      .then(() => {
+        showToast({ type: "success", message: "Книга сохранена" });
+      })
+      .catch((err) => {
+        showToast({ type: "error", message: "Не удалось сохранить книгу" });
+        throw err;
+      })
+      .finally(() => setSubmitting(false));
+  };
+
+  const handleDeleteBook = async () => {
+    if (id === undefined) return;
+    const confirmed = await confirmAction("Удалить книгу знаний вместе с записями? Это действие необратимо.", {
+      title: "Удаление книги знаний",
+    });
+    if (!confirmed) return;
+    setSubmitting(true);
+    removeBook(id)
+      .then(() => navigate(ROUTES.books))
+      .catch(async (err) => {
+        setSubmitting(false);
+        // 409 — FK нарушение: книга выбрана в истории.
+        if (err instanceof ApiError && err.status === 409) {
+          await showAlert("Книга используется в истории. Сначала удалите историю.", "Нельзя удалить");
+        } else {
+          showToast({ type: "error", message: "Не удалось удалить книгу" });
+        }
+      });
+  };
+
+  // Переход к записи размонтирует форму книги — несохранённые название/описание пропали бы молча.
+  const openEntry = async (path: string) => {
+    if (bookDirty) {
+      const leave = await confirmAction("Изменения названия и описания книги не сохранены и будут потеряны.", {
+        title: "Перейти без сохранения?",
+        confirmText: "Перейти",
+      });
+      if (!leave) return;
+    }
+    navigate(path);
+  };
 
   // Сдвиг записи на одну позицию (↑/↓): порядок влияет на очередь вставки в промпт истории.
   const moveEntry = (index: number, dir: -1 | 1) => {
@@ -53,174 +101,39 @@ export function BookEditPage() {
     reorder(ids);
   };
 
-  const handleSubmitBook = (input: BookInput) => {
-    setSubmitting(true);
-    if (id === undefined) {
-      createBook(input)
-        // После создания переходим на экран правки той же книги — чтобы сразу добавить записи.
-        .then((res) => navigate(bookEditPath(res.book.id)))
-        .catch(() => setSubmitting(false));
-    } else {
-      updateBook(id, input)
-        .then(() => navigate(ROUTES.books))
-        .catch(() => setSubmitting(false));
-    }
-  };
-
-  const handleDeleteBook = async () => {
-    if (id === undefined) return;
-    const confirmed = await confirmAction("Удалить книгу знаний? Это действие необратимо.", {
-      title: "Удаление книги знаний",
-    });
-    if (!confirmed) return;
-    setSubmitting(true);
-    removeBook(id)
-      .then(() => navigate(ROUTES.books))
-      .catch(async (err) => {
-        setSubmitting(false);
-        if (err instanceof ApiError && err.status === 409) {
-          await showAlert("Книга используется в истории. Сначала удалите историю.", "Нельзя удалить");
-        }
-      });
-  };
-
-  const atLimit = entries.length >= MAX_ENTRIES_PER_BOOK;
+  if (error || (!loading && id !== undefined && !book)) {
+    return (
+      <AppPage centered>
+        <EmptyState
+          icon={BookOpen}
+          title="Книга не найдена"
+          description="Возможно, её удалили."
+          action={
+            <Button variant="default" onClick={() => navigate(ROUTES.books)}>
+              К списку книг
+            </Button>
+          }
+        />
+      </AppPage>
+    );
+  }
 
   return (
-    <PageStateBoundary
-      loading={loading}
-      error={Boolean(error) || (id !== undefined && !book)}
-      errorText="Книга не найдена"
-    >
-      {() => (
-      <div className="kb-page">
-        <List>
-          <BookForm
-            initial={book}
-            submitting={submitting}
-            onSubmit={handleSubmitBook}
-            onDelete={id === undefined ? undefined : handleDeleteBook}
+    <AppPage title={id === undefined ? "Новая книга" : "Книга знаний"} loading={loading}>
+      <BookForm initial={book} submitting={submitting} onSubmit={handleSubmitBook} onDirtyChange={setBookDirty} />
+      {id !== undefined && (
+        <>
+          <BookEntries
+            entries={entries}
+            onOpen={(e) => openEntry(bookEntryEditPath(id, e.id))}
+            onAdd={() => openEntry(bookEntryNewPath(id))}
+            onMove={moveEntry}
           />
-
-          {/* Записи доступны только у сохранённой книги (нужен её id). */}
-          {id !== undefined && (
-            // mode="wait" — уходящий вид доигрывает exit до входа нового (без наложения/скачка высоты);
-            // initial={false} — на первом монтировании экрана список не анимируем (это делает PageTransition).
-            <AnimatePresence mode="wait" initial={false}>
-              {entryEdit !== null ? (
-                <motion.div key="editor" {...swapAnim}>
-                  <EntryEditor
-                    bookId={id}
-                    initial={entryEdit === "new" ? undefined : entryEdit}
-                    onSaved={() => {
-                      setEntryEdit(null);
-                      reloadEntries();
-                    }}
-                    onCancel={() => setEntryEdit(null)}
-                  />
-                </motion.div>
-              ) : (
-                <motion.div key="list" {...swapAnim}>
-                  <Section header="Записи">
-                    {entries.length === 0 && <Cell subtitle="Пока пусто">Нет записей</Cell>}
-                    {entries.map((e, index) => (
-                      // layout + стабильный key={e.id} — при перестановке строки плавно переезжают
-                      // на новые позиции (FLIP), как в редакторе порядка промптов, а не перескакивают.
-                      <motion.div key={e.id} layout transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}>
-                        <Cell
-                          before={
-                            e.characterId != null ? (
-                              <CharacterAvatar
-                                id={e.characterId}
-                                hasImage={e.characterHasImage}
-                                name={e.characterName ?? ""}
-                                size={40}
-                              />
-                            ) : e.personaId != null ? (
-                              <PersonaAvatar
-                                id={e.personaId}
-                                hasImage={e.personaHasImage}
-                                name={e.personaName ?? ""}
-                                size={40}
-                              />
-                            ) : (
-                              // Иконка 40px — тот же футпринт, что аватар персонажа/персоны, чтобы строки
-                              // разных видов записей были одной высоты и текст не «прыгал».
-                              <FileText size={40} strokeWidth={1.5} className="kb-entry-icon" />
-                            )
-                          }
-                          subtitle={
-                            e.characterId != null
-                              ? (e.characterName ?? "персонаж удалён")
-                              : e.personaId != null
-                                ? (e.personaName ?? "персона удалена")
-                                : e.content.slice(0, 60)
-                          }
-                          hint={!e.enabled ? "выкл." : e.activation === "keyword" ? "по ключу" : undefined}
-                          after={
-                            // Стрелки — в родном слоте after: hover-фон Cell красит всю строку целиком.
-                            // Границы списка — не disabled (в Chromium/WebKit клик по disabled-кнопке
-                            // ретаргетится на ближайшего некликабельного предка, т.е. на сам Cell, и
-                            // открывал бы редактор), а aria-disabled + stopPropagation на клике.
-                            <div className="kb-entry-order">
-                              <button
-                                type="button"
-                                className="kb-order-btn"
-                                aria-disabled={index === 0}
-                                aria-label="Выше"
-                                onClick={(ev) => {
-                                  ev.stopPropagation();
-                                  moveEntry(index, -1);
-                                }}
-                              >
-                                <ChevronUp size={18} />
-                              </button>
-                              <button
-                                type="button"
-                                className="kb-order-btn"
-                                aria-disabled={index === entries.length - 1}
-                                aria-label="Ниже"
-                                onClick={(ev) => {
-                                  ev.stopPropagation();
-                                  moveEntry(index, 1);
-                                }}
-                              >
-                                <ChevronDown size={18} />
-                              </button>
-                            </div>
-                          }
-                          onClick={() => setEntryEdit(e)}
-                        >
-                          {e.name ||
-                            (e.characterId != null
-                              ? e.characterName
-                              : e.personaId != null
-                                ? e.personaName
-                                : "Без названия") ||
-                            "Запись"}
-                        </Cell>
-                      </motion.div>
-                    ))}
-                    <div style={{ padding: 16 }}>
-                      <Button
-                        size="m"
-                        stretched
-                        mode="outline"
-                        disabled={atLimit}
-                        before={<Plus size={18} />}
-                        onClick={() => setEntryEdit("new")}
-                      >
-                        Добавить запись
-                      </Button>
-                    </div>
-                  </Section>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          )}
-        </List>
-      </div>
+          <DeleteButton disabled={submitting} onClick={handleDeleteBook}>
+            Удалить книгу
+          </DeleteButton>
+        </>
       )}
-    </PageStateBoundary>
+    </AppPage>
   );
 }
