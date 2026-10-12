@@ -51,7 +51,8 @@ export class CardsController {
   @Post(":id/generate")
   @HttpCode(200)
   generate(@CurrentUser() userId: string, @Param("id", ParseIntPipe) id: number, @Body() body: GenerateCardBlockDto) {
-    // Явный categoryId — всегда клик «Перегенерировать»: сбрасываем накопленные ответы ask_user блока.
+    // Явный categoryId — всегда клик «Перегенерировать»: сбрасываем контекст инструментов блока
+    // (ответы ask_user и веб-поиски).
     return this.generation.generate(userId, id, body.categoryId, body.categoryId !== undefined);
   }
 

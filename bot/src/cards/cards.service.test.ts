@@ -46,9 +46,9 @@ describe("CardsService", () => {
   });
 
   it("create без пресета — пишет, пресет не ищется", async () => {
-    const create = vi.fn().mockResolvedValue({ id: 7 });
+    const create = vi.fn().mockResolvedValue({ id: 7, categories: [] });
     const { service, presets } = makeService({ count: vi.fn().mockResolvedValue(0), create });
-    await expect(service.create(1, input)).resolves.toEqual({ id: 7 });
+    await expect(service.create(1, input)).resolves.toEqual({ id: 7, categories: [] });
     expect(create).toHaveBeenCalledWith(1, input);
     expect(presets.findOne).not.toHaveBeenCalled();
   });
@@ -62,9 +62,9 @@ describe("CardsService", () => {
   });
 
   it("create со своим пресетом — пишет", async () => {
-    const create = vi.fn().mockResolvedValue({ id: 7 });
+    const create = vi.fn().mockResolvedValue({ id: 7, categories: [] });
     const { service } = makeService({ count: vi.fn().mockResolvedValue(0), create }, true);
-    await expect(service.create(1, { ...input, presetId: 3 })).resolves.toEqual({ id: 7 });
+    await expect(service.create(1, { ...input, presetId: 3 })).resolves.toEqual({ id: 7, categories: [] });
   });
 
   it("get/update — undefined от репозитория превращается в 404", async () => {
@@ -87,9 +87,9 @@ describe("CardsService", () => {
 
   it("update — лок снимается и после успеха, и после ошибки", async () => {
     const { service } = makeService({
-      update: vi.fn().mockResolvedValueOnce({ id: 5 }).mockRejectedValueOnce(new Error("db")),
+      update: vi.fn().mockResolvedValueOnce({ id: 5, categories: [] }).mockRejectedValueOnce(new Error("db")),
     });
-    await expect(service.update(1, 5, input)).resolves.toEqual({ id: 5 });
+    await expect(service.update(1, 5, input)).resolves.toEqual({ id: 5, categories: [] });
     await expect(service.update(1, 5, input)).rejects.toThrow("db");
     expect(tryLockCard(5)).toBe(true);
   });

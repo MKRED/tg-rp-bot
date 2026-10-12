@@ -150,6 +150,32 @@ describe("assembleCardBlockPrompt", () => {
     });
   });
 
+  describe("webSearches — сохранённые поиски реплеятся в истории своего блока", () => {
+    const webSearches = [{ query: "эльфы", results: [{ title: "T", url: "u", content: "c" }] }];
+
+    it("поиски предыдущего блока видны при генерации следующего — перед его assistant-content", () => {
+      const categories = [
+        cat({ id: "base", title: "Base", content: "готовый текст", webSearches }),
+        cat({ id: "body", title: "Body" }),
+      ];
+      const messages = assembleCardBlockPrompt("System", "Prompt", categories)!.messages as any[];
+      expect(messages.map((m) => m.role)).toEqual(["system", "user", "assistant", "tool", "assistant", "user"]);
+      expect(messages[2].tool_calls[0].function.name).toBe("web_search");
+      expect(messages[3].tool_call_id).toBe(messages[2].tool_calls[0].id);
+      expect(messages[4].content).toBe("готовый текст");
+    });
+
+    it("поиски целевого блока (резюме после паузы) идут перед его обменом ask_user", () => {
+      const categories = [
+        cat({ id: "base", title: "Base", webSearches, askUserAnswers: [{ question: "Пол?", answer: "Женский" }] }),
+      ];
+      const messages = assembleCardBlockPrompt("System", "Prompt", categories)!.messages as any[];
+      expect(messages.map((m) => m.role)).toEqual(["system", "user", "assistant", "tool", "assistant", "tool"]);
+      expect(messages[2].tool_calls[0].function.name).toBe("web_search");
+      expect(messages[4].tool_calls[0].function.name).toBe("ask_user");
+    });
+  });
+
   describe("askUserAnswers — реплеятся как настоящий tool_call/tool_result", () => {
     // Приводим messages[i] к any для доступа к tool_calls/tool_call_id — в остальных тестах файла
     // сообщения плоские ChatMessage, здесь же явно проверяется синтетический протокол function calling.

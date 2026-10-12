@@ -5,6 +5,15 @@ import { found } from "../common/found.js";
 import { PresetsRepository } from "../presets/presets.repository.js";
 import { tryLockCard, unlockCard } from "./card-lock.js";
 import { CardsRepository } from "./cards.repository.js";
+import { withToolContextTokens } from "./generation/tool-context.js";
+
+/**
+ * Карточка для клиента: к категориям добавляется toolContextTokens (вес сохранённых ответов ask_user
+ * и веб-поисков в промпте). Считается на выдаче, в БД не хранится — вход POST/PUT поле отбрасывает.
+ */
+function forClient(card: Card): Card {
+  return { ...card, categories: withToolContextTokens(card.categories) };
+}
 
 /** Карточки «Мастерской»: правила домена (лимит, пресет, лок, «не найдена») поверх репозитория. */
 @Injectable()
@@ -20,7 +29,7 @@ export class CardsService {
   }
 
   async get(userId: string, id: number): Promise<Card> {
-    return found(await this.repository.findOne(userId, id));
+    return forClient(found(await this.repository.findOne(userId, id)));
   }
 
   async create(userId: string, input: CardInput): Promise<Card> {
@@ -28,7 +37,7 @@ export class CardsService {
     if ((await this.repository.count(userId)) >= MAX_CARDS_PER_USER) {
       throw new BadRequestException(`Card limit reached (max ${MAX_CARDS_PER_USER})`);
     }
-    return this.repository.create(userId, input);
+    return forClient(await this.repository.create(userId, input));
   }
 
   async update(userId: string, id: number, input: CardInput): Promise<Card> {
@@ -37,7 +46,7 @@ export class CardsService {
     // строки, без него параллельные PUT и «Сгенерировать» могли бы затереть друг друга.
     if (!tryLockCard(id)) throw new ConflictException("busy");
     try {
-      return found(await this.repository.update(userId, id, input));
+      return forClient(found(await this.repository.update(userId, id, input)));
     } finally {
       unlockCard(id);
     }

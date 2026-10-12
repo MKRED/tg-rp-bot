@@ -65,4 +65,71 @@ describe("runCardGenerationToolLoop — веб-поиск", () => {
     expect(first.tools.map((t: { function: { name: string } }) => t.function.name)).toEqual(["ask_user"]);
     expect(llm.complete.mock.calls[1]![0].messages.at(-1).content).toContain("tool unavailable: web_search");
   });
+
+  it("web_search при исчерпанном лимите не выполняется, цикл конечен (предложен только ask_user)", async () => {
+    const onWebSearch = vi.fn();
+    const { llm, webSearch, params } = setup({ maxSearchRounds: 0, askUserEnabled: true, onWebSearch });
+    llm.complete
+      .mockResolvedValueOnce({ content: "", model: "m", toolCalls: [searchCall("q1")] })
+      .mockResolvedValueOnce({ content: "", model: "m", toolCalls: [searchCall("q2")] })
+      .mockResolvedValueOnce({ content: "текст", model: "m" });
+
+    await expect(runCardGenerationToolLoop(params)).resolves.toEqual({ done: true, content: "текст" });
+    expect(webSearch.search).not.toHaveBeenCalled();
+    expect(onWebSearch).not.toHaveBeenCalled();
+    // Два непредложенных вызова исчерпали и бюджет ask_user — третий запрос уходит без инструментов.
+    expect(llm.complete.mock.calls[2]![0].tools).toBeUndefined();
+  });
+
+  it("успешный поиск отдаётся в onWebSearch, неудачный — нет", async () => {
+    const onWebSearch = vi.fn();
+    const { llm, webSearch, params } = setup({ onWebSearch });
+    webSearch.search
+      .mockResolvedValueOnce([{ title: "T", url: "u", content: "c" }])
+      .mockRejectedValueOnce(new Error("network"));
+    llm.complete
+      .mockResolvedValueOnce({ content: "", model: "m", toolCalls: [searchCall("ok"), searchCall("fail")] })
+      .mockResolvedValueOnce({ content: "готово", model: "m" });
+
+    await runCardGenerationToolLoop(params);
+    expect(onWebSearch).toHaveBeenCalledTimes(1);
+    expect(onWebSearch).toHaveBeenCalledWith({ query: "ok", results: [{ title: "T", url: "u", content: "c" }] });
+  });
+});
+
+describe("runCardGenerationToolLoop — ask_user", () => {
+  const askCall = (id = "ask-1") => ({
+    id,
+    type: "function" as const,
+    function: { name: "ask_user", arguments: JSON.stringify({ questions: [{ question: "Пол?" }] }) },
+  });
+
+  it("поиск в одном ходе с ask_user выполняется и сохраняется, цикл уходит на паузу", async () => {
+    const onWebSearch = vi.fn();
+    const { llm, webSearch, params } = setup({ askUserEnabled: true, onWebSearch });
+    llm.complete.mockResolvedValueOnce({ content: "", model: "m", toolCalls: [searchCall("q"), askCall()] });
+
+    await expect(runCardGenerationToolLoop(params)).resolves.toEqual({
+      done: false,
+      questions: [{ question: "Пол?", options: undefined }],
+    });
+    expect(webSearch.search).toHaveBeenCalledWith("q");
+    expect(onWebSearch).toHaveBeenCalledWith(expect.objectContaining({ query: "q" }));
+    expect(llm.complete).toHaveBeenCalledTimes(1);
+  });
+
+  it("ask_user без предложения (выключен) — ошибка модели вместо паузы, цикл конечен", async () => {
+    const { llm, params } = setup({ askUserEnabled: false, maxSearchRounds: 2 });
+    // Модель упорно зовёт непредложенный ask_user: каждый вызов списывает бюджет поиска, и после
+    // его исчерпания запрос уходит без tools — ответ принимается как текст.
+    llm.complete
+      .mockResolvedValueOnce({ content: "", model: "m", toolCalls: [askCall("a1")] })
+      .mockResolvedValueOnce({ content: "", model: "m", toolCalls: [askCall("a2")] })
+      .mockResolvedValueOnce({ content: "текст", model: "m" });
+
+    await expect(runCardGenerationToolLoop(params)).resolves.toEqual({ done: true, content: "текст" });
+    const second = llm.complete.mock.calls[1]![0];
+    expect(second.messages.at(-1).content).toContain("tool unavailable: ask_user");
+    expect(llm.complete.mock.calls[2]![0].tools).toBeUndefined();
+  });
 });

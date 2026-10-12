@@ -98,16 +98,29 @@ export function CardForm({
   // Генерация уже сохранена на сервере — правим и стейт, и baseline точечно по categoryId (не
   // заменяем весь массив), чтобы не затереть несохранённые правки других категорий. pendingQuestions
   // сбрасываем: content появляется, только когда сервер закончил (в т.ч. после ответа на ask_user).
-  const handleGenerated = (categoryId: string, content: string) => {
-    setCategories((prev) => prev.map((c) => (c.id === categoryId ? { ...c, content, pendingQuestions: undefined } : c)));
+  // toolContextTokens — серверный счётчик, в «грязное» состояние не входит (formDirty его не читает).
+  const handleGenerated = (categoryId: string, content: string, toolContextTokens: number) => {
+    setCategories((prev) =>
+      prev.map((c) => (c.id === categoryId ? { ...c, content, pendingQuestions: undefined, toolContextTokens } : c)),
+    );
     setBaseline((b) => ({
       ...b,
       categories: b.categories.map((c) => (c.id === categoryId ? { ...c, content } : c)),
     }));
   };
 
-  const handlePendingQuestions = (categoryId: string, questions: CardCategory["pendingQuestions"]) => {
-    setCategories((prev) => prev.map((c) => (c.id === categoryId ? { ...c, pendingQuestions: questions } : c)));
+  const handlePendingQuestions = (
+    categoryId: string,
+    questions: CardCategory["pendingQuestions"],
+    toolContextTokens?: number,
+  ) => {
+    setCategories((prev) =>
+      prev.map((c) =>
+        c.id === categoryId
+          ? { ...c, pendingQuestions: questions, toolContextTokens: toolContextTokens ?? c.toolContextTokens }
+          : c,
+      ),
+    );
   };
 
   return (

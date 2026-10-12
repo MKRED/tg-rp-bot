@@ -44,8 +44,9 @@ function setup(opts: { card?: ReturnType<typeof makeCard>; preset?: object } = {
   const preset = "preset" in opts ? opts.preset : { id: 3 };
   const cards = {
     findOne: vi.fn().mockResolvedValue(card),
-    clearCategoryAskUserAnswers: vi.fn().mockResolvedValue(card),
+    clearCategoryToolContext: vi.fn().mockResolvedValue(card),
     setCategoryContent: vi.fn().mockResolvedValue(card),
+    appendCategoryWebSearches: vi.fn().mockResolvedValue(card),
     setCategoryPendingQuestions: vi.fn().mockResolvedValue(card),
     applyCategoryAnswers: vi.fn().mockResolvedValue(card),
   };
@@ -87,8 +88,13 @@ describe("CardGenerationService.generate", () => {
   it("следующий незаполненный блок: генерирует, сохраняет обрезанный текст, снимает лок", async () => {
     runCardGenerationToolLoop.mockResolvedValue({ done: true, content: "  text  " });
     const { service, cards } = setup();
-    await expect(service.generate(1, CARD_ID)).resolves.toEqual({ status: "done", categoryId: "a", content: "text" });
-    expect(cards.setCategoryContent).toHaveBeenCalledWith(1, CARD_ID, "a", "text");
+    await expect(service.generate(1, CARD_ID)).resolves.toEqual({
+      status: "done",
+      categoryId: "a",
+      content: "text",
+      toolContextTokens: 0,
+    });
+    expect(cards.setCategoryContent).toHaveBeenCalledWith(1, CARD_ID, "a", "text", []);
     expect(runCardGenerationToolLoop).toHaveBeenCalledWith(
       expect.objectContaining({ llm: LLM, webSearch: null, maxSearchRounds: 3, askUserEnabled: false }),
     );
@@ -124,6 +130,60 @@ describe("CardGenerationService.generate", () => {
     expect(await refusal(service.generate(1, CARD_ID, "zzz", true))).toEqual({ status: 400, body: "target_not_found" });
   });
 
+  describe("веб-поиски генерации сохраняются на категории", () => {
+    const record = { query: "q", results: [{ title: "T", url: "u", content: "c" }] };
+    /** Цикл, который «выполнил» один поиск (отдал его в onWebSearch) и закончился как задано. */
+    const loopWithSearch = (end: () => unknown) =>
+      runCardGenerationToolLoop.mockImplementation(async (params: { onWebSearch: (r: typeof record) => void }) => {
+        params.onWebSearch(record);
+        return end();
+      });
+
+    it("готовый блок — поиски уходят той же записью, что и текст; в ответе вес контекста", async () => {
+      loopWithSearch(() => ({ done: true, content: "t" }));
+      const saved = makeCard({ categories: [category("a", { content: "t", webSearches: [record] })] });
+      const { service, cards } = setup();
+      cards.setCategoryContent.mockResolvedValue(saved);
+      const step = await service.generate(1, CARD_ID);
+      expect(cards.setCategoryContent).toHaveBeenCalledWith(1, CARD_ID, "a", "t", [record]);
+      expect(step.toolContextTokens).toBeGreaterThan(0);
+      expect(cards.appendCategoryWebSearches).not.toHaveBeenCalled();
+    });
+
+    it("пауза ask_user — поиски сохраняются вместе с вопросами", async () => {
+      const questions = [{ question: "Q?" }];
+      loopWithSearch(() => ({ done: false, questions }));
+      const { service, cards } = setup({ card: makeCard({ useAskUser: true }) });
+      await service.generate(1, CARD_ID);
+      expect(cards.setCategoryPendingQuestions).toHaveBeenCalledWith(1, CARD_ID, "a", questions, [record]);
+    });
+
+    it("сбой LLM после поиска — поиски всё равно сохраняются, наверх уходит исходная ошибка", async () => {
+      loopWithSearch(() => {
+        throw new Error("llm down");
+      });
+      const { service, cards } = setup();
+      await expect(service.generate(1, CARD_ID)).rejects.toThrow("llm down");
+      expect(cards.appendCategoryWebSearches).toHaveBeenCalledWith(1, CARD_ID, "a", [record]);
+      expect(lockFree()).toBe(true);
+    });
+
+    it("лимит поисков сквозной для блока: сохранённые поиски вычитаются", async () => {
+      runCardGenerationToolLoop.mockResolvedValue({ done: true, content: "t" });
+      const { service } = setup({ card: makeCard({ categories: [category("a", { webSearches: [record, record] })] }) });
+      await service.generate(1, CARD_ID);
+      expect(runCardGenerationToolLoop).toHaveBeenCalledWith(expect.objectContaining({ maxSearchRounds: 1 }));
+    });
+  });
+
+  it("«Перегенерировать» сбрасывает и сохранённые веб-поиски блока", async () => {
+    runCardGenerationToolLoop.mockResolvedValue({ done: true, content: "t" });
+    const webSearches = [{ query: "q", results: [] }];
+    const { service, cards } = setup({ card: makeCard({ categories: [category("a", { content: "x", webSearches })] }) });
+    await service.generate(1, CARD_ID, "a", true);
+    expect(cards.clearCategoryToolContext).toHaveBeenCalledWith(1, CARD_ID, "a");
+  });
+
   it("«Перегенерировать» сбрасывает накопленные ответы ask_user целевого блока, резюме — нет", async () => {
     runCardGenerationToolLoop.mockResolvedValue({ done: true, content: "t" });
     const card = makeCard({
@@ -131,18 +191,23 @@ describe("CardGenerationService.generate", () => {
     });
     const { service, cards } = setup({ card });
     await service.generate(1, CARD_ID, "a", true);
-    expect(cards.clearCategoryAskUserAnswers).toHaveBeenCalledWith(1, CARD_ID, "a");
-    cards.clearCategoryAskUserAnswers.mockClear();
+    expect(cards.clearCategoryToolContext).toHaveBeenCalledWith(1, CARD_ID, "a");
+    cards.clearCategoryToolContext.mockClear();
     await service.generate(1, CARD_ID, "a", false);
-    expect(cards.clearCategoryAskUserAnswers).not.toHaveBeenCalled();
+    expect(cards.clearCategoryToolContext).not.toHaveBeenCalled();
   });
 
   it("пауза на ask_user: вопросы сохраняются на категории, лок снят", async () => {
     const questions = [{ question: "Q?", options: ["x"] }];
     runCardGenerationToolLoop.mockResolvedValue({ done: false, questions });
     const { service, cards } = setup({ card: makeCard({ useAskUser: true }) });
-    await expect(service.generate(1, CARD_ID)).resolves.toEqual({ status: "questions", categoryId: "a", questions });
-    expect(cards.setCategoryPendingQuestions).toHaveBeenCalledWith(1, CARD_ID, "a", questions);
+    await expect(service.generate(1, CARD_ID)).resolves.toEqual({
+      status: "questions",
+      categoryId: "a",
+      questions,
+      toolContextTokens: 0,
+    });
+    expect(cards.setCategoryPendingQuestions).toHaveBeenCalledWith(1, CARD_ID, "a", questions, []);
     expect(cards.setCategoryContent).not.toHaveBeenCalled();
     expect(lockFree()).toBe(true);
   });
@@ -206,7 +271,7 @@ describe("CardGenerationService.answer", () => {
       { question: "Q2", answer: "A2", options: undefined },
     ]);
     // Резюме паузы — не «Перегенерировать»: накопленные ответы не сбрасываются.
-    expect(cards.clearCategoryAskUserAnswers).not.toHaveBeenCalled();
+    expect(cards.clearCategoryToolContext).not.toHaveBeenCalled();
     expect(lockFree()).toBe(true);
   });
 

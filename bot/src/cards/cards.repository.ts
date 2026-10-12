@@ -7,6 +7,7 @@ import {
   type AskUserQuestion,
   type CardCategory,
   type CardInput,
+  type WebSearchRecord,
 } from "@tg-rp-bot/shared";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { schema } from "../db/index.js";
@@ -99,9 +100,9 @@ export class CardsRepository {
 
   /**
    * Обновляет карточку из формы (только свою); undefined — карточки нет. pendingQuestions/
-   * askUserAnswers сервер-владеемые: клиент их не присылает (DTO отсекает), а полная перезапись
-   * categories без подмешивания стёрла бы их при любом сохранении формы — переносим из текущей
-   * строки по id категории.
+   * askUserAnswers/webSearches сервер-владеемые: клиент их не присылает (DTO отсекает), а полная
+   * перезапись categories без подмешивания стёрла бы их при любом сохранении формы — переносим из
+   * текущей строки по id категории.
    */
   async update(userId: string, id: number, input: CardInput): Promise<Card | undefined> {
     const existing = await this.findOne(userId, id);
@@ -111,6 +112,7 @@ export class CardsRepository {
       ...c,
       pendingQuestions: existingById.get(c.id)?.pendingQuestions,
       askUserAnswers: existingById.get(c.id)?.askUserAnswers,
+      webSearches: existingById.get(c.id)?.webSearches,
     }));
     return this.persist(userId, id, { ...input, categories });
   }
@@ -130,29 +132,62 @@ export class CardsRepository {
   /**
    * Сохраняет сгенерированный текст одной категории. pendingQuestions сбрасывается: content
    * появляется, только когда генерация завершена, а оставшиеся вопросы (клиент не увидел паузу —
-   * потерял сеть) навсегда перекрывали бы готовый блок каруселью в интерфейсе.
+   * потерял сеть) навсегда перекрывали бы готовый блок каруселью в интерфейсе. searches — веб-поиски
+   * этой генерации, дописываются той же записью (см. appendWebSearches).
    */
-  setCategoryContent(userId: string, id: number, categoryId: string, content: string): Promise<Card | undefined> {
-    return this.patchCategory(userId, id, categoryId, (c) => ({ ...c, content, pendingQuestions: undefined }));
+  setCategoryContent(
+    userId: string,
+    id: number,
+    categoryId: string,
+    content: string,
+    searches: WebSearchRecord[] = [],
+  ): Promise<Card | undefined> {
+    return this.patchCategory(userId, id, categoryId, (c) => ({
+      ...appendWebSearches(c, searches),
+      content,
+      pendingQuestions: undefined,
+    }));
   }
 
-  /** Записывает вопросы ask_user, ждущие ответа (генерация блока приостановлена до ответа). */
+  /**
+   * Записывает вопросы ask_user, ждущие ответа (генерация блока приостановлена до ответа), и
+   * веб-поиски, сделанные до паузы, — после ответа блок генерируется заново и увидит их в реплее.
+   */
   setCategoryPendingQuestions(
     userId: string,
     id: number,
     categoryId: string,
     questions: AskUserQuestion[],
+    searches: WebSearchRecord[] = [],
   ): Promise<Card | undefined> {
-    return this.patchCategory(userId, id, categoryId, (c) => ({ ...c, pendingQuestions: questions }));
+    return this.patchCategory(userId, id, categoryId, (c) => ({
+      ...appendWebSearches(c, searches),
+      pendingQuestions: questions,
+    }));
+  }
+
+  /** Дописывает веб-поиски без изменения блока — генерация упала уже после них (квота потрачена). */
+  appendCategoryWebSearches(
+    userId: string,
+    id: number,
+    categoryId: string,
+    searches: WebSearchRecord[],
+  ): Promise<Card | undefined> {
+    return this.patchCategory(userId, id, categoryId, (c) => appendWebSearches(c, searches));
   }
 
   /**
-   * Сбрасывает накопленные askUserAnswers категории — только явная «Перегенерировать»: иначе ответы
-   * для заменяемого варианта блока реплеились бы в промпт вечно и занимали бы бюджет
-   * ASK_USER_MAX_ANSWERED_QUESTIONS. Ответ на паузу ask_user сюда не заходит — там ответы копятся.
+   * Сбрасывает контекст инструментов категории (askUserAnswers + webSearches) — только явная
+   * «Перегенерировать»: иначе ответы и поиски для заменяемого варианта блока реплеились бы в промпт
+   * вечно и занимали бы бюджеты (ASK_USER_MAX_ANSWERED_QUESTIONS, лимит поисков). Ответ на паузу
+   * ask_user сюда не заходит — там контекст копится.
    */
-  clearCategoryAskUserAnswers(userId: string, id: number, categoryId: string): Promise<Card | undefined> {
-    return this.patchCategory(userId, id, categoryId, (c) => ({ ...c, askUserAnswers: undefined }));
+  clearCategoryToolContext(userId: string, id: number, categoryId: string): Promise<Card | undefined> {
+    return this.patchCategory(userId, id, categoryId, (c) => ({
+      ...c,
+      askUserAnswers: undefined,
+      webSearches: undefined,
+    }));
   }
 
   /** Дописывает ответы (или отказ) ask_user в историю категории и снимает pendingQuestions. */
@@ -224,6 +259,12 @@ function decryptRow(row: Card, key: Buffer): Card {
     prompt: decryptField(row.prompt, key),
     categories: decryptCategories(row.categories, key),
   };
+}
+
+/** Категория с дописанными веб-поисками; без новых поисков — та же категория (поле не создаётся пустым). */
+function appendWebSearches(category: CardCategory, searches: WebSearchRecord[]): CardCategory {
+  if (searches.length === 0) return category;
+  return { ...category, webSearches: [...(category.webSearches ?? []), ...searches] };
 }
 
 /** Поля формы из уже расшифрованной карточки — для полной перезаписи в точечных операциях. */

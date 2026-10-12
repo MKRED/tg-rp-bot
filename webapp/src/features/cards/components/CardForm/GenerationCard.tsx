@@ -14,9 +14,15 @@ interface GenerationCardProps {
   saveForm: () => Promise<boolean>;
   /** Ручная правка текста блока — часть «грязного» состояния формы (требует «Сохранить»). */
   onCategoriesChange: (categories: CardCategory[]) => void;
-  onPendingQuestions: (categoryId: string, questions: CardCategory["pendingQuestions"]) => void;
-  onGenerated: (categoryId: string, content: string) => void;
+  onPendingQuestions: (
+    categoryId: string,
+    questions: CardCategory["pendingQuestions"],
+    toolContextTokens?: number,
+  ) => void;
+  onGenerated: (categoryId: string, content: string, toolContextTokens: number) => void;
 }
+
+const fmtTokens = (n: number) => n.toLocaleString("ru-RU");
 
 /**
  * Карточка «Генерация»: текст каждого включённого блока (правится вручную) и кнопка под ним по его
@@ -89,6 +95,10 @@ export function GenerationCard({
 
         const isRegenerate = nextIndex === -1 || index < nextIndex;
         const isNext = index === nextIndex;
+        // Сохранённые ответы на вопросы и результаты веб-поиска блока уходят в промпт этого и всех
+        // следующих блоков — показываем их вес (точный счёт сервера); «Перегенерировать» его сбрасывает.
+        const toolTokens = category.toolContextTokens ?? 0;
+        const showRegenerate = canAct && isRegenerate;
         return (
           <Stack key={category.id} gap="xs">
             <PromptEditorField
@@ -98,17 +108,24 @@ export function GenerationCard({
               previewLines={4}
               onChange={(value) => updateContent(category.id, value)}
             />
-            {canAct && isRegenerate && (
-              <Group justify="flex-end">
-                <Button
-                  variant="subtle"
-                  size="compact-sm"
-                  loading={generatingId === category.id}
-                  disabled={buttonsDisabled}
-                  onClick={() => void generate(category, true)}
-                >
-                  Перегенерировать
-                </Button>
+            {(showRegenerate || toolTokens > 0) && (
+              <Group justify={toolTokens > 0 ? "space-between" : "flex-end"} wrap="nowrap">
+                {toolTokens > 0 && (
+                  <Text size="xs" c="dimmed">
+                    {`Контекст инструментов: ${fmtTokens(toolTokens)} ток.`}
+                  </Text>
+                )}
+                {showRegenerate && (
+                  <Button
+                    variant="subtle"
+                    size="compact-sm"
+                    loading={generatingId === category.id}
+                    disabled={buttonsDisabled}
+                    onClick={() => void generate(category, true)}
+                  >
+                    Перегенерировать
+                  </Button>
+                )}
               </Group>
             )}
             {canAct && isNext && (

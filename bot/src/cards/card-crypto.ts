@@ -3,7 +3,7 @@ import { decryptField, encryptField } from "../utils/index.js";
 
 type FieldCipher = (value: string, key: Buffer) => string;
 
-/** Применяет шифр ко всем текстовым полям категорий (включая ask_user), id/enabled — как есть. */
+/** Применяет шифр ко всем текстовым полям категорий (включая ask_user и веб-поиски), id/enabled — как есть. */
 function mapCategoryTexts(categories: CardCategory[], key: Buffer, cipher: FieldCipher): CardCategory[] {
   return categories.map((c) => ({
     ...c,
@@ -18,6 +18,14 @@ function mapCategoryTexts(categories: CardCategory[], key: Buffer, cipher: Field
       question: cipher(a.question, key),
       answer: cipher(a.answer, key),
       options: a.options?.map((o) => cipher(o, key)),
+    })),
+    webSearches: c.webSearches?.map((s) => ({
+      query: cipher(s.query, key),
+      results: s.results.map((r) => ({
+        title: cipher(r.title, key),
+        url: cipher(r.url, key),
+        content: cipher(r.content, key),
+      })),
     })),
   }));
 }

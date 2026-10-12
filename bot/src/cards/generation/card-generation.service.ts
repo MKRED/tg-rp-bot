@@ -4,7 +4,9 @@ import type {
   AskUserAnswer,
   CardGenerationError,
   CardGenerationStep,
+  WebSearchRecord,
 } from "@tg-rp-bot/shared";
+import type { Card } from "../../db/schema.js";
 import { MissingApiKeyError } from "../../llm/errors.js";
 import { LlmService } from "../../llm/llm.service.js";
 import logger from "../../logger.js";
@@ -17,6 +19,7 @@ import { tryLockCard, unlockCard } from "../card-lock.js";
 import { CardsRepository } from "../cards.repository.js";
 import { ASK_USER_DECLINED_ANSWER, ASK_USER_MAX_ANSWERED_QUESTIONS } from "./ask-user-tool.js";
 import { assembleCardBlockPrompt } from "./prompt-assembly.js";
+import { countToolContextTokens } from "./tool-context.js";
 import { runCardGenerationToolLoop } from "./tool-loop.js";
 
 /** Отказ генерации: код причины в `{ error }` (контракт webapp) с HTTP-статусом. */
@@ -45,10 +48,13 @@ export class CardGenerationService {
    * enabled-блок («Сгенерировать»); с categoryId — явно указанный блок, перегенерация «как если бы
    * шли по очереди».
    *
-   * resetAskUserAnswers — true только у явной «Перегенерировать» (ручка generate с categoryId):
-   * сбрасывает askUserAnswers целевой категории, чтобы ответы для заменяемого варианта блока не
-   * реплеились в промпт и не занимали ASK_USER_MAX_ANSWERED_QUESTIONS вечно. false — резюме паузы
-   * ask_user внутри одной попытки (answer), где ответы, наоборот, накапливаются.
+   * resetToolContext — true только у явной «Перегенерировать» (ручка generate с categoryId):
+   * сбрасывает контекст инструментов целевой категории (ответы ask_user + веб-поиски), чтобы он не
+   * реплеился в промпт для заменяемого варианта блока и не занимал бюджеты вечно. false — резюме
+   * паузы ask_user внутри одной попытки (answer), где контекст, наоборот, накапливается.
+   *
+   * Успешные веб-поиски сохраняются на категории при любом исходе (готовый блок, пауза, ошибка
+   * после поиска) — они реплеятся в запросах этого и следующих блоков, см. tool-context.ts.
    *
    * Держит cardLock на всё время вызова — не только против повторного клика, но и против
    * параллельного PUT (оба пути делают read-modify-write полной строки, см. card-lock.ts). На паузе
@@ -58,17 +64,22 @@ export class CardGenerationService {
     userId: string,
     cardId: number,
     categoryId?: string,
-    resetAskUserAnswers = false,
+    resetToolContext = false,
   ): Promise<CardGenerationStep> {
     if (!tryLockCard(cardId)) throw refuse(409, "busy");
     const t0 = Date.now();
+    // Поиски копятся здесь, а не в результате цикла: при ошибке LLM результата нет, а сохранить надо.
+    const searches: WebSearchRecord[] = [];
+    let searchTargetId: string | undefined;
     try {
       let card = await this.cards.findOne(userId, cardId);
       if (!card) throw refuse(404, "not_found");
 
-      const hasAnswers = card.categories.some((c) => c.id === categoryId && c.askUserAnswers?.length);
-      if (resetAskUserAnswers && categoryId && hasAnswers) {
-        card = await this.cards.clearCategoryAskUserAnswers(userId, cardId, categoryId);
+      const hasToolContext = card.categories.some(
+        (c) => c.id === categoryId && (c.askUserAnswers?.length || c.webSearches?.length),
+      );
+      if (resetToolContext && categoryId && hasToolContext) {
+        card = await this.cards.clearCategoryToolContext(userId, cardId, categoryId);
         if (!card) throw refuse(404, "not_found");
       }
 
@@ -95,35 +106,52 @@ export class CardGenerationService {
       // текущий вызов LLM (см. ASK_USER_MAX_ANSWERED_QUESTIONS).
       const target = card.categories.find((c) => c.id === assembled.targetCategoryId);
       const askUserEnabled = card.useAskUser && (target?.askUserAnswers?.length ?? 0) < ASK_USER_MAX_ANSWERED_QUESTIONS;
+      // Лимит поисков — тоже сквозной для блока: уже сохранённые поиски вычитаются, иначе каждое
+      // резюме после ответа на ask_user получало бы свежий бюджет.
+      const maxSearchRounds = await this.tavilySettings.getMaxSearchRounds(userId);
+      const searchesLeft = Math.max(0, maxSearchRounds - (target?.webSearches?.length ?? 0));
+      searchTargetId = assembled.targetCategoryId;
 
       const outcome = await runCardGenerationToolLoop({
         llm: this.llm,
         baseOptions: { userId, debugLabel: "cards", ...presetToCompletionOptions(preset) },
         history: assembled.messages,
         webSearch: tavilyApiKey ? this.webSearcher(tavilyApiKey) : null,
-        maxSearchRounds: await this.tavilySettings.getMaxSearchRounds(userId),
+        maxSearchRounds: searchesLeft,
         askUserEnabled,
+        onWebSearch: (record) => searches.push(record),
       });
+
+      // searches очищается только ПОСЛЕ успешной записи: если запись упала, catch ниже допишет поиски
+      // отдельно (квота уже потрачена); после успеха — не должен писать их второй раз.
+      const performed = [...searches];
 
       if (!outcome.done) {
         const { questions } = outcome;
         const targetId = assembled.targetCategoryId;
-        const saved = await this.cards.setCategoryPendingQuestions(userId, cardId, targetId, questions);
+        const saved = await this.cards.setCategoryPendingQuestions(userId, cardId, targetId, questions, performed);
+        searches.length = 0;
         if (!saved) throw refuse(404, "not_found");
-        return { status: "questions", categoryId: targetId, questions };
+        return { status: "questions", categoryId: targetId, questions, toolContextTokens: toolContextTokens(saved, targetId) };
       }
 
       const content = outcome.content.trim();
-      const saved = await this.cards.setCategoryContent(userId, cardId, assembled.targetCategoryId, content);
+      const targetId = assembled.targetCategoryId;
+      const saved = await this.cards.setCategoryContent(userId, cardId, targetId, content, performed);
+      searches.length = 0;
       if (!saved) throw refuse(404, "not_found");
       logger.info(
-        { durationMs: Date.now() - t0, userId, cardId, categoryId: assembled.targetCategoryId },
+        { durationMs: Date.now() - t0, userId, cardId, categoryId: targetId, searchesCount: performed.length },
         "Card block generated",
       );
-      // Только categoryId+content, не вся карточка: клиент мержит точечно, не затирая категории,
-      // которые пользователь мог параллельно править локально (ещё не сохранены).
-      return { status: "done", categoryId: assembled.targetCategoryId, content };
+      // Только поля блока, не вся карточка: клиент мержит точечно, не затирая категории, которые
+      // пользователь мог параллельно править локально (ещё не сохранены).
+      return { status: "done", categoryId: targetId, content, toolContextTokens: toolContextTokens(saved, targetId) };
     } catch (err) {
+      // Лок ещё наш (снимается в finally) — запись не гоняется с PUT.
+      if (searchTargetId && searches.length > 0) {
+        await this.saveSearchesAfterFailure(userId, cardId, searchTargetId, searches);
+      }
       throw toHttpError(err, userId, cardId);
     } finally {
       unlockCard(cardId);
@@ -192,10 +220,38 @@ export class CardGenerationService {
     return result;
   }
 
+  /**
+   * Генерация упала уже после веб-поиска: квота Tavily потрачена, поэтому результаты всё равно
+   * сохраняем — повторная попытка увидит их в реплее. Сбой самой записи только логируем: наверх
+   * должна уйти исходная ошибка генерации, а не ошибка этой страховки.
+   */
+  private async saveSearchesAfterFailure(
+    userId: string,
+    cardId: number,
+    categoryId: string,
+    searches: WebSearchRecord[],
+  ): Promise<void> {
+    try {
+      await this.cards.appendCategoryWebSearches(userId, cardId, categoryId, searches);
+      logger.info(
+        { userId, cardId, categoryId, searchesCount: searches.length },
+        "Веб-поиски сохранены после сбоя генерации",
+      );
+    } catch (err) {
+      logger.error({ err, userId, cardId, categoryId }, "Не удалось сохранить веб-поиски после сбоя генерации");
+    }
+  }
+
   /** Поиск с ключом пользователя — в таком виде его получает цикл tool-calling. */
   private webSearcher(apiKey: string): WebSearcher {
     return { search: (query) => this.tavily.search(apiKey, query) };
   }
+}
+
+/** Вес контекста инструментов категории в только что сохранённой карточке (для ответа клиенту). */
+function toolContextTokens(card: Card, categoryId: string): number {
+  const category = card.categories.find((c) => c.id === categoryId);
+  return category ? countToolContextTokens(category) : 0;
 }
 
 /**

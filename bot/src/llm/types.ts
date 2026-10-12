@@ -20,8 +20,8 @@ export type ToolCall = LlmToolCall;
  * reasoning_content — DeepSeek thinking-режим (`thinking: { type: "enabled" }`, см. providers.ts):
  * если запрос идёт с включённым thinking, DeepSeek требует, чтобы у КАЖДОГО assistant-сообщения с
  * tool_calls в истории было это поле (иначе 400 "reasoning_content in the thinking mode must be
- * passed back"), даже когда сам tool_calls синтетический (см. prompt-assembly.ts —
- * appendAskUserExchange), а не реальный «мыслительный» вывод модели за этим вызовом. Опционально —
+ * passed back"), даже когда сам tool_calls синтетический (см. tool-context.ts —
+ * buildToolContextMessages), а не реальный «мыслительный» вывод модели за этим вызовом. Опционально —
  * не нужно, когда thinking выключен (обычный режим); проверено вручную прямым запросом к DeepSeek.
  */
 export interface ToolCallMessage {

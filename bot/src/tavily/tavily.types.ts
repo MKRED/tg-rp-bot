@@ -1,9 +1,7 @@
-/** Один результат веб-поиска — в таком виде уходит модели в tool-результате web_search. */
-export interface WebSearchResult {
-  title: string;
-  url: string;
-  content: string;
-}
+import type { WebSearchResult } from "@tg-rp-bot/shared";
+
+// Результат поиска сохраняется на категории карточки и уезжает в webapp — тип живёт в контракте.
+export type { WebSearchResult };
 
 /** Квота ключа Tavily для экрана настроек. */
 export interface TavilyUsage {

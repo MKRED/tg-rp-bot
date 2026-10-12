@@ -1,4 +1,4 @@
-import type { AskUserQuestion } from "@tg-rp-bot/shared";
+import type { AskUserQuestion, WebSearchRecord } from "@tg-rp-bot/shared";
 import type {
   ChatCompleter,
   ChatCompletionOptions,
@@ -22,6 +22,8 @@ const ASK_USER_MAX_ROUNDS = 2;
 
 interface WebSearchOutcome {
   content: string;
+  /** Успешный поиск — запрос и результаты, чтобы вызывающий сохранил их на категории. */
+  record?: WebSearchRecord;
   /** Ключ Tavily невалиден/отозван (401/403) — ретраить его в следующих раундах бессмысленно. */
   authFailed: boolean;
 }
@@ -45,7 +47,8 @@ async function runWebSearchCall(call: ToolCall, webSearch: WebSearcher): Promise
   }
 
   try {
-    return { content: JSON.stringify(await webSearch.search(query)), authFailed: false };
+    const results = await webSearch.search(query);
+    return { content: JSON.stringify(results), record: { query, results }, authFailed: false };
   } catch (err) {
     const authFailed = err instanceof TavilyHttpError && (err.status === 401 || err.status === 403);
     logger.error({ err, query, authFailed }, "Tavily search failed during card generation");
@@ -63,7 +66,14 @@ export interface ToolLoopParams {
   history: LoopMessage[];
   /** TavilyService с ключом пользователя; null — веб-поиск выключен на карточке или ключ Tavily не задан. */
   webSearch: WebSearcher | null;
+  /** Остаток бюджета поисков блока — вызывающий уже вычел сохранённые на категории поиски. */
   maxSearchRounds: number;
+  /**
+   * Зовётся на каждый УСПЕШНЫЙ поиск сразу после него. Коллбэк, а не поле результата: поиски нужно
+   * сохранить при любом исходе, в том числе когда следующий вызов LLM упал и результата нет вовсе —
+   * квота Tavily уже потрачена, а сохранённый поиск реплеится в следующих запросах блока.
+   */
+  onWebSearch?: (record: WebSearchRecord) => void;
   askUserEnabled: boolean;
 }
 
@@ -78,7 +88,9 @@ export type ToolLoopOutcome = { done: true; content: string } | { done: false; q
  * кап, не полагаемся только на инструкцию в промпте).
  *
  * ask_user не резолвится внутри цикла (в отличие от web_search) — эта функция возвращается с
- * done: false и только вопросами. Вызывающий (card-generation.service.ts) НЕ резюмирует
+ * done: false и только вопросами. web_search из того же хода при этом всё равно выполняется и
+ * отдаётся в onWebSearch: вызывающий сохранит его на категории, и после ответа модель увидит
+ * результат в реплее, а не станет искать заново. Вызывающий (card-generation.service.ts) НЕ резюмирует
  * этот же LLM-разговор: он сохраняет вопросы на самой категории (см. CardCategory в
  * @tg-rp-bot/shared) и, получив ответ, просто заново вызывает эту функцию с прогнанным через
  * assembleCardBlockPrompt промптом, где ответы реплеятся заново синтетической парой assistant
@@ -94,10 +106,13 @@ export type ToolLoopOutcome = { done: true; content: string } | { done: false; q
  * либо поднимает searchesUsed/askUserRoundsUsed минимум на 1 за каждый tool_call в нём (web_search
  * и неизвестные инструменты — searchesUsed, ask_user — askUserRoundsUsed, даже если аргументы
  * битые/повторные) — значит хотя бы один из бюджетов неизбежно исчерпается не позже чем через
- * maxSearchRounds + ASK_USER_MAX_ROUNDS ходов.
+ * maxSearchRounds + ASK_USER_MAX_ROUNDS ходов. Инструмент, вызванный БЕЗ предложения в этом раунде
+ * (выключен, бюджет исчерпан или имя неизвестно — модель подсматривает вызовы в реплее), не
+ * выполняется и списывает оба бюджета сразу: его собственный счётчик уже ни на что не влияет, а
+ * списание только с него оставило бы другой инструмент предложенным навсегда.
  */
 export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise<ToolLoopOutcome> {
-  const { llm, baseOptions, webSearch, maxSearchRounds, askUserEnabled } = params;
+  const { llm, baseOptions, webSearch, maxSearchRounds, askUserEnabled, onWebSearch } = params;
   const { userId } = baseOptions;
   const t0 = Date.now();
 
@@ -117,6 +132,16 @@ export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise
       messages: history,
       ...(tools.length > 0 ? { tools, toolChoice: "auto" as const } : {}),
     });
+
+    logger.debug(
+      {
+        userId,
+        round: llmCalls,
+        offered: tools.map((t) => t.function.name),
+        called: result.toolCalls?.map((c) => c.function.name) ?? [],
+      },
+      "Card generation tool loop: раунд",
+    );
 
     if (!result.toolCalls?.length || tools.length === 0) {
       logger.info(
@@ -142,7 +167,27 @@ export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise
     let pausedQuestions: AskUserQuestion[] | undefined;
     let authFailed = false;
 
+    const offered = new Set(tools.map((t) => t.function.name));
+
     for (const call of result.toolCalls) {
+      // Вызов инструмента, которого в этом раунде не предлагали (выключен, бюджет исчерпан, либо имя
+      // выдумано): модель подсматривает web_search/ask_user в реплее прошлых вызовов. Не выполняем —
+      // иначе поиск шёл бы сверх лимита, а ask_user ставил бы паузу в обход отключения — и списываем
+      // ОБА бюджета: свой у непредложенного инструмента уже не растёт, и цикл не был бы конечным.
+      if (!offered.has(call.function.name)) {
+        logger.warn(
+          { userId, tool: call.function.name, offered: [...offered] },
+          "Card generation tool loop: вызван непредложенный инструмент",
+        );
+        history.push({
+          role: "tool",
+          tool_call_id: call.id,
+          content: JSON.stringify({ error: `tool unavailable: ${call.function.name}` }),
+        });
+        searchesUsed++;
+        askUserRoundsUsed++;
+        continue;
+      }
       if (call.function.name === ASK_USER_TOOL_NAME) {
         // Считаем сам факт вызова независимо от валидности аргументов/повторности — иначе битые
         // аргументы не расходовали бы бюджет и цикл не был бы гарантированно конечным.
@@ -169,12 +214,13 @@ export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise
         continue;
       }
 
-      // webSearch === null здесь не бывает в норме (без него web_search не предлагается), но модель
-      // может прислать tool_call и без предложенного инструмента — отвечаем ей ошибкой, не падаем.
-      const outcome = webSearch
+      // Сюда доходит только предложенный web_search, а он предлагается лишь при webSearch !== null;
+      // вторая ветка — сужение типа, не рабочий путь.
+      const outcome: WebSearchOutcome = webSearch
         ? await runWebSearchCall(call, webSearch)
         : { content: JSON.stringify({ error: `tool unavailable: ${call.function.name}` }), authFailed: false };
       history.push({ role: "tool", tool_call_id: call.id, content: outcome.content });
+      if (outcome.record) onWebSearch?.(outcome.record);
       searchesUsed++;
       if (outcome.authFailed) authFailed = true;
     }

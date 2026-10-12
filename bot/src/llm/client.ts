@@ -104,8 +104,10 @@ async function chatCompletionSingle(
       }
       const json = (await response.json()) as LlmResponse;
       // Ответ с tool_calls обычно приходит с пустым/null content — это не отказ/пустая генерация,
-      // а штатный запрос вызвать инструмент, гвард на пустой текст здесь не применим.
-      const hasToolCalls = !!json.choices[0]?.message.tool_calls?.length;
+      // а штатный запрос вызвать инструмент, гвард на пустой текст здесь не применим. Но только если
+      // инструменты предлагались: tool_calls в ответ на запрос БЕЗ tools вызывающий выполнить не
+      // сможет (цикл карточек примет content как готовый текст) — это та же пустая генерация.
+      const hasToolCalls = !!options.tools?.length && !!json.choices[0]?.message.tool_calls?.length;
       if (!hasToolCalls && isUnusableCompletion(json.choices[0]?.message.content ?? "")) {
         throw new EmptyCompletionError();
       }

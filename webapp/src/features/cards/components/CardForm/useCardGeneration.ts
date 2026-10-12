@@ -36,11 +36,16 @@ interface UseCardGenerationArgs {
   /**
    * Точечно ставит вопросы ask_user категории (не «грязная» правка формы). Функциональным апдейтом в
    * форме: ответ сервера приходит через секунды-минуты, и массив, замкнутый на момент клика, затёр бы
-   * правки других блоков, сделанные за это время.
+   * правки других блоков, сделанные за это время. toolContextTokens — свежий вес контекста
+   * инструментов блока из ответа сервера; undefined (сброс карусели после ошибки) — не трогаем.
    */
-  onPendingQuestions: (categoryId: string, questions: CardCategory["pendingQuestions"]) => void;
+  onPendingQuestions: (
+    categoryId: string,
+    questions: CardCategory["pendingQuestions"],
+    toolContextTokens?: number,
+  ) => void;
   /** Результат генерации уже сохранён на сервере — форма синхронизирует и стейт, и baseline. */
-  onGenerated: (categoryId: string, content: string) => void;
+  onGenerated: (categoryId: string, content: string, toolContextTokens: number) => void;
 }
 
 /**
@@ -69,10 +74,10 @@ export function useCardGeneration({
     try {
       const result = await generateCardBlock(id, categoryId);
       if (result.status === "questions") {
-        onPendingQuestions(result.categoryId, result.questions);
+        onPendingQuestions(result.categoryId, result.questions, result.toolContextTokens);
         return; // generatingId остаётся — блок ждёт ответа в карусели
       }
-      onGenerated(result.categoryId, result.content);
+      onGenerated(result.categoryId, result.content, result.toolContextTokens);
       setGeneratingId(null);
     } catch (err) {
       showToast({ type: "error", message: errorMessage(err) });
@@ -87,10 +92,10 @@ export function useCardGeneration({
     try {
       const result = await answerCardBlockQuestions(cardId, categoryId, input);
       if (result.status === "questions") {
-        onPendingQuestions(result.categoryId, result.questions); // новый раунд уточнений
+        onPendingQuestions(result.categoryId, result.questions, result.toolContextTokens); // новый раунд уточнений
         return;
       }
-      onGenerated(result.categoryId, result.content);
+      onGenerated(result.categoryId, result.content, result.toolContextTokens);
       setGeneratingId(null);
     } catch (err) {
       showToast({ type: "error", message: errorMessage(err) });

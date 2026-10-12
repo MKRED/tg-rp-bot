@@ -19,17 +19,35 @@ export interface AskUserAnswer {
   options?: string[];
 }
 
+/** Один результат веб-поиска — в таком виде уходит модели в tool-результате web_search. */
+export interface WebSearchResult {
+  title: string;
+  url: string;
+  content: string;
+}
+
+/** Выполненный веб-поиск (web_search): запрос модели и то, что вернул поиск. */
+export interface WebSearchRecord {
+  query: string;
+  results: WebSearchResult[];
+}
+
 /**
  * Категория карточки (cards.categories) — редактируемый пользователем блок структуры (например
  * "Base", "Body"): title/description — то, что ИИ видит как заголовок и пример формата (собирается
  * в <example>…</example>), content — сгенерированный/отредактированный текст блока (пусто = ещё не
  * сгенерирован). Порядок генерации/сборки промпта = порядок элементов массива.
  *
- * pendingQuestions/askUserAnswers — состояние ask_user, сервер-владеемое: хранится прямо на категории,
- * а не в памяти процесса (у пользователя нет ограничения по времени на ответ). pendingQuestions —
- * вопросы, ещё ожидающие ответа для ЭТОГО блока; askUserAnswers — уже отвеченные (или пропущенные)
- * пары: контекст для его собственной генерации после ответа и для последующих блоков. Клиент их
- * только читает — во входе POST/PUT сервер их отбрасывает и переносит из сохранённой строки.
+ * pendingQuestions/askUserAnswers/webSearches — контекст инструментов блока, сервер-владеемый:
+ * хранится прямо на категории, а не в памяти процесса (у пользователя нет ограничения по времени на
+ * ответ). pendingQuestions — вопросы, ещё ожидающие ответа для ЭТОГО блока; askUserAnswers — уже
+ * отвеченные (или пропущенные) пары; webSearches — успешные веб-поиски, сделанные при генерации
+ * блока. Ответы и поиски — контекст и для собственной генерации блока, и для последующих блоков;
+ * явная «Перегенерировать» сбрасывает их у своего блока. Клиент их только читает — во входе
+ * POST/PUT сервер их отбрасывает и переносит из сохранённой строки.
+ *
+ * toolContextTokens — сколько токенов этот контекст (ответы + поиски блока) занимает в промпте:
+ * точный подсчёт сервера на выдаче карточки, в БД не хранится.
  */
 export interface CardCategory {
   id: string;
@@ -39,6 +57,8 @@ export interface CardCategory {
   enabled: boolean;
   pendingQuestions?: AskUserQuestion[];
   askUserAnswers?: AskUserAnswer[];
+  webSearches?: WebSearchRecord[];
+  toolContextTokens?: number;
 }
 
 /** Тело формы создания/правки (POST/PUT). */
@@ -108,11 +128,12 @@ export const DEFAULT_CARD_CATEGORIES: CardCategory[] = [
  * Ответ обеих ручек генерации (POST /cards/:id/generate и /generate/answer). "done" — блок готов и уже
  * сохранён (клиент мержит точечно по categoryId, не всю карточку — не затирая несохранённые правки
  * других категорий); "questions" — модель попросила уточнение (ask_user), вопросы уже сохранены на
- * категории, ограничения по времени на ответ нет.
+ * категории, ограничения по времени на ответ нет. toolContextTokens — актуальный вес контекста
+ * инструментов этого блока (см. CardCategory): генерация могла добавить поиски или сбросить контекст.
  */
 export type CardGenerationStep =
-  | { status: "done"; categoryId: string; content: string }
-  | { status: "questions"; categoryId: string; questions: AskUserQuestion[] };
+  | { status: "done"; categoryId: string; content: string; toolContextTokens: number }
+  | { status: "questions"; categoryId: string; questions: AskUserQuestion[]; toolContextTokens: number };
 
 /** Ответ на вопросы ask_user (тело /generate/answer без categoryId): ответы по порядку вопросов или отказ. */
 export type AnswerCardQuestionsInput = { skipped: true } | { skipped: false; answers: string[] };
