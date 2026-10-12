@@ -1,8 +1,3 @@
-/* На экранах tgui — отступ как у полей tgui; внутри AppPage переменная обнуляет его (убрать на шаге 8). */
-.root {
-  padding: var(--app-legacy-field-padding, var(--mantine-spacing-sm) 22px 0);
-}
-
 /* Аватар с фото — кнопка просмотра целиком (лайтбокс). */
 .zoom {
   flex-shrink: 0;

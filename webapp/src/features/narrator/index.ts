@@ -7,12 +7,19 @@ export { useStoryStats } from "./hooks/useStoryStats";
 export { useCompactions } from "./hooks/useCompactions";
 export { useStoryAutoTranslate } from "./hooks/useStoryAutoTranslate";
 export { useStoryTree } from "./hooks/useStoryTree";
-export { StoryCard } from "./components/StoryCard";
+export { StoryAvatars } from "./components/StoryAvatars";
+export { StoryRow } from "./components/StoryRow";
 export { StoryInput, type StoryInputHandle } from "./components/StoryInput";
 export { StoryHeader } from "./components/StoryHeader";
 export { StoryMessageItem } from "./components/StoryMessageItem";
 export { BeatDivider } from "./components/BeatDivider";
-export { CompactSettingsSection } from "./components/CompactSettingsSection";
+export {
+  StoryCompactCard,
+  StoryFeedCard,
+  StoryLinksCard,
+  StoryStatsCard,
+  type StoryLinkTarget,
+} from "./components/StorySettings";
 export {
   listStories,
   getStory,
@@ -33,7 +40,7 @@ export {
 export { getStorySettings, updateStorySettings } from "./api/settings-api";
 export { getStoryStats } from "./api/stats-api";
 export { compactStory, listCompactions, deleteCompaction } from "./api/compact-api";
-export { LANG_OPTIONS, SCOPE_OPTIONS, AUTO_SCOPE_OPTIONS, METHOD_OPTIONS } from "./lib/translate-options";
+export { LANG_OPTIONS, SCOPE_OPTIONS, AUTO_SCOPE_OPTIONS } from "./lib/translate-options";
 export type {
   StoryListItem,
   StoryMessage,

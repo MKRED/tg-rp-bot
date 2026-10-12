@@ -15,8 +15,8 @@ export function useCompactions(storyId: number) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
+  // loading — только первая загрузка, повторная обновляет список без лоадера.
   const reload = useCallback(() => {
-    setLoading(true);
     return listCompactions(storyId)
       .then(setCompactions)
       .catch((err) => console.error("Failed to load compactions", err))

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getChatSettings, updateChatSettings } from "../api/settings-api";
 import type { ChatSettings } from "../types/chat";
 
@@ -13,6 +13,9 @@ const DEFAULT_SETTINGS: ChatSettings = {
 export function useChatSettings(chatId: number) {
   const [settings, setSettings] = useState<ChatSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
+  // Актуальные настройки для update: правки идут подряд, пока предыдущий запрос ещё в полёте.
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
 
   useEffect(() => {
     setLoading(true);
@@ -26,21 +29,24 @@ export function useChatSettings(chatId: number) {
   // Оптимистично применяет patch; при ошибке откатывает и возвращает false — экран покажет тост.
   const update = useCallback(
     async (patch: Partial<ChatSettings>): Promise<boolean> => {
-      const optimistic = { ...settings, ...patch };
-      setSettings(optimistic);
+      const keys = Object.keys(patch) as (keyof ChatSettings)[];
+      // Значения до правки — для отката; из ref, а не из замыкания: замыкание могло устареть.
+      const before = Object.fromEntries(keys.map((k) => [k, settingsRef.current[k]])) as Partial<ChatSettings>;
+      // Сразу и в ref — следующая правка до перерисовки должна видеть эту.
+      settingsRef.current = { ...settingsRef.current, ...patch };
+      setSettings((cur) => ({ ...cur, ...patch }));
       try {
         const updated = await updateChatSettings(chatId, patch);
-        setSettings(updated);
+        // Из ответа берём только поля этого patch: другие правки, отправленные пока шёл запрос, не затираем.
+        setSettings((cur) => ({ ...cur, ...Object.fromEntries(keys.map((k) => [k, updated[k]])) }));
         return true;
       } catch (err) {
         console.error("Failed to update chat settings", err);
-        // Откатываем только поля этого patch: другие правки, сделанные пока запрос шёл, не трогаем.
-        const revert = Object.fromEntries(Object.keys(patch).map((k) => [k, settings[k as keyof ChatSettings]]));
-        setSettings((cur) => ({ ...cur, ...revert }));
+        setSettings((cur) => ({ ...cur, ...before }));
         return false;
       }
     },
-    [chatId, settings],
+    [chatId],
   );
 
   return { settings, loading, update };

@@ -1,5 +1,5 @@
-import { Loader, Text } from "@mantine/core";
-import { Check } from "lucide-react";
+import { Button, Loader, Stack, Text } from "@mantine/core";
+import { Check, Plus } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { ListRow } from "../ListCard";
 import { ResponsiveSheet } from "../ResponsiveSheet";
@@ -32,6 +32,8 @@ interface PickerFieldProps {
   loading?: boolean;
   /** Текст шторки, когда выбирать не из чего. */
   emptyText: string;
+  /** Кнопка под пустым списком — уйти создавать запись (шторка закрывается). */
+  emptyAction?: { label: string; onClick: () => void };
   onChange: (id: number) => void;
 }
 
@@ -49,6 +51,7 @@ export function PickerField({
   selected: selectedOverride,
   loading,
   emptyText,
+  emptyAction,
   onChange,
 }: PickerFieldProps) {
   const [opened, setOpened] = useState(false);
@@ -73,9 +76,23 @@ export function PickerField({
             <Loader size="sm" />
           </div>
         ) : options.length === 0 ? (
-          <Text c="dimmed" ta="center" py="md">
-            {emptyText}
-          </Text>
+          <Stack align="center" gap="md" py="md">
+            <Text c="dimmed" ta="center">
+              {emptyText}
+            </Text>
+            {emptyAction && (
+              <Button
+                variant="light"
+                leftSection={<Plus size={18} />}
+                onClick={() => {
+                  setOpened(false);
+                  emptyAction.onClick();
+                }}
+              >
+                {emptyAction.label}
+              </Button>
+            )}
+          </Stack>
         ) : (
           // Строки во всю ширину шторки — фон нажатия и разделители до краёв.
           <div className={styles.list}>

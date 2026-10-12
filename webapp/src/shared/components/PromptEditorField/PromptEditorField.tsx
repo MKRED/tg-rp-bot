@@ -30,7 +30,7 @@ export function PromptEditorField({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className={styles.root}>
+    <div>
       <div className={styles.label}>
         <Text fw={500} className={styles.labelText}>
           {header}

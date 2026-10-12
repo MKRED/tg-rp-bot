@@ -13,15 +13,14 @@ const EMPTY_STATS: StoryStats = {
 };
 
 /**
- * Статистика истории для экрана настроек: токены (вся история / активная ветка / полный запрос).
- * Зеркало useChatStats без impersonate-вариантов (в narrator их нет).
+ * Статистика истории для экрана настроек: токены (вся история / активная ветка / полный запрос) и
+ * доступность сжатия. loading — только первая загрузка: reload после сжатия обновляет тихо, без лоадера.
  */
 export function useStoryStats(storyId: number) {
   const [stats, setStats] = useState<StoryStats>(EMPTY_STATS);
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(() => {
-    setLoading(true);
     return getStoryStats(storyId)
       .then(setStats)
       .catch((err) => console.error("Failed to load story stats", err))

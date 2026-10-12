@@ -1,0 +1,41 @@
+.center {
+  display: flex;
+  justify-content: center;
+  padding: var(--mantine-spacing-sm);
+}
+
+/* Пересказы — строки с разделителями. */
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.item + .item {
+  border-top: 1px solid var(--app-color-divider);
+}
+
+.itemToggle {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--mantine-spacing-xs);
+  border-radius: var(--mantine-radius-sm);
+}
+
+.chevron {
+  flex: none;
+  color: var(--mantine-color-dimmed);
+  transition: transform 150ms ease;
+}
+
+.chevron[data-open] {
+  transform: rotate(90deg);
+}
+
+.summary {
+  padding: 0 0 var(--mantine-spacing-sm) 22px;
+  white-space: pre-wrap;
+}

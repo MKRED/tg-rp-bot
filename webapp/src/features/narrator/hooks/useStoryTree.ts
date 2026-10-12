@@ -6,14 +6,19 @@ import type { StoryTreeNode } from "../types/story";
 export function useStoryTree(storyId: number) {
   const [nodes, setNodes] = useState<StoryTreeNode[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     setLoading(true);
+    setError(false);
     getStoryTree(storyId)
       .then(setNodes)
-      .catch((err) => console.error("Failed to load story tree", err))
+      .catch((err) => {
+        console.error("Failed to load story tree", err);
+        setError(true);
+      })
       .finally(() => setLoading(false));
   }, [storyId]);
 
-  return { nodes, loading };
+  return { nodes, loading, error };
 }

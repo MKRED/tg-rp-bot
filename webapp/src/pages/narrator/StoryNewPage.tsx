@@ -1,21 +1,19 @@
-import { Button, Cell, List, Modal, Section, Spinner } from "@telegram-apps/telegram-ui";
-import { BookOpen, ChevronRight, Clapperboard, SlidersHorizontal } from "lucide-react";
-import { motion } from "framer-motion";
+import { Button } from "@mantine/core";
+import { Clapperboard } from "lucide-react";
 import { useState } from "react";
 import { ROUTES, storyViewPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
-import { PageTransition } from "../../shared/components/PageTransition";
+import { AppPage } from "../../shared/components/AppPage";
+import { PickerField, type PickerOption } from "../../shared/components/PickerField";
 import { PromptEditorField } from "../../shared/components/PromptEditorField";
-import { createStory } from "../../features/narrator";
+import { SettingsCard } from "../../shared/components/SettingsCard";
+import { useToast } from "../../shared/toast";
 import { useBooks } from "../../features/knowledge-books";
 import { useTemplates } from "../../features/narrator-templates";
 import { presetSummary, usePresets } from "../../features/generation-presets";
-import { useToast } from "../../shared/toast";
-import "./narrator.css";
+import { createStory } from "../../features/narrator";
 
-const ITEM_TRANSITION = { duration: 0.2, ease: "easeOut" as const };
-
-/** Экран создания истории: выбор книги/шаблона/пресета + обязательное открытие + опц. премиза. */
+/** Форма создания истории: книга знаний, шаблон рассказчика и пресет (все обязательны), начало и премиза. */
 export function StoryNewPage() {
   const navigate = useTransitionNavigate();
   const { showToast } = useToast();
@@ -30,271 +28,105 @@ export function StoryNewPage() {
   const [premise, setPremise] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const [bookOpen, setBookOpen] = useState(false);
-  const [templateOpen, setTemplateOpen] = useState(false);
-  const [presetOpen, setPresetOpen] = useState(false);
+  const canSubmit = bookId !== null && templateId !== null && presetId !== null && openingBeat.trim().length > 0;
 
-  const selectedBook = books.find((b) => b.id === bookId) ?? null;
-  const selectedTemplate = templates.find((t) => t.id === templateId) ?? null;
-  const selectedPreset = presets.find((p) => p.id === presetId) ?? null;
-
-  // Книга, шаблон и пресет обязательны; премиза — нет.
-  const valid =
-    bookId !== null && templateId !== null && presetId !== null && openingBeat.trim().length > 0;
-
-  const handleCreate = () => {
-    if (!valid || submitting) return;
+  const handleSubmit = async () => {
+    if (bookId === null || templateId === null || presetId === null || !openingBeat.trim()) return;
     setSubmitting(true);
-    createStory({
-      bookId: bookId!,
-      templateId: templateId!,
-      presetId: presetId!,
-      openingBeat: openingBeat.trim(),
-      premise: premise.trim(),
-    })
-      .then((res) => navigate(storyViewPath(res.story.id)))
-      .catch(() => {
-        setSubmitting(false);
-        showToast({ type: "error", message: "Не удалось создать историю" });
+    try {
+      const res = await createStory({
+        bookId,
+        templateId,
+        presetId,
+        openingBeat: openingBeat.trim(),
+        premise: premise.trim(),
       });
+      // replace: «Назад» из новой истории ведёт к списку, а не обратно в форму создания.
+      navigate(storyViewPath(res.story.id), { replace: true });
+    } catch (err) {
+      // Остаёмся в форме с заполненным — можно повторить.
+      console.error("Failed to create story", err);
+      showToast({ type: "error", message: "Не удалось создать историю" });
+      setSubmitting(false);
+    }
   };
 
-  if (booksLoading || templatesLoading || presetsLoading) {
-    return (
-      <PageTransition>
-        <div className="story-new-page__center">
-          <Spinner size="m" />
-        </div>
-      </PageTransition>
-    );
-  }
+  const bookOptions: PickerOption[] = books.map((b) => ({
+    id: b.id,
+    title: b.name,
+    description: b.description ?? `Записей: ${b.entryCount}`,
+  }));
+  const templateOptions: PickerOption[] = templates.map((t) => ({ id: t.id, title: t.name }));
+  const presetOptions: PickerOption[] = presets.map((p) => ({ id: p.id, title: p.name, description: presetSummary(p) }));
 
   return (
-    <PageTransition>
-      <div className="story-new-page">
-        <List>
-          <Section header="Новая история">
-            {/* Книга знаний — обязательна */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ ...ITEM_TRANSITION, delay: 0 }}
-            >
-              <Cell
-                before={
-                  <BookOpen
-                    size={24}
-                    className={`story-new-page__icon${bookId === null ? " story-new-page__icon--hint" : ""}`}
-                  />
-                }
-                after={<ChevronRight size={20} className="story-new-page__chevron" />}
-                subtitle={
-                  bookId === null
-                    ? "Обязательно"
-                    : (selectedBook?.description ?? `Записей: ${selectedBook?.entryCount ?? 0}`)
-                }
-                onClick={() => setBookOpen(true)}
-              >
-                {selectedBook?.name ?? "Выберите книгу знаний"}
-              </Cell>
-            </motion.div>
+    <AppPage title="Новая история" description="Мир, правила рассказчика и с чего всё начинается">
+      <SettingsCard title="Основа">
+        <PickerField
+          label="Книга знаний"
+          description="Мир истории: персонажи, места, лор"
+          required
+          placeholder="Выберите книгу знаний"
+          options={bookOptions}
+          value={bookId}
+          loading={booksLoading}
+          emptyText="Книг знаний пока нет."
+          emptyAction={{ label: "Создать книгу знаний", onClick: () => navigate(ROUTES.bookNew) }}
+          onChange={setBookId}
+        />
+        <PickerField
+          label="Шаблон рассказчика"
+          description="Промпты, по которым ИИ ведёт историю"
+          required
+          placeholder="Выберите шаблон"
+          options={templateOptions}
+          value={templateId}
+          loading={templatesLoading}
+          emptyText="Шаблонов рассказчика пока нет."
+          emptyAction={{ label: "Создать шаблон", onClick: () => navigate(ROUTES.narratorTemplateNew) }}
+          onChange={setTemplateId}
+        />
+        <PickerField
+          label="Настройки ИИ"
+          description="Пресет генерации: контекст, длина ответа, температура"
+          required
+          placeholder="Выберите пресет"
+          options={presetOptions}
+          value={presetId}
+          loading={presetsLoading}
+          emptyText="Пресетов пока нет."
+          emptyAction={{ label: "Создать пресет", onClick: () => navigate(ROUTES.presetNew) }}
+          onChange={setPresetId}
+        />
+      </SettingsCard>
 
-            {/* Narrator-шаблон — опционально, дефолт = дефолтная инструкция */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ ...ITEM_TRANSITION, delay: 0.05 }}
-            >
-              <Cell
-                before={
-                  <Clapperboard
-                    size={24}
-                    className={`story-new-page__icon${templateId === null ? " story-new-page__icon--hint" : ""}`}
-                  />
-                }
-                after={<ChevronRight size={20} className="story-new-page__chevron" />}
-                subtitle={templateId === null ? "Обязательно" : "Narrator-шаблон"}
-                onClick={() => setTemplateOpen(true)}
-              >
-                {selectedTemplate?.name ?? "Narrator-шаблон"}
-              </Cell>
-            </motion.div>
+      <SettingsCard title="Начало">
+        <PromptEditorField
+          header="Стартовое сообщение"
+          hint="Показывается дословно как первый бит истории и уходит в контекст модели. Обязательно."
+          placeholder="С чего начинается история…"
+          previewLines={6}
+          value={openingBeat}
+          onChange={setOpeningBeat}
+        />
+        <PromptEditorField
+          header="Сценарий / премиза"
+          hint="Куда вести сцену, тон, завязка. В текст истории не попадает, но влияет на следующие биты. Необязательно."
+          placeholder="Куда ведём историю, тон, завязка…"
+          value={premise}
+          onChange={setPremise}
+        />
+      </SettingsCard>
 
-            {/* Пресет генерации — опционально, дефолт = параметры по умолчанию */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ ...ITEM_TRANSITION, delay: 0.1 }}
-            >
-              <Cell
-                before={
-                  <SlidersHorizontal
-                    size={24}
-                    className={`story-new-page__icon${presetId === null ? " story-new-page__icon--hint" : ""}`}
-                  />
-                }
-                after={<ChevronRight size={20} className="story-new-page__chevron" />}
-                subtitle={
-                  presetId === null
-                    ? "Обязательно"
-                    : (selectedPreset ? presetSummary(selectedPreset) : "Пресет генерации")
-                }
-                onClick={() => setPresetOpen(true)}
-              >
-                {selectedPreset?.name ?? "Пресет генерации"}
-              </Cell>
-            </motion.div>
-          </Section>
-
-          <Section className="section-blend-inputs" header="Старт истории">
-            <PromptEditorField
-              header="Стартовое сообщение (обязательно)"
-              hint="Показывается дословно как первый бит истории и уходит в контекст модели."
-              placeholder="С чего начинается история…"
-              previewLines={6}
-              value={openingBeat}
-              onChange={setOpeningBeat}
-            />
-            <PromptEditorField
-              header="Сценарий / премиза (необязательно)"
-              hint="Куда вести сцену, тон, завязка. В текст истории не попадает, но влияет на следующие биты."
-              placeholder="Куда ведём историю, тон, завязка…"
-              value={premise}
-              onChange={setPremise}
-            />
-          </Section>
-        </List>
-
-        <motion.div
-          className="story-new-page__submit"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ ...ITEM_TRANSITION, delay: 0.16 }}
-        >
-          <Button size="l" stretched disabled={!valid || submitting} onClick={handleCreate}>
-            {submitting ? <Spinner size="s" /> : "Создать историю"}
-          </Button>
-        </motion.div>
-
-        {/* Модал выбора книги знаний */}
-        <Modal
-          open={bookOpen}
-          onOpenChange={setBookOpen}
-          header={<Modal.Header>Книга знаний</Modal.Header>}
-        >
-          {books.length === 0 ? (
-            <List>
-              <Cell
-                before={<BookOpen size={24} className="story-new-page__icon" />}
-                subtitle="Сначала создайте книгу знаний"
-                onClick={() => {
-                  setBookOpen(false);
-                  navigate(ROUTES.bookNew);
-                }}
-              >
-                Создать книгу знаний
-              </Cell>
-            </List>
-          ) : (
-            <List>
-              {books.map((b) => (
-                <Cell
-                  key={b.id}
-                  before={<BookOpen size={24} className="story-new-page__icon" />}
-                  subtitle={b.description ?? `Записей: ${b.entryCount}`}
-                  onClick={() => {
-                    setBookId(b.id);
-                    setBookOpen(false);
-                  }}
-                >
-                  {b.name}
-                </Cell>
-              ))}
-            </List>
-          )}
-        </Modal>
-
-        {/* Модал выбора narrator-шаблона */}
-        <Modal
-          open={templateOpen}
-          onOpenChange={setTemplateOpen}
-          header={<Modal.Header>Narrator-шаблон</Modal.Header>}
-        >
-          {templatesLoading && (
-            <div className="story-new-page__center">
-              <Spinner size="m" />
-            </div>
-          )}
-          <List>
-            {templates.length === 0 ? (
-              <Cell
-                before={<Clapperboard size={24} className="story-new-page__icon" />}
-                subtitle="Сначала создайте narrator-шаблон"
-                onClick={() => {
-                  setTemplateOpen(false);
-                  navigate(ROUTES.narratorTemplateNew);
-                }}
-              >
-                Создать narrator-шаблон
-              </Cell>
-            ) : (
-              templates.map((t) => (
-                <Cell
-                  key={t.id}
-                  before={<Clapperboard size={24} className="story-new-page__icon" />}
-                  onClick={() => {
-                    setTemplateId(t.id);
-                    setTemplateOpen(false);
-                  }}
-                >
-                  {t.name}
-                </Cell>
-              ))
-            )}
-          </List>
-        </Modal>
-
-        {/* Модал выбора пресета генерации */}
-        <Modal
-          open={presetOpen}
-          onOpenChange={setPresetOpen}
-          header={<Modal.Header>Пресет генерации</Modal.Header>}
-        >
-          {presetsLoading && (
-            <div className="story-new-page__center">
-              <Spinner size="m" />
-            </div>
-          )}
-          <List>
-            {presets.length === 0 ? (
-              <Cell
-                before={<SlidersHorizontal size={24} className="story-new-page__icon" />}
-                subtitle="Сначала создайте пресет генерации"
-                onClick={() => {
-                  setPresetOpen(false);
-                  navigate(ROUTES.presetNew);
-                }}
-              >
-                Создать пресет генерации
-              </Cell>
-            ) : (
-              presets.map((p) => (
-                <Cell
-                  key={p.id}
-                  before={<SlidersHorizontal size={24} className="story-new-page__icon" />}
-                  subtitle={presetSummary(p)}
-                  onClick={() => {
-                    setPresetId(p.id);
-                    setPresetOpen(false);
-                  }}
-                >
-                  {p.name}
-                </Cell>
-              ))
-            )}
-          </List>
-        </Modal>
-      </div>
-    </PageTransition>
+      <Button
+        fullWidth
+        leftSection={<Clapperboard size={18} />}
+        disabled={!canSubmit}
+        loading={submitting}
+        onClick={handleSubmit}
+      >
+        Создать историю
+      </Button>
+    </AppPage>
   );
 }

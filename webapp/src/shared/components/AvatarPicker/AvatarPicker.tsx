@@ -74,7 +74,7 @@ export function AvatarPicker({ image, imageFull, name, onChange }: AvatarPickerP
   const lightboxSrc = imageFull ?? image;
 
   return (
-    <Group gap="md" wrap="nowrap" className={styles.root}>
+    <Group gap="md" wrap="nowrap">
       {/* Инициалы — как у аватаров в списках (nameInitials); цвет — акцент палитры. */}
       {image ? (
         <UnstyledButton className={styles.zoom} onClick={() => setLightboxOpen(true)} aria-label="Открыть фото">

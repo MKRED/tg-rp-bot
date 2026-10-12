@@ -1,7 +1,7 @@
 import { Box, Button, Collapse } from "@mantine/core";
 import { MessageSquarePlus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { chatViewPath } from "../../app/routes";
+import { ROUTES, chatViewPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { AppPage } from "../../shared/components/AppPage";
 import { PickerField, type PickerOption } from "../../shared/components/PickerField";
@@ -103,7 +103,8 @@ export function RpChatNewPage() {
             options={characterOptions}
             value={charId}
             loading={charsLoading}
-            emptyText="Персонажей пока нет — создайте их в разделе «Персонажи»."
+            emptyText="Персонажей пока нет."
+            emptyAction={{ label: "Создать персонажа", onClick: () => navigate(ROUTES.characterNew) }}
             onChange={setCharId}
           />
           <Collapse expanded={charId !== null}>
@@ -125,7 +126,8 @@ export function RpChatNewPage() {
           options={personaOptions}
           value={personaId}
           loading={personasLoading}
-          emptyText="Персон пока нет — создайте их в разделе «Персоны»."
+          emptyText="Персон пока нет."
+          emptyAction={{ label: "Создать персону", onClick: () => navigate(ROUTES.personaNew) }}
           onChange={setPersonaId}
         />
       </SettingsCard>
@@ -139,7 +141,8 @@ export function RpChatNewPage() {
           options={templateOptions}
           value={templateId}
           loading={templatesLoading}
-          emptyText="RP-шаблонов пока нет — создайте их в разделе «RP-шаблоны»."
+          emptyText="RP-шаблонов пока нет."
+          emptyAction={{ label: "Создать RP-шаблон", onClick: () => navigate(ROUTES.rpTemplateNew) }}
           onChange={setTemplateId}
         />
         <PickerField
@@ -150,7 +153,8 @@ export function RpChatNewPage() {
           options={presetOptions}
           value={presetId}
           loading={presetsLoading}
-          emptyText="Пресетов пока нет — создайте их в разделе «Настройки ответа ИИ»."
+          emptyText="Пресетов пока нет."
+          emptyAction={{ label: "Создать пресет", onClick: () => navigate(ROUTES.presetNew) }}
           onChange={setPresetId}
         />
       </SettingsCard>

@@ -34,8 +34,8 @@ RP-чата), переиспользуя только реально переи�
   `pages/knowledge-books/*`, `pages/narrator-templates/*`; кнопки на главной (Режим игры + Библиотека).
   Перевод истории — раздел в `StorySettingsPage` + кнопка-Globe на битах/директивах в ленте
   (`useStorySettings` и общий с RP-чатом `shared/hooks/useTranslatable`). Редактор шаблона (`TemplateForm`) — поля
-  промптов + блок «Порядок промптов». Кросс-фичевые компоненты в `shared/components`: `ExpandableSelect`
-  (настройки перевода истории) и `PromptOrderEditor` (дженерик-редактор порядка промптов с пропсами
+  промптов + блок «Порядок промптов». Кросс-фичевые компоненты в `shared/components`: `TranslateSettingsCard`
+  и `TitleCard` (общие с настройками RP-чата), `PromptOrderEditor` (дженерик-редактор порядка промптов с пропсами
   `labels`/`sources`/`unimplemented` — используют пресеты ИИ и narrator-шаблоны; у каждой фичи свои карты
   подписей/источников и `DEFAULT_*_PROMPT_ORDER`).
 
@@ -114,6 +114,6 @@ postHistory`, где `postHistory` выключен. Фолбэк (истори�
   (`shouldAutoCompact`, синхронно, fail-safe — падение не роняет advance, остаётся `trimHistoryToBudget`).
 - **Инвалидция:** `deleteStoryMessage` зовёт `invalidateCompactionsByRemovedIds` — каскад вперёд по seq,
   если якорь попал в удалённое (см. оговорку про глобальный seq в коде). Токены везде — `countTokens` (o200k).
-- **Webapp:** секция «Сжатие истории» в `StorySettingsPage` (`CompactSettingsSection` — тумблеры, слайдеры
-  пол/слова, кнопка «Сжать сейчас», список пересказов с удалением, гейт по `stats.compactAvailable`);
+- **Webapp:** карточка «Сжатие истории» в `StorySettingsPage` (`StoryCompactCard` — тумблеры, ползунки
+  пол/слова с сохранением по отпусканию, кнопка «Сжать сейчас», список пересказов с удалением, гейт по `stats.compactAvailable`);
   поле `compactionPrompt` в `TemplateForm`; SSE-событие `status` (`phase:"compacting"`) в `StoryPage`.

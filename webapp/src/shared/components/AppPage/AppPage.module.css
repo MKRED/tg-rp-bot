@@ -5,8 +5,6 @@
   /* Цвет текста — свой: иначе Text/Title Mantine наследуют цвет от AppRoot tgui, а тот берёт его из
      темы Telegram (в тёмном Telegram при нашей светлой схеме — белый текст на светлом фоне). */
   color: var(--mantine-color-text);
-  /* Общие поля, живущие и на экранах tgui (PromptEditorField), здесь — без своего гуттера tgui. */
-  --app-legacy-field-padding: 0;
   /* Full Screen: контент ниже системной панели и кнопок Telegram (вне Telegram — env(), иначе 0). */
   padding-top: calc(
     var(--mantine-spacing-md) +

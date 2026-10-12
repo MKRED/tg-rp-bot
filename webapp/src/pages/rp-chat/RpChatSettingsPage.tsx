@@ -13,14 +13,17 @@ import { useTransitionNavigate } from "../../app/useTransitionNavigate";
 import { AppPage } from "../../shared/components/AppPage";
 import { DeleteButton } from "../../shared/components/DeleteButton";
 import { EmptyState } from "../../shared/components/EmptyState";
+import { TitleCard } from "../../shared/components/TitleCard";
+import { TranslateSettingsCard } from "../../shared/components/TranslateSettingsCard";
 import { confirmAction } from "../../shared/telegram/confirm";
 import { useToast } from "../../shared/toast";
 import {
   ChatLinksCard,
   ChatStatsCard,
-  ChatTitleCard,
-  ChatTranslateCard,
+  AUTO_SCOPE_OPTIONS,
+  SCOPE_OPTIONS,
   deleteChat,
+  renameChat,
   useChat,
   useChatSettings,
   useChatStats,
@@ -96,14 +99,23 @@ export function RpChatSettingsPage() {
         <EmptyState icon={MessagesSquare} title="Чат не найден" description="Возможно, он был удалён." />
       ) : (
         <>
-          <ChatTitleCard
-            chatId={chatId}
+          <TitleCard
             title={chat.title}
-            characterName={chat.character.name}
+            placeholder={chat.character.name}
+            description="Оставьте пустым, чтобы показывать имя персонажа"
+            ariaLabel="Название чата"
+            onRename={(title) => renameChat(chatId, title)}
             onSaved={(title) => setChat((prev) => (prev ? { ...prev, title } : prev))}
+            errorMessage="Не удалось переименовать чат"
           />
           <ChatLinksCard chat={chat} onOpen={openLink} />
-          <ChatTranslateCard settings={settings} onUpdate={handleUpdate} />
+          <TranslateSettingsCard
+            settings={settings}
+            onUpdate={handleUpdate}
+            scopeOptions={SCOPE_OPTIONS}
+            autoScopeOptions={AUTO_SCOPE_OPTIONS}
+            description="Кнопка перевода под сообщениями"
+          />
           <ChatStatsCard stats={stats} clearing={clearing} onClearVariants={handleClearVariants} />
           <DeleteButton onClick={handleDelete} disabled={deleting}>
             Удалить чат

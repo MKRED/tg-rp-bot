@@ -1,6 +1,5 @@
 import { Group, Progress, Text } from "@mantine/core";
 import { tokenBudget, type BudgetLevel } from "../../text/token-budget";
-import styles from "./TokenBudgetBar.module.css";
 
 interface TokenBudgetBarProps {
   /** Использовано токенов (оценка). */
@@ -27,7 +26,7 @@ export function TokenBudgetBar({ used, limit }: TokenBudgetBarProps) {
   const { pct, level, unlimited } = tokenBudget(used, limit);
 
   return (
-    <div className={styles.root}>
+    <div>
       <Group justify="space-between" gap="xs">
         <Text size="sm" c="dimmed">
           ~{fmt(used)}

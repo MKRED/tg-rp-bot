@@ -88,6 +88,13 @@ Webapp переезжает с tgui на Mantine (`@mantine/core`, `@mantine/hoo
   сообщения — хук `shared/hooks/useTranslatable` (RP-чат и история).
 - **`TokenBudgetBar`** — полоса «использовано / лимит контекста» (`Progress`; жёлтая у лимита, красная
   сверх), при безграничном контексте — только «~N / ∞».
+- **`TitleCard`** — карточка «Название» (чат, история): сохранение по уходу с поля, пусто — имя по
+  умолчанию из `placeholder`. **`TranslateSettingsCard`** — перевод сообщений (тумблер, метод, язык,
+  где показывать, автоперевод); подписи «где показывать» фича передаёт сама.
+- **`PickerField`** — `emptyAction` у пустой шторки: кнопка «Создать …» уводит на создание записи.
+- **`BranchGraph`** (`shared/graph/BranchGraph`) — граф веток на React Flow для чата и истории: раскладка,
+  центрирование на активном узле, загрузка/ошибка/пусто, тост при неудачном переключении. Фича даёт
+  `describe` (подпись и текст узла, признак «сжат») и `onSelect`. Кладётся в `FullHeightPage`.
 - **`ApiKeyField`** — поле персонального ключа API с условной кнопкой сохранить/удалить.
 - **`PromptEditorField`** — поле длинного промпта: подпись с подсказкой по тапу (`Popover`) и счётчиком
   токенов, превью в виде заполненного поля, тап открывает `PromptEditorOverlay`.
@@ -102,10 +109,9 @@ Webapp переезжает с tgui на Mantine (`@mantine/core`, `@mantine/hoo
 - **`AvatarPicker`** — аватар с загрузкой фото (кроп `ImageCropEditor`), заменой, удалением и
   просмотром целиком (`ImageLightbox`). Кроп и лайтбокс — свои полноэкранные оверлеи в портале,
   намеренно тёмные в любой схеме (как фоторедактор), стили — в модулях. **`DeleteButton`** — текстовая красная кнопка удаления в подвале формы.
-- **Общие компоненты и на экранах tgui.** `PromptEditorField`, `AvatarPicker`, `DeleteButton`,
-  `TokenBudgetBar`, `InfiniteSentinel`, `RpText`, `TranslateSheet`, `TranslateActionModal` уже на
-  Mantine, но стоят и на экранах tgui (рассказчик; там контейнер `RpText` задаёт размер текста tgui). Там у полей нет своего отступа, поэтому корень берёт гуттер tgui
-  из `var(--app-legacy-field-padding, …)`, а `AppPage` обнуляет переменную. Убрать на шаге 8.
+- **Общие компоненты на экране tgui.** На tgui остался только экран истории (шаг 7в): там стоят
+  `RpText`, `TranslateSheet`, `TranslateActionModal`, `InfiniteSentinel`, `PromptEditorOverlay` (контейнер
+  `RpText` задаёт размер текста tgui).
 - **Тосты** — прежний `useToast().showToast({ message, type })`, внутри `@mantine/notifications`
   (снизу по центру, один за раз, поверх лайтбокса).
 

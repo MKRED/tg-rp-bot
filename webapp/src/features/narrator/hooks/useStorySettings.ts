@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getStorySettings, updateStorySettings } from "../api/settings-api";
 import type { StorySettings } from "../types/story";
 
@@ -16,10 +16,13 @@ const DEFAULT_SETTINGS: StorySettings = {
   editEnabled: false,
 };
 
-/** Загружает настройки перевода истории; update — оптимистичный PUT с откатом при ошибке. */
+/** Загружает настройки истории; update — оптимистичный PUT с откатом при ошибке. */
 export function useStorySettings(storyId: number) {
   const [settings, setSettings] = useState<StorySettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
+  // Актуальные настройки для update: правки идут подряд, пока предыдущий запрос ещё в полёте.
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
 
   useEffect(() => {
     setLoading(true);
@@ -30,19 +33,27 @@ export function useStorySettings(storyId: number) {
       .finally(() => setLoading(false));
   }, [storyId]);
 
+  // Оптимистично применяет patch; при ошибке откатывает и возвращает false — экран покажет тост.
   const update = useCallback(
-    async (patch: Partial<StorySettings>) => {
-      const optimistic = { ...settings, ...patch };
-      setSettings(optimistic);
+    async (patch: Partial<StorySettings>): Promise<boolean> => {
+      const keys = Object.keys(patch) as (keyof StorySettings)[];
+      // Значения до правки — для отката; из ref, а не из замыкания: замыкание могло устареть.
+      const before = Object.fromEntries(keys.map((k) => [k, settingsRef.current[k]])) as Partial<StorySettings>;
+      // Сразу и в ref — следующая правка до перерисовки должна видеть эту.
+      settingsRef.current = { ...settingsRef.current, ...patch };
+      setSettings((cur) => ({ ...cur, ...patch }));
       try {
         const updated = await updateStorySettings(storyId, patch);
-        setSettings(updated);
+        // Из ответа берём только поля этого patch: другие правки, отправленные пока шёл запрос, не затираем.
+        setSettings((cur) => ({ ...cur, ...Object.fromEntries(keys.map((k) => [k, updated[k]])) }));
+        return true;
       } catch (err) {
         console.error("Failed to update story settings", err);
-        setSettings(settings); // откатываем оптимистичное изменение
+        setSettings((cur) => ({ ...cur, ...before }));
+        return false;
       }
     },
-    [storyId, settings],
+    [storyId],
   );
 
   return { settings, loading, update };

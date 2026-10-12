@@ -7,11 +7,8 @@ export { MessageBubble } from "./components/MessageBubble";
 export {
   ChatLinksCard,
   ChatStatsCard,
-  ChatTitleCard,
-  ChatTranslateCard,
   type ChatLinkTarget,
 } from "./components/ChatSettings";
-export { ChatGraphNode, type ChatGraphNodeData } from "./components/ChatGraphNode";
 export { GreetingField } from "./components/GreetingField";
 export { defaultGreeting, resolveGreetingIndex, type GreetingChoice } from "./lib/greetingChoice";
 export { useChats } from "./hooks/useChats";
@@ -24,7 +21,7 @@ export { useChatTranslation } from "./hooks/useChatTranslation";
 export { createChat, deleteChat, renameChat } from "./api/chats-api";
 export { deleteMessage, switchBranch, translateMessage } from "./api/messages-api";
 export { composeTranslate } from "./api/translate-api";
-export { LANG_OPTIONS } from "./lib/translate-options";
+export { AUTO_SCOPE_OPTIONS, LANG_OPTIONS, SCOPE_OPTIONS } from "./lib/translate-options";
 export { translateFlags } from "./lib/translations";
 export type {
   ChatListItem,
