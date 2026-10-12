@@ -116,4 +116,4 @@ postHistory`, где `postHistory` выключен. Фолбэк (истори�
   если якорь попал в удалённое (см. оговорку про глобальный seq в коде). Токены везде — `countTokens` (o200k).
 - **Webapp:** карточка «Сжатие истории» в `StorySettingsPage` (`StoryCompactCard` — тумблеры, ползунки
   пол/слова с сохранением по отпусканию, кнопка «Сжать сейчас», список пересказов с удалением, гейт по `stats.compactAvailable`);
-  поле `compactionPrompt` в `TemplateForm`; SSE-событие `status` (`phase:"compacting"`) в `StoryPage`.
+  поле `compactionPrompt` в `TemplateForm`; SSE-событие `status` (`phase:"compacting"`) ловит `useStoryGeneration`, лента пишет «Сжимаю историю…» рядом с точками ожидания бита.

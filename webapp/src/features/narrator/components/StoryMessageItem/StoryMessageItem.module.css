@@ -1,0 +1,85 @@
+.beat {
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+
+  /* Курсор генерации в конце текста. */
+  &[data-streaming]::after {
+    content: "▍";
+    margin-left: 1px;
+    color: var(--mantine-color-dimmed);
+    animation: blink 1s step-end infinite;
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Действия под битом: приглушённые, не спорят с текстом; первая кнопка — вровень с краем текста. */
+.actions {
+  color: var(--mantine-color-dimmed);
+  margin-top: 2px;
+  margin-left: calc(var(--mantine-spacing-xs) * -1);
+  flex-wrap: wrap;
+}
+
+/* Недоступная кнопка (крайний вариант, идёт генерация) — просто бледная, без серой плашки disabled от
+   Mantine. Кнопку со спиннером не трогаем — спиннер должен быть виден. */
+.actions :is(button:disabled, [data-disabled]):not([data-loading]) {
+  background-color: transparent;
+  opacity: 0.3;
+}
+
+.siblingCount {
+  min-width: 28px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Удаление — красным только при наведении/нажатии: в строке оно не должно кричать. */
+.danger {
+  @media (hover: hover) {
+    &:hover {
+      color: var(--mantine-color-red-light-color);
+    }
+  }
+
+  &:active {
+    color: var(--mantine-color-red-light-color);
+  }
+}
+
+/* Директива — компактный чип по центру ленты: реплика режиссёра, а не часть прозы. */
+.directive {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  max-width: 85%;
+  min-height: 32px;
+  padding: 2px var(--mantine-spacing-xs) 2px var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-xl);
+  /* Фон карточки с рамкой: заливка «hover» на фоне страницы в светлой схеме почти не видна. */
+  background: var(--mantine-color-body);
+  border: 1px solid var(--app-color-divider);
+  color: var(--mantine-color-dimmed);
+}
+
+/* Без кнопки перевода — симметричный отступ справа. */
+.directive:not(:has(button)) {
+  padding-right: var(--mantine-spacing-sm);
+}
+
+.directiveIcon {
+  flex: none;
+}
+
+.directiveText {
+  min-width: 0;
+  padding-block: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

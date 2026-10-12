@@ -99,9 +99,11 @@ export function RpChatPage() {
 
   const handleSwitchBranch = async (targetId: number) => {
     setImpersonateOpen(false); // другой момент диалога
-    suppressAutoTranslate(); // сообщения ветки исторические — не автопереводим
     try {
       await switchBranch(chatId, targetId);
+      // Сообщения ветки исторические — не автопереводим. Только после удачного переключения: иначе
+      // флаг остался бы взведённым и съел бы автоперевод следующего сообщения.
+      suppressAutoTranslate();
       await refresh();
     } catch (err) {
       console.error("Failed to switch branch", err);

@@ -1,0 +1,35 @@
+/* Нижняя панель экрана: поле не уходит под полосу жестов. */
+.bar {
+  flex-shrink: 0;
+  border-top: 1px solid var(--app-color-divider);
+  background: var(--app-color-page);
+  padding-bottom: var(--tg-viewport-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+}
+
+/* В той же колонке, что и лента. */
+.inner {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--mantine-spacing-xs);
+  max-width: var(--app-chat-width, 48rem);
+  margin-inline: auto;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+}
+
+.side {
+  flex: none;
+}
+
+.field {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Высота однострочного поля — как у круглых кнопок рядом (44px). Фон — карточки: заливка полей по
+   умолчанию на фоне страницы почти не видна в светлой теме. */
+.input {
+  min-height: 44px;
+  background-color: var(--mantine-color-body);
+  padding-block: 11px;
+  line-height: 1.4;
+}

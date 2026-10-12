@@ -1,0 +1,26 @@
+.header {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--app-color-divider);
+  background: var(--app-color-page);
+}
+
+/* Содержимое — в той же колонке, что и лента (на ПК — по центру, не во всю ширину). */
+.inner {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  max-width: var(--app-chat-width, 48rem);
+  margin-inline: auto;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-xs) var(--mantine-spacing-xs) var(--mantine-spacing-md);
+}
+
+/* Стопка не сжимается: длинное название обрезается многоточием, а не наезжает на аватары. */
+.avatars {
+  flex: none;
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  margin-left: var(--mantine-spacing-xs);
+}

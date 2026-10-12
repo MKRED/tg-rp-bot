@@ -7,14 +7,18 @@ import type { StoryAvatarRef } from "../../types/story";
 interface StoryAvatarsProps {
   avatars: StoryAvatarRef[];
   size?: number;
+  /** Сколько аватаров показывать; остальные — кружком «+N». Не задано — все. */
+  max?: number;
 }
 
 /**
  * Стопка аватаров персонажей и персон книги истории (порядок книги). Картинки — одним батч-запросом,
  * пока их нет — инициалы. В книге нет ни одного персонажа или персоны — значок рассказчика.
  */
-export function StoryAvatars({ avatars, size = 40 }: StoryAvatarsProps) {
-  const resolved = useAvatarBatch(avatars);
+export function StoryAvatars({ avatars, size = 40, max }: StoryAvatarsProps) {
+  const shown = max !== undefined && avatars.length > max ? avatars.slice(0, max - 1) : avatars;
+  const rest = avatars.length - shown.length;
+  const resolved = useAvatarBatch(shown);
 
   if (avatars.length === 0) {
     return (
@@ -25,16 +29,16 @@ export function StoryAvatars({ avatars, size = 40 }: StoryAvatarsProps) {
   }
   return (
     <Avatar.Group spacing={size / 4}>
-      {avatars.map((a) => (
-        <Avatar
-          key={`${a.type}:${a.id}`}
-          size={size}
-          src={resolved.get(`${a.type}:${a.id}`)}
-          color="accent"
-        >
+      {shown.map((a) => (
+        <Avatar key={`${a.type}:${a.id}`} size={size} src={resolved.get(`${a.type}:${a.id}`)} color="accent">
           {nameInitials(a.name)}
         </Avatar>
       ))}
+      {rest > 0 && (
+        <Avatar size={size} color="gray">
+          +{rest}
+        </Avatar>
+      )}
     </Avatar.Group>
   );
 }

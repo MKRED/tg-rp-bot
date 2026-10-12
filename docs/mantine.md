@@ -109,9 +109,6 @@ Webapp переезжает с tgui на Mantine (`@mantine/core`, `@mantine/hoo
 - **`AvatarPicker`** — аватар с загрузкой фото (кроп `ImageCropEditor`), заменой, удалением и
   просмотром целиком (`ImageLightbox`). Кроп и лайтбокс — свои полноэкранные оверлеи в портале,
   намеренно тёмные в любой схеме (как фоторедактор), стили — в модулях. **`DeleteButton`** — текстовая красная кнопка удаления в подвале формы.
-- **Общие компоненты на экране tgui.** На tgui остался только экран истории (шаг 7в): там стоят
-  `RpText`, `TranslateSheet`, `TranslateActionModal`, `InfiniteSentinel`, `PromptEditorOverlay` (контейнер
-  `RpText` задаёт размер текста tgui).
 - **Тосты** — прежний `useToast().showToast({ message, type })`, внутри `@mantine/notifications`
   (снизу по центру, один за раз, поверх лайтбокса).
 

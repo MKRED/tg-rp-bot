@@ -1,0 +1,52 @@
+/* Прокручивается только лента: шапка и поле режиссёра стоят на месте.
+   overflow-anchor не отключать — им браузер держит низ, когда биты после прокрутки меняют высоту
+   (показ кэшированного перевода), см. useRenderWindow. */
+.feed {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Колонка ленты: на ПК — по центру, не во всю ширину (та же, что у шапки и поля). */
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-sm);
+  width: 100%;
+  max-width: var(--app-chat-width, 48rem);
+  margin-inline: auto;
+  padding: var(--mantine-spacing-md);
+}
+
+/* Сообщение и орнамент перед ним — колонкой; директива-чип центрируется внутри. */
+.item {
+  display: flex;
+  flex-direction: column;
+}
+
+.center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* «Разрыв сцены» ✦ ✦ ✦: отрицательный отступ справа компенсирует letter-spacing после последнего
+   символа — иначе орнамент стоял бы левее центра. */
+.divider {
+  align-self: center;
+  padding-block: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  letter-spacing: 0.6em;
+  margin-right: -0.6em;
+  user-select: none;
+  opacity: 0.7;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  min-height: 1.6em;
+}

@@ -1,18 +1,19 @@
 /** Публичная поверхность фичи narrator («Режиссёр истории»). */
 
 export { useStories } from "./hooks/useStories";
-export { useStory } from "./hooks/useStory";
+export { useStory, type StoryLoadError } from "./hooks/useStory";
 export { useStorySettings } from "./hooks/useStorySettings";
 export { useStoryStats } from "./hooks/useStoryStats";
 export { useCompactions } from "./hooks/useCompactions";
-export { useStoryAutoTranslate } from "./hooks/useStoryAutoTranslate";
+export { useStoryTranslation } from "./hooks/useStoryTranslation";
+export { useStoryGeneration } from "./hooks/useStoryGeneration";
 export { useStoryTree } from "./hooks/useStoryTree";
 export { StoryAvatars } from "./components/StoryAvatars";
 export { StoryRow } from "./components/StoryRow";
 export { StoryInput, type StoryInputHandle } from "./components/StoryInput";
 export { StoryHeader } from "./components/StoryHeader";
 export { StoryMessageItem } from "./components/StoryMessageItem";
-export { BeatDivider } from "./components/BeatDivider";
+export { StoryFeed, type StoryFeedHandle } from "./components/StoryFeed";
 export {
   StoryCompactCard,
   StoryFeedCard,
@@ -41,6 +42,7 @@ export { getStorySettings, updateStorySettings } from "./api/settings-api";
 export { getStoryStats } from "./api/stats-api";
 export { compactStory, listCompactions, deleteCompaction } from "./api/compact-api";
 export { LANG_OPTIONS, SCOPE_OPTIONS, AUTO_SCOPE_OPTIONS } from "./lib/translate-options";
+export { storyTranslateFlags } from "./lib/storyMessages";
 export type {
   StoryListItem,
   StoryMessage,

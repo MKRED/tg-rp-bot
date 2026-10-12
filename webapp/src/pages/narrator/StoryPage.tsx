@@ -1,226 +1,107 @@
-import { Spinner, Text } from "@telegram-apps/telegram-ui";
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { storyGraphPath, storySettingsPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
-import { InfiniteSentinel } from "../../shared/components/InfiniteSentinel";
-import { PageTransition } from "../../shared/components/PageTransition";
-import { RpText } from "../../shared/components/RpText";
+import { FullHeightPage } from "../../shared/components/FullHeightPage";
 import { TranslateSheet } from "../../shared/components/TranslateSheet";
+import { confirmAction } from "../../shared/telegram/confirm";
+import { useToast } from "../../shared/toast";
 import {
-  BeatDivider,
+  LANG_OPTIONS,
+  StoryFeed,
   StoryHeader,
   StoryInput,
   StoryMessageItem,
-  LANG_OPTIONS,
-  advanceStory,
   composeStoryTranslate,
   deleteStoryMessage,
-  deleteStoryTranslation,
   editStoryBeat,
-  regenerateBeat,
+  storyTranslateFlags,
   switchBranch,
-  translateStoryMessage,
   useStory,
-  useStoryAutoTranslate,
+  useStoryGeneration,
   useStorySettings,
+  useStoryTranslation,
+  type StoryFeedHandle,
+  type StoryInputHandle,
+  type StoryMessage,
 } from "../../features/narrator";
-import { confirmAction } from "../../shared/telegram/confirm";
-import { useRenderWindow } from "../../shared/hooks/useRenderWindow";
-import { useToast } from "../../shared/toast";
-import type { StoryInputHandle, StoryMessage } from "../../features/narrator";
-import "./narrator.css";
 
-/** Экран истории: лента битов + директив, поле режиссёра, стриминг следующего бита. */
+/** Экран истории: шапка, лента битов и директив, поле режиссёра, шторка перевода черновика. */
 export function StoryPage() {
-  const params = useParams();
-  const id = Number(params.id);
-
+  const { id } = useParams<{ id: string }>();
+  const storyId = Number(id);
   const navigate = useTransitionNavigate();
-  const { story, messages, setMessages, loading, error, reload } = useStory(id);
-  const { settings } = useStorySettings(id);
   const { showToast } = useToast();
-  const [sending, setSending] = useState(false);
-  const [streamingText, setStreamingText] = useState<string | null>(null);
-  // Фаза фонового статуса перед битом (напр. "compacting" — авто-сжатие истории).
-  const [statusPhase, setStatusPhase] = useState<string | null>(null);
+  const feedRef = useRef<StoryFeedHandle>(null);
+  const inputRef = useRef<StoryInputHandle>(null);
   const [translateOpen, setTranslateOpen] = useState(false);
-  const storyInputRef = useRef<StoryInputHandle>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const feedRef = useRef<HTMLDivElement>(null);
-  // Первый скролл к низу при открытии истории — мгновенный (без видимой долгой прокрутки
-  // от верха), далее новые биты/стриминг скроллим плавно.
-  const didInitialScroll = useRef(false);
 
-  // Автопрокрутка к низу при новых сообщениях/стриминге. Зависим от ДЛИНЫ ленты, а не от
-  // её содержимого: перевод бита/директивы меняет текст сообщения (но не их число) и не
-  // должен дёргать ленту вниз.
-  useEffect(() => {
-    if (!messages.length) return;
-    const behavior = didInitialScroll.current ? "smooth" : "auto";
-    bottomRef.current?.scrollIntoView({ behavior });
-    didInitialScroll.current = true;
-  }, [messages.length, streamingText]);
+  const { story, messages, setMessages, loading, error, reload, retry } = useStory(storyId);
+  const { settings } = useStorySettings(storyId);
+  const { translate, retranslate, removeTranslation, autoTranslatingIds, suppressAutoTranslate } =
+    useStoryTranslation(storyId, messages, setMessages, settings, Boolean(story));
 
-  // Переводит бит/директиву и вливает перевод в локальную ленту (чтобы тоггл показал его сразу).
-  const handleTranslate = useCallback(
-    async (msgId: number, lang: string): Promise<string> => {
-      try {
-        const translation = await translateStoryMessage(id, msgId, lang);
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === msgId
-              ? { ...m, translations: { ...(m.translations ?? {}), [lang]: translation } }
-              : m,
-          ),
-        );
-        return translation;
-      } catch (err) {
-        // Прокидываем дальше — useTranslatable.toggle() не должен показать showTranslation=true
-        // без реального перевода (setShowTranslation там не в try, а после await).
-        showToast({ type: "error", message: err instanceof Error ? err.message : "Не удалось перевести" });
-        throw err;
-      }
-    },
-    [id, setMessages, showToast],
-  );
+  // Готовый бит подменяет потоковый — без анимации появления (мелькание текста).
+  const handleBeatDone = useCallback((beat: StoryMessage) => feedRef.current?.markAnimated(beat.id), []);
+  const handleDirectiveLost = useCallback((directive: string) => inputRef.current?.setDraft(directive), []);
+  const { advance, regenerate, sending, streamingText, statusPhase } = useStoryGeneration(storyId, {
+    setMessages,
+    reload,
+    onBeatDone: handleBeatDone,
+    onDirectiveLost: handleDirectiveLost,
+  });
 
-  // Пересчитывает перевод бита/директивы заново (игнорируя кэш) — меню долгого нажатия на Globe.
-  // Promise возвращаем, чтобы StoryMessageItem мог показать спиннер на кнопке на время запроса.
-  const handleRetranslate = useCallback(async (msgId: number, lang: string) => {
-    try {
-      const translation = await translateStoryMessage(id, msgId, lang, { force: true });
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === msgId
-            ? { ...m, translations: { ...(m.translations ?? {}), [lang]: translation } }
-            : m,
-        ),
-      );
-    } catch (err) {
-      console.error("Failed to retranslate story message", err);
-      showToast({ type: "error", message: err instanceof Error ? err.message : "Не удалось перевести" });
-    }
-  }, [id, setMessages, showToast]);
-
-  // Убирает закэшированный перевод бита/директивы — меню долгого нажатия на Globe.
-  const handleDeleteTranslation = useCallback(async (msgId: number, lang: string) => {
-    try {
-      await deleteStoryTranslation(id, msgId, lang);
-      setMessages((prev) =>
-        prev.map((m) => {
-          if (m.id !== msgId || !m.translations) return m;
-          const { [lang]: _removed, ...rest } = m.translations;
-          return { ...m, translations: rest };
-        }),
-      );
-    } catch (err) {
-      console.error("Failed to delete story translation", err);
-    }
-  }, [id, setMessages]);
-
-  // Авто-перевод новых сообщений вынесен в хук; suppressNextRun зовём при смене ветки.
-  const { suppressNextRun, autoTranslatingIds } = useStoryAutoTranslate(messages, settings, handleTranslate);
-
+  // Не findLast: ES2023, сборка — es2022 (методы не транспилируются), а WebView Telegram бывают старыми.
   const lastBeatId = [...messages].reverse().find((m) => m.role === "assistant")?.id;
 
-  // В DOM — только хвост ленты; ранние биты дорисовываются при скролле к верху. Хук — до ранних
-  // return'ов (loading/error) ниже, иначе нарушился бы порядок хуков.
-  const renderWindow = useRenderWindow(feedRef, messages.length, id);
-
-  const advance = (directive: string) => {
-    if (sending) return;
-    setSending(true);
-    setStreamingText("");
-    advanceStory(id, directive, {
-      onUserMessage: (msg: StoryMessage) => setMessages((prev) => [...prev, msg]),
-      onStatus: (phase) => setStatusPhase(phase),
-      onToken: (text) => {
-        setStatusPhase(null); // первый токен бита → фаза статуса (сжатие) завершена
-        setStreamingText((prev) => (prev ?? "") + text);
-      },
-      onReset: () => setStreamingText(""),
-      // Стрим снимаем в одном батче с появлением реального бита (onApplied внутри reload) —
-      // иначе лента на миг укоротилась бы (скролл вверх) до прихода бита (скролл обратно вниз).
-      onDone: () => {
-        setStatusPhase(null);
-        reload(() => setStreamingText(null));
-      },
-      onError: (message) => {
-        setStatusPhase(null);
-        setStreamingText(null);
-        showToast({ type: "error", message });
-      },
-    }).finally(() => {
-      setSending(false);
-    });
+  /** Действие над историей и тихая пересинхронизация ленты; ошибка каждого шага — свой тост. */
+  const mutate = async (action: () => Promise<unknown>, errorMessage: string) => {
+    try {
+      await action();
+    } catch (err) {
+      console.error(errorMessage, err);
+      showToast({ type: "error", message: errorMessage });
+      return;
+    }
+    try {
+      await reload();
+    } catch (err) {
+      // Само действие прошло — не пишем «не удалось удалить», если не обновилась только лента.
+      console.error("Failed to reload story", err);
+      showToast({ type: "error", message: "Не удалось обновить историю" });
+    }
   };
 
-  const regenerate = (beatId: number) => {
-    if (sending) return;
-    setSending(true);
-    setStreamingText("");
-    // Оптимистично убираем регенерируемый бит — иначе стримящийся вариант появлялся бы
-    // под старым битом, а замена происходила только после reload(). Бит вернётся (новым
-    // сиблингом) после завершения генерации; реген доступен лишь на последнем бите.
-    setMessages((prev) => prev.filter((m) => m.id !== beatId));
-    regenerateBeat(id, beatId, {
-      onToken: (text) => setStreamingText((prev) => (prev ?? "") + text),
-      onReset: () => setStreamingText(""),
-      // Снимаем стрим в одном батче с reload — см. коммент в advance (без «дёрганья» ленты).
-      onDone: () => {
-        reload(() => setStreamingText(null));
-      },
-      onError: (message) => {
-        setStreamingText(null);
-        showToast({ type: "error", message });
-        reload(); // вернуть оптимистично убранный бит (сервер откатил курсор на исходный)
-      },
-    }).finally(() => {
-      setSending(false);
-    });
+  // Смена варианта и откат к биту — один и тот же переход курсора истории (как клик по узлу графа).
+  // Автоперевод гасим только после удачного перехода: иначе флаг остался бы взведённым и съел бы
+  // автоперевод следующей директивы.
+  const moveCursor = (messageId: number, errorMessage: string) => {
+    if (sending) return Promise.resolve();
+    return mutate(() => switchBranch(storyId, messageId).then(suppressAutoTranslate), errorMessage);
   };
 
-  const handleDelete = async (msgId: number) => {
+  const handleDelete = async (messageId: number) => {
     if (sending) return;
-    const confirmed = await confirmAction("Удалить этот бит и всё, что после него?", {
+    const ok = await confirmAction("Удалить этот бит и всё, что после него?", {
       title: "Удаление бита",
+      confirmText: "Удалить",
     });
-    if (!confirmed) return;
-    try {
-      await deleteStoryMessage(id, msgId);
-    } catch {
-      showToast({ type: "error", message: "Не удалось удалить бит" });
-    }
-    reload();
+    if (ok) await mutate(() => deleteStoryMessage(storyId, messageId), "Не удалось удалить бит");
   };
 
-  const handleSwitch = async (siblingId: number) => {
-    if (sending) return;
-    suppressNextRun(); // ветка историческая — не авто-переводим её сообщения
-    try {
-      await switchBranch(id, siblingId);
-    } catch {
-      showToast({ type: "error", message: "Не удалось переключить ветку" });
-    }
-    reload();
-  };
-
-  // Правит текст бита на месте (без перегенерации, без нового сиблинга). Перевод намеренно не
-  // перезапускаем — сервер сбросил кэш, пользователь дёрнет кнопку Globe заново сам при желании.
-  // Бросает при неудаче — StoryMessageItem оставляет редактор открытым, чтобы правка не терялась.
-  const handleEditBeat = async (msgId: number, content: string) => {
-    if (sending) return;
+  // Правка текста бита на месте (без перегенерации и нового варианта). Перевод не перезапускаем — сервер
+  // сбросил кэш, перевести заново можно кнопкой. Бросает при неудаче — редактор остаётся открытым.
+  const handleEdit = async (messageId: number, content: string) => {
     const trimmed = content.trim();
     if (!trimmed) {
       showToast({ type: "error", message: "Текст бита не может быть пустым" });
       throw new Error("Story beat content cannot be empty");
     }
     try {
-      const updated = await editStoryBeat(id, msgId, trimmed);
+      const updated = await editStoryBeat(storyId, messageId, trimmed);
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === msgId ? { ...m, content: updated.content, translations: updated.translations } : m,
+          m.id === messageId ? { ...m, content: updated.content, translations: updated.translations } : m,
         ),
       );
     } catch (err) {
@@ -230,129 +111,71 @@ export function StoryPage() {
     }
   };
 
-  // Быстрый откат из ленты — тот же переход курсора истории, что и клик по узлу в графе веток.
-  const handleQuickRollback = async (msgId: number) => {
-    if (sending) return;
-    suppressNextRun();
-    try {
-      await switchBranch(id, msgId);
-    } catch {
-      showToast({ type: "error", message: "Не удалось откатиться к сообщению" });
-    }
-    reload();
-  };
-
-  if (loading) {
-    return (
-      <PageTransition>
-        <div className="story-page__fullcenter">
-          <Spinner size="m" />
-        </div>
-      </PageTransition>
-    );
-  }
-  if (error || !story) {
-    return (
-      <PageTransition>
-        <Text Component="div" className="story-page__fullcenter">История не найдена</Text>
-      </PageTransition>
-    );
-  }
-
   return (
-    <PageTransition>
-      <div style={{ display: "flex", flexDirection: "column", height: "100dvh" }}>
+    <FullHeightPage>
+      {story && (
         <StoryHeader
           title={story.title ?? story.book.name}
           avatars={story.book.avatars}
-          onGraphClick={() => navigate(storyGraphPath(id))}
-          onSettingsClick={() => navigate(storySettingsPath(id))}
+          onGraphClick={() => navigate(storyGraphPath(storyId))}
+          onSettingsClick={() => navigate(storySettingsPath(storyId))}
         />
+      )}
 
-        <div
-          ref={feedRef}
-          style={{ flex: 1, overflowY: "auto", padding: "8px 16px", display: "flex", flexDirection: "column" }}
-        >
-          <InfiniteSentinel hasMore={renderWindow.hasMore} loading={false} onLoadMore={renderWindow.loadMore} />
+      <StoryFeed
+        ref={feedRef}
+        storyId={storyId}
+        messages={messages}
+        loading={loading}
+        error={story ? null : error}
+        onRetry={retry}
+        streamingText={streamingText}
+        statusPhase={statusPhase}
+        renderMessage={(m) => {
+          const flags = storyTranslateFlags(settings, m);
+          return (
+            <StoryMessageItem
+              message={m}
+              isLast={m.id === lastBeatId && streamingText === null}
+              disabled={sending}
+              showTranslateButton={flags.button}
+              targetLang={settings.translateTargetLang}
+              autoShowTranslation={flags.autoShow}
+              autoTranslating={autoTranslatingIds.has(m.id)}
+              onTranslate={translate}
+              onRetranslate={retranslate}
+              onDeleteTranslation={removeTranslation}
+              quickRollbackEnabled={settings.quickRollbackEnabled}
+              editEnabled={settings.editEnabled}
+              onQuickRollback={(messageId) => moveCursor(messageId, "Не удалось откатиться к биту")}
+              onEdit={handleEdit}
+              onSwitchSibling={(siblingId) => void moveCursor(siblingId, "Не удалось переключить вариант")}
+              onRegenerate={regenerate}
+              onDelete={(messageId) => void handleDelete(messageId)}
+            />
+          );
+        }}
+      />
 
-          {messages.slice(renderWindow.start).map((m, offset) => {
-            const i = renderWindow.start + offset;
-            // Кнопку перевода показываем на бите/директиве согласно scope (assistant=бит, user=директива).
-            const showTranslateButton =
-              m.kind !== "continue" &&
-              settings.translateEnabled &&
-              (settings.translateScope === "all" || settings.translateScope === m.role);
-            const autoShowTranslation =
-              m.kind !== "continue" &&
-              settings.translateEnabled &&
-              settings.autoTranslateScope !== "none" &&
-              (settings.autoTranslateScope === "all" || settings.autoTranslateScope === m.role);
-            return (
-              <Fragment key={m.id}>
-                {/* Бит-продолжение (предыдущий ход — «Дальше» без директивы) отделяем орнаментом:
-                    чипа-режиссёра между ними нет, иначе биты сливались бы. */}
-                {m.kind === "beat" && messages[i - 1]?.kind === "continue" && <BeatDivider />}
-                <StoryMessageItem
-                  message={m}
-                  isLast={m.id === lastBeatId && streamingText === null}
-                  disabled={sending}
-                  showTranslateButton={showTranslateButton}
-                  targetLang={settings.translateTargetLang}
-                  autoShowTranslation={autoShowTranslation}
-                  autoTranslating={autoTranslatingIds.has(m.id)}
-                  onTranslate={handleTranslate}
-                  onRetranslate={handleRetranslate}
-                  onDeleteTranslation={handleDeleteTranslation}
-                  onRegenerate={() => regenerate(m.id)}
-                  onDelete={() => handleDelete(m.id)}
-                  onSwitchSibling={handleSwitch}
-                  quickRollbackEnabled={settings.quickRollbackEnabled}
-                  onQuickRollback={handleQuickRollback}
-                  editEnabled={settings.editEnabled}
-                  onEdit={handleEditBeat}
-                />
-              </Fragment>
-            );
-          })}
-
-          {streamingText !== null && (
-            <>
-              {/* Стримящийся бит тоже отделяем, если двинули историю «Дальше» (последний ход — continue). */}
-              {messages[messages.length - 1]?.kind === "continue" && <BeatDivider />}
-              <div style={{ margin: "8px 0", whiteSpace: "pre-wrap", lineHeight: 1.5, fontSize: "var(--tgui--text--font_size)", color: "var(--tgui--text_color)" }}>
-                {streamingText ? (
-                  <RpText text={streamingText} />
-                ) : (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--tgui--hint_color)" }}>
-                    <Spinner size="s" />
-                    {statusPhase === "compacting" && <Text Component="span">Сжимаю историю…</Text>}
-                  </span>
-                )}
-              </div>
-            </>
-          )}
-
-          <div ref={bottomRef} />
-        </div>
-
+      {story && (
         <StoryInput
-          ref={storyInputRef}
+          ref={inputRef}
           onAdvance={advance}
           onTranslate={() => setTranslateOpen(true)}
           disabled={sending}
         />
-      </div>
+      )}
 
       <TranslateSheet
         opened={translateOpen}
-        translate={(p) => composeStoryTranslate(id, p)}
+        translate={(p) => composeStoryTranslate(storyId, p)}
         langOptions={LANG_OPTIONS}
-        onPick={(t) => {
-          storyInputRef.current?.setDraft(t);
+        onPick={(text) => {
+          inputRef.current?.setDraft(text);
           setTranslateOpen(false);
         }}
         onClose={() => setTranslateOpen(false)}
       />
-    </PageTransition>
+    </FullHeightPage>
   );
 }
