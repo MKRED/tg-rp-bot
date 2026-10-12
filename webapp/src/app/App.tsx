@@ -17,8 +17,8 @@ const platform: "ios" | "base" =
   rawPlatform === "ios" || rawPlatform === "macos" ? "ios" : "base";
 
 /**
- * Корень приложения. ThemeProvider стоит СНАРУЖИ AppRoot — он же оборачивает вложенный
- * AppRoot в PromptEditorOverlay (через портал), поэтому оба видят один resolved appearance.
+ * Корень приложения. ThemeProvider стоит СНАРУЖИ AppRoot и MantineProvider — обе библиотеки берут
+ * из него один resolved appearance.
  */
 export function App() {
   return (

@@ -1,5 +1,7 @@
+import { ActionIcon, Divider } from "@mantine/core";
 import { Check, ClipboardPaste, Copy, Languages, Redo2, Trash2, Undo2 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import styles from "./PromptEditorOverlay.module.css";
 
 interface PromptEditorToolbarProps {
   draft: string;
@@ -8,18 +10,19 @@ interface PromptEditorToolbarProps {
   onUndo: () => void;
   onRedo: () => void;
   onClear: () => void;
-  /** Текст уже прочитан из буфера обмена — вставка на месте курсора остаётся за родителем (он держит ref textarea). */
+  /** Текст уже прочитан из буфера обмена — вставка на месте курсора остаётся за родителем (он держит ref поля). */
   onPaste: (text: string) => void;
-  /** Очистка недоступна в режиме перевода (viewer сейчас показывает translation-буфер — см. PromptEditorOverlay). */
+  /** Очистка недоступна, пока в поле буфер перевода (см. PromptEditorBody). */
   clearDisabled?: boolean;
-  /** Переключает бар на PromptEditorTranslateToolbar (второй режим панели). */
+  /** Переключает панель на PromptEditorTranslateToolbar (второй режим). */
   onOpenTranslate: () => void;
 }
 
+const ICON = 20;
+
 /**
- * Панель инструментов для работы с текстом промпта — читает/пишет буфер обмена сама
- * (единственный источник clipboard-вызовов), а вставку на месте курсора и историю
- * undo/redo делегирует родителю, у которого есть ref textarea и стек истории.
+ * Панель работы с текстом — сама читает/пишет буфер обмена (единственное место clipboard-вызовов),
+ * а вставку на месте курсора и историю undo/redo делегирует родителю.
  */
 export function PromptEditorToolbar({
   draft,
@@ -33,13 +36,16 @@ export function PromptEditorToolbar({
   onOpenTranslate,
 }: PromptEditorToolbarProps) {
   const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current); }, []);
 
   const handleCopy = useCallback(() => {
     navigator.clipboard
       .writeText(draft)
       .then(() => {
         setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
+        if (copiedTimer.current) clearTimeout(copiedTimer.current);
+        copiedTimer.current = setTimeout(() => setCopied(false), 1500);
       })
       .catch((err) => console.error("Не удалось скопировать текст промпта", err));
   }, [draft]);
@@ -54,64 +60,47 @@ export function PromptEditorToolbar({
   }, [onPaste]);
 
   return (
-    <div className="prompt-editor-overlay__toolbar">
-      <button
-        className="prompt-editor-overlay__toolbar-btn prompt-editor-overlay__toolbar-btn--danger"
+    <div className={styles.toolbar}>
+      <ActionIcon
+        variant="subtle"
+        className={styles.tool}
+        color="red"
+        size="lg"
         onClick={onClear}
         disabled={!draft || clearDisabled}
-        type="button"
         aria-label="Очистить текст"
       >
-        <Trash2 size={18} />
-      </button>
+        <Trash2 size={ICON} />
+      </ActionIcon>
 
-      <span className="prompt-editor-overlay__toolbar-divider" />
+      <Divider orientation="vertical" mx={4} />
 
-      <button
-        className="prompt-editor-overlay__toolbar-btn"
-        onClick={handleCopy}
-        disabled={!draft}
-        type="button"
-        aria-label="Скопировать"
-      >
-        {copied ? <Check size={18} /> : <Copy size={18} />}
-      </button>
-      <button
-        className="prompt-editor-overlay__toolbar-btn"
-        onClick={handlePaste}
-        type="button"
-        aria-label="Вставить"
-      >
-        <ClipboardPaste size={18} />
-      </button>
-      <button
-        className="prompt-editor-overlay__toolbar-btn"
-        onClick={onOpenTranslate}
-        type="button"
-        aria-label="Режим перевода"
-      >
-        <Languages size={18} />
-      </button>
+      <ActionIcon variant="subtle" className={styles.tool} color="gray" size="lg" onClick={handleCopy} disabled={!draft} aria-label="Скопировать">
+        {copied ? <Check size={ICON} /> : <Copy size={ICON} />}
+      </ActionIcon>
+      <ActionIcon variant="subtle" className={styles.tool} color="gray" size="lg" onClick={handlePaste} aria-label="Вставить">
+        <ClipboardPaste size={ICON} />
+      </ActionIcon>
+      <ActionIcon variant="subtle" className={styles.tool} color="gray" size="lg" onClick={onOpenTranslate} aria-label="Режим перевода">
+        <Languages size={ICON} />
+      </ActionIcon>
 
-      {/* margin-left: auto на первой кнопке группы прижимает Undo/Redo к правому краю панели */}
-      <button
-        className="prompt-editor-overlay__toolbar-btn prompt-editor-overlay__toolbar-btn--push"
+      {/* Undo/Redo прижаты к правому краю панели. */}
+      <ActionIcon
+        variant="subtle"
+        className={styles.tool}
+        color="gray"
+        size="lg"
+        ml="auto"
         onClick={onUndo}
         disabled={!canUndo}
-        type="button"
         aria-label="Отменить"
       >
-        <Undo2 size={18} />
-      </button>
-      <button
-        className="prompt-editor-overlay__toolbar-btn"
-        onClick={onRedo}
-        disabled={!canRedo}
-        type="button"
-        aria-label="Повторить"
-      >
-        <Redo2 size={18} />
-      </button>
+        <Undo2 size={ICON} />
+      </ActionIcon>
+      <ActionIcon variant="subtle" className={styles.tool} color="gray" size="lg" onClick={onRedo} disabled={!canRedo} aria-label="Повторить">
+        <Redo2 size={ICON} />
+      </ActionIcon>
     </div>
   );
 }

@@ -6,7 +6,7 @@ import type { StorySettings } from "../types/story";
  * «мои сообщения»).
  */
 
-// LANG_OPTIONS — общий список языков, живёт в shared рядом с LangPicker (был дубль с rp-chat).
+// LANG_OPTIONS — общий список языков, живёт в shared/constants/lang-options (был дубль с rp-chat).
 export { LANG_OPTIONS } from "../../../shared/constants/lang-options";
 
 export const SCOPE_OPTIONS: { value: StorySettings["translateScope"]; label: string }[] = [

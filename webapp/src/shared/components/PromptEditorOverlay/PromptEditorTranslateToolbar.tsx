@@ -1,25 +1,23 @@
-import { Caption, Spinner } from "@telegram-apps/telegram-ui";
-import { ArrowLeftRight, Check, ChevronLeft, FileText, Globe, Languages, Sparkles } from "lucide-react";
-import type { ReactNode } from "react";
+import { ActionIcon, Indicator, Popover, SegmentedControl, Select, Text } from "@mantine/core";
+import { ArrowLeftRight, Check, ChevronLeft, Languages } from "lucide-react";
+import { useState } from "react";
 import type { PromptTranslateEngine } from "../../api/promptTranslate";
 import { LANG_OPTIONS } from "../../constants/lang-options";
-import { LangPicker } from "../LangPicker";
-import { SegmentedToggle } from "../SegmentedToggle";
-import "./PromptEditorTranslateToolbar.css";
+import styles from "./PromptEditorOverlay.module.css";
 
 export type TranslateBuffer = "source" | "translation";
 
-const ICON_SIZE = 16;
+const ICON = 20;
 
 const ENGINE_OPTIONS = [
-  { value: "google", label: "Google", icon: <Globe size={ICON_SIZE} /> },
-  { value: "ai", label: "ИИ", icon: <Sparkles size={ICON_SIZE} /> },
-] as const satisfies { value: PromptTranslateEngine; label: string; icon: ReactNode }[];
+  { value: "google", label: "Google" },
+  { value: "ai", label: "ИИ" },
+] satisfies { value: PromptTranslateEngine; label: string }[];
 
 const BUFFER_OPTIONS = [
-  { value: "source", label: "Оригинал", icon: <FileText size={ICON_SIZE} /> },
-  { value: "translation", label: "Перевод", icon: <Languages size={ICON_SIZE} /> },
-] as const satisfies { value: TranslateBuffer; label: string; icon: ReactNode }[];
+  { value: "source", label: "Оригинал" },
+  { value: "translation", label: "Перевод" },
+] satisfies { value: TranslateBuffer; label: string }[];
 
 interface PromptEditorTranslateToolbarProps {
   onBack: () => void;
@@ -43,38 +41,31 @@ interface PromptEditorTranslateToolbarProps {
   onApplyTranslation: () => void;
 }
 
-/** Почему кнопка синка сейчас неактивна — коротким текстом в title, а не молчаливым disabled:
- * без объяснения серая кнопка выглядит как баг, а не как ожидаемое состояние (см. вопрос
- * пользователя "почему кнопка серая", разобранный при добавлении этой подсказки). */
+/** Почему синхронизация сейчас недоступна — без объяснения серая кнопка выглядит как баг. */
 function syncDisabledHint(
   activeBuffer: TranslateBuffer,
   sameLang: boolean,
   sourceDirtyCount: number,
   translationDirtyCount: number,
-): string | undefined {
+): string {
   if (sameLang) return "Исходный и целевой язык совпадают — переводить нечего.";
-  const bothPending = sourceDirtyCount > 0 && translationDirtyCount > 0;
-  if (bothPending) {
+  if (sourceDirtyCount > 0 && translationDirtyCount > 0) {
     return "Обе стороны изменены и не синхронизированы — сначала разрешите одну: " +
       "отмените правки (Undo) либо очистите буфер на вкладке «Оригинал».";
   }
-  if (activeBuffer === "source" && sourceDirtyCount === 0) {
+  if (activeBuffer === "source") {
     return "В оригинале нет новых правок для перевода. Если нужный текст уже есть на вкладке " +
       "«Перевод», переключитесь туда и нажмите «Применить».";
   }
-  if (activeBuffer === "translation" && translationDirtyCount === 0) {
-    return "В переводе нет новых правок для переноса в оригинал.";
-  }
-  return undefined;
+  return "В переводе нет новых правок для переноса в оригинал.";
 }
 
 /**
- * Бар инструментов режима перевода — второй режим панели (переключается кнопкой в
- * PromptEditorToolbar). Тоггл «Оригинал/Перевод» независим от того, синхронизировался ли уже этот
- * буфер — можно открыть пустой перевод и сразу писать новый текст на другом языке (см.
- * usePromptTranslate). Кнопка синка — одна, контекстная: направление и disabled зависят от того,
- * какой буфер сейчас активен и не «грязна» ли противоположная сторона (защита от одновременной
- * несинхронизированности с обеих сторон — см. usePromptTranslate.canSyncTo*).
+ * Панель режима перевода. «Оригинал / Перевод» переключает буфер в поле независимо от того, переведён
+ * ли он: можно открыть пустой перевод и сразу писать текст на другом языке (см. usePromptTranslate).
+ * Кнопка синхронизации одна, контекстная: направление и доступность зависят от активного буфера и от
+ * того, не изменена ли противоположная сторона (usePromptTranslate.canSyncTo*). Недоступная кнопка не
+ * выключена, а по нажатию объясняет причину — на телефоне нет наведения для подсказки.
  */
 export function PromptEditorTranslateToolbar({
   onBack,
@@ -97,86 +88,101 @@ export function PromptEditorTranslateToolbar({
   canApplyTranslation,
   onApplyTranslation,
 }: PromptEditorTranslateToolbarProps) {
-  const sameLang = sourceLang === targetLang;
+  const [hintOpen, setHintOpen] = useState(false);
+  const toSource = activeBuffer === "translation";
+  const syncDisabled = toSource ? !canSyncToSource : !canSyncToTranslation;
+  const dirtyCount = toSource ? translationDirtyCount : sourceDirtyCount;
 
-  const sync =
-    activeBuffer === "source"
-      ? {
-          label: "→ Перевод",
-          ariaLabel: "Синхронизировать в перевод",
-          onClick: onSyncToTranslation,
-          disabled: !canSyncToTranslation,
-          dirty: sourceDirtyCount,
-        }
-      : {
-          label: "→ Оригинал",
-          ariaLabel: "Синхронизировать в оригинал",
-          onClick: onSyncToSource,
-          disabled: !canSyncToSource,
-          dirty: translationDirtyCount,
-        };
-  const syncTitle = sync.disabled
-    ? syncDisabledHint(activeBuffer, sameLang, sourceDirtyCount, translationDirtyCount)
-    : undefined;
+  const handleSync = () => {
+    if (loading) return;
+    if (syncDisabled) {
+      setHintOpen((o) => !o);
+      return;
+    }
+    setHintOpen(false);
+    if (toSource) onSyncToSource();
+    else onSyncToTranslation();
+  };
 
   return (
-    <div className="prompt-editor-translate-toolbar">
-      <div className="prompt-editor-translate-toolbar__row">
-        <button
-          type="button"
-          className="prompt-editor-overlay__toolbar-btn"
-          onClick={onBack}
-          aria-label="К инструментам текста"
-        >
-          <ChevronLeft size={18} />
-        </button>
-        <SegmentedToggle options={ENGINE_OPTIONS} value={engine} onChange={onEngineChange} ariaLabel="Движок перевода" />
-        <SegmentedToggle
-          options={BUFFER_OPTIONS}
+    <div className={styles.translateToolbar}>
+      <div className={styles.row}>
+        <ActionIcon variant="subtle" className={styles.tool} color="gray" size="lg" onClick={onBack} aria-label="К инструментам текста">
+          <ChevronLeft size={ICON} />
+        </ActionIcon>
+        <SegmentedControl
+          size="sm"
+          data={ENGINE_OPTIONS}
+          value={engine}
+          onChange={(v) => onEngineChange(v as PromptTranslateEngine)}
+          aria-label="Движок перевода"
+        />
+        <SegmentedControl
+          size="sm"
+          className={styles.grow}
+          data={BUFFER_OPTIONS}
           value={activeBuffer}
-          onChange={onActiveBufferChange}
-          ariaLabel="Показываемый буфер"
+          onChange={(v) => onActiveBufferChange(v as TranslateBuffer)}
+          aria-label="Буфер в поле"
         />
       </div>
-      <div className="prompt-editor-translate-toolbar__row">
-        <LangPicker value={sourceLang} onChange={onSourceLangChange} options={LANG_OPTIONS} compact />
-        <button
-          type="button"
-          className="prompt-editor-overlay__toolbar-btn"
-          onClick={onSwapLangs}
-          aria-label="Поменять языки местами"
-        >
-          <ArrowLeftRight size={18} />
-        </button>
-        <LangPicker value={targetLang} onChange={onTargetLangChange} options={LANG_OPTIONS} compact />
-        <div className="prompt-editor-translate-toolbar__actions">
-          {activeBuffer === "translation" && (
-            <button
-              type="button"
-              className="prompt-editor-translate-toolbar__apply"
+
+      <div className={styles.row}>
+        <Select
+          size="sm"
+          className={styles.lang}
+          data={LANG_OPTIONS}
+          value={sourceLang}
+          allowDeselect={false}
+          onChange={(v) => v && onSourceLangChange(v)}
+          aria-label="Исходный язык"
+        />
+        <ActionIcon variant="subtle" className={styles.tool} color="gray" size="lg" onClick={onSwapLangs} aria-label="Поменять языки местами">
+          <ArrowLeftRight size={ICON} />
+        </ActionIcon>
+        <Select
+          size="sm"
+          className={styles.lang}
+          data={LANG_OPTIONS}
+          value={targetLang}
+          allowDeselect={false}
+          onChange={(v) => v && onTargetLangChange(v)}
+          aria-label="Язык перевода"
+        />
+
+        <div className={styles.actions}>
+          {/* «Применить» — не синхронизация (без повторного перевода), поэтому не залитая. */}
+          {toSource && (
+            <ActionIcon
+              variant="light"
+              size="lg"
               onClick={onApplyTranslation}
               disabled={!canApplyTranslation}
-              aria-label="Использовать перевод как оригинал"
+              aria-label="Сделать перевод оригиналом"
               title="Сделать текущий перевод оригиналом — без повторного перевода"
             >
-              <Check size={16} />
-            </button>
+              <Check size={ICON} />
+            </ActionIcon>
           )}
-          <button
-            type="button"
-            className="prompt-editor-translate-toolbar__sync"
-            onClick={sync.onClick}
-            disabled={sync.disabled}
-            aria-label={sync.ariaLabel}
-            title={syncTitle ?? sync.label}
-          >
-            {loading ? <Spinner size="s" /> : <Languages size={16} />}
-            {sync.dirty > 0 && (
-              <Caption level="1" className="prompt-editor-translate-toolbar__badge">
-                {sync.dirty}
-              </Caption>
-            )}
-          </button>
+          <Popover opened={hintOpen} onChange={setHintOpen} width={260} position="bottom-end" withArrow shadow="md">
+            <Popover.Target>
+              <Indicator label={dirtyCount} size={16} color="red" disabled={dirtyCount === 0} offset={2}>
+                <ActionIcon
+                  size="lg"
+                  onClick={handleSync}
+                  loading={loading}
+                  data-disabled={syncDisabled || undefined}
+                  aria-disabled={syncDisabled}
+                  aria-label={toSource ? "Перенести правки в оригинал" : "Перевести правки"}
+                >
+                  <Languages size={ICON} />
+                </ActionIcon>
+              </Indicator>
+            </Popover.Target>
+            <Popover.Dropdown>
+              <Text size="sm">{syncDisabledHint(activeBuffer, sourceLang === targetLang, sourceDirtyCount, translationDirtyCount)}</Text>
+            </Popover.Dropdown>
+          </Popover>
         </div>
       </div>
     </div>

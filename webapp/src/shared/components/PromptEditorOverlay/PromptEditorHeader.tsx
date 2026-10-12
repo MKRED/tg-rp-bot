@@ -1,5 +1,6 @@
-import { Button, Subheadline } from "@telegram-apps/telegram-ui";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { Button, Text, UnstyledButton } from "@mantine/core";
+import { ChevronDown } from "lucide-react";
+import styles from "./PromptEditorOverlay.module.css";
 
 interface PromptEditorHeaderProps {
   title: string;
@@ -10,7 +11,7 @@ interface PromptEditorHeaderProps {
   onSave: () => void;
 }
 
-/** Шапка оверлея: Отмена / заголовок (тап разворачивает панель инструментов) / Готово. */
+/** Шапка редактора: Отмена / заголовок (тап раскрывает панель инструментов) / Готово. */
 export function PromptEditorHeader({
   title,
   dirty,
@@ -20,23 +21,23 @@ export function PromptEditorHeader({
   onSave,
 }: PromptEditorHeaderProps) {
   return (
-    <div className="prompt-editor-overlay__header">
-      <Button mode="outline" size="s" onClick={onDiscard}>
+    <div className={styles.header}>
+      <Button variant="subtle" color="gray" onClick={onDiscard} flex="none">
         Отмена
       </Button>
-      <button
-        type="button"
-        className="prompt-editor-overlay__title-toggle"
+      <UnstyledButton
+        className={styles.titleToggle}
         onClick={onToggleToolbar}
         aria-expanded={toolbarVisible}
         aria-label={toolbarVisible ? "Скрыть инструменты" : "Показать инструменты"}
       >
-        <Subheadline level="1" weight="2" className="prompt-editor-overlay__title" plain>
+        <Text fw={600} truncate>
           {title}
-        </Subheadline>
-        {toolbarVisible ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-      </button>
-      <Button mode="filled" size="s" disabled={!dirty} onClick={onSave}>
+        </Text>
+        {/* Шеврон подсказывает, что заголовок нажимается; поворот — что панель открыта. */}
+        <ChevronDown size={16} className={styles.chevron} data-open={toolbarVisible || undefined} aria-hidden />
+      </UnstyledButton>
+      <Button disabled={!dirty} onClick={onSave} flex="none">
         Готово
       </Button>
     </div>

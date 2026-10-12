@@ -1,5 +1,4 @@
 import { Caption, Spinner } from "@telegram-apps/telegram-ui";
-import { AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Clapperboard, Globe, History, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { PromptEditorOverlay } from "../../../shared/components/PromptEditorOverlay";
@@ -303,16 +302,13 @@ export function StoryMessageItem({
         </div>
       )}
 
-      <AnimatePresence>
-        {editorOpen && (
-          <PromptEditorOverlay
-            title="Редактирование бита"
-            value={message.content}
-            onSave={handleEditSave}
-            onCancel={() => setEditorOpen(false)}
-          />
-        )}
-      </AnimatePresence>
+      <PromptEditorOverlay
+        opened={editorOpen}
+        title="Редактирование бита"
+        value={message.content}
+        onSave={handleEditSave}
+        onClose={() => setEditorOpen(false)}
+      />
     </div>
   );
 }

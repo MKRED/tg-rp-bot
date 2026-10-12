@@ -2,7 +2,7 @@ import { ActionIcon, Group, Loader, SegmentedControl, Select, Stack, Text, Texta
 import type { PromptTranslateEngine } from "@tg-rp-bot/shared";
 import { Eraser, Languages, SendHorizontal } from "lucide-react";
 import { useState } from "react";
-import type { LangOption } from "../LangPicker";
+import type { LangOption } from "../../constants/lang-options";
 import { ResponsiveSheet } from "../ResponsiveSheet";
 import { RpText } from "../RpText";
 import { useComposeTranslate, type ComposeTranslateParams } from "../../hooks/useComposeTranslate";

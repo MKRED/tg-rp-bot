@@ -60,18 +60,17 @@ export function PromptEditorField({
         <ChevronRight size={18} className={styles.chevron} aria-hidden />
       </UnstyledButton>
 
-      {open && (
-        <PromptEditorOverlay
-          title={header}
-          placeholder={placeholder}
-          value={value}
-          onSave={(next) => {
-            onChange(next);
-            setOpen(false);
-          }}
-          onCancel={() => setOpen(false)}
-        />
-      )}
+      <PromptEditorOverlay
+        opened={open}
+        title={header}
+        placeholder={placeholder}
+        value={value}
+        onSave={(next) => {
+          onChange(next);
+          setOpen(false);
+        }}
+        onClose={() => setOpen(false)}
+      />
     </div>
   );
 }

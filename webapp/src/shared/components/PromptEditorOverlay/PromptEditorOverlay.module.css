@@ -1,0 +1,140 @@
+/* Окно редактора: на телефоне fullScreen (высота окна), на широком — большое окно по центру. Фон — как у
+   страницы, чтобы на телефоне редактор сливался с шапкой Telegram (её красит AppPage цветом страницы). */
+.content {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--app-color-page);
+}
+
+@media (min-width: $mantine-breakpoint-sm) {
+  .content {
+    height: min(85dvh, 56rem);
+  }
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  color: var(--mantine-color-text);
+}
+
+/* На телефоне окно во всю высоту — шапка не должна уйти под системную полосу и кнопки Telegram. */
+.header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  padding-top: calc(
+    var(--mantine-spacing-xs) +
+    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
+  border-bottom: 1px solid var(--app-color-divider);
+}
+
+/* Окно по центру — safe area его не касается. */
+@media (min-width: $mantine-breakpoint-sm) {
+  .header {
+    padding-top: var(--mantine-spacing-xs);
+  }
+}
+
+/* Длинный заголовок обрезается многоточием, шеврон не сжимается. */
+.titleToggle {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: var(--mantine-radius-md);
+  color: var(--mantine-color-text);
+}
+
+.chevron {
+  flex: none;
+  color: var(--mantine-color-dimmed);
+  transition: transform 150ms ease;
+}
+
+.chevron[data-open] {
+  transform: rotate(180deg);
+}
+
+/* Панели — на фоне карточки: поля и переключатели Mantine рассчитаны на него (на фоне страницы в
+   светлой схеме они сливаются). Шапка остаётся цвета страницы — как шапка Telegram над ней. */
+.toolbarWrap {
+  flex: none;
+  background: var(--mantine-color-body);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px var(--mantine-spacing-sm);
+  border-bottom: 1px solid var(--app-color-divider);
+}
+
+/* Неактивная прозрачная кнопка — без серой подложки Mantine, только приглушённый значок. */
+.tool:disabled {
+  background: transparent;
+}
+
+.translateToolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px var(--mantine-spacing-sm);
+  border-bottom: 1px solid var(--app-color-divider);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.lang {
+  width: 7rem;
+  flex: none;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* Поле без рамки на всю оставшуюся высоту. 16px — иначе iOS зумит страницу при фокусе. */
+.textarea {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--mantine-color-text);
+  font-family: var(--mantine-font-family);
+  font-size: 16px;
+  line-height: 1.5;
+  padding: var(--mantine-spacing-md);
+  padding-bottom: calc(var(--mantine-spacing-md) + var(--tg-viewport-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+}
+
+.textarea::placeholder {
+  color: var(--mantine-color-placeholder);
+}

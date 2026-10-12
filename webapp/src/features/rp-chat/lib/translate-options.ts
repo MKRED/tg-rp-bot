@@ -2,7 +2,7 @@ import type { ChatSettings } from "../types/chat";
 
 /** Опции выпадающих списков настроек перевода чата (RpChatSettingsPage). */
 
-// LANG_OPTIONS — общий список языков, живёт в shared рядом с LangPicker (был дубль с narrator).
+// LANG_OPTIONS — общий список языков, живёт в shared/constants/lang-options (был дубль с narrator).
 export { LANG_OPTIONS } from "../../../shared/constants/lang-options";
 
 export const SCOPE_OPTIONS: { value: ChatSettings["translateScope"]; label: string }[] = [

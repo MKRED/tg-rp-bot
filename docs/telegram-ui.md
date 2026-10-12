@@ -106,8 +106,7 @@ function AppInner() {
 > Платформенная логика — та же, что у tgui внутри (`ios`/`macos` → `ios`, остальное → `base`),
 > но на достоверном источнике — launch-параметрах SDK, а не на отсутствующем глобале.
 > `ThemeProvider` ([webapp/src/shared/theme/ThemeProvider.tsx](../webapp/src/shared/theme/ThemeProvider.tsx))
-> стоит НАД `AppRoot` — и корневой, и вложенный в `PromptEditorOverlay` (через портал) читают один
-> `appearance`, иначе ручной оверрайд не долетел бы до одного из них.
+> стоит НАД `AppRoot` и `MantineProvider` — обе библиотеки читают один `appearance`.
 
 ### 1.4. CSS-переменные: два слоя
 

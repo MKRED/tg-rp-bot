@@ -59,10 +59,8 @@ function storeChoice(key: string, value: string): void {
 
 /**
  * Единый источник темы приложения: режим (авто/светлая/тёмная), палитра и шрифты. Выбор хранится в
- * localStorage — на устройстве, как и раньше режим темы. Стоит НАД AppRoot — и корневой AppRoot (App.tsx), и
- * вложенный в PromptEditorOverlay (уходит в портал, но не из React-дерева) читают один и тот
- * же resolved appearance через useTheme(). Без общего источника ручной оверрайд, применённый
- * на одном из них, не долетел бы до другого — оверлей «телепортировался» бы в другую тему.
+ * localStorage — на устройстве, как и раньше режим темы. Стоит НАД AppRoot и MantineProvider (App.tsx) —
+ * обе библиотеки читают один и тот же resolved appearance через useTheme().
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
   // Вызывается безусловно (правила хуков) даже в режимах light/dark — иначе возврат
