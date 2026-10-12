@@ -1,9 +1,11 @@
-import { List, Spinner, Text } from "@telegram-apps/telegram-ui";
+import { Button } from "@mantine/core";
+import { Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { ROUTES, cardExportPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
-import { PageTransition } from "../../shared/components/PageTransition";
+import { AppPage } from "../../shared/components/AppPage";
+import { EmptyState } from "../../shared/components/EmptyState";
 import {
   CardForm,
   createCard,
@@ -18,7 +20,6 @@ import { presetSummary, usePresets } from "../../features/generation-presets";
 import { useTavilyKeyStatus } from "../../features/tavily-settings";
 import { confirmAction } from "../../shared/telegram/confirm";
 import { useToast } from "../../shared/toast";
-import "./cards.css";
 
 /** Маппинг полной карточки в значения формы. */
 function toInput(c: Card): CardInput {
@@ -50,7 +51,7 @@ export function CardEditPage() {
   // После первого успешного сохранения новой карточки держим её id локально: «Сохранить»
   // больше не покидает экран (маршрут остаётся /cards/new), поэтому без этого повторное
   // сохранение продолжило бы создавать дубликаты вместо обновления уже созданной. Тот же id
-  // разблокирует GenerationSection (кнопка генерации требует существующую карточку на сервере).
+  // разблокирует генерацию (GenerationCard) (кнопка генерации требует существующую карточку на сервере).
   const [createdId, setCreatedId] = useState<number>();
   const id = routeId ?? createdId;
 
@@ -123,46 +124,44 @@ export function CardEditPage() {
     setSubmitting(true);
     removeCard(id)
       .then(() => navigate(ROUTES.cards))
-      .catch(() => setSubmitting(false));
+      .catch(() => {
+        setSubmitting(false);
+        showToast({ type: "error", message: "Не удалось удалить карточку" });
+      });
   };
 
-  if (loading) {
+  if (error || (!loading && routeId !== undefined && !card)) {
     return (
-      <PageTransition>
-        <div className="cards-page__fullcenter">
-          <Spinner size="m" />
-        </div>
-      </PageTransition>
-    );
-  }
-
-  if (error || (routeId !== undefined && !card)) {
-    return (
-      <PageTransition>
-        <Text Component="div" className="cards-page__fullcenter">Карточка не найдена</Text>
-      </PageTransition>
+      <AppPage centered>
+        <EmptyState
+          icon={Sparkles}
+          title="Карточка не найдена"
+          description="Возможно, её удалили."
+          action={
+            <Button variant="default" onClick={() => navigate(ROUTES.cards)}>
+              К списку карточек
+            </Button>
+          }
+        />
+      </AppPage>
     );
   }
 
   return (
-    <PageTransition>
-      <div className="cards-page">
-        <List>
-          <CardForm
-            initial={card ? toInput(card) : undefined}
-            cardId={id}
-            presets={presets}
-            presetsLoading={presetsLoading}
-            webSearchAvailable={webSearchAvailable}
-            webSearchStatusLoading={webSearchStatusLoading}
-            submitting={submitting}
-            onSubmit={handleSubmit}
-            onDelete={id === undefined ? undefined : handleDelete}
-            onDuplicate={id === undefined ? undefined : handleDuplicate}
-            onExport={handleExport}
-          />
-        </List>
-      </div>
-    </PageTransition>
+    <AppPage title={id === undefined ? "Новая карточка" : "Карточка"} loading={loading}>
+      <CardForm
+        initial={card ? toInput(card) : undefined}
+        cardId={id}
+        presets={presets}
+        presetsLoading={presetsLoading}
+        webSearchAvailable={webSearchAvailable}
+        webSearchStatusLoading={webSearchStatusLoading}
+        submitting={submitting}
+        onSubmit={handleSubmit}
+        onDelete={id === undefined ? undefined : handleDelete}
+        onDuplicate={id === undefined ? undefined : handleDuplicate}
+        onExport={handleExport}
+      />
+    </AppPage>
   );
 }

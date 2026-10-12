@@ -1,0 +1,26 @@
+/* Вложенная плашка внутри карточки «Генерация»: обводка акцентом вместо тени второй карточки и без
+   своего фона — поле ответа и кнопки остаются на фоне карточки и не сливаются с плашкой. */
+.root {
+  padding: var(--mantine-spacing-md);
+  background-color: transparent;
+  box-shadow: none;
+  border: 1px solid light-dark(var(--mantine-color-accent-3), var(--mantine-color-accent-8));
+}
+
+.icon {
+  flex-shrink: 0;
+  color: light-dark(var(--mantine-color-accent-8), var(--mantine-color-accent-4));
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+}
+
+.badge {
+  flex-shrink: 0;
+}
+
+.next {
+  flex: 1;
+}

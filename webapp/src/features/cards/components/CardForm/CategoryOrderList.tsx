@@ -1,7 +1,8 @@
-import { Cell, Divider } from "@telegram-apps/telegram-ui";
-import { motion } from "framer-motion";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { CollapsibleCard } from "../../../../shared/components/CollapsibleCard";
+import { ListRow } from "../../../../shared/components/ListCard";
+import { OrderArrows } from "../../../../shared/components/OrderArrows";
 import type { CardCategory } from "../../types/card";
+import styles from "./CategoryOrderList.module.css";
 
 interface CategoryOrderListProps {
   categories: CardCategory[];
@@ -9,15 +10,9 @@ interface CategoryOrderListProps {
 }
 
 /**
- * Порядок категорий структуры карточки: только перестановка (↑/↓), без редактирования содержимого —
- * это делает CategoryList выше. Порядок массива = порядок сборки <example> и очередь генерации блоков
- * (см. assembleCardBlockPrompt на сервере), поэтому влияет на итоговый промпт.
- * Тот же паттерн, что у записей книги знаний (BookEditPage): стрелки в слоте after самого Cell +
- * motion.div layout для плавного FLIP-перехода строк при перестановке. Все строки — в одной общей
- * карточке (фон/скругления даёт внешняя Section в CardForm), между ними — Divider (tgui), как в
- * CategoryList. Вставляется вручную по индексу, а не через автоматику Section: между внешней Section
- * и этими строками стоит Accordion.Content (компонент-обёртка) — Section видит в нём один
- * непрозрачный узел и не может расставить разделители сама (см. docs/telegram-ui.md, 1.4.2).
+ * Карточка «Порядок полей»: только перестановка категорий (↑/↓, плавный переезд строк). Порядок
+ * массива = порядок сборки <example> и очередь генерации блоков (assembleCardBlockPrompt на сервере),
+ * поэтому влияет на итоговый промпт.
  */
 export function CategoryOrderList({ categories, onChange }: CategoryOrderListProps) {
   const moveAt = (index: number, dir: -1 | 1) => {
@@ -29,47 +24,24 @@ export function CategoryOrderList({ categories, onChange }: CategoryOrderListPro
   };
 
   return (
-    <>
-      {categories.map((category, index) => (
-        <motion.div key={category.id} layout transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}>
-          {index > 0 && <Divider />}
-          <Cell
-            hint={!category.enabled ? "выкл." : undefined}
-            after={
-              // Стрелки — в позиционированном слое над ripple-оверлеем Cell (см. .card-order-btn в
-              // cards.css) — иначе он перекрывает статичный after-контент и съедает клики.
-              <div className="card-order">
-                <button
-                  type="button"
-                  className="card-order-btn"
-                  aria-disabled={index === 0}
-                  aria-label="Выше"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    moveAt(index, -1);
-                  }}
-                >
-                  <ChevronUp size={18} />
-                </button>
-                <button
-                  type="button"
-                  className="card-order-btn"
-                  aria-disabled={index === categories.length - 1}
-                  aria-label="Ниже"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    moveAt(index, 1);
-                  }}
-                >
-                  <ChevronDown size={18} />
-                </button>
-              </div>
-            }
-          >
-            {category.title || "Без названия"}
-          </Cell>
-        </motion.div>
-      ))}
-    </>
+    <CollapsibleCard title="Порядок полей" description="В каком порядке блоки собираются и генерируются.">
+      <div className={styles.rows}>
+        {categories.map((category, index) => {
+          const title = category.title || "Без названия";
+          return (
+            <ListRow
+              key={category.id}
+              index={index}
+              layout
+              title={title}
+              description={category.enabled ? undefined : "выключена"}
+              trailing={
+                <OrderArrows index={index} count={categories.length} label={title} onMove={(dir) => moveAt(index, dir)} />
+              }
+            />
+          );
+        })}
+      </div>
+    </CollapsibleCard>
   );
 }

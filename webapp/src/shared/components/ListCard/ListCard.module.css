@@ -60,18 +60,19 @@
     outline-offset: -2px;
   }
 
-  &[aria-disabled="true"] {
+  &[aria-disabled="true"],
+  &[data-static] {
     cursor: default;
   }
 
   /* hover — только на устройствах с мышью: на тач-экране он «залипает» после тапа. */
   @media (hover: hover) {
-    &:not([aria-disabled="true"]):hover::before {
+    &:not([aria-disabled="true"], [data-static]):hover::before {
       background-color: var(--mantine-color-default-hover);
     }
   }
 
-  &:not([aria-disabled="true"]):active::before {
+  &:not([aria-disabled="true"], [data-static]):active::before {
     background-color: var(--mantine-color-default-hover);
   }
 }

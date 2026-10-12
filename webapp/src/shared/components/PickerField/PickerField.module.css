@@ -21,9 +21,15 @@
   }
 }
 
-.name {
+.text {
   flex: 1;
   min-width: 0;
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+  padding-block: var(--mantine-spacing-md);
 }
 
 .chevron {
@@ -36,7 +42,8 @@
   margin-inline: calc(-1 * var(--mantine-spacing-md));
 }
 
+/* Галочка выбранного — текстовый оттенок акцента: заливочный (янтарь) на светлом фоне бледный. */
 .check {
   flex-shrink: 0;
-  color: var(--mantine-primary-color-filled);
+  color: light-dark(var(--mantine-color-accent-8), var(--mantine-color-accent-4));
 }

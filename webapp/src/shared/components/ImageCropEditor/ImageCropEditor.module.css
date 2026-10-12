@@ -1,0 +1,90 @@
+/* Редактор намеренно тёмный в любой схеме — как нативный фоторедактор (см. коммент в .tsx).
+   Поэтому цвета — фиксированные чёрный/белый и тёмные тона палитры, а не light-dark(). */
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  background: var(--mantine-color-black);
+  color: var(--mantine-color-white);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.header {
+  flex-shrink: 0;
+  text-align: center;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg) var(--mantine-spacing-xs);
+  /* Отступ сверху = системный safe-area (статус-бар) + content-safe-area (нативная шапка Telegram
+     с кнопкой «Назад»/меню в full-screen). Без второго слагаемого заголовок уезжает под шапку. */
+  padding-top: calc(
+    var(--mantine-spacing-md)
+    + var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px))
+    + var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
+}
+
+.hint {
+  margin-top: 4px;
+  color: var(--mantine-color-dark-2);
+}
+
+/* Область кропа занимает всё место между шапкой и панелью; react-easy-crop позиционируется
+   absolute внутри неё. */
+.area {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+
+  /* Сильнее затемняем фото вне круга, чтобы выбранная область читалась. react-easy-crop рисует
+     затемнение через box-shadow: 0 0 0 9999em currentColor — управляем им через color. */
+  :global(.reactEasyCrop_CropArea) {
+    color: alpha(var(--mantine-color-black), 0.72);
+    border: 2px solid alpha(var(--mantine-color-white), 0.7);
+  }
+}
+
+/* Панель управления — отдельная поверхность поверх чёрного фото: скруглённый верх и линия. */
+.controls {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-lg);
+  padding: var(--mantine-spacing-lg);
+  /* нижний отступ под домашнюю полоску/safe-area */
+  padding-bottom: calc(
+    var(--mantine-spacing-lg) + var(--tg-viewport-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+  );
+  background: var(--mantine-color-dark-7);
+  border-radius: var(--mantine-radius-lg) var(--mantine-radius-lg) 0 0;
+  border-top: 1px solid alpha(var(--mantine-color-white), 0.08);
+}
+
+.zoomRow {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+}
+
+.zoomIcon {
+  flex-shrink: 0;
+  color: var(--mantine-color-dark-2);
+}
+
+.zoom {
+  flex: 1;
+}
+
+/* Дорожка слайдера на тёмной панели — светлая полупрозрачная в любой схеме. */
+.zoomTrack::before {
+  background-color: alpha(var(--mantine-color-white), 0.18);
+}
+
+.actions {
+  display: flex;
+  gap: var(--mantine-spacing-sm);
+}
+
+.action {
+  flex: 1;
+}

@@ -1,6 +1,10 @@
-import { Button, Caption, Text, Textarea } from "@telegram-apps/telegram-ui";
+import { Badge, Button, Group, Paper, Stack, Text, Textarea } from "@mantine/core";
+import { AnimatePresence, motion } from "framer-motion";
+import { MessageCircleQuestion } from "lucide-react";
 import { useEffect, useState } from "react";
+import { MOTION_TRANSITION } from "../../../../shared/theme/motion";
 import type { AskUserQuestion } from "../../types/card";
+import styles from "./AskUserQuestionsCarousel.module.css";
 
 interface AskUserQuestionsCarouselProps {
   categoryTitle: string;
@@ -11,17 +15,10 @@ interface AskUserQuestionsCarouselProps {
 }
 
 /**
- * Инлайн-карусель уточняющих вопросов ask_user — рендерится ВМЕСТО блока структуры, который модель
- * попросила уточнить перед генерацией (см. GenerationSection), а не модалкой поверх экрана: один
- * вопрос за раз (шаг карусели), «Назад»/«Далее» листают, на последнем шаге «Далее» становится
- * «Ответить». Вопросы и накопленные ответы хранятся на самой категории на сервере (см.
- * CardCategory в @tg-rp-bot/shared) — ограничения по времени на ответ нет: пользователь может свернуть
- * Mini App и вернуться к этому же экрану позже, карточка при этом не считается занятой.
- *
- * Рендерится как top-level child родительской <Section> в GenerationSection (как и обычный блок —
- * <div key={category.id}>…</div>) — БЕЗ собственной вложенной <Section>: у tgui Section свой фон/
- * гуттеры/Divider-логика по top-level children, вложенная Section дала бы задвоенный фон и
- * поломанное разбиение на Divider вместо единого списка блоков.
+ * Карусель уточняющих вопросов ask_user — встаёт вместо блока, который модель попросила уточнить
+ * перед генерацией: один вопрос за раз, «Назад»/«Далее», на последнем — «Ответить». Вопросы и
+ * накопленные ответы хранятся на самой категории на сервере — можно свернуть Mini App и вернуться
+ * позже, карточка при этом не занята.
  */
 export function AskUserQuestionsCarousel({
   categoryTitle,
@@ -33,8 +30,8 @@ export function AskUserQuestionsCarousel({
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<string[]>(() => questions.map(() => ""));
 
-  // Новый набор вопросов (следующий раунд ask_user для того же блока после ответа) — сбрасываем
-  // прогресс карусели и черновик ответов, а не продолжаем со старого step/answers чужой длины.
+  // Новый набор вопросов (следующий раунд ask_user после ответа) — сбрасываем прогресс и черновик
+  // ответов, а не продолжаем со старого step/answers чужой длины.
   useEffect(() => {
     setStep(0);
     setAnswers(questions.map(() => ""));
@@ -49,7 +46,7 @@ export function AskUserQuestionsCarousel({
     setAnswers((prev) => prev.map((a, i) => (i === step ? value : a)));
   };
 
-  /** Клик по варианту-подсказке: не затирает уже введённый текст — дописывает через запятую. */
+  /** Вариант-подсказка не затирает уже введённый текст — дописывается через запятую. */
   const applyOption = (option: string) => {
     setAnswers((prev) =>
       prev.map((a, i) => {
@@ -62,57 +59,64 @@ export function AskUserQuestionsCarousel({
 
   const canGoNext = answer.trim().length > 0 && !submitting;
 
-  const handleNext = () => {
-    if (isLast) {
-      onSubmit(answers);
-      return;
-    }
-    setStep((s) => s + 1);
-  };
-
   return (
-    <div>
-      <Text Component="div" weight="2" className="card-ask-user__title">
-        {`Уточнение — «${categoryTitle}»`}
-      </Text>
+    <Paper className={styles.root}>
+      <Stack gap="sm">
+        <Group gap="xs" wrap="nowrap">
+          <MessageCircleQuestion size={18} className={styles.icon} aria-hidden />
+          <Text fw={600} className={styles.title}>{`Уточнение — «${categoryTitle}»`}</Text>
+          <Badge variant="light" className={styles.badge}>{`${step + 1} из ${questions.length}`}</Badge>
+        </Group>
 
-      <div className="card-ask-user__question">
-        <Caption level="1" className="card-generation__hint">
-          {`Вопрос ${step + 1} из ${questions.length}`}
-        </Caption>
-        <Text Component="div" weight="2">
-          {question.question}
-        </Text>
-        {question.options && question.options.length > 0 && (
-          <div className="card-ask-user__options">
-            {question.options.map((option) => (
-              <Button key={option} size="s" mode="outline" onClick={() => applyOption(option)}>
-                {option}
-              </Button>
-            ))}
-          </div>
-        )}
-        <Textarea
-          rows={3}
-          placeholder="Ваш ответ…"
-          value={answer}
-          onChange={(e) => setAnswer(e.target.value)}
-        />
-      </div>
+        {/* Смена вопроса — короткий сдвиг: видно, что это следующий шаг, а не тот же вопрос. */}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={step}
+            initial={{ opacity: 0, x: 12 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -12 }}
+            transition={MOTION_TRANSITION}
+          >
+            <Stack gap="sm">
+              <Text fw={500}>{question.question}</Text>
+              {question.options && question.options.length > 0 && (
+                <Group gap="xs">
+                  {question.options.map((option) => (
+                    <Button key={option} variant="default" size="compact-md" onClick={() => applyOption(option)}>
+                      {option}
+                    </Button>
+                  ))}
+                </Group>
+              )}
+              <Textarea
+                autosize
+                minRows={3}
+                placeholder="Ваш ответ…"
+                aria-label="Ответ"
+                value={answer}
+                onChange={(e) => setAnswer(e.currentTarget.value)}
+              />
+            </Stack>
+          </motion.div>
+        </AnimatePresence>
 
-      <div className="card-generation__block-action card-ask-user__actions">
-        <div className="card-ask-user__nav">
-          <Button size="m" mode="outline" disabled={step === 0 || submitting} onClick={() => setStep((s) => s - 1)}>
+        <Group gap="sm" wrap="nowrap">
+          <Button variant="default" disabled={step === 0 || submitting} onClick={() => setStep((s) => s - 1)}>
             Назад
           </Button>
-          <Button size="m" stretched loading={submitting} disabled={!canGoNext} onClick={handleNext}>
+          <Button
+            className={styles.next}
+            loading={submitting}
+            disabled={!canGoNext}
+            onClick={() => (isLast ? onSubmit(answers) : setStep((s) => s + 1))}
+          >
             {isLast ? "Ответить" : "Далее"}
           </Button>
-        </div>
-        <Button size="l" stretched mode="outline" disabled={submitting} onClick={onSkipAll}>
+        </Group>
+        <Button variant="subtle" disabled={submitting} onClick={onSkipAll}>
           Пропустить все вопросы
         </Button>
-      </div>
-    </div>
+      </Stack>
+    </Paper>
   );
 }

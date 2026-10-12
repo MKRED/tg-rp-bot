@@ -26,6 +26,7 @@ interface ListRowProps {
   layout?: boolean;
   /** Шеврон «перейти» справа. false — строка выбора в списке, а не переход на экран. */
   chevron?: boolean;
+  /** Без onClick строка не нажимается (нет подсветки и шеврона). */
   onClick?: () => void;
   /** Неактивна: приглушена, без шеврона, тап ничего не делает. */
   disabled?: boolean;
@@ -71,11 +72,14 @@ export function ListRow({
       }}
     >
       {leading && <div className={styles.leading}>{leading}</div>}
-      {/* aria-disabled, а не disabled: строка остаётся в порядке фокуса, скринридер озвучит причину (бейдж). */}
+      {/* aria-disabled, а не disabled: строка остаётся в порядке фокуса, скринридер озвучит причину (бейдж).
+          Без onClick строка не кнопка: только текст и свои кнопки в trailing (напр. порядок полей). */}
       <UnstyledButton
+        component={onClick ? "button" : "div"}
         className={styles.main}
         onClick={disabled ? undefined : onClick}
         aria-disabled={disabled || undefined}
+        data-static={!onClick || undefined}
       >
         <div className={styles.text}>
           <Text fw={500} truncate>
@@ -88,7 +92,7 @@ export function ListRow({
           )}
         </div>
         {meta}
-        {chevron && !disabled && !trailing && <ChevronRight size={18} className={styles.chevron} aria-hidden />}
+        {chevron && onClick && !disabled && !trailing && <ChevronRight size={18} className={styles.chevron} aria-hidden />}
       </UnstyledButton>
       {trailing && <div className={styles.trailing}>{trailing}</div>}
     </motion.div>

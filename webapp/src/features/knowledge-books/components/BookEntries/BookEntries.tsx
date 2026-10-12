@@ -1,6 +1,7 @@
-import { ActionIcon, Button, Text, ThemeIcon } from "@mantine/core";
-import { ChevronDown, ChevronUp, FileText, Plus } from "lucide-react";
+import { Button, Text, ThemeIcon } from "@mantine/core";
+import { FileText, Plus } from "lucide-react";
 import { ListRow } from "../../../../shared/components/ListCard";
+import { OrderArrows } from "../../../../shared/components/OrderArrows";
 import { SettingsCard } from "../../../../shared/components/SettingsCard";
 import { CharacterAvatar } from "../../../characters";
 import { PersonaAvatar } from "../../../personas";
@@ -53,30 +54,7 @@ export function BookEntries({ entries, onOpen, onAdd, onMove }: BookEntriesProps
               description={entryDescription(e)}
               onClick={() => onOpen(e)}
               trailing={
-                <div className={styles.order}>
-                  <ActionIcon
-                    variant="subtle"
-                    color="gray"
-                    size="xl"
-                    className={styles.arrow}
-                    aria-label={`${entryTitle(e)}: выше`}
-                    disabled={index === 0}
-                    onClick={() => onMove(index, -1)}
-                  >
-                    <ChevronUp size={20} />
-                  </ActionIcon>
-                  <ActionIcon
-                    variant="subtle"
-                    color="gray"
-                    size="xl"
-                    className={styles.arrow}
-                    aria-label={`${entryTitle(e)}: ниже`}
-                    disabled={index === entries.length - 1}
-                    onClick={() => onMove(index, 1)}
-                  >
-                    <ChevronDown size={20} />
-                  </ActionIcon>
-                </div>
+                <OrderArrows index={index} count={entries.length} label={entryTitle(e)} onMove={(dir) => onMove(index, dir)} />
               }
             />
           ))}

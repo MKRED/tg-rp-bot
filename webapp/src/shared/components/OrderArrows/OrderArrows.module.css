@@ -1,0 +1,11 @@
+.root {
+  display: flex;
+  flex-shrink: 0;
+}
+
+/* Недоступная стрелка (край списка) — просто бледная, без серой плашки disabled от Mantine. */
+.arrow:disabled,
+.arrow[data-disabled] {
+  background-color: transparent;
+  opacity: 0.3;
+}

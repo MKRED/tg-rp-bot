@@ -1,0 +1,32 @@
+/* overflow — чтобы при анимации высоты содержимое не вылезало. */
+.item {
+  overflow: hidden;
+}
+
+/* Разделитель между категориями (не над первой). */
+.item + .item {
+  border-top: 1px solid var(--app-color-divider);
+}
+
+/* Отступы — внутри анимируемого блока, иначе в конце анимации высоты они бы «прыгали». */
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-sm);
+  padding-block: var(--mantine-spacing-md);
+}
+
+.item:first-child .row {
+  padding-top: 0;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+}

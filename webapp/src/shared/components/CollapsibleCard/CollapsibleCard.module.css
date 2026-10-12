@@ -1,0 +1,47 @@
+/* Фон нажатия заголовка не вылезает за скругления карточки. */
+.card {
+  overflow: hidden;
+}
+
+/* Заголовок — вся верхняя полоса карточки с отступами SettingsCard (p="md"). */
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  width: 100%;
+  padding: var(--mantine-spacing-md);
+  transition: background-color 150ms ease;
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--mantine-color-default-hover);
+    }
+  }
+
+  &:active {
+    background-color: var(--mantine-color-default-hover);
+  }
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--mantine-color-dimmed);
+  transition: transform 200ms ease;
+
+  &[data-open] {
+    transform: rotate(180deg);
+  }
+}
+
+/* Содержимое — столбиком, как в SettingsCard; сверху отступ уже дал заголовок. */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+  padding: 0 var(--mantine-spacing-md) var(--mantine-spacing-md);
+}

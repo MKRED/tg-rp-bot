@@ -1,11 +1,11 @@
 import { Box, Collapse, SegmentedControl, TextInput } from "@mantine/core";
+import { PickerField, type PickerOption } from "../../../../shared/components/PickerField";
 import { PromptEditorField } from "../../../../shared/components/PromptEditorField";
 import { SettingsCard } from "../../../../shared/components/SettingsCard";
 import { CharacterAvatar } from "../../../characters";
 import { PersonaAvatar } from "../../../personas";
 import type { ReferenceItem } from "../../lib/entryReference";
 import { MAX_ENTRY_FIELD_LENGTH } from "../../types/book";
-import { EntryReferencePicker } from "./EntryReferencePicker";
 import type { EntryMode } from "./useEntryReference";
 
 const MODE_OPTIONS = [
@@ -33,6 +33,18 @@ interface ContentCardProps {
   onAlias: (value: string) => void;
 }
 
+/** Персонаж/персона как вариант выбора — с аватаром своей фичи. */
+const characterOption = (c: ReferenceItem): PickerOption => ({
+  id: c.id,
+  title: c.name,
+  leading: <CharacterAvatar id={c.id} hasImage={c.hasImage} name={c.name} />,
+});
+const personaOption = (p: ReferenceItem): PickerOption => ({
+  id: p.id,
+  title: p.name,
+  leading: <PersonaAvatar id={p.id} hasImage={p.hasImage} name={p.name} />,
+});
+
 /** Карточка «Содержание» записи: название, вид (персонаж/персона/текст), ссылка или текст, псевдоним. */
 export function ContentCard(props: ContentCardProps) {
   const { mode } = props;
@@ -53,27 +65,29 @@ export function ContentCard(props: ContentCardProps) {
         <SegmentedControl fullWidth data={MODE_OPTIONS} value={mode} onChange={(v) => props.onMode(v as EntryMode)} />
         <Collapse expanded={mode === "character"}>
           <Box pt="md">
-            <EntryReferencePicker
+            <PickerField
               label="Персонаж"
-              items={props.characters}
-              selected={props.selectedCharacter}
-              Avatar={CharacterAvatar}
+              required
+              options={props.characters.map(characterOption)}
+              value={props.selectedCharacter?.id ?? null}
+              selected={props.selectedCharacter && characterOption(props.selectedCharacter)}
               placeholder="Выберите персонажа"
               emptyText="Персонажей пока нет — создайте их в разделе «Персонажи»."
-              onSelect={props.onCharacter}
+              onChange={props.onCharacter}
             />
           </Box>
         </Collapse>
         <Collapse expanded={mode === "persona"}>
           <Box pt="md">
-            <EntryReferencePicker
+            <PickerField
               label="Персона"
-              items={props.personas}
-              selected={props.selectedPersona}
-              Avatar={PersonaAvatar}
+              required
+              options={props.personas.map(personaOption)}
+              value={props.selectedPersona?.id ?? null}
+              selected={props.selectedPersona && personaOption(props.selectedPersona)}
               placeholder="Выберите персону"
               emptyText="Персон пока нет — создайте их в разделе «Персоны»."
-              onSelect={props.onPersona}
+              onChange={props.onPersona}
             />
           </Box>
         </Collapse>

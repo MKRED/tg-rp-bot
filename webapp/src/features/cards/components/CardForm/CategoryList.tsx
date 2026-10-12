@@ -1,9 +1,12 @@
-import { Button, Divider } from "@telegram-apps/telegram-ui";
+import { Button } from "@mantine/core";
 import { AnimatePresence, motion } from "framer-motion";
-import { SectionActions } from "../../../../shared/components/SectionActions";
+import { Plus } from "lucide-react";
+import { CollapsibleCard } from "../../../../shared/components/CollapsibleCard";
+import { MOTION_TRANSITION } from "../../../../shared/theme/motion";
 import { MAX_CARD_CATEGORIES } from "../../types/card";
 import type { CardCategory } from "../../types/card";
 import { CategoryRow } from "./CategoryRow";
+import styles from "./CategoryList.module.css";
 
 interface CategoryListProps {
   categories: CardCategory[];
@@ -11,15 +14,10 @@ interface CategoryListProps {
 }
 
 /**
- * Редактор структуры карточки: список категорий (заголовок + пример + вкл/выкл) с добавлением
- * и удалением. Порядок = порядок элементов массива = порядок сборки <example> и генерации блоков
- * (см. assembleCardBlockPrompt на сервере) — сама перестановка живёт в отдельной секции
- * (CategoryOrderList), эта отвечает только за содержимое категорий.
- *
- * Все категории — в одной общей карточке (фон/скругления даёт внешняя Section в CardForm), между
- * ними — Divider (tgui). Section сама вставляет Divider между прямыми детьми, но не видит сквозь
- * AnimatePresence (см. docs/telegram-ui.md, 1.4.2) — категории лежат внутри неё ради exit-анимации
- * при удалении, поэтому разделители ставим вручную по индексу, а не полагаемся на автоматику Section.
+ * Карточка «Структура»: категории (название, пример, вкл/выкл) с добавлением и удалением. Порядок
+ * массива = порядок сборки <example> и генерации блоков (assembleCardBlockPrompt на сервере); сама
+ * перестановка — в карточке «Порядок полей» (CategoryOrderList). Свёрнута по умолчанию: правится
+ * реже промптов.
  */
 export function CategoryList({ categories, onChange }: CategoryListProps) {
   const updateAt = (index: number, next: CardCategory) => {
@@ -39,41 +37,40 @@ export function CategoryList({ categories, onChange }: CategoryListProps) {
   };
 
   return (
-    <>
-      <AnimatePresence initial={false}>
-        {categories.map((category, index) => (
-          <motion.div
-            key={category.id}
-            layout
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            style={{ overflow: "hidden" }}
-          >
-            {/* Разделитель — leading, не trailing: индекс пересчитывается на каждый рендер, так что
-                после удаления категории он остаётся ровно между оставшимися блоками, без "хвоста". */}
-            {index > 0 && <Divider />}
-            <CategoryRow
-              category={category}
-              onChange={(next) => updateAt(index, next)}
-              onRemove={() => removeAt(index)}
-            />
-          </motion.div>
-        ))}
-      </AnimatePresence>
-      {categories.length > 0 && <Divider />}
-      <SectionActions>
-        <Button
-          size="s"
-          mode="outline"
-          className="card-categories__add"
-          disabled={categories.length >= MAX_CARD_CATEGORIES}
-          onClick={add}
-        >
-          + Добавить категорию
-        </Button>
-      </SectionActions>
-    </>
+    <CollapsibleCard
+      title="Структура"
+      description={`Категории карточки (${categories.length} из ${MAX_CARD_CATEGORIES}): что генерирует ИИ и в каком формате.`}
+    >
+      {/* Категории — один ребёнок колонки карточки: появление/удаление анимируется высотой, а
+          разделитель между ними рисует CSS (.item + .item), а не gap. */}
+      <div>
+        <AnimatePresence initial={false}>
+          {categories.map((category, index) => (
+            <motion.div
+              key={category.id}
+              className={styles.item}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={MOTION_TRANSITION}
+            >
+              <CategoryRow
+                category={category}
+                onChange={(next) => updateAt(index, next)}
+                onRemove={() => removeAt(index)}
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+      <Button
+        variant="light"
+        leftSection={<Plus size={18} />}
+        disabled={categories.length >= MAX_CARD_CATEGORIES}
+        onClick={add}
+      >
+        Добавить категорию
+      </Button>
+    </CollapsibleCard>
   );
 }

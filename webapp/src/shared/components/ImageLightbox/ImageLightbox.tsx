@@ -1,5 +1,6 @@
-import { Spinner } from "@telegram-apps/telegram-ui";
+import { ActionIcon, Loader } from "@mantine/core";
 import { motion } from "framer-motion";
+import { Send, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -9,7 +10,8 @@ import {
 } from "react-zoom-pan-pinch";
 import { pushBackInterceptor } from "../../telegram/backInterceptor";
 import { useToast } from "../../toast";
-import "./ImageLightbox.css";
+import { MOTION_TRANSITION } from "../../theme/motion";
+import styles from "./ImageLightbox.module.css";
 
 interface ImageLightboxProps {
   /**
@@ -28,7 +30,7 @@ interface ImageLightboxProps {
 
 /**
  * Полноэкранный просмотр изображения с зумом (pinch / двойной тап / колесо) и панорамированием.
- * Рендерится через portal в document.body — избегает z-index конфликтов.
+ * Рендерится через portal в document.body — избегает z-index конфликтов. Тёмный в любой схеме.
  * AnimatePresence в родителе (CharacterAvatar) координирует exit-анимацию перед unmount.
  *
  * Пока изображение не декодировано (src ещё грузится или картинка не успела отрисоваться) —
@@ -96,7 +98,8 @@ export function ImageLightbox({ src, onSend, onClose }: ImageLightboxProps) {
     try {
       await onSend(src);
       showToast({ type: "success", message: "Фото отправлено в чат с ботом" });
-    } catch {
+    } catch (err) {
+      console.error("Не удалось отправить фото в чат", err);
       showToast({ type: "error", message: "Не удалось отправить фото" });
     } finally {
       setSending(false);
@@ -105,48 +108,47 @@ export function ImageLightbox({ src, onSend, onClose }: ImageLightboxProps) {
 
   return createPortal(
     <motion.div
-      className="image-lightbox"
+      className={styles.root}
       onClick={handleBackdropClick}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={MOTION_TRANSITION}
     >
-      <button
-        type="button"
-        className="image-lightbox__close"
-        aria-label="Закрыть"
-        onClick={(e) => { e.stopPropagation(); onClose(); }}
-      >
-        ×
-      </button>
-
-      {/* Кнопка «отправить в чат» — только если задан onSend и фото загружено. На время
-          отправки показываем спиннер и блокируем кнопку (анти-дабл-тап). */}
-      {onSend && src && loaded && (
-        <button
-          type="button"
-          className="image-lightbox__send"
-          aria-label="Отправить в чат"
-          disabled={sending}
-          onClick={(e) => { e.stopPropagation(); handleSend(); }}
+      {/* Тап по промежутку между кнопками — не тап по фону: просмотр не закрывается. */}
+      <div className={styles.toolbar} onClick={(e) => e.stopPropagation()}>
+        {/* «Отправить в чат» — только если задан onSend и фото загружено; на время отправки —
+            лоадер и блокировка (анти-дабл-тап). */}
+        {onSend && src && loaded && (
+          <ActionIcon
+            size={44}
+            radius="xl"
+            variant="filled"
+            className={styles.button}
+            aria-label="Отправить в чат"
+            loading={sending}
+            onClick={(e) => {
+              e.stopPropagation();
+              void handleSend();
+            }}
+          >
+            <Send size={20} />
+          </ActionIcon>
+        )}
+        <ActionIcon
+          size={44}
+          radius="xl"
+          variant="filled"
+          className={styles.button}
+          aria-label="Закрыть"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
         >
-          {sending ? (
-            <Spinner size="s" />
-          ) : (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              {/* Бумажный самолётик — отправка. */}
-              <path
-                d="M21 3L3 10.5l6 2.5m12-10l-7 18-2.5-7m9.5-11l-9.5 11"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          )}
-        </button>
-      )}
+          <X size={22} />
+        </ActionIcon>
+      </div>
 
       {src && (
         <TransformWrapper
@@ -187,12 +189,11 @@ export function ImageLightbox({ src, onSend, onClose }: ImageLightboxProps) {
           }}
         >
           <TransformComponent
-            wrapperClass="image-lightbox__viewport"
-            contentClass="image-lightbox__content"
+            wrapperClass={styles.viewport}
           >
             <img
               ref={imgRef}
-              className="image-lightbox__img"
+              className={styles.img}
               src={src}
               alt=""
               draggable={false}
@@ -204,8 +205,8 @@ export function ImageLightbox({ src, onSend, onClose }: ImageLightboxProps) {
       )}
 
       {!loaded && (
-        <div className="image-lightbox__spinner">
-          <Spinner size="l" />
+        <div className={styles.loader}>
+          <Loader color="white" />
         </div>
       )}
     </motion.div>,
