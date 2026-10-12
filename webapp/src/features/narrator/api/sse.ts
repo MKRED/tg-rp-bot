@@ -19,7 +19,7 @@ export async function readStorySSE(
 
   if (!response.ok || !response.body) {
     reportAuthFailure(response.status);
-    onError("Request failed");
+    onError("Не удалось получить ответ — проверьте соединение и попробуйте ещё раз");
     return;
   }
 

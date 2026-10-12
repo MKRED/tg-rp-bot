@@ -1,0 +1,28 @@
+/* Прокручивается только лента: шапка и поле ввода стоят на месте.
+   overflow-anchor не отключать — им браузер держит низ, когда пузыри после прокрутки меняют высоту
+   (показ кэшированного перевода), см. useRenderWindow. */
+.feed {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Колонка сообщений: на ПК — по центру, не во всю ширину (та же, что у шапки и поля ввода). */
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+  width: 100%;
+  max-width: var(--app-chat-width, 48rem);
+  margin-inline: auto;
+  padding-block: var(--mantine-spacing-md);
+}
+
+.center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

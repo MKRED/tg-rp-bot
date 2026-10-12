@@ -1,14 +1,20 @@
 import { useEffect, useState } from "react";
-import type { StoryMessage } from "../types/story";
+
+/** Сообщение с кэшем переводов — сообщение RP-чата или ход истории. */
+interface TranslatableMessage {
+  id: number;
+  content: string;
+  translations: Record<string, string> | null;
+}
 
 /**
- * Тоггл перевода одного сообщения истории (бита/директивы): держит флаг показа и статус загрузки,
- * при первом показе запрашивает перевод, если его нет в кэше. Зеркало логики MessageBubble (RP).
+ * Тоггл перевода одного сообщения (RP-чата, бита/директивы истории): держит флаг показа и статус
+ * загрузки, при первом показе запрашивает перевод, если его нет в кэше.
  * После onTranslate перевод доезжает в message.translations (родитель обновляет ленту) — отсюда
  * displayText читает кэш и подменяет исходный текст.
  */
 export function useTranslatable(
-  message: StoryMessage,
+  message: TranslatableMessage,
   targetLang: string,
   autoShow: boolean,
   onTranslate: (messageId: number, targetLang: string) => Promise<string>,

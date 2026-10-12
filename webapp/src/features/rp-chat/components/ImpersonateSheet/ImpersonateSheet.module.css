@@ -1,0 +1,46 @@
+.center {
+  display: flex;
+  justify-content: center;
+  padding-block: var(--mantine-spacing-xl);
+}
+
+/* Вариант: текст-кнопка (подставить в поле) и колонка своих кнопок справа — не вложены друг в друга. */
+.card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mantine-spacing-xs);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-xs) var(--mantine-spacing-xs) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-default-hover);
+}
+
+.cardText {
+  flex: 1;
+  min-width: 0;
+  padding-block: var(--mantine-spacing-xs);
+  border-radius: var(--mantine-radius-sm);
+  transition: opacity 150ms ease;
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
+.cardActions {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.text {
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.streaming {
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-default-hover);
+  opacity: 0.85;
+}

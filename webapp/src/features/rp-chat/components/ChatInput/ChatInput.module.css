@@ -1,0 +1,47 @@
+/* Нижняя панель экрана: поле не уходит под полосу жестов. */
+.bar {
+  flex-shrink: 0;
+  border-top: 1px solid var(--app-color-divider);
+  background: var(--app-color-page);
+  padding-bottom: var(--tg-viewport-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+}
+
+/* В той же колонке, что и лента. */
+.inner {
+  max-width: var(--app-chat-width, 48rem);
+  margin-inline: auto;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+}
+
+.editing {
+  padding: 0 var(--mantine-spacing-xs) var(--mantine-spacing-xs);
+}
+
+.row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--mantine-spacing-xs);
+}
+
+.field {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Высота однострочного поля — как у круглых кнопок рядом (44px). Фон — как у пузыря ИИ: заливка
+   полей по умолчанию на фоне страницы (а не карточки) почти не видна в светлой теме. */
+.input {
+  min-height: 44px;
+  background-color: var(--mantine-color-body);
+  padding-block: 11px;
+  line-height: 1.4;
+}
+
+/* «+» поворачивается в «×», пока меню открыто. */
+.plus svg {
+  transition: transform 150ms ease;
+}
+
+.plus[data-opened] svg {
+  transform: rotate(45deg);
+}

@@ -1,0 +1,97 @@
+/* Строка ленты: свои сообщения — справа, ответы ИИ — слева. */
+.row {
+  display: flex;
+  padding-inline: var(--mantine-spacing-md);
+
+  &[data-role="user"] {
+    justify-content: flex-end;
+  }
+}
+
+/* Пузырь и действия под ним — колонкой, прижаты к своей стороне. */
+.column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  max-width: 85%;
+  min-width: 0;
+
+  [data-role="user"] > & {
+    align-items: flex-end;
+  }
+
+  @media (min-width: 48em) {
+    max-width: 75%;
+  }
+}
+
+.bubble {
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-lg);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+
+  /* Ответ ИИ — на фоне карточки, «хвост» снизу слева. */
+  [data-role="assistant"] & {
+    border-bottom-left-radius: var(--mantine-radius-xs);
+    background: var(--mantine-color-body);
+    color: var(--mantine-color-text);
+  }
+
+  /* Свои — заливкой акцента с контрастным текстом, «хвост» снизу справа. Действия и мысли RP-текста —
+     полупрозрачным контрастным цветом: приглушённый и акцентный цвета темы на акцентном фоне не видны. */
+  [data-role="user"] & {
+    border-bottom-right-radius: var(--mantine-radius-xs);
+    background: var(--mantine-primary-color-filled);
+    color: var(--mantine-primary-color-contrast);
+    --rp-action-color: alpha(var(--mantine-primary-color-contrast), 0.7);
+    --rp-thought-color: alpha(var(--mantine-primary-color-contrast), 0.85);
+  }
+
+  /* Курсор генерации в конце текста. */
+  &[data-streaming]::after {
+    content: "▍";
+    margin-left: 1px;
+    color: var(--mantine-color-dimmed);
+    animation: blink 1s step-end infinite;
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.actions {
+  /* Иконки — приглушённые, не спорят с текстом сообщения. */
+  color: var(--mantine-color-dimmed);
+}
+
+/* Недоступная стрелка (крайний вариант) — просто бледная, без серой плашки disabled от Mantine. */
+.arrow:disabled,
+.arrow[data-disabled] {
+  background-color: transparent;
+  opacity: 0.3;
+}
+
+.siblingCount {
+  min-width: 28px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Удаление — красным только при наведении/нажатии: в строке оно не должно кричать. */
+.danger {
+  @media (hover: hover) {
+    &:hover {
+      color: var(--mantine-color-red-light-color);
+    }
+  }
+
+  &:active {
+    color: var(--mantine-color-red-light-color);
+  }
+}

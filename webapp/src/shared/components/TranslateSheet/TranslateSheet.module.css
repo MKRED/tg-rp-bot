@@ -1,0 +1,38 @@
+/* Язык — сколько останется после переключателя режима; не уже короткого названия языка. */
+.lang {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Место под результат — постоянной высоты, чтобы поле ввода не прыгало при смене состояния. */
+.result {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 112px;
+  max-height: 40dvh;
+  overflow-y: auto;
+}
+
+.card {
+  align-self: stretch;
+  width: 100%;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-default-hover);
+  transition: background-color 150ms ease;
+
+  &:active {
+    background: var(--mantine-color-default-border);
+  }
+}
+
+.cardText {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+}

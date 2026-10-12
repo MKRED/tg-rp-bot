@@ -33,9 +33,9 @@ RP-чата), переиспользуя только реально переи�
 - **Webapp:** фичи `narrator`/`knowledge-books`/`narrator-templates`, страницы `pages/narrator/*`,
   `pages/knowledge-books/*`, `pages/narrator-templates/*`; кнопки на главной (Режим игры + Библиотека).
   Перевод истории — раздел в `StorySettingsPage` + кнопка-Globe на битах/директивах в ленте
-  (`useStorySettings`/`useTranslatable`), зеркало RP-чата. Редактор шаблона (`TemplateForm`) — поля
+  (`useStorySettings` и общий с RP-чатом `shared/hooks/useTranslatable`). Редактор шаблона (`TemplateForm`) — поля
   промптов + блок «Порядок промптов». Кросс-фичевые компоненты в `shared/components`: `ExpandableSelect`
-  (настройки перевода RP и narrator) и `PromptOrderEditor` (дженерик-редактор порядка промптов с пропсами
+  (настройки перевода истории) и `PromptOrderEditor` (дженерик-редактор порядка промптов с пропсами
   `labels`/`sources`/`unimplemented` — используют пресеты ИИ и narrator-шаблоны; у каждой фичи свои карты
   подписей/источников и `DEFAULT_*_PROMPT_ORDER`).
 

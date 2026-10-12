@@ -62,10 +62,12 @@ export function useImpersonate(chatId: number) {
     setVariants((list) => list.filter((v) => v.id !== variantId));
     try {
       await deleteImpersonation(chatId, variantId);
-    } catch {
+    } catch (err) {
+      console.error("Failed to delete impersonation variant", err);
+      showToast({ type: "error", message: "Не удалось удалить вариант" });
       setVariants(prev); // откат при сбое
     }
-  }, [chatId, variants]);
+  }, [chatId, variants, showToast]);
 
   return { variants, loading, generating, streamingText, load, generate, remove };
 }

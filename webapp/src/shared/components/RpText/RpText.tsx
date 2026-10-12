@@ -1,24 +1,27 @@
-import { Text } from "@telegram-apps/telegram-ui";
-import "./RpText.css";
 import { parseRpText } from "../../text/parseRpText";
+import styles from "./RpText.module.css";
 
 interface RpTextProps {
   text: string;
 }
 
-/** Рендерит RP-текст с визуальным разделением: *действие*, "речь", «мысль». */
+/**
+ * RP-текст с визуальным разделением: *действие*, "речь", «мысль». Строчные span'ы без своего шрифта —
+ * размер и цвет берутся у контейнера (пузырь, лента истории), цвета действия/мысли — из CSS-переменных
+ * контейнера (см. RpText.module.css).
+ */
 export function RpText({ text }: RpTextProps) {
   const tokens = parseRpText(text);
   return (
     <>
       {tokens.map((token, i) =>
-        token.type === "plain" ? (
-          <Text key={i}>{token.text}</Text>
+        token.type === "plain" || token.type === "speech" ? (
+          <span key={i}>{token.text}</span>
         ) : (
-          <Text key={i} className={`rp-token--${token.type}`}>
+          <span key={i} className={styles[token.type]}>
             {token.text}
-          </Text>
-        )
+          </span>
+        ),
       )}
     </>
   );

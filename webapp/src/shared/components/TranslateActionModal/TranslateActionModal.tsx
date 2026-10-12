@@ -1,5 +1,6 @@
-import { ButtonCell, List, Modal } from "@telegram-apps/telegram-ui";
+import { Button, Stack } from "@mantine/core";
 import { RefreshCw, Trash2 } from "lucide-react";
+import { ResponsiveSheet } from "../ResponsiveSheet";
 
 interface TranslateActionModalProps {
   open: boolean;
@@ -9,40 +10,26 @@ interface TranslateActionModalProps {
 }
 
 /**
- * Модалка действий над закэшированным переводом — фоллбэк долгого нажатия на кнопку Globe там,
- * где нативный попап Telegram (showTranslateActionsPopup) недоступен (ПК-клиенты, дев-браузер —
- * см. isTranslateActionsPopupAvailable). Тот же tgui Modal, что и у пикеров формы (RpChatNewPage),
- * а не floating-меню у кнопки и не window.confirm (у него фиксированный текст кнопок/лимит в два).
+ * Действия над закэшированным переводом — фоллбэк долгого нажатия на кнопку Globe там, где нативный
+ * попап Telegram (showTranslateActionsPopup) недоступен: ПК-клиенты, браузер (см.
+ * isTranslateActionsPopupAvailable). Не window.confirm: у него фиксированный текст и две кнопки.
  */
-export function TranslateActionModal({
-  open,
-  onOpenChange,
-  onRegenerate,
-  onDelete,
-}: TranslateActionModalProps) {
+export function TranslateActionModal({ open, onOpenChange, onRegenerate, onDelete }: TranslateActionModalProps) {
+  const run = (action: () => void) => {
+    action();
+    onOpenChange(false);
+  };
+
   return (
-    <Modal open={open} onOpenChange={onOpenChange} header={<Modal.Header>Перевод</Modal.Header>}>
-      <List>
-        <ButtonCell
-          before={<RefreshCw size={18} />}
-          onClick={() => {
-            onRegenerate();
-            onOpenChange(false);
-          }}
-        >
+    <ResponsiveSheet opened={open} onClose={() => onOpenChange(false)} title="Перевод">
+      <Stack gap="xs">
+        <Button variant="light" fullWidth leftSection={<RefreshCw size={18} />} onClick={() => run(onRegenerate)}>
           Перевести заново
-        </ButtonCell>
-        <ButtonCell
-          mode="destructive"
-          before={<Trash2 size={18} />}
-          onClick={() => {
-            onDelete();
-            onOpenChange(false);
-          }}
-        >
+        </Button>
+        <Button variant="subtle" color="red" fullWidth leftSection={<Trash2 size={18} />} onClick={() => run(onDelete)}>
           Удалить перевод
-        </ButtonCell>
-      </List>
-    </Modal>
+        </Button>
+      </Stack>
+    </ResponsiveSheet>
   );
 }

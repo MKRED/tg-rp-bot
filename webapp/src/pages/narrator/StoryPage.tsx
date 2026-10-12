@@ -1,5 +1,4 @@
 import { Spinner, Text } from "@telegram-apps/telegram-ui";
-import { AnimatePresence } from "framer-motion";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { storyGraphPath, storySettingsPath } from "../../app/routes";
@@ -320,7 +319,7 @@ export function StoryPage() {
             <>
               {/* Стримящийся бит тоже отделяем, если двинули историю «Дальше» (последний ход — continue). */}
               {messages[messages.length - 1]?.kind === "continue" && <BeatDivider />}
-              <div style={{ margin: "8px 0", whiteSpace: "pre-wrap", lineHeight: 1.5, color: "var(--tgui--text_color)" }}>
+              <div style={{ margin: "8px 0", whiteSpace: "pre-wrap", lineHeight: 1.5, fontSize: "var(--tgui--text--font_size)", color: "var(--tgui--text_color)" }}>
                 {streamingText ? (
                   <RpText text={streamingText} />
                 ) : (
@@ -344,20 +343,16 @@ export function StoryPage() {
         />
       </div>
 
-      <AnimatePresence>
-        {translateOpen && (
-          <TranslateSheet
-            key="story-translate-sheet"
-            translate={(p) => composeStoryTranslate(id, p)}
-            langOptions={LANG_OPTIONS}
-            onPick={(t) => {
-              storyInputRef.current?.setDraft(t);
-              setTranslateOpen(false);
-            }}
-            onClose={() => setTranslateOpen(false)}
-          />
-        )}
-      </AnimatePresence>
+      <TranslateSheet
+        opened={translateOpen}
+        translate={(p) => composeStoryTranslate(id, p)}
+        langOptions={LANG_OPTIONS}
+        onPick={(t) => {
+          storyInputRef.current?.setDraft(t);
+          setTranslateOpen(false);
+        }}
+        onClose={() => setTranslateOpen(false)}
+      />
     </PageTransition>
   );
 }

@@ -1,0 +1,12 @@
+/* Цвет токенов задаёт контейнер переменными --rp-action-color / --rp-thought-color: на фоне
+   акцентного пузыря нужны свои оттенки. Не задал — приглушённый цвет и текстовый оттенок акцента. */
+
+.action {
+  font-style: italic;
+  color: var(--rp-action-color, var(--mantine-color-dimmed));
+}
+
+.thought {
+  font-style: italic;
+  color: var(--rp-thought-color, light-dark(var(--mantine-color-accent-8), var(--mantine-color-accent-4)));
+}

@@ -10,7 +10,7 @@ import {
   isTranslateActionsPopupAvailable,
   showTranslateActionsPopup,
 } from "../../../shared/telegram/translateActionsPopup";
-import { useTranslatable } from "../hooks/useTranslatable";
+import { useTranslatable } from "../../../shared/hooks/useTranslatable";
 import type { StoryMessage } from "../types/story";
 
 interface StoryMessageItemProps {
@@ -210,6 +210,8 @@ export function StoryMessageItem({
           whiteSpace: "pre-wrap",
           wordBreak: "break-word",
           lineHeight: 1.5,
+          // Размер текста tgui Text: RpText больше не задаёт шрифт сам (до шага 7 плана Mantine).
+          fontSize: "var(--tgui--text--font_size)",
           color: "var(--tgui--text_color)",
         }}
       >
