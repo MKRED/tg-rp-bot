@@ -66,7 +66,7 @@ export async function aiTranslateStoryText(
   const t0 = Date.now();
   logger.debug({ userId, paragraphCount: paragraphs.length }, "aiTranslateStoryText per-paragraph start");
   // Пустые/whitespace-абзацы (напр. ведущий разрыв) — без сетевого вызова, переносятся как есть.
-  const translatedContents = await runWithConcurrency(paragraphs, TRANSLATE_BLOCK_CONCURRENCY, (p) =>
+  const translatedContents = await runWithConcurrency(paragraphs, TRANSLATE_BLOCK_CONCURRENCY.ai, (p) =>
     p.content.trim() === "" ? Promise.resolve(p.content) : translateOne(p.content),
   );
   logger.info(

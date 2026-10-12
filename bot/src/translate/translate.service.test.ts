@@ -9,8 +9,9 @@ const engine = vi.hoisted(() => ({
 }));
 vi.mock("./engine/translators.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./engine/translators.js")>()),
-  ...engine,
+  aiTranslate: engine.aiTranslate,
 }));
+vi.mock("./engine/googleTranslate.js", () => ({ googleTranslate: engine.googleTranslate }));
 
 const { TranslateService } = await import("./translate.service.js");
 const { MissingApiKeyError } = await import("../llm/errors.js");
@@ -63,6 +64,19 @@ describe("TranslateService", () => {
     expect(status).toBe(400);
     expect(body).toEqual({ error: "no_api_key", message: expect.any(String) });
     expect(engine.aiTranslate).toHaveBeenCalledTimes(1);
+  });
+
+  it("google: блоки по одному, не залпом", async () => {
+    let inFlight = 0;
+    let maxInFlight = 0;
+    engine.googleTranslate.mockImplementation(async (text: string) => {
+      maxInFlight = Math.max(maxInFlight, ++inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      inFlight--;
+      return `g:${text}`;
+    });
+    await setup().service.translateBlocks(1, req("google", ["a", "b", "c", "d"]));
+    expect(maxInFlight).toBe(1);
   });
 
   it("прочий сбой переводчика — 500 Internal error", async () => {

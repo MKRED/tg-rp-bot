@@ -9,4 +9,5 @@ export {
 } from "./translate.constants.js";
 export { chunkText, joinChunks, translateChunked } from "./translateChunking.js";
 export { joinParagraphs, splitParagraphs, type TextParagraph } from "./translateParagraphs.js";
-export { aiTranslate, englishLangName, googleTranslate, resolveTranslationReasoning } from "./translators.js";
+export { googleTranslate } from "./googleTranslate.js";
+export { aiTranslate, englishLangName, resolveTranslationReasoning } from "./translators.js";

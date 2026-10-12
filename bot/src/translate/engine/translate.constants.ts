@@ -31,6 +31,9 @@ export { DEFAULT_TRANSLATION_REASONING_EFFORT } from "@tg-rp-bot/shared";
  */
 export const MAX_CHARS_PER_CALL = 4000;
 
-/** Максимум одновременных запросов к переводчику на один батч — не бомбить неофициальный Google-эндпоинт
- * (склонен к рейт-лимитам) и не упираться в лимиты личного ключа DeepSeek пользователя. */
-export const TRANSLATE_BLOCK_CONCURRENCY = 4;
+/**
+ * Одновременных запросов к переводчику на один батч абзацев. Google — по одному: неофициальный
+ * endpoint режет по IP сервера (429), залп из нескольких запросов сразу упирался в лимит. ИИ — 4, чтобы
+ * не упираться в лимиты личного ключа DeepSeek пользователя.
+ */
+export const TRANSLATE_BLOCK_CONCURRENCY = { google: 1, ai: 4 } as const;

@@ -84,7 +84,7 @@ postHistory`, где `postHistory` выключен. Фолбэк (истори�
 рассуждения для перевода): при включении ИИ-перевод бита/директивы (`narrator/translation/ai-translate-story-text.ts`,
 `StoryTranslationService`) делит текст на абзацы (`translateParagraphs.ts`,
 разделитель — 2+ переноса строки, lossless split/join) и переводит каждый отдельным параллельным запросом
-к LLM (`runWithConcurrency`, ограниченная конкурентность `TRANSLATE_BLOCK_CONCURRENCY`), вместо одного
+к LLM (`runWithConcurrency`, ограниченная конкурентность `TRANSLATE_BLOCK_CONCURRENCY.ai`), вместо одного
 запроса на весь текст. Каждый запрос ретраится отдельно (до 3 попыток, кроме `MissingApiKeyError`) — сбой
 одного абзаца не валит весь перевод. Смысл — с включённым мышлением (thinking) модель на большом тексте
 целиком думает непропорционально долго, а отключать мышление не хотим (перевод без него менее осознанный).

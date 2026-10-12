@@ -36,7 +36,7 @@ export class TranslateService {
 
     try {
       const translateChunk = await this.chunkTranslator(userId, req);
-      const translations = await runWithConcurrency(blocks, TRANSLATE_BLOCK_CONCURRENCY, (text) =>
+      const translations = await runWithConcurrency(blocks, TRANSLATE_BLOCK_CONCURRENCY[mode], (text) =>
         translateChunked(text, MAX_CHARS_PER_CALL, translateChunk),
       );
       logger.info({ durationMs: Date.now() - t0, userId, mode, blockCount: blocks.length }, "Batch block translation done");
