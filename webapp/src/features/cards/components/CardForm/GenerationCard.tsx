@@ -1,7 +1,8 @@
-import { Button, Group, Stack, Text } from "@mantine/core";
-import { MessageCircleQuestion, Sparkles } from "lucide-react";
+import { ActionIcon, Button, Group, Stack, Text } from "@mantine/core";
+import { Eraser, MessageCircleQuestion, Sparkles } from "lucide-react";
 import { PromptEditorField } from "../../../../shared/components/PromptEditorField";
 import { SettingsCard } from "../../../../shared/components/SettingsCard";
+import { confirmAction } from "../../../../shared/telegram/confirm";
 import type { CardCategory } from "../../types/card";
 import { AskUserQuestionsCarousel } from "./AskUserQuestionsCarousel";
 import { useCardGeneration } from "./useCardGeneration";
@@ -65,6 +66,18 @@ export function GenerationCard({
     onCategoriesChange(categories.map((c) => (c.id === id ? { ...c, content } : c)));
   };
 
+  /**
+   * То же, что открыть редактор и стереть текст: правка формы, на сервер уходит только с «Сохранить».
+   * Подтверждение — потому что текст стоил генерации, а стирается он одним нажатием.
+   */
+  const clearContent = async (category: CardCategory) => {
+    const confirmed = await confirmAction(
+      `Текст блока «${category.title || "…"}» будет удалён. Очередь генерации вернётся к этому блоку.`,
+      { title: "Очистить блок?", confirmText: "Очистить" },
+    );
+    if (confirmed) updateContent(category.id, "");
+  };
+
   return (
     <SettingsCard
       title="Генерация"
@@ -104,6 +117,8 @@ export function GenerationCard({
         const toolTokens = category.toolContextTokens ?? 0;
         const showRegenerate = canAct && isRegenerate;
         const busy = generatingId === category.id;
+        // От пресета и сохранённости карточки не зависит — как и ручная правка текста.
+        const showClear = category.content.trim() !== "";
         return (
           <Stack key={category.id} gap="xs">
             <PromptEditorField
@@ -112,6 +127,22 @@ export function GenerationCard({
               value={category.content}
               previewLines={4}
               onChange={(value) => updateContent(category.id, value)}
+              // В заголовке, а не в строке кнопок ниже: там на телефоне уже нет места, и подальше от
+              // «Перегенерировать». Во время генерации выключена — результат всё равно затёр бы очистку.
+              headerAction={
+                showClear && (
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    size="lg"
+                    aria-label={`Очистить блок «${title}»`}
+                    disabled={generatingId !== null}
+                    onClick={() => void clearContent(category)}
+                  >
+                    <Eraser size={18} />
+                  </ActionIcon>
+                )
+              }
             />
             {(showRegenerate || toolTokens > 0) && (
               // Перенос разрешён: на телефоне подпись и две кнопки в одну строку не помещаются —

@@ -1,6 +1,6 @@
 import { ActionIcon, Popover, Text, UnstyledButton } from "@mantine/core";
 import { ChevronRight, Info } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { estimateTokens } from "../../text/tokens";
 import { PromptEditorOverlay } from "../PromptEditorOverlay";
 import styles from "./PromptEditorField.module.css";
@@ -13,6 +13,8 @@ interface PromptEditorFieldProps {
   onChange: (value: string) => void;
   /** Сколько строк текста видно в превью. По умолчанию 4. */
   previewLines?: number;
+  /** Действие над полем в конце строки заголовка (после счётчика токенов), например «очистить». */
+  headerAction?: ReactNode;
 }
 
 /**
@@ -26,6 +28,7 @@ export function PromptEditorField({
   value,
   onChange,
   previewLines = 4,
+  headerAction,
 }: PromptEditorFieldProps) {
   const [open, setOpen] = useState(false);
 
@@ -51,6 +54,7 @@ export function PromptEditorField({
         <Text size="xs" c="dimmed" className={styles.tokens}>
           ~{estimateTokens(value)} токенов
         </Text>
+        {headerAction}
       </div>
 
       <UnstyledButton className={styles.field} onClick={() => setOpen(true)} aria-label={`${header}: редактировать`}>
