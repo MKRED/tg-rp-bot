@@ -142,7 +142,13 @@ export function AskUserQuestionsCarousel({
                 {question.options && question.options.length > 0 && (
                   <Group gap="xs">
                     {question.options.map((option) => (
-                      <Button key={option} variant="default" size="compact-md" onClick={() => applyOption(option)}>
+                      <Button
+                        key={option}
+                        variant="default"
+                        size="compact-md"
+                        classNames={{ root: styles.option, label: styles.optionLabel }}
+                        onClick={() => applyOption(option)}
+                      >
                         {option}
                       </Button>
                     ))}

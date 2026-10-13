@@ -25,3 +25,22 @@
 .stepButton {
   min-width: calc(var(--mantine-spacing-xl) + var(--mantine-spacing-xs));
 }
+
+/* Вариант ответа пишет модель, и он бывает длиной в предложение. Кнопка Mantine — фиксированной высоты
+   и в одну строку (nowrap + overflow: hidden у подписи), поэтому длинный вариант вылезал за плашку и
+   обрезался. Здесь кнопка не шире плашки и растёт в высоту, а текст переносится. */
+.option {
+  max-width: 100%;
+  height: auto;
+  min-height: var(--button-height);
+  padding-block: calc(var(--mantine-spacing-xs) / 2);
+}
+
+.optionLabel {
+  height: auto;
+  /* У кнопки межстрочный интервал 1 — для одной строки нормально, в несколько строки слипаются. */
+  line-height: var(--mantine-line-height-xs);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: start;
+}
