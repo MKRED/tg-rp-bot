@@ -98,7 +98,7 @@ export function PersonaEditPage() {
   }
 
   return (
-    <AppPage title={id === undefined ? "Новая персона" : "Персона"} loading={loading}>
+    <AppPage title={id === undefined ? "Новая персона" : "Персона"} tabTitle={persona && `${persona.name} — персона`} loading={loading}>
       <PersonaForm
         initial={persona ? toInput(persona) : undefined}
         submitting={submitting}

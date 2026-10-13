@@ -44,7 +44,12 @@ export function EntryEditPage() {
   }
 
   return (
-    <AppPage title={entryId === undefined ? "Новая запись" : "Запись"} description={book?.name} loading={loading}>
+    <AppPage
+      title={entryId === undefined ? "Новая запись" : "Запись"}
+      tabTitle={book && `${entryId === undefined ? "Новая запись" : "Запись"} — ${book.name}`}
+      description={book?.name}
+      loading={loading}
+    >
       <EntryEditor bookId={bookId} initial={entry} onDone={backToBook} />
     </AppPage>
   );

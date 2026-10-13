@@ -1,5 +1,6 @@
 import { Container, Group, Loader, Stack, Text, Title } from "@mantine/core";
 import type { ReactNode } from "react";
+import { usePageTitle } from "../../hooks/usePageTitle";
 import { PageTransition } from "../PageTransition";
 import styles from "./AppPage.module.css";
 
@@ -9,6 +10,8 @@ const CONTENT_WIDTH = 680;
 interface AppPageProps {
   /** Заголовок экрана над контентом. */
   title?: string;
+  /** Заголовок вкладки браузера, если он точнее title (имя открытой сущности); по умолчанию — title. */
+  tabTitle?: string | null;
   /** Пояснение под заголовком — что это за экран. */
   description?: string;
   /** Справа от заголовка: главное действие экрана (например, «Создать»). */
@@ -26,7 +29,8 @@ interface AppPageProps {
  * Каркас экрана: фон страницы, отступы safe area, колонка ограниченной ширины, анимация
  * появления. Каждый экран рендерится внутри него (или FullHeightPage).
  */
-export function AppPage({ title, description, actions, loading, width = CONTENT_WIDTH, centered, children }: AppPageProps) {
+export function AppPage({ title, tabTitle, description, actions, loading, width = CONTENT_WIDTH, centered, children }: AppPageProps) {
+  usePageTitle(tabTitle ?? title);
   return (
     <div className={centered ? `${styles.page} ${styles.centered}` : styles.page}>
       {/* phase перезапускает анимацию появления, когда лоадер сменяется контентом. */}

@@ -107,7 +107,7 @@ export function CharacterEditPage() {
   }
 
   return (
-    <AppPage title={id === undefined ? "Новый персонаж" : "Персонаж"} loading={loading}>
+    <AppPage title={id === undefined ? "Новый персонаж" : "Персонаж"} tabTitle={character && `${character.name} — персонаж`} loading={loading}>
       <CharacterForm
         initial={character ? toInput(character) : undefined}
         submitting={submitting}

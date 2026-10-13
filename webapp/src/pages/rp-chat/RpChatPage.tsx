@@ -143,7 +143,7 @@ export function RpChatPage() {
   };
 
   return (
-    <FullHeightPage>
+    <FullHeightPage title={chat ? (chat.title ?? chat.character.name) : "Чат"}>
       {chat && (
         <ChatHeader
           character={chat.character}

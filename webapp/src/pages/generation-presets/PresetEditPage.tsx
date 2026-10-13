@@ -83,7 +83,7 @@ export function PresetEditPage() {
   }
 
   return (
-    <AppPage title={id === undefined ? "Новый пресет" : "Пресет"} loading={loading}>
+    <AppPage title={id === undefined ? "Новый пресет" : "Пресет"} tabTitle={preset && `${preset.name} — пресет`} loading={loading}>
       <PresetForm
         initial={preset}
         submitting={submitting}

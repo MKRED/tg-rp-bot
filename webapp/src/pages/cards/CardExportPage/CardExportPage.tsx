@@ -37,7 +37,7 @@ export function CardExportPage() {
   }
 
   return (
-    <AppPage title="Выгрузка" description={card?.name} loading={loading}>
+    <AppPage title="Выгрузка" tabTitle={card && `${card.name} — выгрузка`} description={card?.name} loading={loading}>
       {card && <CardExportForm card={card} />}
     </AppPage>
   );

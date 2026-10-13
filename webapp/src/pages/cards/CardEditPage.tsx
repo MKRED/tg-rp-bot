@@ -149,7 +149,7 @@ export function CardEditPage() {
   }
 
   return (
-    <AppPage title={id === undefined ? "Новая карточка" : "Карточка"} loading={loading}>
+    <AppPage title={id === undefined ? "Новая карточка" : "Карточка"} tabTitle={card && `${card.name} — карточка`} loading={loading}>
       <CardForm
         initial={card ? toInput(card) : undefined}
         cardId={id}

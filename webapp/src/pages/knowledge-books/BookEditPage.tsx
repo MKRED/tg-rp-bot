@@ -119,7 +119,7 @@ export function BookEditPage() {
   }
 
   return (
-    <AppPage title={id === undefined ? "Новая книга" : "Книга знаний"} loading={loading}>
+    <AppPage title={id === undefined ? "Новая книга" : "Книга знаний"} tabTitle={book && `${book.name} — книга знаний`} loading={loading}>
       <BookForm initial={book} submitting={submitting} onSubmit={handleSubmitBook} onDirtyChange={setBookDirty} />
       {id !== undefined && (
         <>

@@ -39,6 +39,8 @@ COPY webapp/vite.config.ts webapp/vite.config.ts
 # PostCSS для Mantine (light-dark(), rem(), брейкпоинты в CSS-модулях).
 COPY webapp/postcss.config.cjs webapp/postcss.config.cjs
 COPY webapp/index.html webapp/index.html
+# Статика «как есть» (иконки вкладки) — Vite кладёт её в корень dist.
+COPY webapp/public webapp/public
 COPY webapp/src webapp/src
 
 # shared -> shared/dist ; bot -> bot/dist ; webapp -> webapp/dist (статика)

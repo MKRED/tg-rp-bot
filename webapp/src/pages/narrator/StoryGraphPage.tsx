@@ -40,7 +40,7 @@ export function StoryGraphPage() {
   );
 
   return (
-    <FullHeightPage phase={loading ? "loading" : "ready"}>
+    <FullHeightPage title="Граф веток истории" phase={loading ? "loading" : "ready"}>
       <BranchGraph
         nodes={nodes}
         loading={loading}

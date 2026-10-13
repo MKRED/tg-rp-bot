@@ -94,7 +94,7 @@ export function RpChatSettingsPage() {
   const loading = chatLoading || settingsLoading || statsLoading;
 
   return (
-    <AppPage title="Настройки чата" loading={loading}>
+    <AppPage title="Настройки чата" tabTitle={chat && `${chat.title ?? chat.character.name} — настройки чата`} loading={loading}>
       {!chat ? (
         <EmptyState icon={MessagesSquare} title="Чат не найден" description="Возможно, он был удалён." />
       ) : (

@@ -75,7 +75,7 @@ export function TemplateEditPage() {
   }
 
   return (
-    <AppPage title={id === undefined ? "Новый RP-шаблон" : "RP-шаблон"} loading={loading}>
+    <AppPage title={id === undefined ? "Новый RP-шаблон" : "RP-шаблон"} tabTitle={template && `${template.name} — RP-шаблон`} loading={loading}>
       <TemplateForm
         initial={template}
         submitting={submitting}

@@ -59,7 +59,7 @@ export function LoginScreen({ onAuthenticated }: LoginScreenProps) {
   };
 
   return (
-    <AppPage width={FORM_WIDTH} centered>
+    <AppPage tabTitle={isRegister ? "Регистрация" : "Вход"} width={FORM_WIDTH} centered>
       <Title order={2} ta="center">
         {isRegister ? "Регистрация" : "Вход"}
       </Title>

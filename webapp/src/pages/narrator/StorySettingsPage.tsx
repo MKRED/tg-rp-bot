@@ -111,7 +111,7 @@ export function StorySettingsPage() {
   const loading = storyLoading || settingsLoading || statsLoading;
 
   return (
-    <AppPage title="Настройки истории" loading={loading}>
+    <AppPage title="Настройки истории" tabTitle={story && `${story.title ?? story.book.name} — настройки истории`} loading={loading}>
       {!story ? (
         <EmptyState icon={Clapperboard} title="История не найдена" description="Возможно, она была удалена." />
       ) : (
