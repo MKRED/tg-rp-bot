@@ -61,7 +61,9 @@ export class CardsController {
   @Post(":id/generate/answer")
   @HttpCode(200)
   answer(@CurrentUser() userId: string, @Param("id", ParseIntPipe) id: number, @Body() body: AnswerCardQuestionsDto) {
-    const input = body.skipped ? { skipped: true as const } : { skipped: false as const, answers: body.answers ?? [] };
+    const input = body.skipped
+      ? { skipped: true as const, note: body.note }
+      : { skipped: false as const, answers: body.answers ?? [], note: body.note };
     return this.generation.answer(userId, id, body.categoryId, input);
   }
 }

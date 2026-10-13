@@ -12,11 +12,16 @@ export interface AskUserQuestion {
  * были у исходного AskUserQuestion: сервер хранит их вместе с ответом, чтобы реплей в сборке промпта
  * восстанавливал tool_call модели один в один, а не усечённым — иначе история показывала бы модели,
  * что её же прошлые вызовы ask_user никогда не предлагали options, и она перестала бы их предлагать.
+ *
+ * unprompted — это не ответ на вопрос модели, а дополнение, которое пользователь написал сам на
+ * последнем шаге карусели: question пустой, текст в answer. В реплее такие записи не выдаются за
+ * вопрос модели и не расходуют бюджет вопросов блока.
  */
 export interface AskUserAnswer {
   question: string;
   answer: string;
   options?: string[];
+  unprompted?: true;
 }
 
 /** Один результат веб-поиска — в таком виде уходит модели в tool-результате web_search. */
@@ -152,8 +157,17 @@ export interface GenerateCardBlockInput {
   forceAskUser?: boolean;
 }
 
-/** Ответ на вопросы ask_user (тело /generate/answer без categoryId): ответы по порядку вопросов или отказ. */
-export type AnswerCardQuestionsInput = { skipped: true } | { skipped: false; answers: string[] };
+/** Предел длины дополнения пользователя к ответам ask_user (оно реплеится в промпт каждого следующего блока). */
+export const ASK_USER_NOTE_MAX_LENGTH = 4000;
+
+/**
+ * Ответ на вопросы ask_user (тело /generate/answer без categoryId): ответы по порядку вопросов или
+ * отказ. Пустой ответ — вопрос оставлен без ответа (сервер запишет маркер отказа). note — дополнение
+ * пользователя от себя, не привязанное к вопросу; действует и при отказе отвечать.
+ */
+export type AnswerCardQuestionsInput =
+  | { skipped: true; note?: string }
+  | { skipped: false; answers: string[]; note?: string };
 
 /** Коды отказа генерации в `{ error }` — webapp переводит их в понятный текст. */
 export type CardGenerationError =

@@ -21,6 +21,7 @@
   flex-shrink: 0;
 }
 
-.next {
-  flex: 1;
+/* Номера шагов — одинаковой ширины и достаточные для пальца, а не по ширине цифры. */
+.stepButton {
+  min-width: calc(var(--mantine-spacing-xl) + var(--mantine-spacing-xs));
 }

@@ -91,8 +91,8 @@ export function GenerationCard({
               categoryTitle={title}
               questions={pending}
               submitting={answering}
-              onSubmit={(answers) => void respond(category.id, { skipped: false, answers })}
-              onSkipAll={() => void respond(category.id, { skipped: true })}
+              onSubmit={(answers, note) => void respond(category.id, { skipped: false, answers, note })}
+              onSkipAll={(note) => void respond(category.id, { skipped: true, note })}
             />
           );
         }

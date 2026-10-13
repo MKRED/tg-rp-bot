@@ -18,6 +18,8 @@ function mapCategoryTexts(categories: CardCategory[], key: Buffer, cipher: Field
       question: cipher(a.question, key),
       answer: cipher(a.answer, key),
       options: a.options?.map((o) => cipher(o, key)),
+      // Флаг, не текст: без явного переноса дополнение пользователя после записи стало бы «ответом».
+      ...(a.unprompted && { unprompted: true as const }),
     })),
     webSearches: c.webSearches?.map((s) => ({
       query: cipher(s.query, key),

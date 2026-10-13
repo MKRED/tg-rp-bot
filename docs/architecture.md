@@ -39,8 +39,8 @@ bot/src/
   characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ — доменные модули Nest: controller / service / repository (бывший DAO) / dto/;
                   у cards/ ещё card-lock.ts (лок карточки, общий для PUT и генерации) и generation/ — поблочная
                   генерация: card-generation.service (Nest-сервис) + prompt-assembly / tool-loop (web_search +
-                  ask_user) / ask-user-tool / tool-context (контекст инструментов блока — ответы ask_user и
-                  результаты web_search хранятся на категории, реплеятся в промпт этого и следующих блоков,
+                  ask_user) / ask-user-tool / tool-context (контекст инструментов блока — ответы ask_user,
+                  дополнения пользователя к ним и результаты web_search хранятся на категории, реплеятся в промпт этого и следующих блоков,
                   сбрасываются «Перегенерировать»; там же подсчёт его веса в токенах для экрана)
   settings/     — /api/settings (всё в строке user_settings): llm/ (ключ/модель DeepSeek, BYOK, шифруется
                   ключом пользователя; verify — /models, баланс), tavily/ (ключ Tavily + лимит раундов поиска; verify — TavilyService),

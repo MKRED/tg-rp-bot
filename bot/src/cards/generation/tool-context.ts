@@ -91,8 +91,14 @@ function webSearchExchange(category: CardCategory): ToolContextMessage[] {
  * предлагать их дальше в этом же диалоге.
  */
 function askUserExchange(category: CardCategory): ToolContextMessage[] {
-  const answers = category.askUserAnswers;
-  if (!answers || answers.length === 0) return [];
+  const all = category.askUserAnswers;
+  if (!all || all.length === 0) return [];
+  // Дополнения пользователя (unprompted) в аргументы вызова не попадают — модель их не спрашивала, а
+  // свои прошлые вызовы она копирует по шаблону и начала бы сама спрашивать «что-то ещё?». Они идут
+  // отдельным полем результата и только когда есть: без них реплей байт-в-байт прежний (кэш префикса).
+  const answers = all.filter((a) => !a.unprompted);
+  const notes = all.filter((a) => a.unprompted).map((a) => a.answer);
+  if (answers.length === 0) return [];
   const toolCallId = `ask_user_${category.id}`;
   return [
     {
@@ -118,6 +124,7 @@ function askUserExchange(category: CardCategory): ToolContextMessage[] {
       tool_call_id: toolCallId,
       content: JSON.stringify({
         answers: answers.map((a) => ({ question: a.question, answer: a.answer })),
+        ...(notes.length > 0 && { additional_user_instructions: notes }),
         note: "These have already been answered — don't call ask_user again for the same information.",
       }),
     },

@@ -47,6 +47,22 @@ describe("buildToolContextMessages", () => {
     expect(messages[0].tool_calls[0].id).not.toBe(messages[2].tool_calls[0].id);
   });
 
+  it("дополнение пользователя — отдельным полем результата, в аргументах вызова его нет", () => {
+    const answered = { question: "Пол?", answer: "Женский" };
+    const messages = build(
+      category({ askUserAnswers: [answered, { question: "", answer: "Она левша", unprompted: true }] }),
+    );
+    expect(JSON.parse(messages[0].tool_calls[0].function.arguments)).toEqual({ questions: [{ question: "Пол?" }] });
+    const result = JSON.parse(messages[1].content);
+    expect(result.answers).toEqual([answered]);
+    expect(result.additional_user_instructions).toEqual(["Она левша"]);
+  });
+
+  it("без дополнений результат ask_user не содержит поля дополнений", () => {
+    const messages = build(category({ askUserAnswers: [{ question: "Пол?", answer: "Женский" }] }));
+    expect(Object.keys(JSON.parse(messages[1].content))).toEqual(["answers", "note"]);
+  });
+
   it("детерминирован: одинаковая категория даёт одинаковые сообщения (кэш префикса)", () => {
     const c = category({ webSearches: [search("q")] });
     expect(buildToolContextMessages(c)).toEqual(buildToolContextMessages(c));

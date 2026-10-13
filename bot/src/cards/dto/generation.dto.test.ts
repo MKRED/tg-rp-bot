@@ -43,6 +43,11 @@ describe("AnswerCardQuestionsDto", () => {
     { title: "skipped: answers не нужны", body: { categoryId: "a", skipped: true }, expected: { categoryId: "a", skipped: true } },
     { title: "skipped: мусорные answers не мешают", body: { categoryId: "a", skipped: true, answers: 1 }, expected: { categoryId: "a", skipped: true, answers: 1 } },
     { title: "categoryId не обрезается", body: { categoryId: " a ", answers: [] }, expected: { categoryId: " a ", skipped: false, answers: [] } },
+    { title: "пустые ответы допустимы (вопрос без ответа)", body: { categoryId: "a", answers: ["", "y"] }, expected: { categoryId: "a", skipped: false, answers: ["", "y"] } },
+    { title: "note обрезается", body: { categoryId: "a", answers: [], note: "  ещё  " }, expected: { categoryId: "a", skipped: false, answers: [], note: "ещё" } },
+    { title: "note при skipped сохраняется", body: { categoryId: "a", skipped: true, note: "ещё" }, expected: { categoryId: "a", skipped: true, note: "ещё" } },
+    { title: "пустой note — как отсутствие", body: { categoryId: "a", answers: [], note: "   " }, expected: { categoryId: "a", skipped: false, answers: [] } },
+    { title: "note не строка — как отсутствие, не ошибка", body: { categoryId: "a", answers: [], note: 5 }, expected: { categoryId: "a", skipped: false, answers: [] } },
   ])("$title", async ({ body, expected }) => {
     expect(await via(AnswerCardQuestionsDto, body)).toStrictEqual({ input: expected });
   });
@@ -55,6 +60,7 @@ describe("AnswerCardQuestionsDto", () => {
     { title: "answers не массив", body: { categoryId: "a", answers: "x" }, expected: "answers must be a string array" },
     { title: "answers не строки", body: { categoryId: "a", answers: ["x", 1] }, expected: "answers must be a string array" },
     { title: "skipped не true — answers обязательны", body: { categoryId: "a", skipped: "yes" }, expected: "answers must be a string array" },
+    { title: "note длиннее лимита", body: { categoryId: "a", answers: [], note: "x".repeat(4001) }, expected: "note is too long" },
   ])("$title", async ({ body, expected }) => {
     expect(await via(AnswerCardQuestionsDto, body)).toEqual({ error: expected });
   });

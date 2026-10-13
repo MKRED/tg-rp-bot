@@ -112,7 +112,9 @@ export class CardGenerationService {
       const target = card.categories.find((c) => c.id === assembled.targetCategoryId);
       // forceAskUser тумблер карточки не обходит: кнопка «с вопросами» есть только при включённых
       // уточнениях, а при выключенных (или исчерпанном бюджете) цикл принуждение просто игнорирует.
-      const askUserEnabled = card.useAskUser && (target?.askUserAnswers?.length ?? 0) < ASK_USER_MAX_ANSWERED_QUESTIONS;
+      // Дополнения пользователя (unprompted) — не вопросы модели, бюджет не расходуют.
+      const askedCount = target?.askUserAnswers?.filter((a) => !a.unprompted).length ?? 0;
+      const askUserEnabled = card.useAskUser && askedCount < ASK_USER_MAX_ANSWERED_QUESTIONS;
       // Лимит поисков — тоже сквозной для блока: уже сохранённые поиски вычитаются, иначе каждое
       // резюме после ответа на ask_user получало бы свежий бюджет.
       const maxSearchRounds = await this.tavilySettings.getMaxSearchRounds(userId);
@@ -204,12 +206,16 @@ export class CardGenerationService {
         throw refuse(400, "answers_mismatch");
       }
 
+      // Карусель не требует отвечать на всё: пустой ответ — вопрос оставлен без ответа, для модели
+      // это тот же отказ, а не пустая строка (иначе она переспросила бы то же самое).
       const answers: AskUserAnswer[] = pending.map((q, i) => ({
         question: q.question,
-        answer: input.skipped ? ASK_USER_DECLINED_ANSWER : input.answers[i]!,
+        answer: (input.skipped ? "" : input.answers[i]!.trim()) || ASK_USER_DECLINED_ANSWER,
         options: q.options,
       }));
       answeredCount = answers.length;
+      const note = input.note?.trim();
+      if (note) answers.push({ question: "", answer: note, unprompted: true });
       if (!(await this.cards.applyCategoryAnswers(userId, cardId, categoryId, answers))) {
         throw refuse(404, "not_found");
       }
@@ -220,7 +226,8 @@ export class CardGenerationService {
     const result = await this.generate(userId, cardId, categoryId);
     logger.info(
       {
-        userId, cardId, categoryId, answeredCount, skipped: input.skipped, status: result.status,
+        userId, cardId, categoryId, answeredCount, skipped: input.skipped, hasNote: Boolean(input.note?.trim()),
+        status: result.status,
         durationMs: Date.now() - t0,
       },
       "Ask_user: ответы сохранены, генерация блока резюмирована",

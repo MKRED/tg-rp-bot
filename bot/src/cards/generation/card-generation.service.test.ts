@@ -221,6 +221,17 @@ describe("CardGenerationService.generate", () => {
     expect(runCardGenerationToolLoop).toHaveBeenCalledWith(expect.objectContaining({ askUserEnabled: false }));
   });
 
+  it("дополнения пользователя бюджет вопросов блока не расходуют", async () => {
+    runCardGenerationToolLoop.mockResolvedValue({ done: true, content: "t" });
+    const answers = [
+      ...Array.from({ length: ASK_USER_MAX_ANSWERED_QUESTIONS - 1 }, () => ({ question: "Q", answer: "A" })),
+      { question: "", answer: "note", unprompted: true as const },
+    ];
+    const { service } = setup({ card: makeCard({ useAskUser: true, categories: [category("a", { askUserAnswers: answers })] }) });
+    await service.generate(1, CARD_ID);
+    expect(runCardGenerationToolLoop).toHaveBeenCalledWith(expect.objectContaining({ askUserEnabled: true }));
+  });
+
   it("forceAskUser уходит в цикл, но выключенный тумблер уточнений карточки не обходит", async () => {
     runCardGenerationToolLoop.mockResolvedValue({ done: true, content: "t" });
     const on = setup({ card: makeCard({ useAskUser: true }) });
@@ -300,6 +311,32 @@ describe("CardGenerationService.answer", () => {
     await service.answer(1, CARD_ID, "a", { skipped: true });
     const written = cards.applyCategoryAnswers.mock.calls[0]![3] as { answer: string }[];
     expect(written.map((a) => a.answer)).toEqual([ASK_USER_DECLINED_ANSWER, ASK_USER_DECLINED_ANSWER]);
+  });
+
+  it("пустой ответ — вопрос без ответа, пишется маркер отказа, а не пустая строка", async () => {
+    const { service, cards } = setup({ card: pendingCard() });
+    await service.answer(1, CARD_ID, "a", { skipped: false, answers: ["  ", " A2 "] });
+    const written = cards.applyCategoryAnswers.mock.calls[0]![3] as { answer: string }[];
+    expect(written.map((a) => a.answer)).toEqual([ASK_USER_DECLINED_ANSWER, "A2"]);
+  });
+
+  it("дополнение пользователя пишется отдельной unprompted-записью после ответов", async () => {
+    const { service, cards } = setup({ card: pendingCard() });
+    await service.answer(1, CARD_ID, "a", { skipped: false, answers: ["A1", "A2"], note: " Ещё она левша " });
+    const written = cards.applyCategoryAnswers.mock.calls[0]![3] as unknown[];
+    expect(written).toHaveLength(3);
+    expect(written[2]).toEqual({ question: "", answer: "Ещё она левша", unprompted: true });
+  });
+
+  it("дополнение не теряется при отказе отвечать; пустое — не пишется", async () => {
+    const { service, cards } = setup({ card: pendingCard() });
+    await service.answer(1, CARD_ID, "a", { skipped: true, note: "Только это" });
+    const written = cards.applyCategoryAnswers.mock.calls[0]![3] as { answer: string }[];
+    expect(written.map((a) => a.answer)).toEqual([ASK_USER_DECLINED_ANSWER, ASK_USER_DECLINED_ANSWER, "Только это"]);
+
+    const second = setup({ card: pendingCard() });
+    await second.service.answer(1, CARD_ID, "a", { skipped: true, note: "  " });
+    expect(second.cards.applyCategoryAnswers.mock.calls[0]![3]).toHaveLength(2);
   });
 
   it("нет ожидающих вопросов — 404 no_pending_question, без записи", async () => {
