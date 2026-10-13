@@ -9,6 +9,7 @@ export type CardFormDraft = {
   presetId: number | null;
   useWebSearch: boolean;
   useAskUser: boolean;
+  askUserFirst: boolean;
 };
 
 /**
@@ -34,6 +35,7 @@ export function normalizeCardDraft(draft: CardFormDraft): CardInput {
     presetId: draft.presetId,
     useWebSearch: draft.useWebSearch,
     useAskUser: draft.useAskUser,
+    askUserFirst: draft.askUserFirst,
   };
 }
 

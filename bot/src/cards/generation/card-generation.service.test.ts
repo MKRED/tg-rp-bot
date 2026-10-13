@@ -35,6 +35,7 @@ const makeCard = (over: Record<string, unknown> = {}) => ({
   presetId: 3,
   useWebSearch: false,
   useAskUser: false,
+  askUserFirst: false,
   ...over,
 });
 
@@ -220,6 +221,23 @@ describe("CardGenerationService.generate", () => {
     expect(runCardGenerationToolLoop).toHaveBeenCalledWith(expect.objectContaining({ askUserEnabled: false }));
   });
 
+  it("forceAskUser уходит в цикл, но выключенный тумблер уточнений карточки не обходит", async () => {
+    runCardGenerationToolLoop.mockResolvedValue({ done: true, content: "t" });
+    const on = setup({ card: makeCard({ useAskUser: true }) });
+    await on.service.generate(1, CARD_ID, undefined, false, true);
+    expect(runCardGenerationToolLoop).toHaveBeenLastCalledWith(
+      expect.objectContaining({ askUserEnabled: true, forceAskUser: "last" }),
+    );
+    // Режим — из настройки сохранённой карточки.
+    const first = setup({ card: makeCard({ useAskUser: true, askUserFirst: true }) });
+    await first.service.generate(1, CARD_ID, undefined, false, true);
+    expect(runCardGenerationToolLoop).toHaveBeenLastCalledWith(expect.objectContaining({ forceAskUser: "first" }));
+
+    const off = setup();
+    await off.service.generate(1, CARD_ID, undefined, false, true);
+    expect(runCardGenerationToolLoop).toHaveBeenLastCalledWith(expect.objectContaining({ askUserEnabled: false }));
+  });
+
   it("веб-поиск: поиск идёт через TavilyService с ключом пользователя; без ключа — генерация без поиска", async () => {
     runCardGenerationToolLoop.mockResolvedValue({ done: true, content: "t" });
     const { service, tavilySettings } = setup({ card: makeCard({ useWebSearch: true }) });
@@ -272,6 +290,8 @@ describe("CardGenerationService.answer", () => {
     ]);
     // Резюме паузы — не «Перегенерировать»: накопленные ответы не сбрасываются.
     expect(cards.clearCategoryToolContext).not.toHaveBeenCalled();
+    // И не принуждает к вопросам снова, даже если пауза началась с кнопки «с вопросами».
+    expect(runCardGenerationToolLoop).toHaveBeenCalledWith(expect.objectContaining({ forceAskUser: undefined }));
     expect(lockFree()).toBe(true);
   });
 

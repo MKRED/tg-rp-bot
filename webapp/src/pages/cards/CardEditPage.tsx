@@ -31,6 +31,7 @@ function toInput(c: Card): CardInput {
     presetId: c.presetId,
     useWebSearch: c.useWebSearch,
     useAskUser: c.useAskUser,
+    askUserFirst: c.askUserFirst,
   };
 }
 

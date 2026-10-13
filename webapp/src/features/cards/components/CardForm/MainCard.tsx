@@ -11,6 +11,8 @@ interface MainCardProps {
   presetId: number | null;
   useWebSearch: boolean;
   useAskUser: boolean;
+  /** Режим кнопки «с вопросами»: вопросы первым ходом (true) или после остальных инструментов. */
+  askUserFirst: boolean;
   presets: CardPresetOption[];
   presetsLoading: boolean;
   /** Есть ли сохранённый ключ Tavily — без него веб-поиск не включить. */
@@ -23,6 +25,7 @@ interface MainCardProps {
   onPresetId: (value: number) => void;
   onUseWebSearch: (value: boolean) => void;
   onUseAskUser: (value: boolean) => void;
+  onAskUserFirst: (value: boolean) => void;
 }
 
 /** Карточка «Основное»: название, промпты генерации, пресет ИИ и инструменты модели. */
@@ -81,6 +84,19 @@ export function MainCard(props: MainCardProps) {
         checked={props.useAskUser}
         onChange={(e) => props.onUseAskUser(e.currentTarget.checked)}
       />
+      {/* Режим кнопок «с вопросами» — только при включённых уточнениях (без них кнопок нет). */}
+      {props.useAskUser && (
+        <Switch
+          label="«С вопросами» — сразу"
+          description={
+            props.askUserFirst
+              ? "Кнопка «С вопросами» требует вопросы первым же ходом — до веб-поиска и других инструментов"
+              : "Кнопка «С вопросами» сначала даёт модели вызвать другие инструменты (веб-поиск) и требует вопросы в конце; черновой ответ модели при этом отбрасывается"
+          }
+          checked={props.askUserFirst}
+          onChange={(e) => props.onAskUserFirst(e.currentTarget.checked)}
+        />
+      )}
     </SettingsCard>
   );
 }

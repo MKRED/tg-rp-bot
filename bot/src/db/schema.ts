@@ -244,6 +244,9 @@ export const cards = pgTable("cards", {
   // (см. cards/generation/ask-user-tool.ts). Независим от useWebSearch — оба инструмента
   // могут быть включены одновременно.
   useAskUser: boolean("use_ask_user").notNull().default(false),
+  // Режим кнопки «с вопросами» (принудительный ask_user): true — первым ходом, false — в конце,
+  // после остальных инструментов (см. forceAskUser в cards/generation/tool-loop.ts).
+  askUserFirst: boolean("ask_user_first").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()

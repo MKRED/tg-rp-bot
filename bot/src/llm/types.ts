@@ -38,7 +38,7 @@ export interface ToolResultMessage {
   content: string;
 }
 
-/** OpenAI-совместимое описание функции-инструмента для tool_choice: "auto". */
+/** OpenAI-совместимое описание функции-инструмента (request.tools). */
 export interface ToolDefinition {
   type: "function";
   function: {
@@ -56,7 +56,8 @@ export interface ChatCompletionOptions {
   messages: Array<ChatMessage | ToolCallMessage | ToolResultMessage>;
   /** Доступные модели инструменты (function calling). Без tool_choice — провайдер решает сам ("auto"). */
   tools?: ToolDefinition[];
-  toolChoice?: "auto" | "none";
+  /** "required" — модель обязана вызвать любой из tools; объект — обязана вызвать именно эту функцию. */
+  toolChoice?: "auto" | "none" | "required" | { type: "function"; function: { name: string } };
   /** Переопределить модель из конфига для конкретного вызова. */
   model?: string;
   // Базовые

@@ -20,7 +20,8 @@ export const ASK_USER_MAX_ANSWERED_QUESTIONS = 8;
  * то же самое. */
 export const ASK_USER_DECLINED_ANSWER = "(user declined to answer)";
 
-/** Схема инструмента для tool_choice: "auto" — модель сама решает, когда нужно уточнение. */
+/** Схема инструмента. Обычно tool_choice: "auto" — модель сама решает, когда нужно уточнение; кнопка
+ * «с вопросами» принуждает к вызову первым ходом (forceAskUser в tool-loop.ts). */
 export const ASK_USER_TOOL: ToolDefinition = {
   type: "function",
   function: {

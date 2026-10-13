@@ -27,3 +27,10 @@ Tavily (веб-поиск) устроен так же: per-user ключ в `bot
 **Инвариант:** тело запросов OpenRouter не меняем. Reasoning («мышление» из пресета, поля
 `requestReasoning`/`reasoningEffort`) применяется только для DeepSeek (`thinking`-режим); для OpenRouter
 `reasoningBody` возвращает `{}`.
+
+**Принудительный вызов инструмента:** DeepSeek в `thinking`-режиме отклоняет именованный `tool_choice`
+(400 «Thinking mode does not support this tool_choice»). Поэтому кнопка «с вопросами» в генерации
+карточек (`forceAskUser`, `cards/generation/tool-loop.ts`) шлёт принудительный ход с выключенным
+reasoning; остальные ходы идут с `tool_choice: "auto"` и reasoning из пресета. Когда принуждать — настройка
+карточки `askUserFirst`: первым ходом либо в конце, когда модель закончила с остальными инструментами
+(её черновой ответ отбрасывается; если она сама вызвала `ask_user`, принуждения нет).

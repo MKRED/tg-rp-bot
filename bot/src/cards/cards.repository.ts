@@ -91,6 +91,7 @@ export class CardsRepository {
         presetId: input.presetId,
         useWebSearch: input.useWebSearch,
         useAskUser: input.useAskUser,
+        askUserFirst: input.askUserFirst,
       })
       .returning();
     const created = rows[0]!;
@@ -238,6 +239,7 @@ export class CardsRepository {
         presetId: input.presetId,
         useWebSearch: input.useWebSearch,
         useAskUser: input.useAskUser,
+        askUserFirst: input.askUserFirst,
       })
       .where(and(eq(schema.cards.id, id), eq(schema.cards.userId, userId)))
       .returning();
@@ -277,5 +279,6 @@ function cardToInput(card: Card): CardInput {
     presetId: card.presetId,
     useWebSearch: card.useWebSearch,
     useAskUser: card.useAskUser,
+    askUserFirst: card.askUserFirst,
   };
 }

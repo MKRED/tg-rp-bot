@@ -118,6 +118,109 @@ describe("runCardGenerationToolLoop — ask_user", () => {
     expect(llm.complete).toHaveBeenCalledTimes(1);
   });
 
+  const forcedChoice = { type: "function", function: { name: "ask_user" } };
+
+  it("forceAskUser: первый ход — именованный tool_choice ask_user, пауза с вопросами", async () => {
+    const { llm, params } = setup({ askUserEnabled: true, forceAskUser: "first" });
+    llm.complete.mockResolvedValueOnce({ content: "", model: "m", toolCalls: [askCall()] });
+
+    await expect(runCardGenerationToolLoop(params)).resolves.toMatchObject({ done: false });
+    expect(llm.complete.mock.calls[0]![0].toolChoice).toEqual(forcedChoice);
+  });
+
+  it("forceAskUser действует только на первый ход: битые аргументы → дальше auto и обычный текст", async () => {
+    const { llm, params } = setup({
+      askUserEnabled: true,
+      forceAskUser: "first",
+      baseOptions: { userId: 1, requestReasoning: true },
+    });
+    const broken = { id: "bad", type: "function" as const, function: { name: "ask_user", arguments: "{" } };
+    llm.complete
+      .mockResolvedValueOnce({ content: "", model: "m", toolCalls: [broken] })
+      .mockResolvedValueOnce({ content: "текст", model: "m" });
+
+    await expect(runCardGenerationToolLoop(params)).resolves.toEqual({ done: true, content: "текст" });
+    expect(llm.complete.mock.calls[0]![0].toolChoice).toEqual(forcedChoice);
+    expect(llm.complete.mock.calls[1]![0].toolChoice).toBe("auto");
+    // DeepSeek не принимает принуждение в thinking-режиме: reasoning выключен только на этом ходе.
+    expect(llm.complete.mock.calls[0]![0].requestReasoning).toBe(false);
+    expect(llm.complete.mock.calls[1]![0].requestReasoning).toBe(true);
+  });
+
+  it("без forceAskUser и при выключенном ask_user принуждения нет — auto", async () => {
+    const plain = setup({ askUserEnabled: true });
+    plain.llm.complete.mockResolvedValueOnce({ content: "t", model: "m" });
+    await runCardGenerationToolLoop(plain.params);
+    expect(plain.llm.complete.mock.calls[0]![0].toolChoice).toBe("auto");
+
+    const gated = setup({ askUserEnabled: false, forceAskUser: "first" });
+    gated.llm.complete.mockResolvedValueOnce({ content: "t", model: "m" });
+    await runCardGenerationToolLoop(gated.params);
+    expect(gated.llm.complete.mock.calls[0]![0].toolChoice).toBe("auto");
+  });
+
+  describe("forceAskUser: last — вопросы после остальных инструментов", () => {
+    const last = (over: Partial<Params> = {}) =>
+      setup({ askUserEnabled: true, forceAskUser: "last", baseOptions: { userId: 1, requestReasoning: true }, ...over });
+
+    it("поиск → черновик отброшен → принудительный ход видит результаты поиска, пауза", async () => {
+      const { llm, params } = last();
+      llm.complete
+        .mockResolvedValueOnce({ content: "", model: "m", toolCalls: [searchCall("q")] })
+        .mockResolvedValueOnce({ content: "черновик", model: "m" })
+        .mockResolvedValueOnce({ content: "", model: "m", toolCalls: [askCall()] });
+
+      await expect(runCardGenerationToolLoop(params)).resolves.toMatchObject({ done: false });
+      const [first, second, third] = llm.complete.mock.calls.map((c) => c[0]);
+      expect(first.toolChoice).toBe("auto");
+      expect(second.toolChoice).toBe("auto");
+      expect(third.toolChoice).toEqual(forcedChoice);
+      expect(third.requestReasoning).toBe(false);
+      // Черновик в историю не попал; результат поиска — на месте.
+      expect(JSON.stringify(third.messages)).not.toContain("черновик");
+      expect(third.messages).toContainEqual(expect.objectContaining({ role: "tool", tool_call_id: "call-q" }));
+    });
+
+    it("модель сама позвала ask_user — принуждения нет, один вызов LLM", async () => {
+      const { llm, params } = last();
+      llm.complete.mockResolvedValueOnce({ content: "", model: "m", toolCalls: [askCall()] });
+
+      await expect(runCardGenerationToolLoop(params)).resolves.toMatchObject({ done: false });
+      expect(llm.complete).toHaveBeenCalledTimes(1);
+      expect(llm.complete.mock.calls[0]![0].toolChoice).toBe("auto");
+    });
+
+    it("принудительный ход с битыми аргументами — больше не принуждаем, текст принимается", async () => {
+      const { llm, params } = last();
+      const broken = { id: "bad", type: "function" as const, function: { name: "ask_user", arguments: "{" } };
+      llm.complete
+        .mockResolvedValueOnce({ content: "черновик", model: "m" })
+        .mockResolvedValueOnce({ content: "", model: "m", toolCalls: [broken] })
+        .mockResolvedValueOnce({ content: "текст", model: "m" });
+
+      await expect(runCardGenerationToolLoop(params)).resolves.toEqual({ done: true, content: "текст" });
+      expect(llm.complete).toHaveBeenCalledTimes(3);
+      expect(llm.complete.mock.calls[2]![0].toolChoice).toBe("auto");
+    });
+
+    it("других инструментов нет — принуждаем сразу, без черновика на выброс", async () => {
+      const { llm, params } = last({ webSearch: null });
+      llm.complete.mockResolvedValueOnce({ content: "", model: "m", toolCalls: [askCall()] });
+
+      await runCardGenerationToolLoop(params);
+      expect(llm.complete).toHaveBeenCalledTimes(1);
+      expect(llm.complete.mock.calls[0]![0].toolChoice).toEqual(forcedChoice);
+    });
+
+    it("ask_user недоступен — текст возвращается как есть", async () => {
+      const { llm, params } = last({ askUserEnabled: false });
+      llm.complete.mockResolvedValueOnce({ content: "текст", model: "m" });
+
+      await expect(runCardGenerationToolLoop(params)).resolves.toEqual({ done: true, content: "текст" });
+      expect(llm.complete).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it("ask_user без предложения (выключен) — ошибка модели вместо паузы, цикл конечен", async () => {
     const { llm, params } = setup({ askUserEnabled: false, maxSearchRounds: 2 });
     // Модель упорно зовёт непредложенный ask_user: каждый вызов списывает бюджет поиска, и после

@@ -71,6 +71,12 @@ export interface CardInput {
   presetId: number | null;
   useWebSearch: boolean;
   useAskUser: boolean;
+  /**
+   * Когда кнопка «с вопросами» принуждает модель к ask_user: true — первым же ходом, до остальных
+   * инструментов; false — в конце, когда модель закончила с инструментами (веб-поиск) и собралась
+   * писать текст (этот черновик отбрасывается). Имеет смысл только при useAskUser.
+   */
+  askUserFirst: boolean;
 }
 
 /** Строка списка (GET /cards) — имя + дата обновления. */
@@ -134,6 +140,17 @@ export const DEFAULT_CARD_CATEGORIES: CardCategory[] = [
 export type CardGenerationStep =
   | { status: "done"; categoryId: string; content: string; toolContextTokens: number }
   | { status: "questions"; categoryId: string; questions: AskUserQuestion[]; toolContextTokens: number };
+
+/**
+ * Тело POST /cards/:id/generate. categoryId — явная «Перегенерировать» этого блока, без него —
+ * следующий незаполненный. forceAskUser — кнопка «с вопросами»: модель обязана вызвать ask_user
+ * (в начале или в конце — CardInput.askUserFirst сохранённой карточки); действует только при
+ * включённых уточнениях (useAskUser), иначе игнорируется.
+ */
+export interface GenerateCardBlockInput {
+  categoryId?: string;
+  forceAskUser?: boolean;
+}
 
 /** Ответ на вопросы ask_user (тело /generate/answer без categoryId): ответы по порядку вопросов или отказ. */
 export type AnswerCardQuestionsInput = { skipped: true } | { skipped: false; answers: string[] };

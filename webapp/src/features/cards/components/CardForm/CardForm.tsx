@@ -58,10 +58,11 @@ export function CardForm({
   const [presetId, setPresetId] = useState<number | null>(initial?.presetId ?? null);
   const [useWebSearch, setUseWebSearch] = useState(initial?.useWebSearch ?? false);
   const [useAskUser, setUseAskUser] = useState(initial?.useAskUser ?? false);
+  const [askUserFirst, setAskUserFirst] = useState(initial?.askUserFirst ?? false);
 
   const draft = useMemo(
-    () => ({ name, systemPrompt, prompt, categories, presetId, useWebSearch, useAskUser }),
-    [name, systemPrompt, prompt, categories, presetId, useWebSearch, useAskUser],
+    () => ({ name, systemPrompt, prompt, categories, presetId, useWebSearch, useAskUser, askUserFirst }),
+    [name, systemPrompt, prompt, categories, presetId, useWebSearch, useAskUser, askUserFirst],
   );
   // Снапшот последних сохранённых значений — база для «грязного» статуса (см. CharacterForm).
   const [baseline, setBaseline] = useState<CardInput>(() => normalizeCardDraft(draft));
@@ -132,6 +133,7 @@ export function CardForm({
         presetId={presetId}
         useWebSearch={useWebSearch}
         useAskUser={useAskUser}
+        askUserFirst={askUserFirst}
         presets={presets}
         presetsLoading={presetsLoading}
         webSearchAvailable={webSearchAvailable}
@@ -142,6 +144,7 @@ export function CardForm({
         onPresetId={setPresetId}
         onUseWebSearch={setUseWebSearch}
         onUseAskUser={setUseAskUser}
+        onAskUserFirst={setAskUserFirst}
       />
       <CategoryList categories={categories} onChange={setCategories} />
       <CategoryOrderList categories={categories} onChange={setCategories} />
@@ -149,6 +152,7 @@ export function CardForm({
         cardId={cardId}
         categories={categories}
         presetId={presetId}
+        useAskUser={useAskUser}
         formDirty={isDirty}
         saveForm={save}
         onCategoriesChange={setCategories}

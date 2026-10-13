@@ -19,6 +19,7 @@ const input = {
   presetId: null,
   useWebSearch: false,
   useAskUser: false,
+  askUserFirst: false,
 };
 
 function makeService(

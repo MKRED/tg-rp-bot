@@ -23,6 +23,7 @@ export interface Card {
   presetId: number | null;
   useWebSearch: boolean;
   useAskUser: boolean;
+  askUserFirst: boolean;
   createdAt: string;
   updatedAt: string;
 }

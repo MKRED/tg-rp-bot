@@ -52,4 +52,7 @@ export class CardInputDto implements CardInput {
 
   @IsFlag()
   useAskUser = false;
+
+  @IsFlag()
+  askUserFirst = false;
 }

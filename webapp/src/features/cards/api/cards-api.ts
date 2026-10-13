@@ -1,5 +1,5 @@
 import { apiFetch } from "../../../shared/api/client";
-import type { AnswerCardQuestionsInput, CardGenerationStep } from "@tg-rp-bot/shared";
+import type { AnswerCardQuestionsInput, CardGenerationStep, GenerateCardBlockInput } from "@tg-rp-bot/shared";
 import type { Card, CardInput, CardListItem } from "../types/card";
 
 export function listCards(): Promise<{ cards: CardListItem[] }> {
@@ -30,12 +30,13 @@ export function removeCard(id: number): Promise<{ ok: true }> {
 
 /**
  * Генерирует блок карточки: без categoryId — следующий незаполненный enabled-блок, с categoryId —
- * явная перегенерация уже заполненного (см. CardGenerationService.generate на сервере).
+ * явная перегенерация уже заполненного (см. CardGenerationService.generate на сервере). forceAskUser —
+ * модель обязана сначала задать уточняющие вопросы.
  */
-export function generateCardBlock(id: number, categoryId?: string): Promise<CardGenerationStep> {
+export function generateCardBlock(id: number, input: GenerateCardBlockInput = {}): Promise<CardGenerationStep> {
   return apiFetch<CardGenerationStep>(`/cards/${id}/generate`, {
     method: "POST",
-    body: JSON.stringify({ categoryId }),
+    body: JSON.stringify(input),
   });
 }
 

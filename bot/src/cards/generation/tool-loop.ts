@@ -75,6 +75,18 @@ export interface ToolLoopParams {
    */
   onWebSearch?: (record: WebSearchRecord) => void;
   askUserEnabled: boolean;
+  /**
+   * Кнопка «с вопросами»: один ход цикла обязан быть вызовом ask_user (tool_choice с именем функции).
+   * - "first" — первый же ход: вопросы задаются до остальных инструментов (поиск возможен уже после
+   *   ответа, но на сами вопросы не влияет);
+   * - "last" — сначала обычный "auto": модель зовёт что хочет (веб-поиск), и только когда она
+   *   собралась писать текст, не задав вопросов сама, этот черновик отбрасывается и следует
+   *   принудительный ход. Если других инструментов предложить уже нечего, принуждаем сразу — без
+   *   черновика на выброс.
+   * Принуждение одноразовое (иначе модель переспрашивала бы до исчерпания бюджета) и идёт с
+   * выключенным reasoning — DeepSeek не принимает его в thinking-режиме. Без askUserEnabled не действует.
+   */
+  forceAskUser?: "first" | "last";
 }
 
 export type ToolLoopOutcome = { done: true; content: string } | { done: false; questions: AskUserQuestion[] };
@@ -109,10 +121,11 @@ export type ToolLoopOutcome = { done: true; content: string } | { done: false; q
  * maxSearchRounds + ASK_USER_MAX_ROUNDS ходов. Инструмент, вызванный БЕЗ предложения в этом раунде
  * (выключен, бюджет исчерпан или имя неизвестно — модель подсматривает вызовы в реплее), не
  * выполняется и списывает оба бюджета сразу: его собственный счётчик уже ни на что не влияет, а
- * списание только с него оставило бы другой инструмент предложенным навсегда.
+ * списание только с него оставило бы другой инструмент предложенным навсегда. Принуждение ask_user
+ * «в конце» (forceAskUser: "last") одноразовое — добавляет к этой оценке не больше одного хода.
  */
 export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise<ToolLoopOutcome> {
-  const { llm, baseOptions, webSearch, maxSearchRounds, askUserEnabled, onWebSearch } = params;
+  const { llm, baseOptions, webSearch, maxSearchRounds, askUserEnabled, forceAskUser, onWebSearch } = params;
   const { userId } = baseOptions;
   const t0 = Date.now();
 
@@ -120,6 +133,11 @@ export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise
   let searchesUsed = 0;
   let askUserRoundsUsed = 0;
   let llmCalls = 0;
+  // Принуждение ask_user: уже израсходовано / модель сама позвала ask_user (тогда не принуждаем) /
+  // черновик отброшен и следующий ход — принудительный.
+  let forceUsed = false;
+  let askUserCalled = false;
+  let draftDiscarded = false;
 
   for (;;) {
     const canSearch = webSearch !== null && searchesUsed < maxSearchRounds;
@@ -127,16 +145,31 @@ export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise
     const tools = [...(canSearch ? [WEB_SEARCH_TOOL] : []), ...(canAsk ? [ASK_USER_TOOL] : [])];
 
     llmCalls++;
+    // Принуждение — именованный выбор, а не "required": тот разрешил бы модели отделаться web_search.
+    const mayForce = forceAskUser !== undefined && !forceUsed && !askUserCalled && canAsk;
+    // "last" без других инструментов (поиск выключен или его бюджет вышел) — ждать нечего: черновик
+    // всё равно был бы выброшен, поэтому принуждаем сразу.
+    const forced = mayForce && (forceAskUser === "first" || !canSearch || draftDiscarded);
+    if (forced) forceUsed = true;
+    const toolChoice = forced
+      ? { type: "function" as const, function: { name: ASK_USER_TOOL_NAME } }
+      : ("auto" as const);
     const result = await llm.complete({
       ...baseOptions,
+      // DeepSeek в thinking-режиме отклоняет принудительный tool_choice (400 "Thinking mode does not
+      // support this tool_choice", проверено запросом) — принудительный ход идёт без reasoning. Он
+      // только формулирует вопросы; сам блок после ответа пишется уже с reasoning из пресета.
+      // reasoning_content прошлых ходов в истории при выключенном thinking безвреден.
+      ...(forced && { requestReasoning: false }),
       messages: history,
-      ...(tools.length > 0 ? { tools, toolChoice: "auto" as const } : {}),
+      ...(tools.length > 0 ? { tools, toolChoice } : {}),
     });
 
     logger.debug(
       {
         userId,
         round: llmCalls,
+        forced,
         offered: tools.map((t) => t.function.name),
         called: result.toolCalls?.map((c) => c.function.name) ?? [],
       },
@@ -144,6 +177,17 @@ export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise
     );
 
     if (!result.toolCalls?.length || tools.length === 0) {
+      // "last": модель закончила с инструментами и написала текст, не задав вопросов. Текст
+      // отбрасываем и в историю НЕ кладём (иначе модель спрашивала бы о собственном готовом ответе) —
+      // следующий ход принудительный. mayForce здесь гарантирует, что это случится не больше раза.
+      if (forceAskUser === "last" && mayForce && !forced) {
+        logger.info(
+          { userId, llmCalls, searchesUsed, discardedLength: result.content.length },
+          "Card generation tool loop: черновик отброшен, принуждаем ask_user",
+        );
+        draftDiscarded = true;
+        continue;
+      }
       logger.info(
         { userId, searchesUsed, askUserRoundsUsed, llmCalls, durationMs: Date.now() - t0 },
         "Card generation tool loop: завершено",
@@ -192,6 +236,7 @@ export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise
         // Считаем сам факт вызова независимо от валидности аргументов/повторности — иначе битые
         // аргументы не расходовали бы бюджет и цикл не был бы гарантированно конечным.
         askUserRoundsUsed++;
+        askUserCalled = true;
         if (pausedQuestions) {
           history.push({
             role: "tool",

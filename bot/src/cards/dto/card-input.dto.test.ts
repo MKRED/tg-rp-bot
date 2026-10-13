@@ -40,6 +40,7 @@ const defaults = {
   presetId: null,
   useWebSearch: false,
   useAskUser: false,
+  askUserFirst: false,
 };
 
 // Характеризация: ожидания сняты с прежнего ручного парсера Hono-версии (parseCardInput).
@@ -112,13 +113,13 @@ const cases: { title: string; body: unknown; expected: Record<string, unknown> |
   { title: "presetId строка", body: { ...base, presetId: "7" }, expected: "presetId must be an integer" },
   {
     title: "флаги true",
-    body: { ...base, useWebSearch: true, useAskUser: true },
-    expected: { useWebSearch: true, useAskUser: true },
+    body: { ...base, useWebSearch: true, useAskUser: true, askUserFirst: true },
+    expected: { useWebSearch: true, useAskUser: true, askUserFirst: true },
   },
   {
     title: "флаги: не-boolean → false",
-    body: { ...base, useWebSearch: "true", useAskUser: 1 },
-    expected: { useWebSearch: false, useAskUser: false },
+    body: { ...base, useWebSearch: "true", useAskUser: 1, askUserFirst: "yes" },
+    expected: { useWebSearch: false, useAskUser: false, askUserFirst: false },
   },
 ];
 

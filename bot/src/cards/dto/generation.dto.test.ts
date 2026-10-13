@@ -28,6 +28,9 @@ describe("GenerateCardBlockDto", () => {
     { title: "пустая строка — тоже явный блок", body: { categoryId: "" }, expected: { categoryId: "" } },
     { title: "не-строка — как отсутствие, не ошибка", body: { categoryId: 5 }, expected: {} },
     { title: "лишние поля отсекаются", body: { categoryId: "a", x: 1 }, expected: { categoryId: "a" } },
+    { title: "forceAskUser: true", body: { forceAskUser: true }, expected: { forceAskUser: true } },
+    { title: "forceAskUser: false — как отсутствие", body: { categoryId: "a", forceAskUser: false }, expected: { categoryId: "a" } },
+    { title: "forceAskUser не boolean — как отсутствие, не ошибка", body: { forceAskUser: "yes" }, expected: {} },
   ])("$title", async ({ body, expected }) => {
     expect(await via(GenerateCardBlockDto, body)).toStrictEqual({ input: expected });
   });

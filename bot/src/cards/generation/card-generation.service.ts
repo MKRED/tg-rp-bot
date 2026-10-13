@@ -53,6 +53,10 @@ export class CardGenerationService {
    * реплеился в промпт для заменяемого варианта блока и не занимал бюджеты вечно. false — резюме
    * паузы ask_user внутри одной попытки (answer), где контекст, наоборот, накапливается.
    *
+   * forceAskUser — кнопка «с вопросами»: модель принудительно вызывает ask_user — первым ходом или
+   * после остальных инструментов, по настройке карточки askUserFirst (см. tool-loop.ts).
+   * answer() его НЕ передаёт: резюме после ответа снова принуждало бы к вопросам до исчерпания бюджета.
+   *
    * Успешные веб-поиски сохраняются на категории при любом исходе (готовый блок, пауза, ошибка
    * после поиска) — они реплеятся в запросах этого и следующих блоков, см. tool-context.ts.
    *
@@ -65,6 +69,7 @@ export class CardGenerationService {
     cardId: number,
     categoryId?: string,
     resetToolContext = false,
+    forceAskUser = false,
   ): Promise<CardGenerationStep> {
     if (!tryLockCard(cardId)) throw refuse(409, "busy");
     const t0 = Date.now();
@@ -105,6 +110,8 @@ export class CardGenerationService {
       // Гейт на накопленный ask_user-бюджет ЭТОГО блока — сквозь все HTTP-раунды ответа, а не только
       // текущий вызов LLM (см. ASK_USER_MAX_ANSWERED_QUESTIONS).
       const target = card.categories.find((c) => c.id === assembled.targetCategoryId);
+      // forceAskUser тумблер карточки не обходит: кнопка «с вопросами» есть только при включённых
+      // уточнениях, а при выключенных (или исчерпанном бюджете) цикл принуждение просто игнорирует.
       const askUserEnabled = card.useAskUser && (target?.askUserAnswers?.length ?? 0) < ASK_USER_MAX_ANSWERED_QUESTIONS;
       // Лимит поисков — тоже сквозной для блока: уже сохранённые поиски вычитаются, иначе каждое
       // резюме после ответа на ask_user получало бы свежий бюджет.
@@ -119,6 +126,7 @@ export class CardGenerationService {
         webSearch: tavilyApiKey ? this.webSearcher(tavilyApiKey) : null,
         maxSearchRounds: searchesLeft,
         askUserEnabled,
+        forceAskUser: forceAskUser ? (card.askUserFirst ? "first" : "last") : undefined,
         onWebSearch: (record) => searches.push(record),
       });
 

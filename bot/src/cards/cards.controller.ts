@@ -44,7 +44,8 @@ export class CardsController {
   }
 
   /**
-   * Генерация блока: без categoryId — следующий незаполненный, с ним — явная «Перегенерировать».
+   * Генерация блока: без categoryId — следующий незаполненный, с ним — явная «Перегенерировать»;
+   * forceAskUser — модель обязана сначала задать вопросы.
    * status "questions" — модель попросила уточнение (ask_user), клиент отвечает ручкой ниже.
    * 200, а не 201 по умолчанию для POST: ничего не создаётся, контракт Hono-версии.
    */
@@ -52,8 +53,8 @@ export class CardsController {
   @HttpCode(200)
   generate(@CurrentUser() userId: string, @Param("id", ParseIntPipe) id: number, @Body() body: GenerateCardBlockDto) {
     // Явный categoryId — всегда клик «Перегенерировать»: сбрасываем контекст инструментов блока
-    // (ответы ask_user и веб-поиски).
-    return this.generation.generate(userId, id, body.categoryId, body.categoryId !== undefined);
+    // (ответы ask_user и веб-поиски). forceAskUser — кнопка «с вопросами»: первый ход модели — ask_user.
+    return this.generation.generate(userId, id, body.categoryId, body.categoryId !== undefined, body.forceAskUser === true);
   }
 
   /** Ответ (или отказ — skipped) на вопросы ask_user категории; вопросы хранятся на карточке, без таймаута. */

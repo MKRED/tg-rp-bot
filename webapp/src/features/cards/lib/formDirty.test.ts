@@ -11,6 +11,7 @@ const baseDraft: CardFormDraft = {
   presetId: 1,
   useWebSearch: false,
   useAskUser: false,
+  askUserFirst: false,
 };
 
 describe("normalizeCardDraft", () => {
@@ -23,6 +24,7 @@ describe("normalizeCardDraft", () => {
       presetId: 1,
       useWebSearch: false,
       useAskUser: false,
+  askUserFirst: false,
     });
   });
 });

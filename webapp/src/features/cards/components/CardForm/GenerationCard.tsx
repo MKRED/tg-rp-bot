@@ -1,5 +1,5 @@
 import { Button, Group, Stack, Text } from "@mantine/core";
-import { Sparkles } from "lucide-react";
+import { MessageCircleQuestion, Sparkles } from "lucide-react";
 import { PromptEditorField } from "../../../../shared/components/PromptEditorField";
 import { SettingsCard } from "../../../../shared/components/SettingsCard";
 import type { CardCategory } from "../../types/card";
@@ -10,6 +10,8 @@ interface GenerationCardProps {
   cardId: number | undefined;
   categories: CardCategory[];
   presetId: number | null;
+  /** Тумблер «уточняющие вопросы» формы: без него кнопок «с вопросами» нет (сервер его тоже проверяет). */
+  useAskUser: boolean;
   formDirty: boolean;
   saveForm: () => Promise<boolean>;
   /** Ручная правка текста блока — часть «грязного» состояния формы (требует «Сохранить»). */
@@ -27,20 +29,22 @@ const fmtTokens = (n: number) => n.toLocaleString("ru-RU");
 /**
  * Карточка «Генерация»: текст каждого включённого блока (правится вручную) и кнопка под ним по его
  * месту в очереди. Блоки выше первого незаполненного уже готовы — «Перегенерировать»; первый
- * незаполненный — «Сгенерировать»; ниже — кнопки нет (очередь не дошла). Если модель попросила
+ * незаполненный — «Сгенерировать»; ниже — кнопки нет (очередь не дошла). При включённых уточняющих
+ * вопросах у каждой кнопки есть пара «с вопросами» — модель обязана начать с вопросов. Если модель попросила
  * уточнение (ask_user), вместо блока — карусель вопросов.
  */
 export function GenerationCard({
   cardId,
   categories,
   presetId,
+  useAskUser,
   formDirty,
   saveForm,
   onCategoriesChange,
   onPendingQuestions,
   onGenerated,
 }: GenerationCardProps) {
-  const { generatingId, answering, generate, respond } = useCardGeneration({
+  const { generatingId, generatingForced, answering, generate, respond } = useCardGeneration({
     cardId,
     formDirty,
     saveForm,
@@ -99,6 +103,7 @@ export function GenerationCard({
         // следующих блоков — показываем их вес (точный счёт сервера); «Перегенерировать» его сбрасывает.
         const toolTokens = category.toolContextTokens ?? 0;
         const showRegenerate = canAct && isRegenerate;
+        const busy = generatingId === category.id;
         return (
           <Stack key={category.id} gap="xs">
             <PromptEditorField
@@ -109,35 +114,66 @@ export function GenerationCard({
               onChange={(value) => updateContent(category.id, value)}
             />
             {(showRegenerate || toolTokens > 0) && (
-              <Group justify={toolTokens > 0 ? "space-between" : "flex-end"} wrap="nowrap">
+              // Перенос разрешён: на телефоне подпись и две кнопки в одну строку не помещаются —
+              // кнопки уходят на свою строку и прижимаются вправо.
+              <Group justify={toolTokens > 0 ? "space-between" : "flex-end"} gap="xs">
                 {toolTokens > 0 && (
                   <Text size="xs" c="dimmed">
                     {`Контекст инструментов: ${fmtTokens(toolTokens)} ток.`}
                   </Text>
                 )}
                 {showRegenerate && (
-                  <Button
-                    variant="subtle"
-                    size="compact-sm"
-                    loading={generatingId === category.id}
-                    disabled={buttonsDisabled}
-                    onClick={() => void generate(category, true)}
-                  >
-                    Перегенерировать
-                  </Button>
+                  <Group gap="xs" wrap="nowrap" ml="auto">
+                    {useAskUser && (
+                      <Button
+                        variant="subtle"
+                        size="compact-sm"
+                        leftSection={<MessageCircleQuestion size={16} />}
+                        loading={busy && generatingForced}
+                        disabled={buttonsDisabled}
+                        onClick={() => void generate(category, true, true)}
+                      >
+                        С вопросами
+                      </Button>
+                    )}
+                    <Button
+                      variant="subtle"
+                      size="compact-sm"
+                      loading={busy && !generatingForced}
+                      disabled={buttonsDisabled}
+                      onClick={() => void generate(category, true)}
+                    >
+                      Перегенерировать
+                    </Button>
+                  </Group>
                 )}
               </Group>
             )}
             {canAct && isNext && (
-              <Button
-                fullWidth
-                leftSection={<Sparkles size={18} />}
-                loading={generatingId === category.id}
-                disabled={buttonsDisabled}
-                onClick={() => void generate(category, false)}
-              >
-                {`Сгенерировать «${title}»`}
-              </Button>
+              <>
+                <Button
+                  fullWidth
+                  leftSection={<Sparkles size={18} />}
+                  loading={busy && !generatingForced}
+                  disabled={buttonsDisabled}
+                  onClick={() => void generate(category, false)}
+                >
+                  {`Сгенерировать «${title}»`}
+                </Button>
+                {/* Альтернатива: модель обязана сначала задать уточняющие вопросы (ask_user). */}
+                {useAskUser && (
+                  <Button
+                    fullWidth
+                    variant="light"
+                    leftSection={<MessageCircleQuestion size={18} />}
+                    loading={busy && generatingForced}
+                    disabled={buttonsDisabled}
+                    onClick={() => void generate(category, false, true)}
+                  >
+                    Сгенерировать с вопросами
+                  </Button>
+                )}
+              </>
             )}
           </Stack>
         );

@@ -62,6 +62,8 @@ export function useCardGeneration({
 }: UseCardGenerationArgs) {
   const { showToast } = useToast();
   const [generatingId, setGeneratingId] = useState<string | null>(null);
+  // Какая из двух кнопок блока запустила генерацию — только чтобы крутить индикатор на нажатой.
+  const [generatingForced, setGeneratingForced] = useState(false);
   const [answering, setAnswering] = useState(false);
 
   /**
@@ -70,9 +72,9 @@ export function useCardGeneration({
    * по сохранённой карточке (локальная очередь могла устареть, если карточку меняли из другой сессии;
    * результат мержится по id из ответа). Для «Перегенерировать» цель — явно этот блок.
    */
-  const runGenerate = async (id: number, categoryId?: string) => {
+  const runGenerate = async (id: number, categoryId: string | undefined, forceAskUser: boolean) => {
     try {
-      const result = await generateCardBlock(id, categoryId);
+      const result = await generateCardBlock(id, { categoryId, ...(forceAskUser && { forceAskUser }) });
       if (result.status === "questions") {
         onPendingQuestions(result.categoryId, result.questions, result.toolContextTokens);
         return; // generatingId остаётся — блок ждёт ответа в карусели
@@ -112,40 +114,44 @@ export function useCardGeneration({
    * Кнопка блока. При несохранённых правках — одно предупреждение «сохраним и сгенерируем» (оно же
    * покрывает перезапись для regenerate); провал сохранения — тост, генерация не стартует. Без правок
    * у regenerate своё подтверждение «перезапишет текст», у generate — без подтверждения.
+   * forceAskUser — кнопка «с вопросами»: модель обязана сначала задать уточняющие вопросы.
    */
-  const generate = async (category: CardCategory, isRegenerate: boolean) => {
+  const generate = async (category: CardCategory, isRegenerate: boolean, forceAskUser = false) => {
     if (cardId === undefined) return;
     const title = category.title || "…";
+    const askNote = forceAskUser ? " Сначала ИИ задаст уточняющие вопросы." : "";
 
     if (formDirty) {
       const message = isRegenerate
         ? `Есть несохранённые изменения — карточка будет сохранена, а текущий текст блока «${title}» заменён новым.`
         : "Есть несохранённые изменения — карточка будет сохранена, после чего запустится генерация.";
-      const confirmed = await confirmAction(message, {
+      const confirmed = await confirmAction(message + askNote, {
         title: "Сохранить и сгенерировать?",
         confirmText: "Сохранить и сгенерировать",
       });
       if (!confirmed) return;
+      setGeneratingForced(forceAskUser);
       setGeneratingId(category.id);
       if (!(await saveForm())) {
         setGeneratingId(null);
         showToast({ type: "error", message: "Не удалось сохранить карточку" });
         return;
       }
-      await runGenerate(cardId, isRegenerate ? category.id : undefined);
+      await runGenerate(cardId, isRegenerate ? category.id : undefined, forceAskUser);
       return;
     }
 
     if (isRegenerate) {
-      const confirmed = await confirmAction(`Текущий текст блока «${title}» будет заменён новым результатом генерации.`, {
-        title: "Перегенерировать блок?",
-        confirmText: "Перегенерировать",
-      });
+      const confirmed = await confirmAction(
+        `Текущий текст блока «${title}» будет заменён новым результатом генерации.${askNote}`,
+        { title: "Перегенерировать блок?", confirmText: "Перегенерировать" },
+      );
       if (!confirmed) return;
     }
+    setGeneratingForced(forceAskUser);
     setGeneratingId(category.id);
-    await runGenerate(cardId, isRegenerate ? category.id : undefined);
+    await runGenerate(cardId, isRegenerate ? category.id : undefined, forceAskUser);
   };
 
-  return { generatingId, answering, generate, respond };
+  return { generatingId, generatingForced, answering, generate, respond };
 }
