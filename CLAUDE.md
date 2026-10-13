@@ -141,6 +141,17 @@ Full tree, webapp layout rules, router/deep-link details — [docs/architecture.
   `--tg-theme-*`; palette/fonts/motion live in `shared/theme/`. Mobile-first, decent on desktop;
   animations are part of the screen. Conventions — [docs/mantine.md](docs/mantine.md).
   Telegram theme/viewport/safe area/platforms — [docs/telegram-ui.md](docs/telegram-ui.md).
+- **Any UI change = UX first, browser check after** — full checklist in [docs/ui-workflow.md](docs/ui-workflow.md).
+  - **UX before code.** Never add a control the path-of-least-resistance way: think through the scenario,
+    placement, thumb reach on a phone, consistency with neighbouring screens, empty/loading/error states,
+    feedback. One clearly best option → do it and say why. Several reasonable options → think them
+    through yourself first, then ask the user (`AskUserQuestion`, recommended option first) **before**
+    implementing.
+  - **Verify in a real browser** (Playwright MCP, dev user from `DEV_USER_ID`, `yarn dev:all`) — both
+    functionally (walk the new flow, console/network clean) and visually (screenshots). **Mobile
+    390×844 first** (the main format), **then desktop 1280×800**; both are mandatory. Remember the DB is
+    prod (clean up test entities) and LLM/Tavily calls are paid. Report what was checked, at which
+    sizes, and what could not be checked (Telegram-only behaviour).
 - **`pages/<screen>/`** = thin route target; **`features/<feature>/`** = self-contained domain module.
 - **Feature files go into `api/ hooks/ components/ types/ lib/`** subfolders, not loose in the root.
   Don't create empty categories.
@@ -287,8 +298,8 @@ Docs describe the **current** state, not history — what's removed from code is
   API/model, new mandatory rule, significant structure change.
 - **docs/** — reference narratives; when editing a feature, update its file and keep only a thin link here:
   `architecture.md` (tree, webapp layout, router, proxy/Mini App boundaries), `llm.md` (provider, BYOK),
-  `narrator.md` (story director mode + compact), `testing.md`, `deploy.md`, `mantine.md`, `telegram-ui.md`
-  (Telegram theme, platforms, viewport); `plan/` — roadmaps of upcoming large changes (update or remove as steps land).
+  `narrator.md` (story director mode + compact), `testing.md`, `deploy.md`, `mantine.md`, `ui-workflow.md`
+  (UX-first + browser check for UI changes), `telegram-ui.md` (Telegram theme, platforms, viewport); `plan/` — roadmaps of upcoming large changes (update or remove as steps land).
 - **`.claude/agents/*.md`** — only replace stale literal facts (provider name, env var, path, command)
   that the diff changed; never rewrite agent frontmatter/role/instructions. Full rules live in
   `.claude/agents/docs-updater.md`.

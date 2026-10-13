@@ -139,7 +139,7 @@ UI webapp — на Mantine (`@mantine/core`, `@mantine/hooks`, `@mantine/notific
 - Цели нажатия не мельче 44px: у кнопок и полей `md` высота поднята до 44px в `theme.ts` (у Mantine — 42px), `Switch` по умолчанию `md`; `SegmentedControl md` — 41px; стрелки `PromptOrderEditor` — `ActionIcon size="xl"` (44px); иконки-кнопки внутри поля (`ActionIcon` в `rightSection`) меньше — их целью считается поле. Действий только на hover нет.
 - Поля ввода 16px (`size="md"` по умолчанию в теме) — иначе iOS зумит страницу на фокусе.
 - Списки на телефоне в одну колонку; карточки/галереи на широком экране — `SimpleGrid cols={{ base: 1, sm: 2 }}`.
-- Проверка экрана в Playwright: 390×844 и 1280×800, светлая и тёмная схема.
+- Проверка экрана в браузере (размеры, схемы, что смотреть) — [ui-workflow.md](ui-workflow.md).
 
 ## Анимации
 
