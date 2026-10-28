@@ -1,8 +1,10 @@
-import { Switch, TextInput } from "@mantine/core";
+import { Alert, Switch, TextInput } from "@mantine/core";
+import { TriangleAlert } from "lucide-react";
 import { PickerField } from "../../../../shared/components/PickerField";
 import { PromptEditorField } from "../../../../shared/components/PromptEditorField";
 import { SettingsCard } from "../../../../shared/components/SettingsCard";
 import { DEFAULT_CARD_PROMPT, DEFAULT_CARD_SYSTEM_PROMPT, type CardPresetOption } from "../../types/card";
+import { ReferenceImagesField } from "./ReferenceImagesField";
 
 interface MainCardProps {
   name: string;
@@ -13,6 +15,9 @@ interface MainCardProps {
   useAskUser: boolean;
   /** Режим кнопки «с вопросами»: вопросы первым ходом (true) или после остальных инструментов. */
   askUserFirst: boolean;
+  referenceImages: string[];
+  /** Референсы есть, а модель выбранного пресета их не видит — предупреждение под пикером пресета. */
+  imagesUnsupported: boolean;
   presets: CardPresetOption[];
   presetsLoading: boolean;
   /** Есть ли сохранённый ключ Tavily — без него веб-поиск не включить. */
@@ -26,9 +31,10 @@ interface MainCardProps {
   onUseWebSearch: (value: boolean) => void;
   onUseAskUser: (value: boolean) => void;
   onAskUserFirst: (value: boolean) => void;
+  onReferenceImages: (images: string[]) => void;
 }
 
-/** Карточка «Основное»: название, промпты генерации, пресет ИИ и инструменты модели. */
+/** Карточка «Основное»: название, промпты генерации, референсы, пресет ИИ и инструменты модели. */
 export function MainCard(props: MainCardProps) {
   const webSearchHint = props.webSearchStatusLoading
     ? "Проверяем ключ Tavily…"
@@ -61,6 +67,7 @@ export function MainCard(props: MainCardProps) {
         previewLines={6}
         onChange={props.onPrompt}
       />
+      <ReferenceImagesField images={props.referenceImages} onChange={props.onReferenceImages} />
       <PickerField
         label="Пресет ИИ"
         description="Нужен для генерации блоков"
@@ -71,6 +78,11 @@ export function MainCard(props: MainCardProps) {
         emptyText="Пресетов пока нет — создайте их в «Настройках ответа ИИ»."
         onChange={props.onPresetId}
       />
+      {props.imagesUnsupported && (
+        <Alert color="orange" icon={<TriangleAlert size={18} />}>
+          Модель этого пресета не видит картинки. Выберите пресет с deepseek-flash или уберите референсы.
+        </Alert>
+      )}
       <Switch
         label="Веб-поиск"
         description={webSearchHint}

@@ -41,7 +41,10 @@ const defaults = {
   useWebSearch: false,
   useAskUser: false,
   askUserFirst: false,
+  referenceImages: [],
 };
+
+const IMG = "data:image/jpeg;base64,AAAA";
 
 // Характеризация: ожидания сняты с прежнего ручного парсера Hono-версии (parseCardInput).
 // В каждом ошибочном случае ровно одно плохое поле — «первая ошибка» и «склейка» совпадают.
@@ -120,6 +123,24 @@ const cases: { title: string; body: unknown; expected: Record<string, unknown> |
     title: "флаги: не-boolean → false",
     body: { ...base, useWebSearch: "true", useAskUser: 1, askUserFirst: "yes" },
     expected: { useWebSearch: false, useAskUser: false, askUserFirst: false },
+  },
+  { title: "референсы", body: { ...base, referenceImages: [IMG, IMG] }, expected: { referenceImages: [IMG, IMG] } },
+  { title: "референсов нет — пустой массив", body: base, expected: { referenceImages: [] } },
+  {
+    title: "референсов больше 3",
+    body: { ...base, referenceImages: [IMG, IMG, IMG, IMG] },
+    expected: "Too many reference images (max 3)",
+  },
+  { title: "референсы не массив", body: { ...base, referenceImages: IMG }, expected: "referenceImages must be an array" },
+  {
+    title: "референс не data:image",
+    body: { ...base, referenceImages: [IMG, "https://x/y.png"] },
+    expected: "Reference image 1 must be a data:image/* URL",
+  },
+  {
+    title: "референс слишком большой",
+    body: { ...base, referenceImages: [IMG + "A".repeat(1_500_000)] },
+    expected: "Reference image 0 too large",
   },
 ];
 

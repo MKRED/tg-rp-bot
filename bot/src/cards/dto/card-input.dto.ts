@@ -3,6 +3,7 @@ import type { CardCategory, CardInput } from "@tg-rp-bot/shared";
 import { Transform } from "class-transformer";
 import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString } from "class-validator";
 import { IsCardCategories } from "./card-categories.js";
+import { IsReferenceImages } from "./reference-images.js";
 
 /** Текст промпта: необязателен, не-строка (или отсутствие) — пустая строка, не ошибка. */
 function IsPromptText(): PropertyDecorator {
@@ -55,4 +56,7 @@ export class CardInputDto implements CardInput {
 
   @IsFlag()
   askUserFirst = false;
+
+  @IsReferenceImages()
+  referenceImages: string[] = [];
 }

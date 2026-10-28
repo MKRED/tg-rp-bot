@@ -92,6 +92,7 @@ export class CardsRepository {
         useWebSearch: input.useWebSearch,
         useAskUser: input.useAskUser,
         askUserFirst: input.askUserFirst,
+        referenceImages: input.referenceImages.map((image) => encryptField(image, key)),
       })
       .returning();
     const created = rows[0]!;
@@ -240,6 +241,7 @@ export class CardsRepository {
         useWebSearch: input.useWebSearch,
         useAskUser: input.useAskUser,
         askUserFirst: input.askUserFirst,
+        referenceImages: input.referenceImages.map((image) => encryptField(image, key)),
       })
       .where(and(eq(schema.cards.id, id), eq(schema.cards.userId, userId)))
       .returning();
@@ -260,6 +262,7 @@ function decryptRow(row: Card, key: Buffer): Card {
     systemPrompt: decryptField(row.systemPrompt, key) || DEFAULT_CARD_SYSTEM_PROMPT,
     prompt: decryptField(row.prompt, key),
     categories: decryptCategories(row.categories, key),
+    referenceImages: row.referenceImages.map((image) => decryptField(image, key)),
   };
 }
 
@@ -280,5 +283,6 @@ function cardToInput(card: Card): CardInput {
     useWebSearch: card.useWebSearch,
     useAskUser: card.useAskUser,
     askUserFirst: card.askUserFirst,
+    referenceImages: card.referenceImages,
   };
 }

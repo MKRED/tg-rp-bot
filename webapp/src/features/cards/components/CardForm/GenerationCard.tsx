@@ -13,6 +13,8 @@ interface GenerationCardProps {
   presetId: number | null;
   /** Тумблер «уточняющие вопросы» формы: без него кнопок «с вопросами» нет (сервер его тоже проверяет). */
   useAskUser: boolean;
+  /** Референсы есть, а модель пресета не видит картинки — генерация недоступна до смены пресета. */
+  imagesUnsupported: boolean;
   formDirty: boolean;
   saveForm: () => Promise<boolean>;
   /** Ручная правка текста блока — часть «грязного» состояния формы (требует «Сохранить»). */
@@ -39,6 +41,7 @@ export function GenerationCard({
   categories,
   presetId,
   useAskUser,
+  imagesUnsupported,
   formDirty,
   saveForm,
   onCategoriesChange,
@@ -59,7 +62,7 @@ export function GenerationCard({
   // выключенной категории нигде не рисуется, и проверка по всем заблокировала бы кнопки навсегда.
   const hasPendingQuestions = enabled.some((c) => (c.pendingQuestions?.length ?? 0) > 0);
   // Несохранённые правки кнопки не прячут — предупреждение и сохранение внутри generate.
-  const canAct = cardId !== undefined && presetId !== null;
+  const canAct = cardId !== undefined && presetId !== null && !imagesUnsupported;
   const buttonsDisabled = generatingId !== null || hasPendingQuestions;
 
   const updateContent = (id: string, content: string) => {
@@ -85,7 +88,9 @@ export function GenerationCard({
         !canAct
           ? cardId === undefined
             ? "Сначала сохраните карточку."
-            : "Выберите пресет ИИ, чтобы включить генерацию."
+            : presetId === null
+              ? "Выберите пресет ИИ, чтобы включить генерацию."
+              : "Модель пресета не видит референсы — смените пресет или уберите картинки."
           : "Блоки пишутся по очереди; готовый текст можно поправить вручную."
       }
     >

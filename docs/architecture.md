@@ -38,7 +38,8 @@ bot/src/
                   token/reset/error через интерфейс SseSink)
   characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ — доменные модули Nest: controller / service / repository (бывший DAO) / dto/;
                   у cards/ ещё card-lock.ts (лок карточки, общий для PUT и генерации) и generation/ — поблочная
-                  генерация: card-generation.service (Nest-сервис) + prompt-assembly / tool-loop (web_search +
+                  генерация: card-generation.service (Nest-сервис) + prompt-assembly (в т.ч. картинки-референсы карточки
+                  в первом user-сообщении, см. docs/llm.md «Картинки») / tool-loop (web_search +
                   ask_user) / ask-user-tool / tool-context (контекст инструментов блока — ответы ask_user,
                   дополнения пользователя к ним и результаты web_search хранятся на категории, реплеятся в промпт этого и следующих блоков,
                   сбрасываются «Перегенерировать»; там же подсчёт его веса в токенах для экрана)

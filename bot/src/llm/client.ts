@@ -3,6 +3,7 @@ import { retry } from "../utils/index.js";
 import { isUnusableCompletion } from "./completionGuard.js";
 import { CHAT_COMPLETIONS_PATH } from "./constants.js";
 import { type LlmDebugResponse, recordLlmCall } from "./debugCapture.js";
+import { redactImageUrls } from "./redact-images.js";
 import { EmptyCompletionError, LlmHttpError } from "./errors.js";
 import type { LlmProvider } from "./providers.js";
 import { buildBody, makeHeaders } from "./request.js";
@@ -74,7 +75,7 @@ export async function requestChatCompletion(
       model,
       streaming,
       durationMs: Date.now() - t0,
-      request: buildBody(options, streaming, provider),
+      request: redactImageUrls(buildBody(options, streaming, provider)),
       response,
     });
   }

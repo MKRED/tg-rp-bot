@@ -1,8 +1,8 @@
 import type { CardCategory } from "@tg-rp-bot/shared";
-import type { ChatMessage, ToolCallMessage, ToolResultMessage } from "../../llm/types.js";
+import type { ChatMessage, MultimodalUserMessage, ToolCallMessage, ToolResultMessage } from "../../llm/types.js";
 import { buildToolContextMessages } from "./tool-context.js";
 
-type PromptMessage = ChatMessage | ToolCallMessage | ToolResultMessage;
+type PromptMessage = ChatMessage | MultimodalUserMessage | ToolCallMessage | ToolResultMessage;
 
 export interface CardBlockPrompt {
   messages: PromptMessage[];
@@ -28,6 +28,11 @@ export interface CardBlockPrompt {
  * и всё, что после — не читаются, будто ещё не существуют. Без параметра — как раньше, целью
  * становится первая enabled-категория с пустым content.
  *
+ * referenceImages — картинки-референсы карточки: прикрепляются к ПЕРВОМУ user-сообщению (основной
+ * промпт) составным content[] с короткой пометкой в тексте. Только к первому: оно реплеится в каждом
+ * запросе, так что модель видит картинки при генерации любого блока, а дублировать их в каждом
+ * запросе блока — лишние ~1000 токенов за картинку.
+ *
  * Контекст инструментов каждой категории (сохранённые веб-поиски и ответы ask_user) реплеится в её
  * историю КАК НАСТОЯЩИЕ tool_call/tool_result сразу за user-сообщением, которым блок был запрошен
  * (см. buildToolContextMessages в tool-context.ts) — и для целевого блока, и для всех блоков до него.
@@ -42,6 +47,7 @@ export function assembleCardBlockPrompt(
   prompt: string,
   categories: CardCategory[],
   targetCategoryId?: string,
+  referenceImages: string[] = [],
 ): CardBlockPrompt | undefined {
   const enabled = categories.filter((c) => c.enabled);
   const targetIndex =
@@ -54,11 +60,11 @@ export function assembleCardBlockPrompt(
 
   const messages: PromptMessage[] = [{ role: "system", content: systemPrompt }];
 
-  const mainUserContent = insertExampleBlock(prompt, buildExampleBlock(enabled));
-  messages.push({
-    role: "user",
-    content: targetIndex === 0 ? `${mainUserContent}\n\n${blockRequest(target.title)}` : mainUserContent,
-  });
+  const withExample = insertExampleBlock(prompt, buildExampleBlock(enabled));
+  // Пометка про референсы — до запроса блока: запрос остаётся последней строкой хода, как без картинок.
+  const mainUserContent = referenceImages.length > 0 ? `${withExample}\n\n${REFERENCE_IMAGES_NOTE}` : withExample;
+  const mainUserText = targetIndex === 0 ? `${mainUserContent}\n\n${blockRequest(target.title)}` : mainUserContent;
+  messages.push(buildMainUserMessage(mainUserText, referenceImages));
   messages.push(...buildToolContextMessages(targetIndex === 0 ? target : enabled[0]!));
 
   if (targetIndex > 0) {
@@ -74,6 +80,26 @@ export function assembleCardBlockPrompt(
 
   return { messages, targetCategoryId: target.id };
 }
+
+/**
+ * Первое user-сообщение: без картинок — обычная строка (как было), с картинками — content[] из текста
+ * и самих картинок (image_url с data URL, формат DeepSeek).
+ */
+function buildMainUserMessage(text: string, referenceImages: string[]): ChatMessage | MultimodalUserMessage {
+  if (referenceImages.length === 0) return { role: "user", content: text };
+  return {
+    role: "user",
+    content: [
+      { type: "text", text },
+      ...referenceImages.map((url) => ({ type: "image_url" as const, image_url: { url } })),
+    ],
+  };
+}
+
+/** Пометка к картинкам — на английском, как и остальные служебные части промпта. */
+const REFERENCE_IMAGES_NOTE =
+  "The attached images are visual references for this character. Base the character's appearance " +
+  "(body, face, hair, eyes, outfit, accessories, overall style) on them.";
 
 /** Короткий запрос на генерацию конкретного блока — на английском, формат ответа задаёт system. */
 function blockRequest(title: string): string {

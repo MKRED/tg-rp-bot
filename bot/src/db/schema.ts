@@ -244,6 +244,9 @@ export const cards = pgTable("cards", {
   // Режим кнопки «с вопросами» (принудительный ask_user): true — первым ходом, false — в конце,
   // после остальных инструментов (см. forceAskUser в cards/generation/tool-loop.ts).
   askUserFirst: boolean("ask_user_first").notNull().default(false),
+  // Картинки-референсы внешности (data URL), каждая зашифрована per-user ключом, как и тексты карточки
+  // (см. cards.repository.ts). Уходят модели изображениями — см. cards/generation/prompt-assembly.ts.
+  referenceImages: jsonb("reference_images").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()

@@ -10,6 +10,21 @@ export interface ChatMessage {
   content: string;
 }
 
+/** Часть составного user-сообщения (OpenAI-совместимый content[]): текст или картинка. */
+export type UserContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+
+/**
+ * User-сообщение с картинками. Отдельный тип, а не расширение ChatMessage.content до массива — по той
+ * же причине, что и ToolCallMessage ниже: ChatMessage повсеместно читают как строку. DeepSeek
+ * принимает картинки только в user-сообщениях и только у моделей из DEEPSEEK_VISION_MODELS.
+ */
+export interface MultimodalUserMessage {
+  role: "user";
+  content: UserContentPart[];
+}
+
 /** Один вызов инструмента моделью (OpenAI-совместимый tool_calls[i]); тот же тип уходит в записи экрана отладки. */
 export type ToolCall = LlmToolCall;
 
@@ -53,7 +68,7 @@ export interface ChatCompletionOptions {
   // Union — а не расширение ChatMessage.content до string|null: ChatMessage используется
   // повсеместно (промпт-билдеры, компакция нарратора, перевод) с .trim()/.length, расширение
   // content каскадом сломало бы typecheck далеко за пределами tool-calling.
-  messages: Array<ChatMessage | ToolCallMessage | ToolResultMessage>;
+  messages: Array<ChatMessage | MultimodalUserMessage | ToolCallMessage | ToolResultMessage>;
   /** Доступные модели инструменты (function calling). Без tool_choice — провайдер решает сам ("auto"). */
   tools?: ToolDefinition[];
   /** "required" — модель обязана вызвать любой из tools; объект — обязана вызвать именно эту функцию. */

@@ -82,6 +82,12 @@ export interface CardInput {
    * писать текст (этот черновик отбрасывается). Имеет смысл только при useAskUser.
    */
   askUserFirst: boolean;
+  /**
+   * Картинки-референсы внешности (data:image/*-URL, до MAX_CARD_REFERENCE_IMAGES): уходят модели
+   * изображениями в первом user-сообщении каждой генерации блока. Видит их только модель из
+   * DEEPSEEK_VISION_MODELS — с другой моделью пресета сервер отказывает (images_unsupported).
+   */
+  referenceImages: string[];
 }
 
 /** Строка списка (GET /cards) — имя + дата обновления. */
@@ -94,6 +100,21 @@ export interface CardListItem {
 
 // Мягкий лимит: webapp блокирует UI заранее, сервер проверяет последней линией защиты.
 export const MAX_CARDS_PER_USER = 50;
+
+/** Максимум картинок-референсов на карточку. */
+export const MAX_CARD_REFERENCE_IMAGES = 3;
+
+/**
+ * Потолок одного референса (длина data URL). Webapp ужимает картинку до REFERENCE_IMAGE_MAX_SIDE JPEG
+ * (~100–300 КБ); лимит с запасом, но так, чтобы три референса + текст карточки влезали в JSON-лимит тела.
+ */
+export const MAX_CARD_REFERENCE_IMAGE_CHARS = 1_500_000;
+
+/**
+ * Длинная сторона референса после ужатия в webapp. DeepSeek и так берёт за картинку не больше ~1024
+ * токенов, крупнее отправлять — только раздувать тело запроса.
+ */
+export const REFERENCE_IMAGE_MAX_SIDE = 1024;
 
 /** Максимум категорий структуры на карточку (как MAX_FIRST_MESSAGES у персонажа) — защита от абьюза. */
 export const MAX_CARD_CATEGORIES = 30;
@@ -177,4 +198,5 @@ export type CardGenerationError =
   | "target_not_found"
   | "nothing_to_generate"
   | "no_pending_question"
-  | "answers_mismatch";
+  | "answers_mismatch"
+  | "images_unsupported";

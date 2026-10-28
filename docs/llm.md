@@ -44,3 +44,18 @@ DeepSeek — единственный поддерживаемый провай�
 reasoning; остальные ходы идут с `tool_choice: "auto"` и reasoning из пресета. Когда принуждать — настройка
 карточки `askUserFirst`: первым ходом либо в конце, когда модель закончила с остальными инструментами
 (её черновой ответ отбрасывается; если она сама вызвала `ask_user`, принуждения нет).
+
+## Картинки (vision)
+
+Картинки видит только `deepseek-flash` (`DEEPSEEK_VISION_MODELS` / `modelSupportsImages` в
+`@tg-rp-bot/shared`): формат OpenAI — `content: [{type:"text"}, {type:"image_url", image_url:{url}}]`,
+только в user-сообщениях (тип `MultimodalUserMessage` в `llm/types.ts`), JPEG/PNG/GIF/WebP, data URL или
+https. Проверено запросами: `deepseek-v4-pro` отвечает 200, но молча заменяет картинку на
+«[Unsupported Image]» — HTTP-ошибки нет, поэтому модель проверяется заранее (генерация карточки с
+референсами при такой модели — 400 `images_unsupported`). Цена картинки растёт с размером (~400 токенов
+за 386×1051, ~900 за 1000×1333), поэтому webapp ужимает референсы до `REFERENCE_IMAGE_MAX_SIDE`.
+На экран отладки data URL картинок не попадают — `llm/redact-images.ts` заменяет их описанием.
+
+Сейчас картинки шлёт одна фича — референсы внешности карточки «Мастерской» (`cards.reference_images`, до
+`MAX_CARD_REFERENCE_IMAGES`): прикрепляются к первому user-сообщению каждой генерации блока
+(`cards/generation/prompt-assembly.ts`).

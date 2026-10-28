@@ -59,11 +59,16 @@ export function CardForm({
   const [useWebSearch, setUseWebSearch] = useState(initial?.useWebSearch ?? false);
   const [useAskUser, setUseAskUser] = useState(initial?.useAskUser ?? false);
   const [askUserFirst, setAskUserFirst] = useState(initial?.askUserFirst ?? false);
+  const [referenceImages, setReferenceImages] = useState<string[]>(initial?.referenceImages ?? []);
 
   const draft = useMemo(
-    () => ({ name, systemPrompt, prompt, categories, presetId, useWebSearch, useAskUser, askUserFirst }),
-    [name, systemPrompt, prompt, categories, presetId, useWebSearch, useAskUser, askUserFirst],
+    () => ({ name, systemPrompt, prompt, categories, presetId, useWebSearch, useAskUser, askUserFirst, referenceImages }),
+    [name, systemPrompt, prompt, categories, presetId, useWebSearch, useAskUser, askUserFirst, referenceImages],
   );
+  // Референсы есть, а модель выбранного пресета их не видит — сервер откажет (images_unsupported),
+  // поэтому генерацию блокируем заранее, с подсказкой в «Основном» и «Генерации».
+  const imagesUnsupported =
+    referenceImages.length > 0 && presets.some((p) => p.id === presetId && !p.supportsImages);
   // Снапшот последних сохранённых значений — база для «грязного» статуса (см. CharacterForm).
   const [baseline, setBaseline] = useState<CardInput>(() => normalizeCardDraft(draft));
   const isDirty = useMemo(() => hasUnsavedChanges(draft, baseline), [draft, baseline]);
@@ -134,6 +139,8 @@ export function CardForm({
         useWebSearch={useWebSearch}
         useAskUser={useAskUser}
         askUserFirst={askUserFirst}
+        referenceImages={referenceImages}
+        imagesUnsupported={imagesUnsupported}
         presets={presets}
         presetsLoading={presetsLoading}
         webSearchAvailable={webSearchAvailable}
@@ -145,6 +152,7 @@ export function CardForm({
         onUseWebSearch={setUseWebSearch}
         onUseAskUser={setUseAskUser}
         onAskUserFirst={setAskUserFirst}
+        onReferenceImages={setReferenceImages}
       />
       <CategoryList categories={categories} onChange={setCategories} />
       <CategoryOrderList categories={categories} onChange={setCategories} />
@@ -153,6 +161,7 @@ export function CardForm({
         categories={categories}
         presetId={presetId}
         useAskUser={useAskUser}
+        imagesUnsupported={imagesUnsupported}
         formDirty={isDirty}
         saveForm={save}
         onCategoriesChange={setCategories}
