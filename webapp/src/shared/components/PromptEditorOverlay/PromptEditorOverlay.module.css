@@ -3,7 +3,8 @@
 .content {
   display: flex;
   flex-direction: column;
-  height: 100dvh;
+  /* Видимая высота окна без клавиатуры (shared/viewport), иначе низ редактора уходит под неё. */
+  height: var(--app-viewport-height, 100dvh);
   overflow: hidden;
   background: var(--app-color-page);
 }

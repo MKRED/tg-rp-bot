@@ -144,8 +144,13 @@ Mini App может открываться по-разному, и от конт
 - для скролл-контейнеров, где нужна перерисовка в реальном времени, используйте `height`;
 - `viewport.expand()` зовите при инициализации, чтобы стартовать на полной высоте.
 
-Для верстки на весь экран используйте `height: 100dvh` (динамическая высота вьюпорта) — в проекте так
-сделаны полноэкранные экраны (общий каркас [webapp/src/shared/components/FullHeightPage/FullHeightPage.module.css](../webapp/src/shared/components/FullHeightPage/FullHeightPage.module.css)).
+Для верстки на весь экран используйте `height: var(--app-viewport-height, 100dvh)` — так сделаны
+полноэкранные экраны (общий каркас [webapp/src/shared/components/FullHeightPage/FullHeightPage.module.css](../webapp/src/shared/components/FullHeightPage/FullHeightPage.module.css)).
+В обычном мобильном браузере клавиатура по умолчанию ложится поверх страницы и 100dvh не уменьшает —
+поле ввода внизу экрана уходит под неё. Поэтому: в meta viewport стоит `interactive-widget=resizes-content`
+(Chrome на Android уменьшает окно под клавиатуру), а `--app-viewport-height` держит равной высоте
+`visualViewport` модуль [webapp/src/shared/viewport](../webapp/src/shared/viewport/visualViewportHeight.ts)
+(Safari на iPhone `interactive-widget` не знает). В Telegram обе меры ничего не меняют.
 
 ### 3.4. Safe area insets — два разных вида
 
@@ -205,7 +210,7 @@ padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 - **Платформу читаем один раз** на уровне модуля (она не меняется), а не в `useEffect`.
 - **Тему берём из `useTheme()`** (`shared/theme`) — дефолт из сигнала `themeParams.isDark` (реагирует на
   смену темы Telegram без перезагрузки), с учётом ручного выбора пользователя (раздел 1).
-- **`100dvh`, не `100vh`** для полноэкранных раскладок (высота вьюпорта динамическая).
+- **`var(--app-viewport-height, 100dvh)`, не `100vh`** для полноэкранных раскладок (высота вьюпорта динамическая, клавиатура — раздел 3.3).
 - **`stableHeight` для нижних панелей**, `height` для скролла (раздел 3.3).
 
 ---
