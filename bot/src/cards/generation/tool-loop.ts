@@ -3,6 +3,7 @@ import type {
   ChatCompleter,
   ChatCompletionOptions,
   ChatMessage,
+  MultimodalUserMessage,
   ToolCall,
   ToolCallMessage,
   ToolResultMessage,
@@ -13,7 +14,7 @@ import type { WebSearcher } from "../../tavily/tavily.types.js";
 import { WEB_SEARCH_TOOL, WEB_SEARCH_TOOL_NAME } from "../../tavily/web-search-tool.js";
 import { ASK_USER_TOOL, ASK_USER_TOOL_NAME, parseAskUserArguments } from "./ask-user-tool.js";
 
-type LoopMessage = ChatMessage | ToolCallMessage | ToolResultMessage;
+type LoopMessage = ChatMessage | MultimodalUserMessage | ToolCallMessage | ToolResultMessage;
 
 /** Сколько раз модель может вызвать ask_user за одну генерацию блока (включая невалидные/повторные
  * вызовы) — защита от бесконечного диалога вопросов. В норме модель укладывает всё уточнение в

@@ -36,6 +36,7 @@ const makeCard = (over: Record<string, unknown> = {}) => ({
   useWebSearch: false,
   useAskUser: false,
   askUserFirst: false,
+  referenceImages: [] as string[],
   ...over,
 });
 
@@ -114,6 +115,12 @@ describe("CardGenerationService.generate", () => {
     { title: "пресет не выбран", card: makeCard({ presetId: null }), preset: { id: 3 }, expected: { status: 400, body: "preset_required" } },
     { title: "пресет не найден", card: makeCard(), preset: undefined, expected: { status: 400, body: "preset_required" } },
     {
+      title: "референсы, а модель пресета не видит картинки",
+      card: makeCard({ referenceImages: ["data:image/jpeg;base64,AA"] }),
+      preset: { id: 3, model: "deepseek-v4-pro" },
+      expected: { status: 400, body: "images_unsupported" },
+    },
+    {
       title: "всё заполнено",
       card: makeCard({ categories: [category("a", { content: "x" })] }),
       preset: { id: 3 },
@@ -124,6 +131,15 @@ describe("CardGenerationService.generate", () => {
     expect(await refusal(service.generate(1, CARD_ID))).toEqual(expected);
     expect(runCardGenerationToolLoop).not.toHaveBeenCalled();
     expect(lockFree()).toBe(true);
+  });
+
+  it("референсы при модели по умолчанию (flash) — уходят картинками в первое user-сообщение", async () => {
+    const image = "data:image/jpeg;base64,AA";
+    const { service } = setup({ card: makeCard({ referenceImages: [image] }), preset: { id: 3, model: null } });
+    runCardGenerationToolLoop.mockResolvedValue({ done: true, content: "text" });
+    await service.generate(1, CARD_ID);
+    const { history } = runCardGenerationToolLoop.mock.calls[0]![0] as { history: { content: unknown }[] };
+    expect(history[1]!.content).toContainEqual({ type: "image_url", image_url: { url: image } });
   });
 
   it("явный блок, которого нет, — 400 target_not_found", async () => {

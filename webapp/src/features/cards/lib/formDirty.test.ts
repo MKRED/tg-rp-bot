@@ -12,6 +12,7 @@ const baseDraft: CardFormDraft = {
   useWebSearch: false,
   useAskUser: false,
   askUserFirst: false,
+  referenceImages: ["data:image/jpeg;base64,AA"],
 };
 
 describe("normalizeCardDraft", () => {
@@ -24,7 +25,8 @@ describe("normalizeCardDraft", () => {
       presetId: 1,
       useWebSearch: false,
       useAskUser: false,
-  askUserFirst: false,
+      askUserFirst: false,
+      referenceImages: ["data:image/jpeg;base64,AA"],
     });
   });
 });
@@ -47,6 +49,11 @@ describe("hasUnsavedChanges", () => {
       categories: [{ ...baseDraft.categories[0]!, content: "Сгенерированный текст" }],
     };
     expect(hasUnsavedChanges(changed, baseline)).toBe(true);
+  });
+
+  it("true, когда изменились референсы", () => {
+    const baseline = normalizeCardDraft(baseDraft);
+    expect(hasUnsavedChanges({ ...baseDraft, referenceImages: [] }, baseline)).toBe(true);
   });
 
   it("true, когда изменился presetId", () => {

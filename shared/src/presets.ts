@@ -47,5 +47,17 @@ export interface PresetListItem {
 /** Модель пресета по умолчанию (model: null) и вызовов без пресета — например, перевода текста. */
 export const DEFAULT_DEEPSEEK_MODEL = "deepseek-flash";
 
+/**
+ * Модели DeepSeek, которые видят картинки (image_url в user-сообщении). Проверено запросами: v4-pro
+ * отвечает 200, но молча заменяет картинку на "[Unsupported Image]" — ошибки HTTP не будет, поэтому
+ * проверяем модель заранее, а не ловим отказ.
+ */
+export const DEEPSEEK_VISION_MODELS: readonly string[] = ["deepseek-flash"];
+
+/** Видит ли модель пресета картинки; null — модель по умолчанию (DEFAULT_DEEPSEEK_MODEL). */
+export function modelSupportsImages(model: string | null): boolean {
+  return DEEPSEEK_VISION_MODELS.includes(model ?? DEFAULT_DEEPSEEK_MODEL);
+}
+
 // Мягкий лимит: webapp блокирует UI заранее, сервер проверяет последней линией защиты.
 export const MAX_PRESETS_PER_USER = 50;

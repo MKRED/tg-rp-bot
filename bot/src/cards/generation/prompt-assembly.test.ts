@@ -303,4 +303,29 @@ describe("assembleCardBlockPrompt", () => {
     const second = assembleCardBlockPrompt("System", "{{example}} в начале", categories);
     expect(second!.messages[1]!.content.startsWith("<example>")).toBe(true);
   });
+
+  describe("референсы", () => {
+    const IMG = "data:image/png;base64,AA";
+
+    it("без картинок первое user-сообщение — обычная строка", () => {
+      const result = assembleCardBlockPrompt("System", "Prompt", [cat({ id: "base", title: "Base" })], undefined, []);
+      expect(typeof result!.messages[1]!.content).toBe("string");
+    });
+
+    it("картинки — в первом user-сообщении после текста; пометка до запроса блока", () => {
+      const categories = [cat({ id: "base", title: "Base" })];
+      const result = assembleCardBlockPrompt("System", "Prompt", categories, undefined, [IMG, IMG]);
+      const content = result!.messages[1]!.content as Array<{ type: string; text?: string }>;
+      expect(content.map((p) => p.type)).toEqual(["text", "image_url", "image_url"]);
+      expect(content[0]!.text).toMatch(/visual references[\s\S]*Generate the "Base" block\.$/);
+    });
+
+    it("картинки не дублируются в запросах следующих блоков", () => {
+      const categories = [cat({ id: "base", title: "Base", content: "готово" }), cat({ id: "body", title: "Body" })];
+      const result = assembleCardBlockPrompt("System", "Prompt", categories, undefined, [IMG]);
+      const withImages = result!.messages.filter((m) => Array.isArray(m.content));
+      expect(withImages).toHaveLength(1);
+      expect(result!.messages.at(-1)).toEqual({ role: "user", content: 'Generate the "Body" block.' });
+    });
+  });
 });

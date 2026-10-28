@@ -1,0 +1,59 @@
+/* Плитки одного размера в ряд: три референса + «добавить» помещаются в ширину телефона. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--mantine-spacing-xs);
+  margin-top: var(--mantine-spacing-xs);
+  max-width: 420px;
+}
+
+.tile {
+  position: relative;
+  aspect-ratio: 3 / 4;
+}
+
+.preview {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--mantine-radius-md);
+  overflow: hidden;
+  cursor: zoom-in;
+  transition: opacity 150ms ease;
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+/* Пустая плитка «добавить» — пунктирная рамка в цвет приглушённого текста. */
+.add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 3 / 4;
+  border: 1px dashed var(--mantine-color-dimmed);
+  border-radius: var(--mantine-radius-md);
+  color: var(--mantine-color-dimmed);
+  transition:
+    color 150ms ease,
+    border-color 150ms ease;
+
+  &:hover:not(:disabled) {
+    color: var(--mantine-primary-color-filled);
+    border-color: var(--mantine-primary-color-filled);
+  }
+}

@@ -10,6 +10,7 @@ export type CardFormDraft = {
   useWebSearch: boolean;
   useAskUser: boolean;
   askUserFirst: boolean;
+  referenceImages: string[];
 };
 
 /**
@@ -36,6 +37,7 @@ export function normalizeCardDraft(draft: CardFormDraft): CardInput {
     useWebSearch: draft.useWebSearch,
     useAskUser: draft.useAskUser,
     askUserFirst: draft.askUserFirst,
+    referenceImages: draft.referenceImages,
   };
 }
 

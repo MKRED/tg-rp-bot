@@ -41,18 +41,21 @@ function renderThumb(img: HTMLImageElement, crop: CropArea): string {
   return canvas.toDataURL("image/jpeg", THUMB_QUALITY);
 }
 
-/** Уменьшает всё изображение так, чтобы длинная сторона была ≤ FULL_MAX_SIDE; кодирует в JPEG. */
-function renderFull(img: HTMLImageElement): string {
+/** Уменьшает всё изображение так, чтобы длинная сторона была ≤ maxSide; кодирует в JPEG. */
+function renderFull(img: HTMLImageElement, maxSide = FULL_MAX_SIDE, quality = FULL_QUALITY): string {
   const { naturalWidth: w, naturalHeight: h } = img;
   // Не увеличиваем мелкие картинки — масштаб только вниз.
-  const scale = Math.min(1, FULL_MAX_SIDE / Math.max(w, h));
+  const scale = Math.min(1, maxSide / Math.max(w, h));
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(w * scale);
   canvas.height = Math.round(h * scale);
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2D context unavailable");
+  // JPEG без альфа-канала: прозрачный фон (PNG-арты) иначе стал бы чёрным — заливаем белым.
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL("image/jpeg", FULL_QUALITY);
+  return canvas.toDataURL("image/jpeg", quality);
 }
 
 /**
@@ -66,4 +69,12 @@ function renderFull(img: HTMLImageElement): string {
 export async function buildAvatarImages(src: string, crop: CropArea): Promise<AvatarImages> {
   const img = await loadImage(src);
   return { thumb: renderThumb(img, crop), full: renderFull(img) };
+}
+
+/**
+ * Картинка целиком (без кропа), ужатая до длинной стороны maxSide JPEG — для референсов, которые
+ * уходят модели изображением. src — обычно object URL выбранного файла.
+ */
+export async function buildScaledImage(src: string, maxSide: number): Promise<string> {
+  return renderFull(await loadImage(src), maxSide);
 }

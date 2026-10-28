@@ -1,4 +1,5 @@
 import { Button } from "@mantine/core";
+import { modelSupportsImages } from "@tg-rp-bot/shared";
 import { Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
@@ -32,6 +33,7 @@ function toInput(c: Card): CardInput {
     useWebSearch: c.useWebSearch,
     useAskUser: c.useAskUser,
     askUserFirst: c.askUserFirst,
+    referenceImages: c.referenceImages,
   };
 }
 
@@ -63,6 +65,7 @@ export function CardEditPage() {
     id: p.id,
     name: p.name,
     summary: presetSummary(p),
+    supportsImages: modelSupportsImages(p.model),
   }));
 
   // Тумблер веб-поиска в форме активен, только если у пользователя сохранён ключ Tavily —

@@ -10,6 +10,7 @@ export {
   DEFAULT_CARD_PROMPT,
   DEFAULT_CARD_SYSTEM_PROMPT,
   MAX_CARD_CATEGORIES,
+  MAX_CARD_REFERENCE_IMAGES,
   MAX_CARDS_PER_USER,
 } from "@tg-rp-bot/shared";
 
@@ -24,6 +25,7 @@ export interface Card {
   useWebSearch: boolean;
   useAskUser: boolean;
   askUserFirst: boolean;
+  referenceImages: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -38,4 +40,6 @@ export interface CardPresetOption {
   id: number;
   name: string;
   summary: string;
+  /** Видит ли модель пресета картинки-референсы (modelSupportsImages из @tg-rp-bot/shared). */
+  supportsImages: boolean;
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "cards" ADD COLUMN "reference_images" jsonb DEFAULT '[]'::jsonb NOT NULL;

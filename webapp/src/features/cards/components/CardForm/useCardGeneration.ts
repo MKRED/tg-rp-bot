@@ -12,6 +12,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   nothing_to_generate: "Все включённые блоки уже сгенерированы",
   target_not_found: "Этот блок больше не актуален — обновите карточку",
   busy: "Генерация уже идёт, подождите",
+  images_unsupported: "Модель пресета не видит картинки — выберите пресет с deepseek-flash",
   not_found: "Карточка не найдена",
   no_pending_question: "Вопрос уже неактуален — сгенерируйте блок заново",
   answers_mismatch: "Не удалось отправить ответы — попробуйте сгенерировать блок заново",

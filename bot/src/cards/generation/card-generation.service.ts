@@ -1,10 +1,11 @@
 import { BadRequestException, HttpException, Injectable } from "@nestjs/common";
-import type {
-  AnswerCardQuestionsInput,
-  AskUserAnswer,
-  CardGenerationError,
-  CardGenerationStep,
-  WebSearchRecord,
+import {
+  modelSupportsImages,
+  type AnswerCardQuestionsInput,
+  type AskUserAnswer,
+  type CardGenerationError,
+  type CardGenerationStep,
+  type WebSearchRecord,
 } from "@tg-rp-bot/shared";
 import type { Card } from "../../db/schema.js";
 import { MissingApiKeyError } from "../../llm/errors.js";
@@ -91,8 +92,19 @@ export class CardGenerationService {
       if (card.presetId == null) throw refuse(400, "preset_required");
       const preset = await this.presets.findOne(userId, card.presetId);
       if (!preset) throw refuse(400, "preset_required");
+      // Модель без зрения не вернёт ошибку, а молча выкинет картинки и напишет внешность «из головы»
+      // (проверено: v4-pro отвечает 200 с "[Unsupported Image]") — отказываем явно, до вызова LLM.
+      if (card.referenceImages.length > 0 && !modelSupportsImages(preset.model)) {
+        throw refuse(400, "images_unsupported");
+      }
 
-      const assembled = assembleCardBlockPrompt(card.systemPrompt, card.prompt, card.categories, categoryId);
+      const assembled = assembleCardBlockPrompt(
+        card.systemPrompt,
+        card.prompt,
+        card.categories,
+        categoryId,
+        card.referenceImages,
+      );
       if (!assembled) {
         // Явный categoryId без валидной цели — локальное состояние клиента разошлось с сохранённым
         // (категория удалена/выключена/что-то перед ней не заполнено в другой сессии): это не тот же
