@@ -136,8 +136,8 @@ export function buildStoryMessages(opts: StoryPromptOptions): ChatMessage[] {
 
   if (historyEnabled) {
     // Примечание: при агрессивной обрезке первым уцелевшим узлом может оказаться нейтрализованный
-    // user-ход — тогда после leading-user идут два user-сообщения подряд. Anthropic/OpenRouter их
-    // склеивают, так что это не нарушает чередование; специально схлопывать не нужно.
+    // user-ход — тогда после leading-user идут два user-сообщения подряд. Инвариант «массив
+    // не начинается с assistant» это не нарушает, так что специально схлопывать не нужно.
     result.push({ role: "user", content: opts.leadingUserMarker });
     history.forEach((m, i) => {
       if (m.role === "user" && i !== lastIndex) {

@@ -248,13 +248,12 @@ vitest in both packages, pool `forks`. Details and "why" — [docs/testing.md](d
 | Service | Used for | Key |
 |---|---|---|
 | Telegram | Bot API (via HTTP proxy) | `BOT_TOKEN`, `TELEGRAM_PROXY_URL` |
-| DeepSeek | LLM chat completion — the **only active provider**, server-side, per-user (BYOK) | in DB, not env |
+| DeepSeek | LLM chat completion — the **only provider**, server-side, per-user (BYOK) | in DB, not env |
 | Tavily | Web search (quota), server-side, per-user (BYOK), via HTTP proxy | in DB, not env |
 | Google / Yandex Translate | Machine translation — **unofficial keyless** endpoints, server-side, direct (no proxy); rate-limited per server IP | none |
 | Postgres | DB (drizzle) | `DATABASE_URL` |
 
-Provider resolution, `MissingApiKeyError`, dormant OpenRouter path and its untouchable request body,
-reasoning/thinking rules — [docs/llm.md](docs/llm.md).
+Provider resolution, `MissingApiKeyError`, reasoning/thinking rules — [docs/llm.md](docs/llm.md).
 
 ## Subagents (`.claude/agents/`)
 Use them instead of manual work when a task fits. For approach advice, being stuck, and pre-"done"

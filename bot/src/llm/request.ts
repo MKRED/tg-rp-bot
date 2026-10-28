@@ -32,11 +32,10 @@ export function buildBody(
   };
 }
 
-/** Заголовки запроса: авторизация провайдера + Content-Type + app-заголовки провайдера. */
+/** Заголовки запроса: авторизация провайдера + Content-Type. */
 export function makeHeaders(provider: LlmProvider): Record<string, string> {
   return {
     Authorization: `Bearer ${provider.apiKey}`,
     "Content-Type": "application/json",
-    ...provider.appHeaders,
   };
 }

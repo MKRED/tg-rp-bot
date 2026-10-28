@@ -111,8 +111,7 @@ bot/src/
   llm/          — LlmModule: LlmService.complete (ключ/модель пользователя из settings/llm на
                   каждый вызов, без ключа — MissingApiKeyError) + чистый клиент (client/request/
                   errors/types/constants/completionGuard/providers/deepseekModels) — серверно;
-                  единственный активный провайдер — DeepSeek; фабрика buildOpenRouterProvider
-                  в providers.ts не задействована (задел, нет пути конфигурации);
+                  единственный провайдер — DeepSeek;
                   debugCapture (+debug.types, debugSettings — кламп настроек) — in-memory перехват RAW-запросов
                   к LLM для экрана отладки (горячий путь каждого вызова; настройки — в debug/)
   tavily/       — TavilyModule: TavilyService (search — POST /search для web_search генерации карточек,

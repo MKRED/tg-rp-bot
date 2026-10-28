@@ -4,7 +4,7 @@ import type { SamplingKey } from "@tg-rp-bot/shared";
 export type SamplingRange = { min: number; max?: number; integer?: boolean };
 
 /**
- * Диапазоны параметров сэмплинга (официальные значения OpenRouter). topK без верхней границы
+ * Диапазоны параметров сэмплинга (общепринятые для OpenAI-совместимых API). topK без верхней границы
  * («0 or above») — проверяем только неотрицательность и целочисленность.
  */
 export const SAMPLING_RANGES: Record<SamplingKey, SamplingRange> = {

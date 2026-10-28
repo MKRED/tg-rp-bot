@@ -20,13 +20,10 @@ Tavily (веб-поиск) устроен так же: per-user ключ в `bot
 **без фоллбэка** на общий/env-ключ. Nest-сервисы инжектят `LlmService`; чистые функции (`streamCompletion`,
 `aiTranslate`, цикл инструментов карточек) получают его параметром как `ChatCompleter`.
 
-## OpenRouter — запасной путь, не активен
-Фабрика `buildOpenRouterProvider()` (`providers.ts`) оставлена заделом и нигде не вызывается — пути
-конфигурации OpenRouter сейчас нет.
-
-**Инвариант:** тело запросов OpenRouter не меняем. Reasoning («мышление» из пресета, поля
-`requestReasoning`/`reasoningEffort`) применяется только для DeepSeek (`thinking`-режим); для OpenRouter
-`reasoningBody` возвращает `{}`.
+## Reasoning (thinking-режим DeepSeek)
+DeepSeek — единственный поддерживаемый провайдер, других путей нет. «Мышление» из пресета (поля
+`requestReasoning`/`reasoningEffort`) превращается в `thinking`-поля тела запроса
+(`deepSeekReasoningBody`, `providers.ts`; уровень схлопывает `mapEffort`).
 
 **Принудительный вызов инструмента:** DeepSeek в `thinking`-режиме отклоняет именованный `tool_choice`
 (400 «Thinking mode does not support this tool_choice»). Поэтому кнопка «с вопросами» в генерации

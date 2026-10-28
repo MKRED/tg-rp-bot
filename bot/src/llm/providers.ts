@@ -1,4 +1,3 @@
-import { OPENROUTER_APP_HEADERS } from "./constants.js";
 import type { LlmProvider } from "./providers.types.js";
 import type { ChatCompletionOptions } from "./types.js";
 
@@ -48,22 +47,5 @@ export function buildDeepSeekProvider(apiKey: string, model: string): LlmProvide
     apiKey,
     defaultModel: model,
     reasoningBody: deepSeekReasoningBody,
-  };
-}
-
-/**
- * Задел на будущий выбор провайдера (пока нигде не вызывается — резолвится только DeepSeek,
- * см. llm/llm.service.ts). Оставлена, чтобы не переписывать заново, когда для OpenRouter
- * появится своя пара полей в userSettings и выбор в UI настроек.
- */
-export function buildOpenRouterProvider(apiKey: string, model: string): LlmProvider {
-  return {
-    name: "openrouter",
-    baseUrl: "https://openrouter.ai/api/v1",
-    apiKey,
-    defaultModel: model,
-    appHeaders: OPENROUTER_APP_HEADERS,
-    // Тело запросов OpenRouter не трогаем — это запасной путь, работает как раньше.
-    reasoningBody: () => ({}),
   };
 }

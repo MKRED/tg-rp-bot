@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDeepSeekProvider, buildOpenRouterProvider, mapEffort } from "./providers.js";
+import { buildDeepSeekProvider, mapEffort } from "./providers.js";
 
 describe("mapEffort", () => {
   it("minimal/low → low", () => {
@@ -18,13 +18,12 @@ describe("mapEffort", () => {
 });
 
 describe("buildDeepSeekProvider", () => {
-  it("base URL, ключ/модель из аргументов, без app-заголовков", () => {
+  it("base URL, ключ/модель из аргументов", () => {
     const p = buildDeepSeekProvider("ds-key", "deepseek-flash");
     expect(p.name).toBe("deepseek");
     expect(p.baseUrl).toBe("https://api.deepseek.com");
     expect(p.apiKey).toBe("ds-key");
     expect(p.defaultModel).toBe("deepseek-flash");
-    expect(p.appHeaders).toBeUndefined();
   });
 
   it("выключенное мышление → thinking disabled", () => {
@@ -56,15 +55,3 @@ describe("buildDeepSeekProvider", () => {
   });
 });
 
-describe("buildOpenRouterProvider", () => {
-  it("base URL, app-заголовки, reasoning не добавляется — тело OpenRouter не трогаем", () => {
-    const p = buildOpenRouterProvider("or-key", "openai/gpt-4o-mini");
-    expect(p.name).toBe("openrouter");
-    expect(p.baseUrl).toBe("https://openrouter.ai/api/v1");
-    expect(p.apiKey).toBe("or-key");
-    expect(p.appHeaders).toBeDefined();
-    expect(
-      p.reasoningBody({ messages: [], userId: 1, requestReasoning: true, reasoningEffort: "xhigh" }),
-    ).toEqual({});
-  });
-});

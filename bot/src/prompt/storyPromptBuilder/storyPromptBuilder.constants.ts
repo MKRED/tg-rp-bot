@@ -7,7 +7,7 @@ export const CONTINUE_MARKER = "Continue the story.";
 
 /**
  * Синтетический leading-user перед корнем (openingBeat — assistant). Без него массив сообщений
- * начинался бы с assistant, что отвергают Anthropic (через OpenRouter) и reasoner DeepSeek.
+ * начинался бы с assistant, что отвергает reasoner DeepSeek.
  */
 export const LEADING_USER_MARKER = "Begin the story.";
 

@@ -46,7 +46,7 @@ RP-чата), переиспользуя только реально переи�
 `storyPromptBuilder.buildStoryMessages`: отыгранные user-ходы (директивы/continue) **нейтрализуются**
 в `CONTINUE_MARKER`, кроме последнего (живого триггера) — их последствие уже в тексте следующего бита,
 повторно инструктировать нельзя. Перед корнем (openingBeat — `assistant`) вставляется синтетический
-leading-user — иначе массив начинался бы с assistant, что отвергают Anthropic (через OpenRouter) и
+leading-user — иначе массив начинался бы с assistant, что отвергает
 reasoner DeepSeek. Книга знаний: `always_on`-записи идут в промпт всегда; `keyword`-записи — только если
 хотя бы одно из её триггер-слов встретилось (word-boundary матч по Unicode-классам `\p{L}`/`\p{N}`,
 регистронезависимо, ё↔е нормализация — `prompt/keywordMatch.ts`) среди последних `keywordDepth`
