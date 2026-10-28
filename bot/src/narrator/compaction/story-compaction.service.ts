@@ -84,6 +84,7 @@ export class StoryCompactionService {
             debugLabel: "compact",
             requestReasoning: true,
             reasoningEffort: ctx.preset?.reasoningEffort ?? undefined,
+            model: ctx.preset?.model ?? undefined,
           }),
         3,
         1500,

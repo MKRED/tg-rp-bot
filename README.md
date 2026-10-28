@@ -10,7 +10,7 @@ Telegram-бот для ролевой игры (RP) с упором на **Teleg
 | Бот | Node 24 (native ESM, TypeScript), [grammY](https://grammy.dev) |
 | HTTP API | [NestJS](https://nestjs.com) (Express, class-validator, nestjs-pino); тот же процесс раздаёт статику Mini App |
 | БД | Postgres + [drizzle-orm](https://orm.drizzle.team) / drizzle-kit |
-| LLM | DeepSeek (OpenAI-совместимый API); ключ/модель — персональные (BYOK), задаются пользователем в Mini App |
+| LLM | DeepSeek (OpenAI-совместимый API); ключ — персональный (BYOK), задаётся пользователем в Mini App; модель — в пресете генерации |
 | Веб-поиск | Tavily (квота ключа); ключ — персональный (BYOK), задаётся пользователем в Mini App |
 | Логи | pino (+ pino-roll, pino-pretty) |
 | Mini App | React 19 + Vite + `@telegram-apps/sdk-react` + Mantine (`@mantine/core`, CSS-модули) + `react-router-dom` (HashRouter) + `@xyflow/react` (граф диалога) + `framer-motion` + `react-easy-crop` (кроп аватара) |
@@ -97,7 +97,7 @@ yarn workspace bot drizzle-kit migrate      # применить миграци�
 См. [`bot/.env.example`](bot/.env.example). Обязательные: `BOT_TOKEN`, `DATABASE_URL`.
 
 **LLM (DeepSeek)** — BYOK: общего ключа в env нет, каждый пользователь задаёт свой ключ DeepSeek
-(и опционально модель) в Mini App → `/settings` → «ИИ (DeepSeek)». Без сохранённого ключа
+в Mini App → `/settings` → «ИИ (DeepSeek)», модель — в каждом пресете генерации. Без сохранённого ключа
 генерация и ИИ-перевод вернут пользователю ошибку с просьбой добавить ключ.
 
 **Веб-поиск (Tavily)** — тоже BYOK: свой ключ Tavily и месячная квота задаются/отображаются в

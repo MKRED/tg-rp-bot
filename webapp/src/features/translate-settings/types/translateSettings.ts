@@ -10,11 +10,7 @@ export {
 
 export const PROMPT_TRANSLATE_REASONING_LABELS = {
   off: "Отключено",
-  minimal: "Минимальное",
   low: "Низкое",
-  medium: "Среднее",
   high: "Высокое",
-  xhigh: "Очень высокое",
   max: "Максимальное",
-  ultra: "Ультра",
 } satisfies Record<PromptTranslateReasoningEffort, string>;

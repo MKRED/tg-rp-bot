@@ -21,6 +21,7 @@ export class PresetsRepository {
       .select({
         id: schema.generationPresets.id,
         name: schema.generationPresets.name,
+        model: schema.generationPresets.model,
         temperature: schema.generationPresets.temperature,
         contextUnlimited: schema.generationPresets.contextUnlimited,
         contextSize: schema.generationPresets.contextSize,

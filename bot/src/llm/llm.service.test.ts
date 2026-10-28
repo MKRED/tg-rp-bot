@@ -12,8 +12,8 @@ type Repo = ConstructorParameters<typeof LlmService>[0];
 
 const OPTIONS = { messages: [], userId: 7 };
 
-function setup(creds: { apiKey: string; model: string | null } | null) {
-  const settings = { getDecryptedCredentials: vi.fn().mockResolvedValue(creds) };
+function setup(apiKey: string | null) {
+  const settings = { getDecryptedApiKey: vi.fn().mockResolvedValue(apiKey) };
   return { settings, service: new LlmService(settings as unknown as Repo) };
 }
 
@@ -26,27 +26,28 @@ describe("LlmService.complete", () => {
     expect(requestChatCompletion).not.toHaveBeenCalled();
   });
 
-  it("ключ и модель пользователя → провайдер DeepSeek; callback'и стрима проброшены как есть", async () => {
-    const { service, settings } = setup({ apiKey: "sk-user", model: "deepseek-pro" });
+  it("ключ пользователя → провайдер DeepSeek; опции и callback'и стрима проброшены как есть", async () => {
+    const { service, settings } = setup("sk-user");
     const onChunk = vi.fn();
     const onReset = vi.fn();
-    await expect(service.complete(OPTIONS, onChunk, onReset)).resolves.toEqual({ content: "ok" });
-    expect(settings.getDecryptedCredentials).toHaveBeenCalledWith(7);
-    const [provider, options, chunk, reset] = requestChatCompletion.mock.lastCall!;
-    expect(provider).toMatchObject({ name: "deepseek", apiKey: "sk-user", defaultModel: "deepseek-pro" });
-    expect([options, chunk, reset]).toEqual([OPTIONS, onChunk, onReset]);
+    const options = { ...OPTIONS, model: "deepseek-v4-pro" };
+    await expect(service.complete(options, onChunk, onReset)).resolves.toEqual({ content: "ok" });
+    expect(settings.getDecryptedApiKey).toHaveBeenCalledWith(7);
+    const [provider, passed, chunk, reset] = requestChatCompletion.mock.lastCall!;
+    expect(provider).toMatchObject({ name: "deepseek", apiKey: "sk-user" });
+    expect([passed, chunk, reset]).toEqual([options, onChunk, onReset]);
   });
 
-  it("модель не выбрана — модель по умолчанию", async () => {
-    const { service } = setup({ apiKey: "sk-user", model: null });
+  it("модель провайдера по умолчанию — для вызовов без модели пресета", async () => {
+    const { service } = setup("sk-user");
     await service.complete(OPTIONS);
     expect(requestChatCompletion.mock.lastCall![0].defaultModel).toBe(DEFAULT_DEEPSEEK_MODEL);
   });
 
   it("ключ читается на каждый вызов — смена ключа в настройках действует сразу", async () => {
-    const { service, settings } = setup({ apiKey: "sk-1", model: null });
+    const { service, settings } = setup("sk-1");
     await service.complete(OPTIONS);
-    settings.getDecryptedCredentials.mockResolvedValue({ apiKey: "sk-2", model: null });
+    settings.getDecryptedApiKey.mockResolvedValue("sk-2");
     await service.complete(OPTIONS);
     expect(requestChatCompletion.mock.calls.map((c) => c[0].apiKey)).toEqual(["sk-1", "sk-2"]);
   });

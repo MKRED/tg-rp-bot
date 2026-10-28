@@ -43,7 +43,7 @@ const defaults = {
   ...markers,
   promptOrder: defaultOrder,
   mergeSystemPrompts: false,
-  translationReasoningEffort: "medium",
+  translationReasoningEffort: "high",
   translatePerParagraph: false,
 };
 
@@ -78,7 +78,7 @@ const cases: { title: string; body: unknown; expected: Record<string, unknown> |
     expected: { mergeSystemPrompts: false, translatePerParagraph: false },
   },
   { title: "translationReasoningEffort off", body: { ...base, translationReasoningEffort: "off" }, expected: { translationReasoningEffort: "off" } },
-  { title: "translationReasoningEffort ultra", body: { ...base, translationReasoningEffort: "ultra" }, expected: { translationReasoningEffort: "ultra" } },
+  { title: "translationReasoningEffort max", body: { ...base, translationReasoningEffort: "max" }, expected: { translationReasoningEffort: "max" } },
   { title: "translationReasoningEffort неизвестный", body: { ...base, translationReasoningEffort: "huge" }, expected: "Invalid translationReasoningEffort" },
   { title: "translationReasoningEffort null", body: { ...base, translationReasoningEffort: null }, expected: "Invalid translationReasoningEffort" },
   {

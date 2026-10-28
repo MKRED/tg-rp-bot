@@ -17,11 +17,6 @@ export class LlmSettingsPatchDto implements LlmSettingsPatch {
   @IsOptional()
   @IsString()
   apiKey?: string | null;
-
-  @TrimmedNonEmpty()
-  @IsOptional()
-  @IsString()
-  model?: string;
 }
 
 /** Тело PATCH /api/settings/tavily. */

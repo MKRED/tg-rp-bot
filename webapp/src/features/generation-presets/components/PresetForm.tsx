@@ -3,9 +3,8 @@ import { useState } from "react";
 import { DeleteButton } from "../../../shared/components/DeleteButton";
 import { BasicsSection } from "./BasicsSection";
 import { SAMPLING_SPECS, type SamplingKey, type SamplingState } from "../lib/param-specs";
-import { ReasoningSection } from "./ReasoningSection";
-import { SamplingSection } from "./SamplingSection";
-import type { PresetInput, ReasoningEffort } from "../types/preset";
+import { ModelResponseSection } from "./ModelResponseSection";
+import { DEFAULT_DEEPSEEK_MODEL, type PresetInput, type ReasoningEffort } from "../types/preset";
 
 interface PresetFormProps {
   /** Начальные значения (режим редактирования); отсутствуют — режим создания. */
@@ -16,12 +15,12 @@ interface PresetFormProps {
   onDelete?: () => void;
 }
 
-const DEFAULT_EFFORT: ReasoningEffort = "medium";
+const DEFAULT_EFFORT: ReasoningEffort = "high";
 
 /** Начальное состояние сэмплинга: значение из пресета (тумблер вкл) либо дефолт спеки (выкл). */
 function initSampling(initial?: PresetInput): SamplingState {
   const state = {} as SamplingState;
-  for (const spec of SAMPLING_SPECS) {
+  for (const spec of Object.values(SAMPLING_SPECS)) {
     const v = initial ? initial[spec.key] : null;
     state[spec.key] =
       v == null ? { value: spec.default, enabled: false } : { value: v, enabled: true };
@@ -38,6 +37,8 @@ function toPositiveInt(value: string | number): number | null {
 /** Форма создания/редактирования пресета генерации. Состояние держим локально (паттерн CharacterForm). */
 export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
+  // null в пресете = модель по умолчанию сервера; в форме показываем её явно и сохраняем выбранную.
+  const [model, setModel] = useState(initial?.model ?? DEFAULT_DEEPSEEK_MODEL);
   const [contextUnlimited, setContextUnlimited] = useState(initial?.contextUnlimited ?? false);
   const [contextSize, setContextSize] = useState<string | number>(initial?.contextSize ?? "");
   const [maxTokens, setMaxTokens] = useState<string | number>(initial?.maxTokens ?? "");
@@ -59,13 +60,14 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
 
     // Сэмплинг: выключенный тумблер → null (параметр не уйдёт в запрос).
     const samplingPayload = {} as Pick<PresetInput, SamplingKey>;
-    for (const spec of SAMPLING_SPECS) {
+    for (const spec of Object.values(SAMPLING_SPECS)) {
       const field = sampling[spec.key];
       samplingPayload[spec.key] = field.enabled ? field.value : null;
     }
 
     onSubmit({
       name: name.trim(),
+      model,
       contextUnlimited,
       // при «неограниченном» размер контекста не нужен
       contextSize: contextUnlimited ? null : toPositiveInt(contextSize),
@@ -91,13 +93,16 @@ export function PresetForm({ initial, submitting, onSubmit, onDelete }: PresetFo
         onMaxTokens={setMaxTokens}
         onStreaming={setStreaming}
       />
-      <ReasoningSection
+      <ModelResponseSection
+        model={model}
         requestReasoning={requestReasoning}
         reasoningEffort={reasoningEffort}
+        sampling={sampling}
+        onModel={setModel}
         onRequestReasoning={setRequestReasoning}
         onReasoningEffort={setReasoningEffort}
+        onSampling={updateSampling}
       />
-      <SamplingSection state={sampling} onChange={updateSampling} />
 
       <Stack gap="sm">
         <Button fullWidth disabled={!canSubmit} loading={submitting} onClick={handleSubmit}>

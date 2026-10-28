@@ -323,6 +323,20 @@
       "when": 1791852194995,
       "tag": "0045_magical_shen",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1793171203433,
+      "tag": "0046_preset_model",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1793171231808,
+      "tag": "0047_deepseek_only_presets",
+      "breakpoints": true
     }
   ]
 }

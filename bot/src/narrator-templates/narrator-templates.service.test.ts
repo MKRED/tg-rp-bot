@@ -29,7 +29,7 @@ const input = {
   leadingUserMarker: "B",
   promptOrder: order.map((item) => ({ ...item })),
   mergeSystemPrompts: false,
-  translationReasoningEffort: "medium" as const,
+  translationReasoningEffort: "high" as const,
   translatePerParagraph: false,
 };
 

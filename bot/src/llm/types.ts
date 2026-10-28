@@ -58,19 +58,12 @@ export interface ChatCompletionOptions {
   tools?: ToolDefinition[];
   /** "required" — модель обязана вызвать любой из tools; объект — обязана вызвать именно эту функцию. */
   toolChoice?: "auto" | "none" | "required" | { type: "function"; function: { name: string } };
-  /** Переопределить модель из конфига для конкретного вызова. */
+  /** Модель DeepSeek для вызова (из пресета); не задана — DEFAULT_DEEPSEEK_MODEL. */
   model?: string;
-  // Базовые
+  // Сэмплинг — только то, что применяет DeepSeek.
   temperature?: number;
   maxTokens?: number;
-  // Расширенные параметры сэмплинга
   topP?: number;
-  topK?: number;
-  frequencyPenalty?: number;
-  presencePenalty?: number;
-  repetitionPenalty?: number;
-  minP?: number;
-  topA?: number;
   // Reasoning («мышление»). Применяется провайдеро-специфично (для DeepSeek — thinking-режим).
   requestReasoning?: boolean;
   reasoningEffort?: string | null;

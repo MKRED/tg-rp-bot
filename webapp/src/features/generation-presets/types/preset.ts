@@ -2,17 +2,13 @@
 import type { PresetInput, ReasoningEffort } from "@tg-rp-bot/shared";
 
 export type { PresetInput, PresetListItem, ReasoningEffort } from "@tg-rp-bot/shared";
-export { MAX_PRESETS_PER_USER, REASONING_EFFORTS } from "@tg-rp-bot/shared";
+export { DEFAULT_DEEPSEEK_MODEL, MAX_PRESETS_PER_USER, REASONING_EFFORTS } from "@tg-rp-bot/shared";
 
-/** Человекочитаемые подписи уровней рассуждения. */
+/** Подписи уровней (глубины) рассуждения — короткие: идут в SegmentedControl на три кнопки. */
 export const REASONING_EFFORT_LABELS: Record<ReasoningEffort, string> = {
-  minimal: "Минимальное",
-  low: "Низкое",
-  medium: "Среднее",
-  high: "Высокое",
-  xhigh: "Очень высокое",
-  max: "Максимальное",
-  ultra: "Ультра",
+  low: "Низкая",
+  high: "Высокая",
+  max: "Макс.",
 };
 
 /** Полный пресет, как его отдаёт сервер (GET /presets/:id). */

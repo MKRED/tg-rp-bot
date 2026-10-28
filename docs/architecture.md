@@ -42,7 +42,7 @@ bot/src/
                   ask_user) / ask-user-tool / tool-context (контекст инструментов блока — ответы ask_user,
                   дополнения пользователя к ним и результаты web_search хранятся на категории, реплеятся в промпт этого и следующих блоков,
                   сбрасываются «Перегенерировать»; там же подсчёт его веса в токенах для экрана)
-  settings/     — /api/settings (всё в строке user_settings): llm/ (ключ/модель DeepSeek, BYOK, шифруется
+  settings/     — /api/settings (всё в строке user_settings): llm/ (ключ DeepSeek, BYOK, шифруется
                   ключом пользователя; verify — /models, баланс), tavily/ (ключ Tavily + лимит раундов поиска; verify — TavilyService),
                   translate/ (режим перевода PromptEditorOverlay) — у каждой controller/service/repository;
                   dto/ (снисходительные PATCH: невалидное поле игнорируется), key-format.ts (400
@@ -108,8 +108,8 @@ bot/src/
   logger.ts     — pino logger (daily rolling, pino-pretty in TTY)
   db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + index.ts
                   (клиент — только через DatabaseService; репозитории доменных модулей берут schema)
-  llm/          — LlmModule: LlmService.complete (ключ/модель пользователя из settings/llm на
-                  каждый вызов, без ключа — MissingApiKeyError) + чистый клиент (client/request/
+  llm/          — LlmModule: LlmService.complete (ключ пользователя из settings/llm на каждый
+                  вызов, модель — из пресета; без ключа — MissingApiKeyError) + чистый клиент (client/request/
                   errors/types/constants/completionGuard/providers/deepseekModels) — серверно;
                   единственный провайдер — DeepSeek;
                   debugCapture (+debug.types, debugSettings — кламп настроек) — in-memory перехват RAW-запросов
@@ -187,7 +187,7 @@ webapp/src/
   features/     — доменные модули (по подпапкам-категориям + barrel index.ts):
                   characters/ personas/ cards/ (черновики «Мастерской», с выгрузкой в персонажа/персону)
                   generation-presets/ rp-templates/ rp-chat/ narrator/
-                  knowledge-books/ narrator-templates/ debug/ llm-settings/ (per-user ключ/модель
+                  knowledge-books/ narrator-templates/ debug/ llm-settings/ (per-user ключ
                   DeepSeek, BYOK, экран /settings) tavily-settings/ (per-user ключ Tavily + квота,
                   BYOK, экран /settings) auth/ (AuthGate внутри роутера над маршрутами: в Telegram — сразу
                   приложение, в браузере — сессия или редирект на /login?from=…; useAuth — способ входа и сессия)

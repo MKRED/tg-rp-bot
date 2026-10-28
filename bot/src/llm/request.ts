@@ -19,12 +19,6 @@ export function buildBody(
     ...(options.temperature !== undefined && { temperature: options.temperature }),
     ...(options.maxTokens !== undefined && { max_tokens: options.maxTokens }),
     ...(options.topP !== undefined && { top_p: options.topP }),
-    ...(options.topK !== undefined && { top_k: options.topK }),
-    ...(options.frequencyPenalty !== undefined && { frequency_penalty: options.frequencyPenalty }),
-    ...(options.presencePenalty !== undefined && { presence_penalty: options.presencePenalty }),
-    ...(options.repetitionPenalty !== undefined && { repetition_penalty: options.repetitionPenalty }),
-    ...(options.minP !== undefined && { min_p: options.minP }),
-    ...(options.topA !== undefined && { top_a: options.topA }),
     ...(options.tools !== undefined && { tools: options.tools }),
     ...(options.toolChoice !== undefined && { tool_choice: options.toolChoice }),
     // Reasoning подключается провайдеро-специфично (для DeepSeek — thinking-режим).

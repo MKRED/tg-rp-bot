@@ -100,9 +100,6 @@ export const userSettings = pgTable("user_settings", {
   // Персональный ключ DeepSeek (BYOK — общего ключа из env больше нет). Зашифрован encryptField
   // (см. utils/crypto.ts), NULL = ключ не задан → генерация падает с MissingApiKeyError.
   deepseekApiKey: text("deepseek_api_key"),
-  // Id модели DeepSeek (из GET /models), выбранной пользователем. NULL → используется
-  // DEFAULT_DEEPSEEK_MODEL (см. llm/constants.ts), если ключ уже задан.
-  deepseekModel: text("deepseek_model"),
   // Персональный ключ Tavily (веб-поиск, BYOK). Зашифрован encryptField (см. utils/crypto.ts),
   // NULL = ключ не задан. Квота не кэшируется в БД — запрашивается у Tavily "на лету" (GET /usage).
   tavilyApiKey: text("tavily_api_key"),
@@ -273,6 +270,8 @@ export const generationPresets = pgTable("generation_presets", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
+  // Id модели DeepSeek (из GET /models). NULL → DEFAULT_DEEPSEEK_MODEL (см. llm/constants.ts).
+  model: text("model"),
 
   // Лимиты токенов (не сэмплинг). contextUnlimited скрывает contextSize в UI.
   contextUnlimited: boolean("context_unlimited").notNull().default(false),
@@ -280,17 +279,11 @@ export const generationPresets = pgTable("generation_presets", {
   maxTokens: integer("max_tokens"),
   streaming: boolean("streaming").notNull().default(false),
 
-  // Параметры сэмплинга — nullable (null = не передавать).
+  // Параметры сэмплинга — nullable (null = не передавать). Только те, что применяет DeepSeek.
   temperature: real("temperature"),
   topP: real("top_p"),
-  topK: integer("top_k"),
-  frequencyPenalty: real("frequency_penalty"),
-  presencePenalty: real("presence_penalty"),
-  repetitionPenalty: real("repetition_penalty"),
-  minP: real("min_p"),
-  topA: real("top_a"),
 
-  // Рассуждение (reasoning). effort: minimal | low | medium | high | xhigh | max | ultra (или null).
+  // Рассуждение (reasoning). effort: low | high | max (или null).
   requestReasoning: boolean("request_reasoning").notNull().default(false),
   reasoningEffort: text("reasoning_effort").$type<ReasoningEffort>(),
 
@@ -579,8 +572,8 @@ export const narratorTemplates = pgTable("narrator_templates", {
   // system-сообщение, обернув каждый блок в <componentId>…</componentId> — см. storyPromptBuilder.
   mergeSystemPrompts: boolean("merge_system_prompts").notNull().default(false),
   // Рассуждение для ИИ-перевода, независимо от пресета: "off" = отключено; иначе — уровень effort
-  // (minimal|low|medium|high|xhigh|max|ultra). Обязательное поле, дефолт "medium" — см. resolveTranslationReasoning.
-  translationReasoningEffort: text("translation_reasoning_effort").$type<TranslationReasoningLevel>().notNull().default("medium"),
+  // (low|high|max). Обязательное поле, дефолт "high" — см. resolveTranslationReasoning.
+  translationReasoningEffort: text("translation_reasoning_effort").$type<TranslationReasoningLevel>().notNull().default("high"),
   // Перевод по абзацам: делит текст на абзацы (2+ переноса строки) и переводит каждый отдельным
   // запросом к LLM параллельно (см. translateParagraphs.ts) — при включённом мышлении (thinking)
   // модель иначе думает непропорционально долго на большом тексте целиком, а мышление отключать

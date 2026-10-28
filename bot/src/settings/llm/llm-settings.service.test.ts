@@ -12,12 +12,12 @@ const { LlmSettingsService } = await import("./llm-settings.service.js");
 const { LlmHttpError } = await import("../../llm/errors.js");
 type Repo = ConstructorParameters<typeof LlmSettingsService>[0];
 
-const SAVED = { apiKey: "sk-saved", model: null };
-function setup(creds: { apiKey: string; model: string | null } | null = SAVED) {
+const SAVED = "sk-saved";
+function setup(creds: string | null = SAVED) {
   const repo = {
     getStatus: vi.fn(),
-    getDecryptedCredentials: vi.fn().mockResolvedValue(creds),
-    upsert: vi.fn().mockResolvedValue({ hasKey: true, last4: "1234", model: null }),
+    getDecryptedApiKey: vi.fn().mockResolvedValue(creds),
+    upsert: vi.fn().mockResolvedValue({ hasKey: true, last4: "1234" }),
   };
   return { service: new LlmSettingsService(repo as unknown as Repo), repo };
 }
@@ -37,7 +37,7 @@ describe("LlmSettingsService.verify", () => {
     const { service, repo } = setup();
     await expect(service.verify(1, "sk-typed")).resolves.toEqual({ ok: true, models: ["m1", "m2"] });
     expect(listDeepSeekModels).toHaveBeenCalledWith("sk-typed");
-    expect(repo.getDecryptedCredentials).not.toHaveBeenCalled();
+    expect(repo.getDecryptedApiKey).not.toHaveBeenCalled();
   });
 
   it("без введённого — реверификация сохранённого", async () => {
@@ -83,7 +83,7 @@ describe("LlmSettingsService.balance", () => {
 describe("LlmSettingsService.update", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it.each([{ model: "m" }, { apiKey: null }, { apiKey: "sk-new", model: "m" }])("патч %j сохраняется как есть", async (patch) => {
+  it.each([{ apiKey: null }, { apiKey: "sk-new" }])("патч %j сохраняется как есть", async (patch) => {
     const { service, repo } = setup();
     await service.update(1, patch);
     expect(repo.upsert).toHaveBeenCalledWith(1, patch);

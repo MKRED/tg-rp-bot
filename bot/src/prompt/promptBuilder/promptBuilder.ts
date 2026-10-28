@@ -232,20 +232,15 @@ export function renderImpersonateMessages(opts: ImpersonateOptions): ChatMessage
 }
 
 /**
- * Маппит поля пресета в ChatCompletionOptions (сэмплинг-параметры).
+ * Маппит поля пресета в ChatCompletionOptions (модель, сэмплинг, рассуждение).
  * null-значения пропускаются — провайдер применяет свои дефолты.
  */
 export function presetToCompletionOptions(preset: GenerationPreset) {
   return {
+    model: preset.model ?? undefined,
     temperature: preset.temperature ?? undefined,
     maxTokens: preset.maxTokens ?? undefined,
     topP: preset.topP ?? undefined,
-    topK: preset.topK ?? undefined,
-    frequencyPenalty: preset.frequencyPenalty ?? undefined,
-    presencePenalty: preset.presencePenalty ?? undefined,
-    repetitionPenalty: preset.repetitionPenalty ?? undefined,
-    minP: preset.minP ?? undefined,
-    topA: preset.topA ?? undefined,
     // Reasoning («мышление»): применяется провайдеро-специфично (для DeepSeek — thinking-режим).
     requestReasoning: preset.requestReasoning,
     reasoningEffort: preset.reasoningEffort ?? undefined,

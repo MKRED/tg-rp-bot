@@ -9,7 +9,9 @@ import type { PresetListItem } from "../types/preset";
 export function presetSummary(p: PresetListItem): string {
   const parts: string[] = [];
 
-  // Температура — самый «говорящий» параметр пресета.
+  if (p.model) parts.push(p.model);
+
+  // Температура — самый «говорящий» параметр сэмплинга.
   if (p.temperature !== null) parts.push(`темп. ${p.temperature.toFixed(2)}`);
 
   // Контекст: безлимит важнее конкретного размера; иначе показываем размер, если задан.
@@ -21,7 +23,7 @@ export function presetSummary(p: PresetListItem): string {
 
   // Рассуждение показываем, только если оно запрошено и выбран уровень.
   if (p.requestReasoning && p.reasoningEffort) {
-    parts.push(`рассужд. ${REASONING_EFFORT_LABELS[p.reasoningEffort].toLowerCase()}`);
+    parts.push(`рассуждение (${REASONING_EFFORT_LABELS[p.reasoningEffort].toLowerCase()})`);
   }
 
   // Пустая конфигурация (всё по умолчанию провайдера) — нейтральная подпись вместо пустоты.

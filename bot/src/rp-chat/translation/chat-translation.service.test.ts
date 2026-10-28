@@ -71,7 +71,7 @@ describe("ChatTranslationService.translateMessage", () => {
   it("метод ai — промпт перевода из RP-шаблона, эффорт из пресета", async () => {
     const { service } = setup("ai");
     await expect(service.translateMessage(1, 5, 9, { targetLang: "en" })).resolves.toBe("AI");
-    expect(engine.aiTranslate).toHaveBeenCalledWith(LLM, "PROMPT", "Текст", "lang:en", 1, true, "high");
+    expect(engine.aiTranslate).toHaveBeenCalledWith(LLM, "PROMPT", "Текст", "lang:en", 1, true, "high", undefined);
   });
 
   it("нет ключа DeepSeek — 400 no_api_key с подсказкой; прочий сбой — 500", async () => {

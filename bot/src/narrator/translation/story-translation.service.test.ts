@@ -29,6 +29,7 @@ function setup(translations: Record<string, string> | null = null, translateMeth
     settings as unknown as A[2],
     templates as unknown as A[3],
     LLM as unknown as A[4],
+    { findOne: vi.fn().mockResolvedValue(undefined) } as unknown as A[5],
   );
   return { service, messages, templates };
 }

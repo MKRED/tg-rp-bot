@@ -2,18 +2,12 @@ import { describe, expect, it } from "vitest";
 import { buildDeepSeekProvider, mapEffort } from "./providers.js";
 
 describe("mapEffort", () => {
-  it("minimal/low → low", () => {
-    for (const e of ["minimal", "low"]) expect(mapEffort(e)).toBe("low");
+  it("low/high/max проходят как есть", () => {
+    for (const e of ["low", "high", "max"] as const) expect(mapEffort(e)).toBe(e);
   });
 
-  it("medium/high/xhigh и пустое значение → high (как compat-маппинг DeepSeek)", () => {
-    for (const e of ["medium", "high", "xhigh", undefined, null]) {
-      expect(mapEffort(e)).toBe("high");
-    }
-  });
-
-  it("max/ultra → max", () => {
-    for (const e of ["max", "ultra"]) expect(mapEffort(e)).toBe("max");
+  it("неизвестное и пустое значение → high (дефолт API)", () => {
+    for (const e of ["medium", "ultra", "", undefined, null]) expect(mapEffort(e)).toBe("high");
   });
 });
 
@@ -40,7 +34,7 @@ describe("buildDeepSeekProvider", () => {
       messages: [],
       userId: 1,
       requestReasoning: true,
-      reasoningEffort: "ultra",
+      reasoningEffort: "max",
     });
     expect(body).toEqual({ thinking: { type: "enabled" }, reasoning_effort: "max" });
   });

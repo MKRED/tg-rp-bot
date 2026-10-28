@@ -6,23 +6,12 @@ import type { ChatCompletionOptions } from "./types.js";
 export type { LlmProvider, LlmProviderName } from "./providers.types.js";
 
 /**
- * Схлопывает провайдеро-независимый enum пресета (minimal|low|medium|high|xhigh|max|ultra) в
- * значения DeepSeek reasoning_effort (low|high|max). Таблица повторяет официальный
- * compat-маппинг DeepSeek (guides/thinking_mode): xhigh там → high, а max — только max/ultra.
- * Маппим сами, а не шлём сырую строку: так тело запроса не зависит от того, примет ли API
- * алиас (раньше на неизвестных уровнях DeepSeek отвечал 422). Пустое значение → high (дефолт API).
+ * Уровень рассуждения → DeepSeek reasoning_effort (low|high|max). Уровни пресета уже совпадают с
+ * DeepSeek, но строку из БД не шлём как есть: на неизвестных значениях DeepSeek отвечает 422, поэтому
+ * всё непредусмотренное (и пустое значение) → high, дефолт API.
  */
 export function mapEffort(effort?: string | null): "low" | "high" | "max" {
-  switch (effort) {
-    case "minimal":
-    case "low":
-      return "low";
-    case "max":
-    case "ultra":
-      return "max";
-    default:
-      return "high";
-  }
+  return effort === "low" || effort === "max" ? effort : "high";
 }
 
 /** Поля thinking-режима DeepSeek. У v4-моделей thinking включён по умолчанию — выключаем явно. */

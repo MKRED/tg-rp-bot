@@ -43,13 +43,9 @@ export const NARRATOR_PROMPT_COMPONENT_SOURCES: Record<StoryPromptComponentId, s
 /** Подписи уровней рассуждения перевода. */
 export const TRANSLATION_REASONING_LABELS: Record<TranslationReasoningLevel, string> = {
   off: "Отключено",
-  minimal: "Минимальное",
   low: "Низкое",
-  medium: "Среднее",
   high: "Высокое",
-  xhigh: "Очень высокое",
   max: "Максимальное",
-  ultra: "Ультра",
 };
 
 export type NarratorTemplate = {

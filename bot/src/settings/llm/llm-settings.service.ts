@@ -9,7 +9,7 @@ import { LlmSettingsRepository } from "./llm-settings.repository.js";
 /** 401 от DeepSeek — сам ключ неверен (а не сбой сети/сервиса). */
 const isInvalidKey = (err: unknown) => err instanceof LlmHttpError && err.status === 401;
 
-/** Персональный ключ/модель DeepSeek (BYOK): статус, проверка ключа, баланс, сохранение. */
+/** Персональный ключ DeepSeek (BYOK): статус, проверка ключа (+ список моделей для пресетов), баланс, сохранение. */
 @Injectable()
 export class LlmSettingsService {
   constructor(private readonly settings: LlmSettingsRepository) {}
@@ -24,7 +24,7 @@ export class LlmSettingsService {
    * Нет ключа / неверный ключ — штатный исход ok:false (200), а не ошибка: тот же канал результата.
    */
   async verify(userId: string, typedKey: string): Promise<VerifyDeepSeekKeyResult> {
-    const apiKey = typedKey || (await this.settings.getDecryptedCredentials(userId))?.apiKey;
+    const apiKey = typedKey || (await this.settings.getDecryptedApiKey(userId));
     if (!apiKey) return { ok: false, error: "no_key" };
     try {
       return { ok: true, models: await listDeepSeekModels(apiKey) };
@@ -39,17 +39,17 @@ export class LlmSettingsService {
    * сохранённого ключа, баланс имеет смысл только для сохранённого.
    */
   async balance(userId: string): Promise<DeepSeekBalance> {
-    const creds = await this.settings.getDecryptedCredentials(userId);
-    if (!creds) throw new BadRequestException("no_key");
+    const apiKey = await this.settings.getDecryptedApiKey(userId);
+    if (!apiKey) throw new BadRequestException("no_key");
     try {
-      return await getDeepSeekBalance(creds.apiKey);
+      return await getDeepSeekBalance(apiKey);
     } catch (err) {
       if (isInvalidKey(err)) throw new BadRequestException("invalid_key");
       throw err;
     }
   }
 
-  /** Сохраняет ключ и/или модель. apiKey: null — удалить ключ (вместе с моделью). */
+  /** Сохраняет ключ. apiKey: null — удалить ключ. */
   update(userId: string, patch: LlmSettingsPatch): Promise<LlmSettingsStatus> {
     assertValidKeyFormat(patch.apiKey);
     return this.settings.upsert(userId, patch);

@@ -34,7 +34,8 @@ export function resolveTranslationReasoning(
  * Сэмплинг не передаём — параметры пресета настроены под RP и навредили бы переводу (см. вызов).
  * requestReasoning/reasoningEffort — резолвятся вызывающим кодом (см. resolveTranslationReasoning
  * для narrator, где шаблон форсирует уровень или отключает рассуждение; RP шлёт requestReasoning:true
- * всегда, эффорт — из пресета, там своего поля перевода для рассуждения нет).
+ * всегда, эффорт — из пресета, там своего поля перевода для рассуждения нет). model — модель пресета
+ * чата/истории; без пресета (перевод произвольного текста) — модель по умолчанию.
  */
 export async function aiTranslate(
   llm: ChatCompleter,
@@ -44,6 +45,7 @@ export async function aiTranslate(
   userId: string,
   requestReasoning: boolean,
   reasoningEffort?: string | null,
+  model?: string | null,
 ): Promise<string> {
   const t0 = Date.now();
   const template = systemPromptTemplate.trim() || DEFAULT_TRANSLATION_TEMPLATE;
@@ -59,6 +61,7 @@ export async function aiTranslate(
     debugLabel: "translate",
     requestReasoning,
     reasoningEffort: reasoningEffort ?? undefined,
+    model: model ?? undefined,
   });
 
   logger.info(

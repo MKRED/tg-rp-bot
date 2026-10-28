@@ -14,9 +14,9 @@ describe("resolveTranslationReasoning", () => {
   });
 
   it("конкретный уровень → форсирует рассуждение с этим эффортом", () => {
-    expect(resolveTranslationReasoning("minimal")).toEqual({
+    expect(resolveTranslationReasoning("low")).toEqual({
       requestReasoning: true,
-      reasoningEffort: "minimal",
+      reasoningEffort: "low",
     });
   });
 
@@ -27,17 +27,17 @@ describe("resolveTranslationReasoning", () => {
     });
   });
 
-  it("null (защитный кейс — шаблон не резолвился) → фолбэк на дефолт (medium)", () => {
+  it("null (защитный кейс — шаблон не резолвился) → фолбэк на дефолт (high)", () => {
     expect(resolveTranslationReasoning(null)).toEqual({
       requestReasoning: true,
-      reasoningEffort: "medium",
+      reasoningEffort: "high",
     });
   });
 
-  it("undefined → фолбэк на дефолт (medium)", () => {
+  it("undefined → фолбэк на дефолт (high)", () => {
     expect(resolveTranslationReasoning(undefined)).toEqual({
       requestReasoning: true,
-      reasoningEffort: "medium",
+      reasoningEffort: "high",
     });
   });
 });

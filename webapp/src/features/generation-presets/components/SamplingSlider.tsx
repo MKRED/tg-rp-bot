@@ -12,7 +12,7 @@ interface SamplingSliderProps {
   onEnabled: (enabled: boolean) => void;
 }
 
-/** Форматирование значения: целое для шага ≥1 (topK), иначе два знака. */
+/** Форматирование значения: целое для шага ≥1, иначе два знака. */
 function formatValue(value: number, step: number): string {
   return step >= 1 ? String(value) : value.toFixed(2);
 }

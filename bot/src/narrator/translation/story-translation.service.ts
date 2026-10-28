@@ -5,6 +5,7 @@ import { MissingApiKeyError } from "../../llm/errors.js";
 import { LlmService } from "../../llm/llm.service.js";
 import logger from "../../logger.js";
 import { NarratorTemplatesRepository } from "../../narrator-templates/narrator-templates.repository.js";
+import { PresetsRepository } from "../../presets/presets.repository.js";
 import { englishLangName, machineTranslate, resolveTranslationReasoning } from "../../translate/engine/index.js";
 import { StoryMessagesRepository } from "../messages/story-messages.repository.js";
 import { StorySettingsRepository } from "../settings/story-settings.repository.js";
@@ -15,7 +16,8 @@ import { aiTranslateStoryText } from "./ai-translate-story-text.js";
 /**
  * Перевод в истории: сообщения (с кэшем в БД) и эфемерный текст (черновик директивы). ИИ-режим:
  * промпт перевода и рассуждение — из narrator-шаблона истории (шаблон — управляющая поверхность
- * narrator), сэмплинг пресета НЕ переиспользуем: высокие temperature/penalties портят верность перевода.
+ * narrator), сэмплинг пресета НЕ переиспользуем: высокая temperature портит верность перевода. Модель —
+ * из пресета истории (выбор модели живёт в пресете).
  */
 @Injectable()
 export class StoryTranslationService {
@@ -25,6 +27,7 @@ export class StoryTranslationService {
     private readonly settings: StorySettingsRepository,
     private readonly templates: NarratorTemplatesRepository,
     private readonly llm: LlmService,
+    private readonly presets: PresetsRepository,
   ) {}
 
   /** Кэш есть и не force — отдаём его; иначе переводим методом из настроек истории и перезаписываем кэш. */
@@ -72,9 +75,12 @@ export class StoryTranslationService {
   }
 
   private async aiTranslate(userId: string, story: StoryRow, text: string, targetLang: string): Promise<string> {
-    const template = story.templateId ? ((await this.templates.findOne(userId, story.templateId)) ?? null) : null;
+    const [template, preset] = await Promise.all([
+      story.templateId ? this.templates.findOne(userId, story.templateId).then((t) => t ?? null) : null,
+      story.presetId ? this.presets.findOne(userId, story.presetId) : undefined,
+    ]);
     const reasoning = resolveTranslationReasoning(template?.translationReasoningEffort);
-    return aiTranslateStoryText(this.llm, text, englishLangName(targetLang), userId, template, reasoning);
+    return aiTranslateStoryText(this.llm, text, englishLangName(targetLang), userId, template, reasoning, preset?.model);
   }
 
   /** Нет ключа DeepSeek — штатное состояние (warn), прочее — авария (error). */

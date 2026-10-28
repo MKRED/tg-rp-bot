@@ -83,6 +83,7 @@ export class ChatTranslationService {
       userId,
       true,
       preset?.reasoningEffort,
+      preset?.model,
     );
   }
 

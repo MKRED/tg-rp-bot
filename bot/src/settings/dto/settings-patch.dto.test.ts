@@ -18,17 +18,14 @@ async function parse(metatype: ArgumentMetadata["metatype"], body: unknown): Pro
 describe("LlmSettingsPatchDto", () => {
   it.each([
     { body: {}, patch: {} },
-    { body: { model: "deepseek-chat" }, patch: { model: "deepseek-chat" } },
-    { body: { model: "  m  " }, patch: { model: "m" } },
-    { body: { model: "   " }, patch: {} },
-    { body: { model: 123 }, patch: {} },
     { body: { apiKey: null }, patch: { apiKey: null } },
     { body: { apiKey: "  sk-1  " }, patch: { apiKey: "sk-1" } },
     // Пустая строка остаётся строкой — её отклонит проверка формата в сервисе (400), как раньше.
     { body: { apiKey: "" }, patch: { apiKey: "" } },
     { body: { apiKey: 42 }, patch: {} },
-    { body: { apiKey: null, model: "m" }, patch: { apiKey: null, model: "m" } },
-    { body: { extra: 1, model: "m" }, patch: { model: "m" } },
+    // Модель больше не настройка пользователя (живёт в пресете) — поле отсекается как лишнее.
+    { body: { apiKey: null, model: "m" }, patch: { apiKey: null } },
+    { body: { extra: 1, model: "m" }, patch: {} },
   ])("$body → $patch", async ({ body, patch }) => {
     expect(await parse(LlmSettingsPatchDto, body)).toEqual(patch);
   });

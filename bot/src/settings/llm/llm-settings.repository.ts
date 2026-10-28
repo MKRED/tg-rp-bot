@@ -7,7 +7,7 @@ import logger from "../../logger.js";
 import { decryptField, encryptField } from "../../utils/crypto.js";
 import { UserKeysService } from "../../user-keys/user-keys.service.js";
 
-/** Колонки user_settings с персональным ключом и моделью DeepSeek (BYOK, см. llm/llm.service.ts). */
+/** Колонка user_settings с персональным ключом DeepSeek (BYOK, см. llm/llm.service.ts). */
 @Injectable()
 export class LlmSettingsRepository {
   constructor(
@@ -15,48 +15,33 @@ export class LlmSettingsRepository {
     private readonly keys: UserKeysService,
   ) {}
 
-  /** Статус ключа/модели для UI настроек — без расшифрованного ключа. */
+  /** Статус ключа для UI настроек — без расшифрованного ключа. */
   async getStatus(userId: string): Promise<LlmSettingsStatus> {
     const t0 = Date.now();
     const row = await this.findRow(userId);
     logger.debug({ durationMs: Date.now() - t0, userId, found: Boolean(row) }, "User LLM settings read");
-    if (!row?.apiKey) return { hasKey: false, last4: null, model: row?.model ?? null };
+    if (!row?.apiKey) return { hasKey: false, last4: null };
     const key = decryptField(row.apiKey, await this.keys.forUser(userId));
-    return { hasKey: true, last4: key.slice(-4), model: row.model };
+    return { hasKey: true, last4: key.slice(-4) };
   }
 
   /**
-   * Расшифрованный ключ + модель — для LlmService (один запрос на вызов LLM) и реверификации
-   * уже сохранённого ключа (verify без apiKey в теле). null — ключ не задан.
+   * Расшифрованный ключ — для LlmService (один запрос на вызов LLM) и реверификации уже
+   * сохранённого ключа (verify без apiKey в теле). null — ключ не задан.
    */
-  async getDecryptedCredentials(userId: string): Promise<{ apiKey: string; model: string | null } | null> {
+  async getDecryptedApiKey(userId: string): Promise<string | null> {
     const row = await this.findRow(userId);
     if (!row?.apiKey) return null;
-    return { apiKey: decryptField(row.apiKey, await this.keys.forUser(userId)), model: row.model };
+    return decryptField(row.apiKey, await this.keys.forUser(userId));
   }
 
-  /**
-   * Партиальный upsert: трогает только поля, реально пришедшие в patch (в отличие от debug-настроек
-   * в debug/debug.repository.ts, которые перезаписываются целиком под клампом) — полная перезапись здесь
-   * случайно затёрла бы ключ при смене одной модели.
-   */
+  /** Сохраняет или удаляет ключ (patch.apiKey: undefined — ничего не менять). */
   async upsert(userId: string, patch: LlmSettingsPatch): Promise<LlmSettingsStatus> {
     const t0 = Date.now();
-    const setFields: { deepseekApiKey?: string | null; deepseekModel?: string | null; updatedAt: Date } = {
-      updatedAt: new Date(),
-    };
-    // Порядок важен: model применяем ДО ветки удаления ключа, иначе комбинация { apiKey: null,
-    // model: "..." } оставила бы модель сохранённой без ключа, хотя удаление ключа сносит и её.
-    if (patch.model !== undefined) setFields.deepseekModel = patch.model;
+    const setFields: { deepseekApiKey?: string | null; updatedAt: Date } = { updatedAt: new Date() };
     if (patch.apiKey !== undefined) {
-      if (patch.apiKey === null) {
-        // Удаление ключа сносит и выбранную модель — иначе она висела бы без ключа, и LlmService
-        // ошибся бы о причине сбоя (нет ключа, а не модели).
-        setFields.deepseekApiKey = null;
-        setFields.deepseekModel = null;
-      } else {
-        setFields.deepseekApiKey = encryptField(patch.apiKey, await this.keys.forUser(userId));
-      }
+      setFields.deepseekApiKey =
+        patch.apiKey === null ? null : encryptField(patch.apiKey, await this.keys.forUser(userId));
     }
 
     await this.database.db
@@ -65,7 +50,7 @@ export class LlmSettingsRepository {
       .onConflictDoUpdate({ target: schema.userSettings.userId, set: setFields });
 
     logger.info(
-      { durationMs: Date.now() - t0, userId, keyChanged: patch.apiKey !== undefined, model: patch.model },
+      { durationMs: Date.now() - t0, userId, keyChanged: patch.apiKey !== undefined },
       "User LLM settings saved",
     );
     return this.getStatus(userId);
@@ -73,7 +58,7 @@ export class LlmSettingsRepository {
 
   private async findRow(userId: string) {
     const rows = await this.database.db
-      .select({ apiKey: schema.userSettings.deepseekApiKey, model: schema.userSettings.deepseekModel })
+      .select({ apiKey: schema.userSettings.deepseekApiKey })
       .from(schema.userSettings)
       .where(eq(schema.userSettings.userId, userId));
     return rows[0];

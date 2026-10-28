@@ -42,6 +42,12 @@ export class PresetInputDto implements PresetInput {
   @IsNotEmpty({ message: "Name is required" })
   name!: string;
 
+  /** Id модели DeepSeek; пустая строка/отсутствие — null (модель по умолчанию). */
+  @Transform(({ value }) => (typeof value === "string" && value.trim() ? value.trim() : null))
+  @IsOptional()
+  @IsString({ message: "Invalid model" })
+  model: string | null = null;
+
   @IsFlag()
   contextUnlimited = false;
 
@@ -59,24 +65,6 @@ export class PresetInputDto implements PresetInput {
 
   @IsSampling("topP")
   topP: number | null = null;
-
-  @IsSampling("topK")
-  topK: number | null = null;
-
-  @IsSampling("frequencyPenalty")
-  frequencyPenalty: number | null = null;
-
-  @IsSampling("presencePenalty")
-  presencePenalty: number | null = null;
-
-  @IsSampling("repetitionPenalty")
-  repetitionPenalty: number | null = null;
-
-  @IsSampling("minP")
-  minP: number | null = null;
-
-  @IsSampling("topA")
-  topA: number | null = null;
 
   @IsFlag()
   requestReasoning = false;

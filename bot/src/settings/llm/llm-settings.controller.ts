@@ -4,8 +4,8 @@ import { LlmSettingsPatchDto, VerifyKeyDto } from "../dto/settings-patch.dto.js"
 import { LlmSettingsService } from "./llm-settings.service.js";
 
 /**
- * /api/settings/llm — персональные ключ/модель DeepSeek (BYOK). Сам ключ никогда не отдаётся —
- * только статус (hasKey, last4, model). Форма ответов — контракт webapp, сохранён с Hono-версии.
+ * /api/settings/llm — персональный ключ DeepSeek (BYOK). Сам ключ никогда не отдаётся —
+ * только статус (hasKey, last4). verify отдаёт и список моделей — его берёт форма пресета. Форма ответов — контракт webapp, сохранён с Hono-версии.
  */
 @Controller("settings/llm")
 export class LlmSettingsController {

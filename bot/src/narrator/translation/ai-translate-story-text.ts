@@ -27,6 +27,7 @@ export async function aiTranslateStoryText(
   userId: string,
   template: NarratorTemplate | null,
   reasoning: { requestReasoning: boolean; reasoningEffort?: string },
+  model?: string | null,
 ): Promise<string> {
   const perParagraph = template?.translatePerParagraph ?? false;
 
@@ -51,6 +52,7 @@ export async function aiTranslateStoryText(
           userId,
           reasoning.requestReasoning,
           reasoning.reasoningEffort,
+          model,
         ),
       2,
       1500,

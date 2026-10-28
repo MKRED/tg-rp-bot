@@ -6,6 +6,7 @@ import type { PresetListItem } from "../types/preset";
 const base: PresetListItem = {
   id: 1,
   name: "test",
+  model: null,
   temperature: null,
   contextUnlimited: false,
   contextSize: null,
@@ -37,7 +38,13 @@ describe("presetSummary", () => {
       "Параметры по умолчанию",
     );
     expect(presetSummary({ ...base, requestReasoning: true, reasoningEffort: "high" })).toBe(
-      "рассужд. высокое",
+      "рассуждение (высокая)",
+    );
+  });
+
+  it("модель идёт первой", () => {
+    expect(presetSummary({ ...base, model: "deepseek-v4-pro", temperature: 0.7 })).toBe(
+      "deepseek-v4-pro · темп. 0.70",
     );
   });
 

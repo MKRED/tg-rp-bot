@@ -1,4 +1,4 @@
-// Контракт /api/settings — персональные настройки пользователя: ключ/модель DeepSeek и ключ Tavily
+// Контракт /api/settings — персональные настройки пользователя: ключ DeepSeek и ключ Tavily
 // (BYOK — сами ключи сервер никогда не отдаёт), настройки режима перевода PromptEditorOverlay.
 import { TRANSLATION_REASONING_LEVELS } from "./narrator-templates.js";
 
@@ -11,13 +11,11 @@ export interface LlmSettingsStatus {
   hasKey: boolean;
   /** Последние 4 символа ключа — для UI ("ключ сохранён, оканчивается на …ab12"), сам ключ не отдаём. */
   last4: string | null;
-  model: string | null;
 }
 
 export interface LlmSettingsPatch {
-  /** undefined — не трогать сохранённый ключ; null — удалить (вместе с моделью); string — задать новый. */
+  /** undefined — не трогать сохранённый ключ; null — удалить; string — задать новый. */
   apiKey?: string | null;
-  model?: string;
 }
 
 export interface VerifyDeepSeekKeyResult {

@@ -40,7 +40,7 @@ export const TRANSLATION_REASONING_LEVELS = ["off", ...REASONING_EFFORTS] as con
 export type TranslationReasoningLevel = (typeof TRANSLATION_REASONING_LEVELS)[number];
 
 /** Дефолт narrator_templates.translation_reasoning_effort (колонка обязательна). */
-export const DEFAULT_TRANSLATION_REASONING_EFFORT: TranslationReasoningLevel = "medium";
+export const DEFAULT_TRANSLATION_REASONING_EFFORT: TranslationReasoningLevel = "high";
 
 /** Тело формы создания/правки (POST/PUT): тексты промптов, маркеры сборки, порядок и флаги. */
 export interface NarratorTemplateInput {

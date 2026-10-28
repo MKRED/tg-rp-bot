@@ -11,18 +11,13 @@ type Repo = ConstructorParameters<typeof PresetsService>[0];
 
 const input = {
   name: "A",
+  model: null,
   contextUnlimited: false,
   contextSize: null,
   maxTokens: null,
   streaming: false,
   temperature: null,
   topP: null,
-  topK: null,
-  frequencyPenalty: null,
-  presencePenalty: null,
-  repetitionPenalty: null,
-  minP: null,
-  topA: null,
   requestReasoning: false,
   reasoningEffort: null,
 };
