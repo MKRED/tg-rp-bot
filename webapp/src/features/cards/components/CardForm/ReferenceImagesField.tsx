@@ -60,7 +60,9 @@ export function ReferenceImagesField({ images, onChange }: ReferenceImagesFieldP
   };
 
   return (
+    // size="md" — подпись того же размера, что у соседних полей формы (PickerField, PromptEditorField).
     <Input.Wrapper
+      size="md"
       label="Референсы внешности"
       description={`До ${MAX_CARD_REFERENCE_IMAGES} картинок — ИИ посмотрит на них при генерации каждого блока`}
     >
