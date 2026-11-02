@@ -38,6 +38,17 @@ export interface WebSearchRecord {
 }
 
 /**
+ * Поле структуры без сгенерированного текста — общая часть категории карточки и поля шаблона
+ * карточки (см. card-templates.ts): название, пример формата для ИИ, включено ли в генерацию.
+ */
+export interface CardField {
+  id: string;
+  title: string;
+  description: string;
+  enabled: boolean;
+}
+
+/**
  * Категория карточки (cards.categories) — редактируемый пользователем блок структуры (например
  * "Base", "Body"): title/description — то, что ИИ видит как заголовок и пример формата (собирается
  * в <example>…</example>), content — сгенерированный/отредактированный текст блока (пусто = ещё не
@@ -54,12 +65,8 @@ export interface WebSearchRecord {
  * toolContextTokens — сколько токенов этот контекст (ответы + поиски блока) занимает в промпте:
  * точный подсчёт сервера на выдаче карточки, в БД не хранится.
  */
-export interface CardCategory {
-  id: string;
-  title: string;
-  description: string;
+export interface CardCategory extends CardField {
   content: string;
-  enabled: boolean;
   pendingQuestions?: AskUserQuestion[];
   askUserAnswers?: AskUserAnswer[];
   webSearches?: WebSearchRecord[];

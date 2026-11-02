@@ -36,13 +36,16 @@ bot/src/
                   sse-observable (async-функция → Observable для Nest @Sse; отписка клиента генерацию не
                   прерывает), stream-completion (streamCompletion/writeGenerationError — LLM-генерация в SSE-события
                   token/reset/error через интерфейс SseSink)
-  characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ — доменные модули Nest: controller / service / repository (бывший DAO) / dto/;
+  characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ card-templates/ — доменные модули Nest: controller / service / repository (бывший DAO) / dto/;
                   у cards/ ещё card-lock.ts (лок карточки, общий для PUT и генерации) и generation/ — поблочная
                   генерация: card-generation.service (Nest-сервис) + prompt-assembly (в т.ч. картинки-референсы карточки
                   в первом user-сообщении, см. docs/llm.md «Картинки») / tool-loop (web_search +
                   ask_user) / ask-user-tool / tool-context (контекст инструментов блока — ответы ask_user,
                   дополнения пользователя к ним и результаты web_search хранятся на категории, реплеятся в промпт этого и следующих блоков,
-                  сбрасываются «Перегенерировать»; там же подсчёт его веса в токенах для экрана)
+                  сбрасываются «Перегенерировать»; там же подсчёт его веса в токенах для экрана);
+                  card-templates/ — /api/card-templates: шаблоны карточек (системный промпт, поля, тумблеры
+                  инструментов). Связи с карточками нет — webapp копирует шаблон в карточку при выборе;
+                  валидация полей и шифрование общие с cards/ (dto/card-categories.ts, card-crypto.ts)
   settings/     — /api/settings (всё в строке user_settings): llm/ (ключ DeepSeek, BYOK, шифруется
                   ключом пользователя; verify — /models, баланс), tavily/ (ключ Tavily + лимит раундов поиска; verify — TavilyService),
                   translate/ (режим перевода PromptEditorOverlay) — у каждой controller/service/repository;
@@ -134,7 +137,7 @@ bot/src/
 
 ## Шифрование данных пользователя
 
-Тексты пользователя (промпты персонажей и персон, карточки, записи книг, сообщения и их переводы,
+Тексты пользователя (промпты персонажей и персон, карточки и их шаблоны, записи книг, сообщения и их переводы,
 истории, пересказы, ключи DeepSeek/Tavily) хранятся зашифрованными AES-256-GCM (`utils/crypto.ts`):
 - **мастер-ключ** = HKDF(`ENCRYPTION_KEY` из env, соль в коде) — для расшифровки нужны оба;
 - **ключ пользователя** — 32 случайных байта, хранится в `users.data_key` зашифрованным мастер-ключом
@@ -182,11 +185,13 @@ webapp/src/
   main.tsx      — точка входа: initTelegram() + рендер <App/>
   init.ts       — инициализация @telegram-apps SDK (защищённая) + initData.restore()
   app/          — оболочка: App.tsx (ThemeProvider + MantineProvider + HashRouter), routes.ts, BackButtonBridge, deepLink.ts
-  pages/        — экраны-маршруты (один на маршрут): home/ characters/ personas/ cards/
+  pages/        — экраны-маршруты (один на маршрут): home/ characters/ personas/ cards/ card-templates/
                   generation-presets/ rp-templates/ rp-chat/ narrator/ knowledge-books/
                   narrator-templates/ debug/
   features/     — доменные модули (по подпапкам-категориям + barrel index.ts):
-                  characters/ personas/ cards/ (черновики «Мастерской», с выгрузкой в персонажа/персону)
+                  characters/ personas/ cards/ (черновики «Мастерской», с выгрузкой в персонажа/персону;
+                  там же шаблоны карточек — форма, выбор/смена шаблона в карточке, «Сохранить как шаблон» —
+                  и общий редактор полей FieldsEditor)
                   generation-presets/ rp-templates/ rp-chat/ narrator/
                   knowledge-books/ narrator-templates/ debug/ llm-settings/ (per-user ключ
                   DeepSeek, BYOK, экран /settings) tavily-settings/ (per-user ключ Tavily + квота,

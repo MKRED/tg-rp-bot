@@ -6,7 +6,7 @@ import { IsCardCategories } from "./card-categories.js";
 import { IsReferenceImages } from "./reference-images.js";
 
 /** Текст промпта: необязателен, не-строка (или отсутствие) — пустая строка, не ошибка. */
-function IsPromptText(): PropertyDecorator {
+export function IsPromptText(): PropertyDecorator {
   return applyDecorators(
     Transform(({ value }: { value: unknown }) => (typeof value === "string" ? value : "")),
     IsString(),
@@ -14,7 +14,7 @@ function IsPromptText(): PropertyDecorator {
 }
 
 /** Флаг: только литерал true включает его, любое другое значение (или отсутствие) — false, не ошибка. */
-function IsFlag(): PropertyDecorator {
+export function IsFlag(): PropertyDecorator {
   return applyDecorators(
     Transform(({ value }: { value: unknown }) => value === true),
     IsBoolean(),

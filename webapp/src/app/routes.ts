@@ -43,6 +43,12 @@ export const ROUTES = {
   cardEdit: "/cards/:id",
   /** Экран выгрузки карточки в персонажа/персону — доступен только для уже сохранённой карточки. */
   cardExport: "/cards/:id/export",
+  /** Список шаблонов карточек «Мастерской». */
+  cardTemplates: "/card-templates",
+  /** Форма создания нового шаблона карточки. */
+  cardTemplateNew: "/card-templates/new",
+  /** Форма редактирования шаблона карточки по id (статический `new` приоритетнее `:id`). */
+  cardTemplateEdit: "/card-templates/:id",
 
   // ─── Narrator-режим («Режиссёр истории») ───────────────────────────────────
   /** Хаб историй: все истории (бесконечный скролл) + кнопка «Новая история». */
@@ -132,6 +138,9 @@ export const personaEditPath = (id: number): string => `/personas/${id}`;
 /** Путь к редактированию конкретной карточки. */
 export const cardEditPath = (id: number): string => `/cards/${id}`;
 
+/** Путь к редактированию шаблона карточки. */
+export const cardTemplateEditPath = (id: number): string => `/card-templates/${id}`;
+
 /** Путь к экрану выгрузки конкретной карточки. */
 export const cardExportPath = (id: number): string => `/cards/${id}/export`;
 
@@ -171,6 +180,7 @@ export function parentPath(pathname: string): string {
   if (pathname.startsWith("/books/")) return ROUTES.books;
   if (pathname.startsWith("/narrator-templates/")) return ROUTES.narratorTemplates;
   if (pathname.startsWith("/rp-templates/")) return ROUTES.rpTemplates;
+  if (pathname.startsWith("/card-templates/")) return ROUTES.cardTemplates;
   if (pathname.startsWith("/debug/")) return ROUTES.home;
   return ROUTES.home;
 }

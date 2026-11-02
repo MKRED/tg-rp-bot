@@ -52,6 +52,12 @@ const CardExportPage = lazy(() =>
     default: m.CardExportPage,
   }))
 );
+const CardTemplatesListPage = lazy(() =>
+  import("../pages/card-templates/CardTemplatesListPage").then((m) => ({ default: m.CardTemplatesListPage }))
+);
+const CardTemplateEditPage = lazy(() =>
+  import("../pages/card-templates/CardTemplateEditPage").then((m) => ({ default: m.CardTemplateEditPage }))
+);
 const RpChatsPage = lazy(() =>
   import("../pages/rp-chat/RpChatsPage").then((m) => ({ default: m.RpChatsPage }))
 );
@@ -148,6 +154,9 @@ export function AnimatedRoutes() {
           <Route path={ROUTES.cardNew} element={<CardEditPage />} />
           <Route path={ROUTES.cardEdit} element={<CardEditPage />} />
           <Route path={ROUTES.cardExport} element={<CardExportPage />} />
+          <Route path={ROUTES.cardTemplates} element={<CardTemplatesListPage />} />
+          <Route path={ROUTES.cardTemplateNew} element={<CardTemplateEditPage />} />
+          <Route path={ROUTES.cardTemplateEdit} element={<CardTemplateEditPage />} />
 
           {/* Narrator-режим. Статический /new стоит раньше /:id. */}
           <Route path={ROUTES.stories} element={<StoriesPage />} />

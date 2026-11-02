@@ -165,6 +165,7 @@ export function CardEditPage() {
         onDelete={id === undefined ? undefined : handleDelete}
         onDuplicate={id === undefined ? undefined : handleDuplicate}
         onExport={handleExport}
+        onManageTemplates={() => navigate(ROUTES.cardTemplates)}
       />
     </AppPage>
   );

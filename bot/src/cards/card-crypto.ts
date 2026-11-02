@@ -1,4 +1,4 @@
-import type { CardCategory } from "@tg-rp-bot/shared";
+import type { CardCategory, CardField } from "@tg-rp-bot/shared";
 import { decryptField, encryptField } from "../utils/index.js";
 
 type FieldCipher = (value: string, key: Buffer) => string;
@@ -39,3 +39,14 @@ export const encryptCategories = (categories: CardCategory[], key: Buffer): Card
 /** Расшифровывает текстовые поля категорий — обратная операция encryptCategories. */
 export const decryptCategories = (categories: CardCategory[], key: Buffer): CardCategory[] =>
   mapCategoryTexts(categories, key, decryptField);
+
+/** Поля шаблона карточки: шифруются те же title/description, что у категорий карточки. */
+function mapFieldTexts(fields: CardField[], key: Buffer, cipher: FieldCipher): CardField[] {
+  return fields.map((f) => ({ ...f, title: cipher(f.title, key), description: cipher(f.description, key) }));
+}
+
+/** Шифрует title/description полей шаблона per-user ключом. */
+export const encryptFields = (fields: CardField[], key: Buffer): CardField[] => mapFieldTexts(fields, key, encryptField);
+
+/** Расшифровывает поля шаблона — обратная операция encryptFields. */
+export const decryptFields = (fields: CardField[], key: Buffer): CardField[] => mapFieldTexts(fields, key, decryptField);

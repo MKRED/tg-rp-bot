@@ -1,5 +1,5 @@
 import { Button, Stack, Text } from "@mantine/core";
-import { Copy, Upload } from "lucide-react";
+import { Copy, LayoutTemplate, Upload } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DeleteButton } from "../../../../shared/components/DeleteButton";
 import { useUnsavedChangesGuard } from "../../../../shared/telegram/useUnsavedChangesGuard";
@@ -7,10 +7,21 @@ import { canExportCard } from "../../lib/canExportCard";
 import { hasUnsavedChanges, normalizeCardDraft } from "../../lib/formDirty";
 import { DEFAULT_CARD_CATEGORIES, DEFAULT_CARD_PROMPT, DEFAULT_CARD_SYSTEM_PROMPT } from "../../types/card";
 import type { CardCategory, CardInput, CardPresetOption } from "../../types/card";
-import { CategoryList } from "./CategoryList";
-import { CategoryOrderList } from "./CategoryOrderList";
+import { FieldsEditor } from "../FieldsEditor";
+import { CardTemplatePicker, STANDARD_TEMPLATE_ID } from "./CardTemplatePicker";
+import { SaveAsTemplateSheet } from "./SaveAsTemplateSheet";
+import { useTemplateApply } from "./useTemplateApply";
 import { GenerationCard } from "./GenerationCard";
 import { MainCard } from "./MainCard";
+
+/** Новая пустая категория из блока «Поля»: id уникален, текст ещё не сгенерирован. */
+const newCategory = (): CardCategory => ({
+  id: `custom-${crypto.randomUUID()}`,
+  title: "",
+  description: "",
+  content: "",
+  enabled: true,
+});
 
 interface CardFormProps {
   /** Начальные значения (режим редактирования); отсутствуют — режим создания. */
@@ -31,6 +42,8 @@ interface CardFormProps {
   onDuplicate?: (input: CardInput) => void;
   /** Переход на экран выгрузки — навигация на совести страницы. */
   onExport: () => void;
+  /** Переход к списку шаблонов карточек (из выбора шаблона). */
+  onManageTemplates?: () => void;
 }
 
 /**
@@ -49,6 +62,7 @@ export function CardForm({
   onDelete,
   onDuplicate,
   onExport,
+  onManageTemplates,
 }: CardFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
   // || а не ?? — пустая строка (карточка без явного system-промпта) тоже заменяется дефолтом.
@@ -60,6 +74,23 @@ export function CardForm({
   const [useAskUser, setUseAskUser] = useState(initial?.useAskUser ?? false);
   const [askUserFirst, setAskUserFirst] = useState(initial?.askUserFirst ?? false);
   const [referenceImages, setReferenceImages] = useState<string[]>(initial?.referenceImages ?? []);
+
+  // Новая карточка стартует с дефолтов — это и есть «Стандартный» шаблон; у открытой выбор не помним
+  // (карточка живёт копией шаблона, связи нет).
+  const template = useTemplateApply({
+    initialId: initial ? null : STANDARD_TEMPLATE_ID,
+    categories,
+    // Пока статус ключа грузится, не гасим веб-поиск шаблона: без ключа сервер всё равно ищет не станет.
+    webSearchAllowed: webSearchAvailable || webSearchStatusLoading,
+    onApply: (patch) => {
+      setSystemPrompt(patch.systemPrompt);
+      setCategories(patch.categories);
+      setUseWebSearch(patch.useWebSearch);
+      setUseAskUser(patch.useAskUser);
+      setAskUserFirst(patch.askUserFirst);
+    },
+  });
+  const [saveAsOpen, setSaveAsOpen] = useState(false);
 
   const draft = useMemo(
     () => ({ name, systemPrompt, prompt, categories, presetId, useWebSearch, useAskUser, askUserFirst, referenceImages }),
@@ -153,9 +184,11 @@ export function CardForm({
         onUseAskUser={setUseAskUser}
         onAskUserFirst={setAskUserFirst}
         onReferenceImages={setReferenceImages}
+        templateSlot={
+          <CardTemplatePicker value={template.appliedId} onPick={(id, t) => void template.pick(id, t)} onManage={onManageTemplates} />
+        }
       />
-      <CategoryList categories={categories} onChange={setCategories} />
-      <CategoryOrderList categories={categories} onChange={setCategories} />
+      <FieldsEditor fields={categories} onChange={setCategories} createField={newCategory} collapsible />
       <GenerationCard
         cardId={cardId}
         categories={categories}
@@ -197,12 +230,31 @@ export function CardForm({
             Скопировать карточку
           </Button>
         )}
+        <Button
+          fullWidth
+          variant="default"
+          leftSection={<LayoutTemplate size={18} />}
+          disabled={submitting || categories.length === 0}
+          onClick={() => setSaveAsOpen(true)}
+        >
+          Сохранить как шаблон
+        </Button>
         {onDelete && (
           <DeleteButton disabled={submitting} onClick={() => onDelete(name)}>
             Удалить карточку
           </DeleteButton>
         )}
       </Stack>
+
+      {/* Монтируем на открытие: название шаблона каждый раз берётся из текущего названия карточки. */}
+      {saveAsOpen && (
+        <SaveAsTemplateSheet
+          opened
+          onClose={() => setSaveAsOpen(false)}
+          cardName={name}
+          card={{ systemPrompt, categories, useWebSearch, useAskUser, askUserFirst }}
+        />
+      )}
     </Stack>
   );
 }

@@ -3,6 +3,7 @@ import { APP_FILTER, APP_PIPE } from "@nestjs/core";
 import { LoggerModule } from "nestjs-pino";
 import { AuthModule } from "./auth/auth.module.js";
 import { AvatarsModule } from "./avatars/avatars.module.js";
+import { CardTemplatesModule } from "./card-templates/card-templates.module.js";
 import { CardsModule } from "./cards/cards.module.js";
 import { CharactersModule } from "./characters/characters.module.js";
 import { ApiExceptionFilter } from "./common/api-exception.filter.js";
@@ -41,6 +42,7 @@ import { UserKeysModule } from "./user-keys/user-keys.module.js";
     RpTemplatesModule,
     NarratorTemplatesModule,
     CardsModule,
+    CardTemplatesModule,
     SettingsModule,
     DebugModule,
     TranslateModule,

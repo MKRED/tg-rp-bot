@@ -79,7 +79,8 @@ webapp/src/ — main/init (Telegram SDK) · app/ (shell, HashRouter) · pages/ (
               features/ (domain modules) · shared/ (cross-cutting)
 shared/src/ — @tg-rp-bot/shared: API contract types (JSON over the wire) + constants, one file per domain
 ```
-bot and webapp domains mirror each other: characters, personas, cards, generation-presets, rp-templates,
+bot and webapp domains mirror each other: characters, personas, cards (+ card-templates: bot module, webapp
+lives inside `features/cards`), generation-presets, rp-templates,
 rp-chat, narrator, knowledge-books, narrator-templates, debug.
 
 Full tree, webapp layout rules, router/deep-link details — [docs/architecture.md](docs/architecture.md).

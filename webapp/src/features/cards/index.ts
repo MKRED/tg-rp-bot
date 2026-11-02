@@ -4,6 +4,12 @@
  * (иначе цикл, который компилируется, но даёт undefined в рантайме).
  */
 export { CardForm } from "./components/CardForm";
+export { CardTemplateForm } from "./components/CardTemplateForm";
+export { useCardTemplates } from "./hooks/useCardTemplates";
+export { useCardTemplate } from "./hooks/useCardTemplate";
+export { createCardTemplate, updateCardTemplate, removeCardTemplate } from "./api/card-templates-api";
+export type { CardTemplate, CardTemplateInput } from "./types/cardTemplate";
+export { MAX_CARD_TEMPLATES_PER_USER, STANDARD_CARD_TEMPLATE } from "./types/cardTemplate";
 export { useCards } from "./hooks/useCards";
 export { useCard } from "./hooks/useCard";
 export {

@@ -3,6 +3,7 @@ import {
   Bug,
   Clapperboard,
   FileText,
+  LayoutTemplate,
   type LucideIcon,
   MessageCircle,
   ScrollText,
@@ -56,6 +57,7 @@ export const HOME_MENU: HomeMenuSection[] = [
       { icon: SlidersHorizontal, label: "Настройки ответа ИИ", description: "Пресеты параметров генерации", route: ROUTES.presets },
       { icon: FileText, label: "RP-шаблоны", description: "Промпты RP-чата", route: ROUTES.rpTemplates },
       { icon: ScrollText, label: "Narrator-шаблоны", description: "Инструкции нарратора", route: ROUTES.narratorTemplates },
+      { icon: LayoutTemplate, label: "Шаблоны карточек", description: "Поля и промпт для «Мастерской»", route: ROUTES.cardTemplates },
     ],
   },
   {

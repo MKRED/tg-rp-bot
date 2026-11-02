@@ -34,7 +34,7 @@ tg-rp-bot/
 │  │  ├─ app.module.ts # корневой модуль Nest (глобальные guard/pipe/filter)
 │  │  ├─ auth/ database/ users/ common/  # общие модули Nest: guard (initData / cookie сессии) + вход по логину + @CurrentUser, БД, …
 │  │  ├─ telegram/     # бот grammY как провайдер Nest: обработчики (/start, «Закрыть»), запуск/остановка polling, прокси Telegram
-│  │  ├─ characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ settings/ debug/ translate/ avatars/ me/ knowledge-books/ rp-chat/ narrator/  # доменные модули Nest: module/controller/service/repository/dto
+│  │  ├─ characters/ personas/ presets/ rp-templates/ narrator-templates/ cards/ card-templates/ settings/ debug/ translate/ avatars/ me/ knowledge-books/ rp-chat/ narrator/  # доменные модули Nest: module/controller/service/repository/dto
 │  │  ├─ config.ts     # переменные окружения
 │  │  ├─ logger.ts     # pino
 │  │  ├─ db/           # drizzle: schema + клиент
@@ -51,7 +51,7 @@ tg-rp-bot/
       ├─ main.tsx      # точка входа + init Telegram SDK
       ├─ init.ts       # инициализация SDK + restore initData
       ├─ app/          # оболочка: App (MantineProvider + HashRouter), routes, BackButton-мост
-      ├─ pages/        # экраны-маршруты (home/ characters/ personas/ cards/ generation-presets/ rp-chat/
+      ├─ pages/        # экраны-маршруты (home/ characters/ personas/ cards/ card-templates/ generation-presets/ rp-chat/
       │                #   narrator/ knowledge-books/ narrator-templates/ debug/)
       ├─ shared/       # api/client (граница к /api), telegram/, text/, image/, components/
       └─ features/     # доменные модули: characters, personas, cards, generation-presets, rp-chat,

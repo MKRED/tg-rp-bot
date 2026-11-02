@@ -52,3 +52,11 @@
   flex-shrink: 0;
   color: light-dark(var(--mantine-color-accent-8), var(--mantine-color-accent-4));
 }
+
+/* Ссылка под списком: отделена линией, как ещё одна строка, но акцентом — это действие, а не вариант. */
+.footer {
+  border-top: 1px solid var(--app-color-divider);
+  border-radius: 0;
+  height: 48px;
+  padding-inline: var(--mantine-spacing-md);
+}

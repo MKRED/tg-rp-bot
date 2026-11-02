@@ -1,5 +1,6 @@
 import { Alert, Switch, TextInput } from "@mantine/core";
 import { TriangleAlert } from "lucide-react";
+import type { ReactNode } from "react";
 import { PickerField } from "../../../../shared/components/PickerField";
 import { PromptEditorField } from "../../../../shared/components/PromptEditorField";
 import { SettingsCard } from "../../../../shared/components/SettingsCard";
@@ -32,9 +33,11 @@ interface MainCardProps {
   onUseAskUser: (value: boolean) => void;
   onAskUserFirst: (value: boolean) => void;
   onReferenceImages: (images: string[]) => void;
+  /** Выбор шаблона карточки — под названием (CardTemplatePicker, состояние живёт в CardForm). */
+  templateSlot?: ReactNode;
 }
 
-/** Карточка «Основное»: название, промпты генерации, референсы, пресет ИИ и инструменты модели. */
+/** Карточка «Основное»: название, шаблон, промпты генерации, референсы, пресет ИИ и инструменты модели. */
 export function MainCard(props: MainCardProps) {
   const webSearchHint = props.webSearchStatusLoading
     ? "Проверяем ключ Tavily…"
@@ -51,12 +54,13 @@ export function MainCard(props: MainCardProps) {
         value={props.name}
         onChange={(e) => props.onName(e.currentTarget.value)}
       />
+      {props.templateSlot}
       <PromptEditorField
         header="Системный промпт"
         hint="Инструкции ИИ о самом процессе генерации: что блоки создаются строго по одному, что <example> ниже — только образец формата, а не готовый ответ. Не зависит от конкретного персонажа."
         placeholder={DEFAULT_CARD_SYSTEM_PROMPT}
         value={props.systemPrompt}
-        previewLines={6}
+        previewLines={2}
         onChange={props.onSystemPrompt}
       />
       <PromptEditorField
@@ -64,7 +68,7 @@ export function MainCard(props: MainCardProps) {
         hint="Общая инструкция для ИИ. Можно вставить {{example}} — на его место встанет структура категорий; если не вставить, она допишется в конец."
         placeholder={DEFAULT_CARD_PROMPT}
         value={props.prompt}
-        previewLines={6}
+        previewLines={4}
         onChange={props.onPrompt}
       />
       <ReferenceImagesField images={props.referenceImages} onChange={props.onReferenceImages} />

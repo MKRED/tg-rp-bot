@@ -34,6 +34,8 @@ interface PickerFieldProps {
   emptyText: string;
   /** Кнопка под пустым списком — уйти создавать запись (шторка закрывается). */
   emptyAction?: { label: string; onClick: () => void };
+  /** Ссылка под непустым списком — уйти управлять записями (шторка закрывается). */
+  footerAction?: { label: string; icon?: ReactNode; onClick: () => void };
   onChange: (id: number) => void;
 }
 
@@ -52,6 +54,7 @@ export function PickerField({
   loading,
   emptyText,
   emptyAction,
+  footerAction,
   onChange,
 }: PickerFieldProps) {
   const [opened, setOpened] = useState(false);
@@ -111,6 +114,21 @@ export function PickerField({
                 }}
               />
             ))}
+            {footerAction && (
+              <Button
+                variant="subtle"
+                fullWidth
+                justify="flex-start"
+                leftSection={footerAction.icon}
+                className={styles.footer}
+                onClick={() => {
+                  setOpened(false);
+                  footerAction.onClick();
+                }}
+              >
+                {footerAction.label}
+              </Button>
+            )}
           </div>
         )}
       </ResponsiveSheet>

@@ -1,0 +1,61 @@
+/* Строки — во всю ширину карточки поверх её внутреннего отступа: разделители и фон до краёв. */
+.list {
+  margin-inline: calc(-1 * var(--mantine-spacing-md));
+}
+
+/* Фон карточки на самой строке: перетаскиваемая строка едет поверх соседних и не просвечивает. */
+.item {
+  position: relative;
+  background: var(--mantine-color-body);
+}
+
+.item + .item {
+  border-top: 1px solid var(--app-color-divider);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  min-height: 56px;
+  padding-inline: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+}
+
+/* Касание ручки — жест перетаскивания, а не прокрутка страницы. */
+.grip {
+  touch-action: none;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  align-self: stretch;
+}
+
+.num {
+  width: 1.25rem;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* overflow — чтобы при анимации высоты содержимое не вылезало; отступы — внутри, иначе «прыгают». */
+.panelWrap {
+  overflow: hidden;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-sm);
+  padding: 0 var(--mantine-spacing-md) var(--mantine-spacing-md);
+}

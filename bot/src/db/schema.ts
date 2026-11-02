@@ -18,7 +18,7 @@ import type {
   TranslateScope,
   TranslationReasoningLevel,
 } from "@tg-rp-bot/shared";
-import type { CardCategory, PromptOrderItem, StoryPromptOrderItem } from "./schema.types.js";
+import type { CardCategory, CardField, PromptOrderItem, StoryPromptOrderItem } from "./schema.types.js";
 
 // Типы компонентов промптов живут в schema.types.ts; реэкспорт сохраняет прежнюю точку
 // импорта `db/schema.js` для пресетов, narrator-шаблонов и билдеров промптов.
@@ -256,6 +256,33 @@ export const cards = pgTable("cards", {
 
 export type Card = typeof cards.$inferSelect;
 export type NewCard = typeof cards.$inferInsert;
+
+/**
+ * Шаблоны карточек «Мастерской» (`/card-templates`): системный промпт, поля структуры и тумблеры
+ * инструментов, которые webapp копирует в карточку при выборе шаблона. Связи с карточками нет —
+ * сознательно: карточка живёт своей копией, правка или удаление шаблона её не затрагивает.
+ * systemPrompt и title/description полей шифруются per-user, как те же тексты у cards: шаблон
+ * сохраняют прямо из карточки, и в открытом виде он обходил бы её шифрование.
+ */
+export const cardTemplates = pgTable("card_templates", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  systemPrompt: text("system_prompt").notNull().default(""),
+  fields: jsonb("fields").$type<CardField[]>().notNull().default(sql`'[]'::jsonb`),
+  useWebSearch: boolean("use_web_search").notNull().default(false),
+  useAskUser: boolean("use_ask_user").notNull().default(false),
+  askUserFirst: boolean("ask_user_first").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export type CardTemplateRow = typeof cardTemplates.$inferSelect;
 
 /**
  * Пресеты настроек генерации («Настройки ответа ИИ»). Один пользователь — много пресетов,
