@@ -63,7 +63,7 @@ export const HOME_MENU: HomeMenuSection[] = [
   {
     title: "Приложение",
     items: [
-      { icon: Settings, label: "Настройки", description: "Тема, ключи ИИ и поиска, перевод", route: ROUTES.settings },
+      { icon: Settings, label: "Настройки", description: "Тема, ключ ИИ, веб-поиск, перевод", route: ROUTES.settings },
       { icon: Bug, label: "Запросы к ИИ", description: "Последние RAW-запросы и перехват", route: ROUTES.debugLlm },
     ],
   },

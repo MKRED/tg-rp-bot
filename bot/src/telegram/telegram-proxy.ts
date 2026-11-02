@@ -10,10 +10,8 @@ import logger from "../logger.js";
  * CONNECT-туннелирование, поэтому HTTP-прокси корректно проксирует HTTPS-адрес
  * https://api.telegram.org.
  *
- * Тот же config.telegramProxyUrl (но уже через undici ProxyAgent, не HttpsProxyAgent — см.
- * tavily/tavily-proxy.ts) переиспользуется и для Tavily: оба сервиса недоступны напрямую с сети
- * сервера (голый fetch падает "403 Forbidden" от awselb ещё до приложения). LLM-провайдер
- * (DeepSeek) и прочие fetch идут напрямую — им прокси не нужен. Никогда не используем глобальный
+ * Прокси нужен только Telegram — он недоступен напрямую из сети сервера. DeepSeek (LLM и веб-поиск)
+ * и прочие fetch идут напрямую — им прокси не нужен. Никогда не используем глобальный
  * прокси (env HTTPS_PROXY/ALL_PROXY) — это увело бы через прокси и LLM-трафик тоже.
  */
 export function createTelegramProxyAgent(): HttpsProxyAgent<string> | undefined {

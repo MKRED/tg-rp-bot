@@ -55,7 +55,7 @@ export function CardTemplateForm({ initial = STANDARD_CARD_TEMPLATE, submitting,
         />
         <Switch
           label="Веб-поиск"
-          description="Сработает в карточке, только если в настройках сохранён ключ Tavily"
+          description="Модель сможет искать в интернете при генерации блоков"
           checked={useWebSearch}
           onChange={(e) => setUseWebSearch(e.currentTarget.checked)}
         />

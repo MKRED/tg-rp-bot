@@ -12,7 +12,7 @@ export const WEB_SEARCH_TOOL: ToolDefinition = {
     parameters: {
       type: "object",
       properties: {
-        query: { type: "string", description: "Search query" },
+        query: { type: "string", description: "Search query, up to 128 characters" },
       },
       required: ["query"],
     },

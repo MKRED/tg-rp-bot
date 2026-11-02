@@ -11,11 +11,11 @@ Telegram-бот для ролевой игры (RP) с упором на **Teleg
 | HTTP API | [NestJS](https://nestjs.com) (Express, class-validator, nestjs-pino); тот же процесс раздаёт статику Mini App |
 | БД | Postgres + [drizzle-orm](https://orm.drizzle.team) / drizzle-kit |
 | LLM | DeepSeek (OpenAI-совместимый API); ключ — персональный (BYOK), задаётся пользователем в Mini App; модель — в пресете генерации |
-| Веб-поиск | Tavily (квота ключа); ключ — персональный (BYOK), задаётся пользователем в Mini App |
+| Веб-поиск | DeepSeek Search (`POST /v1/tools/search`) — тем же персональным ключом DeepSeek, что и LLM |
 | Логи | pino (+ pino-roll, pino-pretty) |
 | Mini App | React 19 + Vite + `@telegram-apps/sdk-react` + Mantine (`@mantine/core`, CSS-модули) + `react-router-dom` (HashRouter) + `@xyflow/react` (граф диалога) + `framer-motion` + `react-easy-crop` (кроп аватара) |
 | Вход | Mini App — initData (подпись проверяется серверно через `@tma.js/init-data-node`); браузер — логин и пароль (scrypt, сессия в httpOnly-cookie, `@nestjs/throttler`) |
-| Прокси | `https-proxy-agent` (Telegram, agent) + `undici` `ProxyAgent` (Tavily, dispatcher) — оба сервиса недоступны напрямую с сети сервера |
+| Прокси | `https-proxy-agent` (Telegram, agent) — Telegram недоступен напрямую с сети сервера |
 | Тесты | vitest (bot + webapp) |
 
 ## Структура
@@ -40,10 +40,10 @@ tg-rp-bot/
 │  │  ├─ db/           # drizzle: schema + клиент
 │  │  ├─ llm/          # LlmModule: вызов LLM (DeepSeek) с ключом пользователя (BYOK) + чистый клиент
 │  │  ├─ prompt/       # сборка промптов RP-чата и narrator (без Nest): promptBuilder, storyPromptBuilder, бюджет
-│  │  ├─ tavily/       # TavilyModule: клиент Tavily (веб-поиск, квота ключа), ключ per-user BYOK
+│  │  ├─ web-search/   # WebSearchModule: веб-поиск DeepSeek (ключ DeepSeek пользователя), инструмент web_search
 │  │  ├─ health/ webapp-static/  # GET /health (@Public); раздача сборки Mini App из ./public + SPA-fallback
 │  │  ├─ user-keys/    # UserKeysModule: ключ шифрования данных пользователя (users.data_key)
-│  │  ├─ scripts/      # разовые скрипты вне Nest (перешифровка данных, прототип веб-поиска)
+│  │  ├─ scripts/      # разовые скрипты вне Nest (перешифровка данных)
 │  │  └─ utils/        # retry, crypto (шифрование полей ключом пользователя)
 │  └─ drizzle/         # SQL-миграции
 └─ webapp/             # Mini App (React + Vite)
@@ -56,16 +56,15 @@ tg-rp-bot/
       ├─ shared/       # api/client (граница к /api), telegram/, text/, image/, components/
       └─ features/     # доменные модули: characters, personas, cards, generation-presets, rp-chat,
                         #   narrator, knowledge-books, narrator-templates, debug, llm-settings,
-                        #   tavily-settings
+                        #   web-search-settings
 ```
 
 ## Прокси
 
-Запросы к Telegram Bot API и к Tavily проходят через локальный HTTP-прокси (`TELEGRAM_PROXY_URL`,
-например `http://127.0.0.1:8080`, без авторизации) — оба сервиса недоступны напрямую с сети
-сервера. Telegram проксируется через `https-proxy-agent` (`HttpsProxyAgent`, CONNECT-туннель) на
-grammY-клиенте, Tavily — через `ProxyAgent` из пакета `undici`. DeepSeek и любые другие запросы
-идут напрямую.
+Запросы к Telegram Bot API проходят через локальный HTTP-прокси (`TELEGRAM_PROXY_URL`,
+например `http://127.0.0.1:8080`, без авторизации) — Telegram недоступен напрямую с сети
+сервера. Проксирование — через `https-proxy-agent` (`HttpsProxyAgent`, CONNECT-туннель) на
+grammY-клиенте. DeepSeek (LLM и веб-поиск) и любые другие запросы идут напрямую.
 
 ## Запуск
 
@@ -100,8 +99,9 @@ yarn workspace bot drizzle-kit migrate      # применить миграци�
 в Mini App → `/settings` → «ИИ (DeepSeek)», модель — в каждом пресете генерации. Без сохранённого ключа
 генерация и ИИ-перевод вернут пользователю ошибку с просьбой добавить ключ.
 
-**Веб-поиск (Tavily)** — тоже BYOK: свой ключ Tavily и месячная квота задаются/отображаются в
-Mini App → `/settings` → «Веб-поиск (Tavily)».
+**Веб-поиск** при генерации карточек — поиск DeepSeek (`POST /v1/tools/search`) тем же ключом DeepSeek
+(~$0.75 за 1000 успешных запросов, отдельного ключа нет). Лимит раундов поиска — Mini App → `/settings` →
+«Веб-поиск».
 
 ## Деплой
 

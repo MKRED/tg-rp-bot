@@ -13,9 +13,10 @@ import { LlmService } from "../../llm/llm.service.js";
 import logger from "../../logger.js";
 import { PresetsRepository } from "../../presets/presets.repository.js";
 import { presetToCompletionOptions } from "../../prompt/promptBuilder/index.js";
-import { TavilySettingsRepository } from "../../settings/tavily/tavily-settings.repository.js";
-import { TavilyService } from "../../tavily/tavily.service.js";
-import type { WebSearcher } from "../../tavily/tavily.types.js";
+import { LlmSettingsRepository } from "../../settings/llm/llm-settings.repository.js";
+import { WebSearchSettingsRepository } from "../../settings/web-search/web-search-settings.repository.js";
+import { WebSearchService } from "../../web-search/web-search.service.js";
+import type { WebSearcher } from "../../web-search/web-search.types.js";
 import { tryLockCard, unlockCard } from "../card-lock.js";
 import { CardsRepository } from "../cards.repository.js";
 import { ASK_USER_DECLINED_ANSWER, ASK_USER_MAX_ANSWERED_QUESTIONS } from "./ask-user-tool.js";
@@ -39,9 +40,10 @@ export class CardGenerationService {
   constructor(
     private readonly cards: CardsRepository,
     private readonly presets: PresetsRepository,
-    private readonly tavilySettings: TavilySettingsRepository,
+    private readonly llmSettings: LlmSettingsRepository,
+    private readonly webSearchSettings: WebSearchSettingsRepository,
     private readonly llm: LlmService,
-    private readonly tavily: TavilyService,
+    private readonly webSearch: WebSearchService,
   ) {}
 
   /**
@@ -112,12 +114,9 @@ export class CardGenerationService {
         throw categoryId ? refuse(400, "target_not_found") : refuse(409, "nothing_to_generate");
       }
 
-      // Ключ мог быть удалён в настройках, а тумблер на карточке остался включённым — генерируем
-      // без поиска, а не роняем генерацию блока (но не молчим).
-      const tavilyApiKey = card.useWebSearch ? await this.tavilySettings.getDecryptedKey(userId) : null;
-      if (card.useWebSearch && !tavilyApiKey) {
-        logger.warn({ userId, cardId }, "Card useWebSearch включён, но ключ Tavily не задан — генерируем без поиска");
-      }
+      // Поиск идёт через тот же ключ DeepSeek, что и генерация. Без ключа поиска нет, но и сама
+      // генерация упадёт MissingApiKeyError на первом вызове LLM (→ 400 no_api_key, см. toHttpError).
+      const searchApiKey = card.useWebSearch ? await this.llmSettings.getDecryptedApiKey(userId) : null;
 
       // Гейт на накопленный ask_user-бюджет ЭТОГО блока — сквозь все HTTP-раунды ответа, а не только
       // текущий вызов LLM (см. ASK_USER_MAX_ANSWERED_QUESTIONS).
@@ -129,7 +128,7 @@ export class CardGenerationService {
       const askUserEnabled = card.useAskUser && askedCount < ASK_USER_MAX_ANSWERED_QUESTIONS;
       // Лимит поисков — тоже сквозной для блока: уже сохранённые поиски вычитаются, иначе каждое
       // резюме после ответа на ask_user получало бы свежий бюджет.
-      const maxSearchRounds = await this.tavilySettings.getMaxSearchRounds(userId);
+      const { maxSearchRounds } = await this.webSearchSettings.get(userId);
       const searchesLeft = Math.max(0, maxSearchRounds - (target?.webSearches?.length ?? 0));
       searchTargetId = assembled.targetCategoryId;
 
@@ -137,7 +136,7 @@ export class CardGenerationService {
         llm: this.llm,
         baseOptions: { userId, debugLabel: "cards", ...presetToCompletionOptions(preset) },
         history: assembled.messages,
-        webSearch: tavilyApiKey ? this.webSearcher(tavilyApiKey) : null,
+        webSearch: searchApiKey ? this.webSearcher(searchApiKey) : null,
         maxSearchRounds: searchesLeft,
         askUserEnabled,
         forceAskUser: forceAskUser ? (card.askUserFirst ? "first" : "last") : undefined,
@@ -248,7 +247,7 @@ export class CardGenerationService {
   }
 
   /**
-   * Генерация упала уже после веб-поиска: квота Tavily потрачена, поэтому результаты всё равно
+   * Генерация упала уже после веб-поиска: поиск уже оплачен, поэтому результаты всё равно
    * сохраняем — повторная попытка увидит их в реплее. Сбой самой записи только логируем: наверх
    * должна уйти исходная ошибка генерации, а не ошибка этой страховки.
    */
@@ -269,9 +268,9 @@ export class CardGenerationService {
     }
   }
 
-  /** Поиск с ключом пользователя — в таком виде его получает цикл tool-calling. */
+  /** Поиск с ключом DeepSeek пользователя — в таком виде его получает цикл tool-calling. */
   private webSearcher(apiKey: string): WebSearcher {
-    return { search: (query) => this.tavily.search(apiKey, query) };
+    return { search: (query) => this.webSearch.search(apiKey, query) };
   }
 }
 

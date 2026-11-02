@@ -9,9 +9,9 @@ import type {
   ToolResultMessage,
 } from "../../llm/types.js";
 import logger from "../../logger.js";
-import { TavilyHttpError } from "../../tavily/errors.js";
-import type { WebSearcher } from "../../tavily/tavily.types.js";
-import { WEB_SEARCH_TOOL, WEB_SEARCH_TOOL_NAME } from "../../tavily/web-search-tool.js";
+import { WebSearchHttpError } from "../../web-search/errors.js";
+import type { WebSearcher } from "../../web-search/web-search.types.js";
+import { WEB_SEARCH_TOOL, WEB_SEARCH_TOOL_NAME } from "../../web-search/web-search-tool.js";
 import { ASK_USER_TOOL, ASK_USER_TOOL_NAME, parseAskUserArguments } from "./ask-user-tool.js";
 
 type LoopMessage = ChatMessage | MultimodalUserMessage | ToolCallMessage | ToolResultMessage;
@@ -25,12 +25,12 @@ interface WebSearchOutcome {
   content: string;
   /** Успешный поиск — запрос и результаты, чтобы вызывающий сохранил их на категории. */
   record?: WebSearchRecord;
-  /** Ключ Tavily невалиден/отозван (401/403) — ретраить его в следующих раундах бессмысленно. */
+  /** Ключ DeepSeek невалиден (401) или кончился баланс (402) — ретраить в следующих раундах бессмысленно. */
   authFailed: boolean;
 }
 
 /** Выполняет один tool_call веб-поиска (или отвечает ошибкой на неизвестное имя инструмента).
- * Ошибки (битые аргументы, сбой Tavily) уходят в content — модель узнаёт о неудаче тем же путём,
+ * Ошибки (битые аргументы, сбой поиска) уходят в content — модель узнаёт о неудаче тем же путём,
  * что и об успехе, и может ответить без этого результата, а не всей генерацией. */
 async function runWebSearchCall(call: ToolCall, webSearch: WebSearcher): Promise<WebSearchOutcome> {
   if (call.function.name !== WEB_SEARCH_TOOL_NAME) {
@@ -51,10 +51,10 @@ async function runWebSearchCall(call: ToolCall, webSearch: WebSearcher): Promise
     const results = await webSearch.search(query);
     return { content: JSON.stringify(results), record: { query, results }, authFailed: false };
   } catch (err) {
-    const authFailed = err instanceof TavilyHttpError && (err.status === 401 || err.status === 403);
-    logger.error({ err, query, authFailed }, "Tavily search failed during card generation");
+    const authFailed = err instanceof WebSearchHttpError && err.isAccountProblem;
+    logger.error({ err, query, authFailed }, "Web search failed during card generation");
     return {
-      content: JSON.stringify({ error: authFailed ? "invalid tavily api key" : "web search failed" }),
+      content: JSON.stringify({ error: authFailed ? "web search unavailable for this account" : "web search failed" }),
       authFailed,
     };
   }
@@ -65,14 +65,14 @@ export interface ToolLoopParams {
   llm: ChatCompleter;
   baseOptions: Omit<ChatCompletionOptions, "messages" | "tools" | "toolChoice">;
   history: LoopMessage[];
-  /** TavilyService с ключом пользователя; null — веб-поиск выключен на карточке или ключ Tavily не задан. */
+  /** WebSearchService с ключом DeepSeek пользователя; null — веб-поиск выключен на карточке или ключа нет. */
   webSearch: WebSearcher | null;
   /** Остаток бюджета поисков блока — вызывающий уже вычел сохранённые на категории поиски. */
   maxSearchRounds: number;
   /**
    * Зовётся на каждый УСПЕШНЫЙ поиск сразу после него. Коллбэк, а не поле результата: поиски нужно
    * сохранить при любом исходе, в том числе когда следующий вызов LLM упал и результата нет вовсе —
-   * квота Tavily уже потрачена, а сохранённый поиск реплеится в следующих запросах блока.
+   * поиск уже оплачен, а сохранённый поиск реплеится в следующих запросах блока.
    */
   onWebSearch?: (record: WebSearchRecord) => void;
   askUserEnabled: boolean;

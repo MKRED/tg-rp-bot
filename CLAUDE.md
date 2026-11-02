@@ -21,15 +21,15 @@ serving both the API and the Mini App static files ([docs/deploy.md](docs/deploy
   SSH tunnel**. Running the bot locally, `drizzle-kit generate/migrate`, ad-hoc queries — all hit prod
   data. Migrations are forward-only; be careful with destructive operations. The tunnel must be up
   before `yarn dev` / `drizzle-kit`.
-- **Proxy only for services unreachable from the server network:** Telegram
-  (`telegram/telegram-bot.factory.ts` → `baseFetchConfig.agent`, HttpsProxyAgent) and Tavily (`tavily/tavily-proxy.ts`, undici ProxyAgent),
-  both via `TELEGRAM_PROXY_URL`. **NEVER** set a global proxy (`HTTPS_PROXY` / `ALL_PROXY`) — it would
+- **Proxy only for services unreachable from the server network — today only Telegram**
+  (`telegram/telegram-bot.factory.ts` → `baseFetchConfig.agent`, HttpsProxyAgent) via `TELEGRAM_PROXY_URL`.
+  DeepSeek (LLM and web search) goes direct. **NEVER** set a global proxy (`HTTPS_PROXY` / `ALL_PROXY`) — it would
   route LLM traffic through it too. Why `agent` and not `dispatcher` — [docs/architecture.md](docs/architecture.md).
 - **Per-user encryption key lives in `users.data_key`** (random, wrapped by the master key from
   `ENCRYPTION_KEY`); repositories get it via `UserKeysService.forUser(userId)`. Never regenerate or
   overwrite it — the user's data becomes unreadable. `users.id` is a UUID; `telegram_id` is optional.
   Details — [docs/architecture.md](docs/architecture.md).
-- **LLM/Tavily keys are server-side, per-user (BYOK).** Stored encrypted in `user_settings`
+- **The DeepSeek key is server-side, per-user (BYOK)** — it also pays for web search (no separate search key). Stored encrypted in `user_settings`
   (`ENCRYPTION_KEY`), never sent to the browser; no fallback to a shared/env key. Generation goes through
   the bot's HTTP API, not from the webapp directly. Details — [docs/llm.md](docs/llm.md).
 - **API auth:** in the Mini App, webapp → `/api/*` requests carry signed `initData` (`Authorization: tma …`),
@@ -73,7 +73,7 @@ bot/src/    — main (Nest bootstrap) · app.module · config · logger ·
               Nest modules: auth/ database/ users/ user-keys/ common/ telegram/ (grammY bot as a provider: handlers,
               polling lifecycle, Telegram proxy) · <domain>/ (characters, …) ·
               db/ (drizzle schema + client) · llm/ (LlmModule: LLM call with the user's key; pure client) ·
-              prompt/ (prompt assembly, no Nest) · tavily/ (TavilyModule: Tavily client) ·
+              prompt/ (prompt assembly, no Nest) · web-search/ (WebSearchModule: DeepSeek search client) ·
               health/ (GET /health, @Public) · webapp-static/ (Mini App static + SPA fallback) · utils/
 webapp/src/ — main/init (Telegram SDK) · app/ (shell, HashRouter) · pages/ (one screen per route) ·
               features/ (domain modules) · shared/ (cross-cutting)
@@ -116,7 +116,7 @@ Full tree, webapp layout rules, router/deep-link details — [docs/architecture.
 - **A new `/api/*` prefix = a new Nest module** (global prefix `api`; static files and the SPA fallback
   skip `/api` and `/health` — `webapp-static/spa-fallback.ts`). Pure (non-Nest) functions never build repositories/services
   themselves — the calling service passes the dependency as a parameter (e.g. `ChatCompleter` = injected
-  `LlmService` for LLM calls, `WebSearcher` = injected `TavilyService` with the user's key for web search).
+  `LlmService` for LLM calls, `WebSearcher` = injected `WebSearchService` with the user's DeepSeek key for web search).
 - **Auth:** global `AuthGuard` (`auth/`) — every controller is protected (only `@Public()` routes skip it —
   `/health`, `/api/auth/register|login|logout`; don't add more without a reason). Login is either Telegram
   `initData` (Mini App) or a session cookie (browser, login + password); both resolve to the same internal
@@ -151,7 +151,7 @@ Full tree, webapp layout rules, router/deep-link details — [docs/architecture.
   - **Verify in a real browser** (Playwright MCP, dev user from `DEV_USER_ID`, `yarn dev:all`) — both
     functionally (walk the new flow, console/network clean) and visually (screenshots). **Mobile
     390×844 first** (the main format), **then desktop 1280×800**; both are mandatory. Remember the DB is
-    prod (clean up test entities) and LLM/Tavily calls are paid. Report what was checked, at which
+    prod (clean up test entities) and LLM/web-search calls are paid. Report what was checked, at which
     sizes, and what could not be checked (Telegram-only behaviour).
 - **`pages/<screen>/`** = thin route target; **`features/<feature>/`** = self-contained domain module.
 - **Feature files go into `api/ hooks/ components/ types/ lib/`** subfolders, not loose in the root.
@@ -249,8 +249,7 @@ vitest in both packages, pool `forks`. Details and "why" — [docs/testing.md](d
 | Service | Used for | Key |
 |---|---|---|
 | Telegram | Bot API (via HTTP proxy) | `BOT_TOKEN`, `TELEGRAM_PROXY_URL` |
-| DeepSeek | LLM chat completion — the **only provider**, server-side, per-user (BYOK) | in DB, not env |
-| Tavily | Web search (quota), server-side, per-user (BYOK), via HTTP proxy | in DB, not env |
+| DeepSeek | LLM chat completion — the **only provider** — and web search (`POST /v1/tools/search`, card generation); server-side, per-user (BYOK), direct (no proxy) | in DB, not env |
 | Google / Yandex Translate | Machine translation — **unofficial keyless** endpoints, server-side, direct (no proxy); rate-limited per server IP | none |
 | Postgres | DB (drizzle) | `DATABASE_URL` |
 

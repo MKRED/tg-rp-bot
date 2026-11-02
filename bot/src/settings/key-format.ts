@@ -1,6 +1,6 @@
 import { BadRequestException } from "@nestjs/common";
 
-/** Общая проверка формата API-ключа (DeepSeek/Tavily — оба BYOK, PATCH /settings/<провайдер>). */
+/** Проверка формата API-ключа (DeepSeek, BYOK, PATCH /settings/llm). */
 
 const MAX_KEY_LENGTH = 200;
 // Отклоняем пробелы/переводы строк внутри ключа — частый баг копипасты из мессенджера: ключ с "\n"

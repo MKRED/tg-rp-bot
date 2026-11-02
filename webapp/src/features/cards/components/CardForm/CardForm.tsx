@@ -30,9 +30,6 @@ interface CardFormProps {
   cardId?: number;
   presets: CardPresetOption[];
   presetsLoading: boolean;
-  /** Есть ли сохранённый ключ Tavily (useTavilyKeyStatus в CardEditPage). */
-  webSearchAvailable: boolean;
-  webSearchStatusLoading: boolean;
   submitting: boolean;
   /** Промис — чтобы после успеха сбросить «грязный» снапшот: экран после сохранения не закрывается. */
   onSubmit: (input: CardInput) => Promise<void>;
@@ -55,8 +52,6 @@ export function CardForm({
   cardId,
   presets,
   presetsLoading,
-  webSearchAvailable,
-  webSearchStatusLoading,
   submitting,
   onSubmit,
   onDelete,
@@ -81,7 +76,6 @@ export function CardForm({
     initialId: initial ? null : STANDARD_TEMPLATE_ID,
     categories,
     // Пока статус ключа грузится, не гасим веб-поиск шаблона: без ключа сервер всё равно ищет не станет.
-    webSearchAllowed: webSearchAvailable || webSearchStatusLoading,
     onApply: (patch) => {
       setSystemPrompt(patch.systemPrompt);
       setCategories(patch.categories);
@@ -174,8 +168,6 @@ export function CardForm({
         imagesUnsupported={imagesUnsupported}
         presets={presets}
         presetsLoading={presetsLoading}
-        webSearchAvailable={webSearchAvailable}
-        webSearchStatusLoading={webSearchStatusLoading}
         onName={setName}
         onSystemPrompt={setSystemPrompt}
         onPrompt={setPrompt}

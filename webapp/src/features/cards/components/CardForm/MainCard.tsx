@@ -21,10 +21,6 @@ interface MainCardProps {
   imagesUnsupported: boolean;
   presets: CardPresetOption[];
   presetsLoading: boolean;
-  /** Есть ли сохранённый ключ Tavily — без него веб-поиск не включить. */
-  webSearchAvailable: boolean;
-  /** Статус ключа ещё грузится — не пугаем «добавьте ключ» того, у кого он есть. */
-  webSearchStatusLoading: boolean;
   onName: (value: string) => void;
   onSystemPrompt: (value: string) => void;
   onPrompt: (value: string) => void;
@@ -39,12 +35,6 @@ interface MainCardProps {
 
 /** Карточка «Основное»: название, шаблон, промпты генерации, референсы, пресет ИИ и инструменты модели. */
 export function MainCard(props: MainCardProps) {
-  const webSearchHint = props.webSearchStatusLoading
-    ? "Проверяем ключ Tavily…"
-    : props.webSearchAvailable
-      ? "Модель сможет искать в интернете при генерации блоков"
-      : "Добавьте ключ Tavily в настройках, чтобы включить";
-
   return (
     <SettingsCard title="Основное">
       <TextInput
@@ -89,9 +79,8 @@ export function MainCard(props: MainCardProps) {
       )}
       <Switch
         label="Веб-поиск"
-        description={webSearchHint}
+        description="Модель сможет искать в интернете при генерации блоков"
         checked={props.useWebSearch}
-        disabled={props.webSearchStatusLoading || !props.webSearchAvailable}
         onChange={(e) => props.onUseWebSearch(e.currentTarget.checked)}
       />
       <Switch

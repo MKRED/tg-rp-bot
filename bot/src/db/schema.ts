@@ -100,14 +100,12 @@ export const userSettings = pgTable("user_settings", {
   // Персональный ключ DeepSeek (BYOK — общего ключа из env больше нет). Зашифрован encryptField
   // (см. utils/crypto.ts), NULL = ключ не задан → генерация падает с MissingApiKeyError.
   deepseekApiKey: text("deepseek_api_key"),
-  // Персональный ключ Tavily (веб-поиск, BYOK). Зашифрован encryptField (см. utils/crypto.ts),
-  // NULL = ключ не задан. Квота не кэшируется в БД — запрашивается у Tavily "на лету" (GET /usage).
-  tavilyApiKey: text("tavily_api_key"),
   // Максимум раундов tool-calling (запрос модели → web_search → результат) подряд за одну
-  // генерацию с включённым веб-поиском (см. tavily/searchSettings.ts). Жёсткий серверный лимит:
+  // генерацию с включённым веб-поиском (см. web-search/searchSettings.ts). Жёсткий серверный лимит:
   // после его достижения модель получает финальный раунд без инструмента tools и обязана
   // ответить тем, что успела найти, а не просьбой к пользователю.
-  tavilyMaxSearchRounds: integer("tavily_max_search_rounds").notNull().default(4),
+  // Имя колонки — наследие Tavily (прежнего провайдера поиска): переименование в БД не стоит миграции.
+  webSearchMaxRounds: integer("tavily_max_search_rounds").notNull().default(4),
   // Настройки режима перевода в PromptEditorOverlay (полноэкранный редактор промпт-полей —
   // персонажи/персоны/карточки/пресеты/шаблоны). НЕ путать с template-scoped
   // rpTemplates/narratorTemplates.translationSystemPrompt — та фича отдельная (Globe-кнопка
@@ -231,10 +229,8 @@ export const cards = pgTable("cards", {
   prompt: text("prompt").notNull().default(""),
   categories: jsonb("categories").$type<CardCategory[]>().notNull().default(sql`'[]'::jsonb`),
   presetId: bigint("preset_id", { mode: "number" }).references(() => generationPresets.id),
-  // Веб-поиск (Tavily, BYOK) при генерации блоков этой карточки: модель сама решает,
-  // когда звать web_search (tool_choice: "auto"), в пределах user_settings.tavilyMaxSearchRounds.
-  // Действует, только если у пользователя сохранён ключ Tavily (см. card-generation.service.ts) — иначе
-  // тихо генерирует без поиска, тумблер в форме мог остаться включённым после удаления ключа.
+  // Веб-поиск (DeepSeek, через ключ DeepSeek пользователя) при генерации блоков этой карточки: модель
+  // сама решает, когда звать web_search (tool_choice: "auto"), в пределах user_settings.webSearchMaxRounds.
   useWebSearch: boolean("use_web_search").notNull().default(false),
   // Уточняющие вопросы пользователю (ask_user, tool_choice: "auto") при генерации блоков этой
   // карточки — модель сама решает, когда не хватает информации, которую знает только пользователь

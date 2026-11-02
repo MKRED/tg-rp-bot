@@ -1,6 +1,6 @@
 import type { CardCategory } from "@tg-rp-bot/shared";
 import type { ToolCallMessage, ToolResultMessage } from "../../llm/types.js";
-import { WEB_SEARCH_TOOL_NAME } from "../../tavily/web-search-tool.js";
+import { WEB_SEARCH_TOOL_NAME } from "../../web-search/web-search-tool.js";
 import { countTokens } from "../../utils/tokens.js";
 import { ASK_USER_TOOL_NAME } from "./ask-user-tool.js";
 

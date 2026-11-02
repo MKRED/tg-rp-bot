@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
 
 const { runCardGenerationToolLoop } = await import("./tool-loop.js");
-const { TavilyHttpError } = await import("../../tavily/errors.js");
+const { WebSearchHttpError } = await import("../../web-search/errors.js");
 type Params = Parameters<typeof runCardGenerationToolLoop>[0];
 
 const searchCall = (query: string) => ({
@@ -41,16 +41,16 @@ describe("runCardGenerationToolLoop — веб-поиск", () => {
     expect(second.tools.map((t: { function: { name: string } }) => t.function.name)).toEqual(["web_search"]);
   });
 
-  it("ключ Tavily отозван (401) — дальше без web_search, генерация не падает", async () => {
+  it.each([401, 402])("поиск DeepSeek ответил %i (ключ/баланс) — дальше без web_search, генерация не падает", async (status) => {
     const { llm, webSearch, params } = setup();
-    webSearch.search.mockRejectedValueOnce(new TavilyHttpError(401, "unauthorized"));
+    webSearch.search.mockRejectedValueOnce(new WebSearchHttpError(status, "error"));
     llm.complete
       .mockResolvedValueOnce({ content: "", model: "m", toolCalls: [searchCall("q")] })
       .mockResolvedValueOnce({ content: "без поиска", model: "m" });
 
     await expect(runCardGenerationToolLoop(params)).resolves.toEqual({ done: true, content: "без поиска" });
     const second = llm.complete.mock.calls[1]![0];
-    expect(second.messages.at(-1).content).toContain("invalid tavily api key");
+    expect(second.messages.at(-1).content).toContain("web search unavailable for this account");
     expect(second.tools).toBeUndefined();
   });
 

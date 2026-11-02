@@ -1,0 +1,1 @@
+ALTER TABLE "user_settings" DROP COLUMN "tavily_api_key";

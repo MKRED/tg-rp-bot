@@ -47,10 +47,12 @@ bot/src/
                   инструментов). Связи с карточками нет — webapp копирует шаблон в карточку при выборе;
                   валидация полей и шифрование общие с cards/ (dto/card-categories.ts, card-crypto.ts)
   settings/     — /api/settings (всё в строке user_settings): llm/ (ключ DeepSeek, BYOK, шифруется
-                  ключом пользователя; verify — /models, баланс), tavily/ (ключ Tavily + лимит раундов поиска; verify — TavilyService),
-                  translate/ (режим перевода PromptEditorOverlay) — у каждой controller/service/repository;
+                  ключом пользователя; verify — /models, баланс), web-search/ (лимит раундов поиска — только
+                  controller/repository, без сервиса), translate/ (режим перевода PromptEditorOverlay) — у
+                  остальных controller/service/repository;
                   dto/ (снисходительные PATCH: невалидное поле игнорируется), key-format.ts (400
-                  invalid_key_format); экспортирует TavilySettingsRepository (генерация карточек) и
+                  invalid_key_format); экспортирует LlmSettingsRepository (LLM и ключ веб-поиска),
+                  WebSearchSettingsRepository (генерация карточек) и
                   TranslateSettingsRepository (перевод)
   debug/        — /api/debug/llm: настройки перехвата LLM (repository — колонки user_settings) + записи из
                   in-memory кольца llm/debugCapture; DebugService праймит кэш настроек на старте
@@ -102,8 +104,7 @@ bot/src/
                   storyPromptBuilder (narrator) + общий budget, compactionPlan, keywordMatch,
                   storyPromptOrder, templateTokenWeight (у каждого constants/types/test рядом)
   telegram/     — бот grammY как провайдер Nest: экземпляр Bot (токен-класс; telegram-bot.factory — прокси
-                  через baseFetchConfig) и прокси-агент (TELEGRAM_PROXY_AGENT, telegram-proxy — HttpsProxyAgent;
-                  тот же TELEGRAM_PROXY_URL переиспользуется для Tavily, но через undici ProxyAgent, см. tavily/);
+                  через baseFetchConfig) и прокси-агент (TELEGRAM_PROXY_AGENT, telegram-proxy — HttpsProxyAgent);
                   telegram-polling.service (bot.catch, long polling из onApplicationBootstrap без ожидания,
                   остановка в onApplicationShutdown); handlers/ — провайдеры, подключающиеся к боту в onModuleInit:
                   start.handler (/start: профиль в users через UsersService, кнопка Mini App),
@@ -118,11 +119,12 @@ bot/src/
                   единственный провайдер — DeepSeek;
                   debugCapture (+debug.types, debugSettings — кламп настроек) — in-memory перехват RAW-запросов
                   к LLM для экрана отладки (горячий путь каждого вызова; настройки — в debug/)
-  tavily/       — TavilyModule: TavilyService (search — POST /search для web_search генерации карточек,
-                  getUsage — GET /usage для проверки ключа; ключ параметром вызова, per-user BYOK) через
-                  fetch из пакета undici + ProxyAgent-провайдер (tavily-proxy.ts, TELEGRAM_PROXY_URL);
-                  WebSearcher (поиск с подставленным ключом — параметр чистого tool-loop), схема
-                  инструмента web_search, errors.ts (TavilyHttpError), searchSettings (кламп раундов)
+  web-search/   — WebSearchModule: WebSearchService (POST https://api.deepseek.com/v1/tools/search для
+                  web_search генерации карточек; ключ DeepSeek пользователя параметром вызова, обычный fetch
+                  без прокси); search-request (чистые: тело запроса с обрезкой query до 128 символов,
+                  маппинг ответа summary → content); WebSearcher (поиск с подставленным ключом — параметр
+                  чистого tool-loop), схема инструмента web_search, errors.ts (WebSearchHttpError,
+                  401/402 — проблема аккаунта), searchSettings (кламп раундов)
   health/       — GET /health → { ok: true } (вне префикса /api, @Public — для мониторинга)
   webapp-static/ — раздача собранной Mini App из ./public (cwd; в Docker — /app/bot/public), только если
                   каталог есть (в dev — Vite): файлы сборки, затем index.html на маршруты React;
@@ -130,7 +132,7 @@ bot/src/
                   неизвестный /api/* → JSON 404). Express-middleware до маршрутов Nest, не контроллер —
                   иначе глобальный guard отдал бы на страницу 401
   scripts/      — разовые скрипты вне Nest: migrate-user-keys (перешифровка v1 → v2 при переходе на
-                  UUID-пользователей), test-web-search (прототип DeepSeek + Tavily)
+                  UUID-пользователей)
   utils/        — retry, crypto (шифрование полей ключом пользователя, обёртка ключа мастер-ключом), concurrency (runWithConcurrency —
                   пул с ограниченной конкурентностью)
 ```
@@ -138,7 +140,7 @@ bot/src/
 ## Шифрование данных пользователя
 
 Тексты пользователя (промпты персонажей и персон, карточки и их шаблоны, записи книг, сообщения и их переводы,
-истории, пересказы, ключи DeepSeek/Tavily) хранятся зашифрованными AES-256-GCM (`utils/crypto.ts`):
+истории, пересказы, ключ DeepSeek) хранятся зашифрованными AES-256-GCM (`utils/crypto.ts`):
 - **мастер-ключ** = HKDF(`ENCRYPTION_KEY` из env, соль в коде) — для расшифровки нужны оба;
 - **ключ пользователя** — 32 случайных байта, хранится в `users.data_key` зашифрованным мастер-ключом
   (`k1:…`). Не выводится из id: id и способ входа можно менять, не трогая данные; смена мастер-ключа —
@@ -194,8 +196,8 @@ webapp/src/
                   и общий редактор полей FieldsEditor)
                   generation-presets/ rp-templates/ rp-chat/ narrator/
                   knowledge-books/ narrator-templates/ debug/ llm-settings/ (per-user ключ
-                  DeepSeek, BYOK, экран /settings) tavily-settings/ (per-user ключ Tavily + квота,
-                  BYOK, экран /settings) auth/ (AuthGate внутри роутера над маршрутами: в Telegram — сразу
+                  DeepSeek, BYOK, экран /settings) web-search-settings/ (лимит раундов веб-поиска,
+                  экран /settings) auth/ (AuthGate внутри роутера над маршрутами: в Telegram — сразу
                   приложение, в браузере — сессия или редирект на /login?from=…; useAuth — способ входа и сессия)
   shared/       — кросс-каттинг: api/ (client с заголовками авторизации, сигнал 401 → экран входа),
                   telegram/ (initData + isInsideTelegram, confirm, profile
@@ -237,23 +239,17 @@ lib/        — чистые хелперы и данные (форматтер�
 
 ---
 
-## Прокси для Telegram и Tavily — детали
+## Прокси для Telegram — детали
 
 Правило (в CLAUDE.md): прокси `TELEGRAM_PROXY_URL` цепляется только к сервисам, недоступным
-напрямую с сети сервера — Telegram и Tavily (оба отдают `403 Forbidden` от awselb ещё до
-приложения без прокси), глобальный прокси запрещён. У Telegram и Tavily механизм проксирования
-разный:
+напрямую с сети сервера — сейчас это только Telegram; глобальный прокси запрещён. DeepSeek
+(LLM и веб-поиск `/v1/tools/search`) идёт напрямую.
 
 ⚠️ grammY в Node использует **node-fetch@2** (не нативный fetch!), который проксируется через
 option `agent`. undici `dispatcher` он **игнорирует** — хотя тип `baseFetchConfig` выведен из
 нативного fetch и обманчиво подсказывает `dispatcher`. Проверено рантайм-тестом: с `agent` getMe
 доходит до Telegram, с `dispatcher` — уходит напрямую в обход прокси. Отсюда каст в
 `telegram/telegram-bot.factory.ts` (`telegram-proxy.ts` → `HttpsProxyAgent` → `client.baseFetchConfig.agent`).
-
-Tavily-клиент (`bot/src/tavily/tavily.service.ts`, диспетчер — `tavily-proxy.ts`) устроен иначе: он вызывает `fetch` и `ProxyAgent`
-из самого пакета **undici**, а не встроенный Node `fetch` с `dispatcher` — та комбинация не
-заводится из-за несовместимой версии undici внутри Node. Прокси там подключается через
-`dispatcher`, а не `agent` (в отличие от grammY выше).
 
 Глобальный прокси (`HTTPS_PROXY` / `ALL_PROXY`) увёл бы через прокси и трафик к LLM-провайдеру
 (DeepSeek) — нельзя.

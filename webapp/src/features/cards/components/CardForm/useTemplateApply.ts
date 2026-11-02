@@ -17,8 +17,6 @@ interface UseTemplateApplyArgs {
   /** С чего стартует поле: новая карточка — со «Стандартного», открытая — без выбора. */
   initialId: number | null;
   categories: CardCategory[];
-  /** Веб-поиск из шаблона включается, только если есть ключ Tavily: без него тумблер в форме недоступен. */
-  webSearchAllowed: boolean;
   onApply: (patch: TemplatePatch) => void;
 }
 
@@ -27,7 +25,7 @@ interface UseTemplateApplyArgs {
  * подтверждение со списком полей, чей текст сохранится или пропадёт. Изменение — только в форме:
  * на сервер уходит с «Сохранить», до этого можно передумать.
  */
-export function useTemplateApply({ initialId, categories, webSearchAllowed, onApply }: UseTemplateApplyArgs) {
+export function useTemplateApply({ initialId, categories, onApply }: UseTemplateApplyArgs) {
   const [appliedId, setAppliedId] = useState<number | null>(initialId);
 
   const pick = async (id: number, template: CardTemplateInput) => {
@@ -43,7 +41,7 @@ export function useTemplateApply({ initialId, categories, webSearchAllowed, onAp
     onApply({
       systemPrompt: template.systemPrompt,
       categories: plan.categories,
-      useWebSearch: template.useWebSearch && webSearchAllowed,
+      useWebSearch: template.useWebSearch,
       useAskUser: template.useAskUser,
       askUserFirst: template.askUserFirst,
     });

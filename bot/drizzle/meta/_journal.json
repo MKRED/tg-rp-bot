@@ -351,6 +351,13 @@
       "when": 1793579624380,
       "tag": "0049_card_templates",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1793584750375,
+      "tag": "0050_drop_tavily_api_key",
+      "breakpoints": true
     }
   ]
 }

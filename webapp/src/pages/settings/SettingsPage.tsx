@@ -2,8 +2,8 @@ import { Button, Group, Stack, Text } from "@mantine/core";
 import { type ReactNode, useState } from "react";
 import { BrowserLoginSection, useAuth, useBrowserLogin } from "../../features/auth";
 import { LlmSettingsSection, useLlmSettings } from "../../features/llm-settings";
-import { TavilySettingsSection, useTavilySettings } from "../../features/tavily-settings";
 import { TranslateSettingsSection, useTranslateSettings } from "../../features/translate-settings";
+import { useWebSearchSettings, WebSearchSettingsSection } from "../../features/web-search-settings";
 import { AppPage } from "../../shared/components/AppPage";
 import { SettingsCard } from "../../shared/components/SettingsCard";
 import { FontPicker, PalettePicker, ThemeToggle } from "../../shared/theme";
@@ -29,21 +29,21 @@ function AppearanceField({ label, description, children }: { label: string; desc
 
 /**
  * Экран «Настройки»: оформление (тема, палитра, шрифты), аккаунт (выход в браузере / логин для браузера в Mini App),
- * персональные ключи ИИ (DeepSeek) и веб-поиска (Tavily), дефолты перевода в редакторе промптов.
+ * персональный ключ ИИ (DeepSeek), лимит веб-поиска, дефолты перевода в редакторе промптов.
  *
  * Статусы грузятся на уровне страницы: пока не пришли все ответы, AppPage показывает один лоадер
  * вместо частичного контента — иначе карточки появлялись бы по очереди и сдвигали уже отрисованные.
  */
 export function SettingsPage() {
   const { loading: llmLoading, ...llm } = useLlmSettings();
-  const { loading: tavilyLoading, ...tavily } = useTavilySettings();
+  const { loading: webSearchLoading, ...webSearch } = useWebSearchSettings();
   const { loading: translateLoading, ...translate } = useTranslateSettings();
   const { mode, session, logout } = useAuth();
   const { loading: browserLoginLoading, ...browserLogin } = useBrowserLogin();
   const [loggingOut, setLoggingOut] = useState(false);
 
   return (
-    <AppPage title="Настройки" loading={llmLoading || tavilyLoading || translateLoading || browserLoginLoading}>
+    <AppPage title="Настройки" loading={llmLoading || webSearchLoading || translateLoading || browserLoginLoading}>
       <SettingsCard title="Оформление" description="Сохраняется на этом устройстве.">
         <AppearanceField label="Тема" description="«Авто» — светлая или тёмная, как в Telegram.">
           <ThemeToggle />
@@ -87,7 +87,7 @@ export function SettingsPage() {
       {(mode === "telegram" || !browserLogin.login) && <BrowserLoginSection {...browserLogin} />}
 
       <LlmSettingsSection {...llm} />
-      <TavilySettingsSection {...tavily} />
+      <WebSearchSettingsSection {...webSearch} />
       <TranslateSettingsSection {...translate} />
     </AppPage>
   );

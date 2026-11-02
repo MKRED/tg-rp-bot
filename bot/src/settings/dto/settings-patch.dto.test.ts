@@ -1,7 +1,7 @@
 import type { ArgumentMetadata } from "@nestjs/common";
 import { describe, expect, it } from "vitest";
 import { createValidationPipe } from "../../common/validation-pipe.js";
-import { LlmSettingsPatchDto, TavilySettingsPatchDto, TranslateSettingsPatchDto, VerifyKeyDto } from "./settings-patch.dto.js";
+import { LlmSettingsPatchDto, TranslateSettingsPatchDto, VerifyKeyDto, WebSearchSettingsPatchDto } from "./settings-patch.dto.js";
 
 /**
  * Характеризационные таблицы: тело запроса → патч, как его разбирали Hono-контроллеры. Невалидное
@@ -31,7 +31,7 @@ describe("LlmSettingsPatchDto", () => {
   });
 });
 
-describe("TavilySettingsPatchDto", () => {
+describe("WebSearchSettingsPatchDto", () => {
   it.each([
     { body: {}, patch: {} },
     { body: { maxSearchRounds: 5 }, patch: { maxSearchRounds: 5 } },
@@ -40,11 +40,10 @@ describe("TavilySettingsPatchDto", () => {
     { body: { maxSearchRounds: Infinity }, patch: { maxSearchRounds: Infinity } },
     { body: { maxSearchRounds: "5" }, patch: {} },
     { body: { maxSearchRounds: null }, patch: {} },
-    { body: { apiKey: null }, patch: { apiKey: null } },
-    { body: { apiKey: " tvly-1 " }, patch: { apiKey: "tvly-1" } },
-    { body: { apiKey: true, maxSearchRounds: 2 }, patch: { maxSearchRounds: 2 } },
+    // Ключа у веб-поиска больше нет (идёт через ключ DeepSeek) — лишнее поле отбрасывается.
+    { body: { apiKey: "x", maxSearchRounds: 2 }, patch: { maxSearchRounds: 2 } },
   ])("$body → $patch", async ({ body, patch }) => {
-    expect(await parse(TavilySettingsPatchDto, body)).toEqual(patch);
+    expect(await parse(WebSearchSettingsPatchDto, body)).toEqual(patch);
   });
 });
 

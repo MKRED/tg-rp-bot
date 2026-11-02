@@ -76,7 +76,7 @@
 `rp-chat/message-crypto.ts`. Обязательно учесть:
 - jsonb `translations` у `messages` и `story_messages` — зашифровано **каждое значение**, ключи (коды
   языков) открыты;
-- `user_settings`: ключи DeepSeek и Tavily;
+- `user_settings`: ключ DeepSeek;
 - таблицы без `user_id` (`messages`, `story_messages`, `impersonation_variants`,
   `knowledge_book_entries`, `story_compactions`) — владелец (и ключ) определяется join'ом до родителя.
 
@@ -285,7 +285,7 @@ cookie сервер требует собственный заголовок (`X
 
 **«Пустой аккаунт»** — ни одной строки во всех таблицах с FK на `users`, кроме:
 - `user_sessions` — сессии не считаются данными;
-- `user_settings` — считается пустой, если в ней не сохранены ключи DeepSeek/Tavily (❓ **вопрос
+- `user_settings` — считается пустой, если в ней не сохранён ключ DeepSeek (❓ **вопрос
   владельцу**: сохранённые ключи — это данные, и удалять их молча нельзя; предлагаю считать аккаунт
   с ключом непустым).
 

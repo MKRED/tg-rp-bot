@@ -1,5 +1,5 @@
-// Контракт /api/settings — персональные настройки пользователя: ключ DeepSeek и ключ Tavily
-// (BYOK — сами ключи сервер никогда не отдаёт), настройки режима перевода PromptEditorOverlay.
+// Контракт /api/settings — персональные настройки пользователя: ключ DeepSeek (BYOK — сам ключ
+// сервер никогда не отдаёт), лимит раундов веб-поиска, настройки режима перевода PromptEditorOverlay.
 import { TRANSLATION_REASONING_LEVELS } from "./narrator-templates.js";
 
 /** Результат «Проверить ключ»: ok:false — штатный исход (200), а не ошибка транспорта. */
@@ -37,7 +37,8 @@ export interface DeepSeekBalance {
   balanceInfos: DeepSeekBalanceInfo[];
 }
 
-// ── Tavily (/settings/tavily) ──────────────────────────────────────────────────────────────────
+// ── Веб-поиск (/settings/web-search) ───────────────────────────────────────────────────────────
+// Поиск идёт через ключ DeepSeek пользователя (POST /v1/tools/search) — своего ключа у него нет.
 
 /**
  * Лимит раундов tool-calling подряд за одну генерацию с веб-поиском. Верхняя граница держит
@@ -48,30 +49,13 @@ export const MIN_SEARCH_ROUNDS = 1;
 export const MAX_SEARCH_ROUNDS = 8;
 export const DEFAULT_SEARCH_ROUNDS = 4;
 
-export interface TavilySettingsStatus {
-  hasKey: boolean;
-  /** Последние 4 символа ключа — для UI, сам ключ не отдаём. */
-  last4: string | null;
+export interface WebSearchSettings {
   maxSearchRounds: number;
 }
 
-export interface TavilySettingsPatch {
-  /** undefined — не трогать сохранённый ключ; null — удалить; string — задать новый. */
-  apiKey?: string | null;
+export interface WebSearchSettingsPatch {
   /** undefined — не трогать лимит раундов; иначе новое значение (кламп — на сервере). */
   maxSearchRounds?: number;
-}
-
-export interface TavilyUsage {
-  plan: string;
-  planUsage: number;
-  planLimit: number | null;
-}
-
-export interface VerifyTavilyKeyResult {
-  ok: boolean;
-  usage?: TavilyUsage;
-  error?: VerifyKeyError;
 }
 
 // ── Режим перевода PromptEditorOverlay (/settings/translate) ───────────────────────────────────

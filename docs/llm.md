@@ -14,7 +14,12 @@
 (перевод произвольного текста).
 
 Ключ в браузер не отдаётся; RP-генерация идёт через HTTP API бота, а не напрямую из webapp.
-Tavily (веб-поиск) устроен так же: per-user ключ в `bot/src/settings/tavily/`, `features/tavily-settings/`.
+Веб-поиск генерации карточек (инструмент `web_search`) — тоже DeepSeek и тем же ключом пользователя:
+`bot/src/web-search/` (`WebSearchService` → `POST https://api.deepseek.com/v1/tools/search`, напрямую без
+прокси; ключ читает `CardGenerationService` из `LlmSettingsRepository`, как и `LlmService`). Запрос модели
+обрезается до 128 символов (лимит API), в результат модели идёт `summary` страницы. Оплата — за успешный
+непустой ответ (~$0.75 / 1000); 401/402 (ключ/баланс) выключают `web_search` до конца генерации блока.
+Лимит раундов — `/api/settings/web-search` (`bot/src/settings/web-search/`, `features/web-search-settings/`).
 
 ## Резолв провайдера
 Вызов LLM — `LlmService.complete()` (`bot/src/llm/llm.service.ts`, модуль `LlmModule`): на **каждый**
