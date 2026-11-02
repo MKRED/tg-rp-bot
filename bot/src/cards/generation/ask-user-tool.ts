@@ -21,7 +21,9 @@ export const ASK_USER_MAX_ANSWERED_QUESTIONS = 8;
 export const ASK_USER_DECLINED_ANSWER = "(user declined to answer)";
 
 /** Схема инструмента. Обычно tool_choice: "auto" — модель сама решает, когда нужно уточнение; кнопка
- * «с вопросами» принуждает к вызову первым ходом (forceAskUser в tool-loop.ts). */
+ * «с вопросами» принуждает к вызову первым ходом (forceAskUser в tool-loop.ts). Граница с web_search
+ * прописана явно: иначе модель спрашивает у пользователя факты канона, которые можно найти, или
+ * дёргает его мелочами, которые проще решить самой. */
 export const ASK_USER_TOOL: ToolDefinition = {
   type: "function",
   function: {
@@ -31,7 +33,9 @@ export const ASK_USER_TOOL: ToolDefinition = {
       "information only the user knows (a preference, a missing detail about the character/setting) " +
       `that isn't in the prompt. Batch everything into a SINGLE call — up to ${ASK_USER_MAX_QUESTIONS} ` +
       "questions at once, not one call per question. Each question can suggest a few answer options, " +
-      "but the user may also type a free-form answer instead.",
+      "but the user may also type a free-form answer instead. Ask only about things the user decides — " +
+      "their intent, preferences, or an open choice that substantially changes the block. Never ask for " +
+      "facts you can find with web_search, and don't ask about minor details: make a reasonable choice yourself.",
     parameters: {
       type: "object",
       properties: {
