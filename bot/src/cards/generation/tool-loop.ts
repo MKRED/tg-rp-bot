@@ -11,7 +11,7 @@ import type {
 import logger from "../../logger.js";
 import { WebSearchHttpError } from "../../web-search/errors.js";
 import type { WebSearcher } from "../../web-search/web-search.types.js";
-import { WEB_SEARCH_TOOL, WEB_SEARCH_TOOL_NAME } from "../../web-search/web-search-tool.js";
+import { WEB_SEARCH_TOOL_NAME, webSearchTool } from "../../web-search/web-search-tool.js";
 import { ASK_USER_TOOL, ASK_USER_TOOL_NAME, parseAskUserArguments } from "./ask-user-tool.js";
 
 type LoopMessage = ChatMessage | MultimodalUserMessage | ToolCallMessage | ToolResultMessage;
@@ -31,8 +31,13 @@ interface WebSearchOutcome {
 
 /** Выполняет один tool_call веб-поиска (или отвечает ошибкой на неизвестное имя инструмента).
  * Ошибки (битые аргументы, сбой поиска) уходят в content — модель узнаёт о неудаче тем же путём,
- * что и об успехе, и может ответить без этого результата, а не всей генерацией. */
-async function runWebSearchCall(call: ToolCall, webSearch: WebSearcher): Promise<WebSearchOutcome> {
+ * что и об успехе, и может ответить без этого результата, а не всей генерацией. searchesLeft —
+ * остаток ПОСЛЕ этого вызова: модель видит его в результате и решает, на что потратить оставшееся. */
+async function runWebSearchCall(
+  call: ToolCall,
+  webSearch: WebSearcher,
+  searchesLeft: number,
+): Promise<WebSearchOutcome> {
   if (call.function.name !== WEB_SEARCH_TOOL_NAME) {
     return { content: JSON.stringify({ error: `unknown tool: ${call.function.name}` }), authFailed: false };
   }
@@ -49,7 +54,7 @@ async function runWebSearchCall(call: ToolCall, webSearch: WebSearcher): Promise
 
   try {
     const results = await webSearch.search(query);
-    return { content: JSON.stringify(results), record: { query, results }, authFailed: false };
+    return { content: JSON.stringify({ results, searches_left: searchesLeft }), record: { query, results }, authFailed: false };
   } catch (err) {
     const authFailed = err instanceof WebSearchHttpError && err.isAccountProblem;
     logger.error({ err, query, authFailed }, "Web search failed during card generation");
@@ -143,7 +148,7 @@ export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise
   for (;;) {
     const canSearch = webSearch !== null && searchesUsed < maxSearchRounds;
     const canAsk = askUserEnabled && askUserRoundsUsed < ASK_USER_MAX_ROUNDS;
-    const tools = [...(canSearch ? [WEB_SEARCH_TOOL] : []), ...(canAsk ? [ASK_USER_TOOL] : [])];
+    const tools = [...(canSearch ? [webSearchTool(maxSearchRounds)] : []), ...(canAsk ? [ASK_USER_TOOL] : [])];
 
     llmCalls++;
     // Принуждение — именованный выбор, а не "required": тот разрешил бы модели отделаться web_search.
@@ -260,14 +265,25 @@ export async function runCardGenerationToolLoop(params: ToolLoopParams): Promise
         continue;
       }
 
+      // Параллельных вызовов в одном ходе может быть больше остатка бюджета — лишние не выполняем,
+      // иначе лимит обходился бы одним широким ходом. Счётчик растёт и здесь (конечность цикла).
+      if (searchesUsed >= maxSearchRounds) {
+        history.push({
+          role: "tool",
+          tool_call_id: call.id,
+          content: JSON.stringify({ error: "search budget for this block is used up", searches_left: 0 }),
+        });
+        searchesUsed++;
+        continue;
+      }
+      searchesUsed++;
       // Сюда доходит только предложенный web_search, а он предлагается лишь при webSearch !== null;
       // вторая ветка — сужение типа, не рабочий путь.
       const outcome: WebSearchOutcome = webSearch
-        ? await runWebSearchCall(call, webSearch)
+        ? await runWebSearchCall(call, webSearch, maxSearchRounds - searchesUsed)
         : { content: JSON.stringify({ error: `tool unavailable: ${call.function.name}` }), authFailed: false };
       history.push({ role: "tool", tool_call_id: call.id, content: outcome.content });
       if (outcome.record) onWebSearch?.(outcome.record);
-      searchesUsed++;
       if (outcome.authFailed) authFailed = true;
     }
 

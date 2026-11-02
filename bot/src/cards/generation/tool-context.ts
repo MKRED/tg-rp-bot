@@ -53,7 +53,8 @@ export function withToolContextTokens(categories: CardCategory[]): CardCategory[
 /**
  * Сохранённые веб-поиски категории: один assistant-ход со всеми вызовами web_search и по
  * tool-сообщению на каждый. content результата — тот же JSON, что модель получила вживую
- * (см. runWebSearchCall в tool-loop.ts).
+ * (см. runWebSearchCall в tool-loop.ts), но без searches_left: тот остаток к реплею устарел, а
+ * актуальный бюджет модель видит в описании инструмента.
  */
 function webSearchExchange(category: CardCategory): ToolContextMessage[] {
   const searches = category.webSearches;
@@ -78,7 +79,7 @@ function webSearchExchange(category: CardCategory): ToolContextMessage[] {
       (s, index): ToolResultMessage => ({
         role: "tool",
         tool_call_id: callId(index),
-        content: JSON.stringify(s.results),
+        content: JSON.stringify({ results: s.results }),
       }),
     ),
   ];

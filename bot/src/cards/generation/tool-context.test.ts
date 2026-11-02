@@ -34,7 +34,7 @@ describe("buildToolContextMessages", () => {
     ]);
     expect(JSON.parse(messages[0].tool_calls[1].function.arguments)).toEqual({ query: "гномы" });
     expect(messages[2].tool_call_id).toBe(messages[0].tool_calls[1].id);
-    expect(JSON.parse(messages[2].content)).toEqual(search("гномы").results);
+    expect(JSON.parse(messages[2].content)).toEqual({ results: search("гномы").results });
   });
 
   it("поиски идут перед вопросами, id вызовов не пересекаются", () => {

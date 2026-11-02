@@ -95,6 +95,39 @@ describe("runCardGenerationToolLoop — веб-поиск", () => {
     expect(onWebSearch).toHaveBeenCalledTimes(1);
     expect(onWebSearch).toHaveBeenCalledWith({ query: "ok", results: [{ title: "T", url: "u", content: "c" }] });
   });
+  it("бюджет — в описании инструмента, остаток — в каждом результате", async () => {
+    const { llm, params } = setup({ maxSearchRounds: 2 });
+    llm.complete
+      .mockResolvedValueOnce({ content: "", model: "m", toolCalls: [searchCall("q")] })
+      .mockResolvedValueOnce({ content: "ok", model: "m" });
+
+    await runCardGenerationToolLoop(params);
+    const first = llm.complete.mock.calls[0]![0];
+    expect(first.tools[0].function.description).toContain("Budget for this block: 2 searches");
+    const second = llm.complete.mock.calls[1]![0];
+    expect(JSON.parse(second.messages.at(-1).content)).toMatchObject({ searches_left: 1 });
+  });
+
+  it("параллельные вызовы сверх остатка бюджета не выполняются", async () => {
+    const { llm, webSearch, params } = setup({ maxSearchRounds: 2 });
+    llm.complete
+      .mockResolvedValueOnce({
+        content: "",
+        model: "m",
+        toolCalls: [searchCall("a"), searchCall("b"), searchCall("c")],
+      })
+      .mockResolvedValueOnce({ content: "ok", model: "m" });
+
+    await runCardGenerationToolLoop(params);
+    expect(webSearch.search).toHaveBeenCalledTimes(2);
+    const second = llm.complete.mock.calls[1]![0];
+    expect(JSON.parse(second.messages.at(-1).content)).toEqual({
+      error: "search budget for this block is used up",
+      searches_left: 0,
+    });
+    // Бюджет исчерпан — следующий ход уже без web_search.
+    expect(second.tools).toBeUndefined();
+  });
 });
 
 describe("runCardGenerationToolLoop — ask_user", () => {
