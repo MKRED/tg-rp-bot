@@ -61,9 +61,7 @@ export function assembleCardBlockPrompt(
   const messages: PromptMessage[] = [{ role: "system", content: systemPrompt }];
 
   const withExample = insertExampleBlock(prompt, buildExampleBlock(enabled));
-  // Пометка про референсы — до запроса блока: запрос остаётся последней строкой хода, как без картинок.
-  const mainUserContent = referenceImages.length > 0 ? `${withExample}\n\n${REFERENCE_IMAGES_NOTE}` : withExample;
-  const mainUserText = targetIndex === 0 ? `${mainUserContent}\n\n${blockRequest(target.title)}` : mainUserContent;
+  const mainUserText = targetIndex === 0 ? `${withExample}\n\n${blockRequest(target.title)}` : withExample;
   messages.push(buildMainUserMessage(mainUserText, referenceImages));
   messages.push(...buildToolContextMessages(targetIndex === 0 ? target : enabled[0]!));
 
@@ -95,11 +93,6 @@ function buildMainUserMessage(text: string, referenceImages: string[]): ChatMess
     ],
   };
 }
-
-/** Пометка к картинкам — на английском, как и остальные служебные части промпта. */
-const REFERENCE_IMAGES_NOTE =
-  "The attached images are visual references for this character. Base the character's appearance " +
-  "(body, face, hair, eyes, outfit, accessories, overall style) on them.";
 
 /** Короткий запрос на генерацию конкретного блока — на английском, формат ответа задаёт system. */
 function blockRequest(title: string): string {

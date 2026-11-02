@@ -312,12 +312,13 @@ describe("assembleCardBlockPrompt", () => {
       expect(typeof result!.messages[1]!.content).toBe("string");
     });
 
-    it("картинки — в первом user-сообщении после текста; пометка до запроса блока", () => {
+    it("картинки — в первом user-сообщении после текста, без служебной приписки", () => {
       const categories = [cat({ id: "base", title: "Base" })];
-      const result = assembleCardBlockPrompt("System", "Prompt", categories, undefined, [IMG, IMG]);
-      const content = result!.messages[1]!.content as Array<{ type: string; text?: string }>;
+      const withImages = assembleCardBlockPrompt("System", "Prompt", categories, undefined, [IMG, IMG]);
+      const withoutImages = assembleCardBlockPrompt("System", "Prompt", categories, undefined, []);
+      const content = withImages!.messages[1]!.content as Array<{ type: string; text?: string }>;
       expect(content.map((p) => p.type)).toEqual(["text", "image_url", "image_url"]);
-      expect(content[0]!.text).toMatch(/visual references[\s\S]*Generate the "Base" block\.$/);
+      expect(content[0]!.text).toBe(withoutImages!.messages[1]!.content);
     });
 
     it("картинки не дублируются в запросах следующих блоков", () => {
