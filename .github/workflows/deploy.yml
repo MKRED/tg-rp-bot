@@ -38,7 +38,19 @@ jobs:
         run: |
           DOCKER_BUILDKIT=1 docker build -f Dockerfile -t kvach_tg_rp_bot .
 
-      # 6. Перезапуск контейнера из готового образа + чистка dangling-образов.
+      # 6. Миграции БД — одноразовым контейнером из НОВОГО образа (тот же env_file и сети, что у бота),
+      #    до перезапуска. Упала миграция → шаг падает, up ниже не выполняется и старый контейнер
+      #    продолжает работать на нетронутой схеме. Не при старте бота: локальный `yarn dev` смотрит
+      #    в ту же прод-базу и применял бы туда незакоммиченные миграции. Уже применённые руками
+      #    миграции drizzle пропускает (__drizzle_migrations).
+      - name: Migrate DB
+        run: |
+          ssh -T -p 2222 root@home.aoshiloli.ru << 'EOF'
+            cd /mnt/ssd/docker/kvach_tg_rp_bot || { echo 'Папка не найдена'; exit 1; }
+            docker compose run --rm --no-deps -T bot yarn drizzle-kit migrate
+          EOF
+
+      # 7. Перезапуск контейнера из готового образа + чистка dangling-образов.
       - name: Run docker compose
         run: |
           ssh -T -p 2222 root@home.aoshiloli.ru << 'EOF'

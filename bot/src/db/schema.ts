@@ -104,8 +104,7 @@ export const userSettings = pgTable("user_settings", {
   // генерацию с включённым веб-поиском (см. web-search/searchSettings.ts). Жёсткий серверный лимит:
   // после его достижения модель получает финальный раунд без инструмента tools и обязана
   // ответить тем, что успела найти, а не просьбой к пользователю.
-  // Имя колонки — наследие Tavily (прежнего провайдера поиска): переименование в БД не стоит миграции.
-  webSearchMaxRounds: integer("tavily_max_search_rounds").notNull().default(4),
+  webSearchMaxRounds: integer("web_search_max_rounds").notNull().default(4),
   // Настройки режима перевода в PromptEditorOverlay (полноэкранный редактор промпт-полей —
   // персонажи/персоны/карточки/пресеты/шаблоны). НЕ путать с template-scoped
   // rpTemplates/narratorTemplates.translationSystemPrompt — та фича отдельная (Globe-кнопка

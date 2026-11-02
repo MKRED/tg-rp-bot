@@ -75,7 +75,7 @@ yarn install                      # установка всех workspace-зав
 
 cp bot/.env.example bot/.env      # заполни BOT_TOKEN, DATABASE_URL, при необходимости прокси/ключи
 
-yarn workspace bot drizzle-kit migrate   # применить миграции БД
+yarn workspace bot drizzle-kit migrate   # применить миграции БД (на проде их применяет деплой)
 
 yarn dev          # старт бота (сначала собирает shared)
 yarn dev:web      # старт Mini App (Vite dev server)
@@ -88,7 +88,7 @@ yarn dev:all      # shared в watch + бот + Mini App в одном терми
 yarn build                                  # сборка shared + bot + webapp
 yarn test                                   # юнит-тесты bot + webapp (vitest)
 yarn workspace bot drizzle-kit generate     # сгенерировать миграцию из изменений схемы
-yarn workspace bot drizzle-kit migrate      # применить миграции
+yarn workspace bot drizzle-kit migrate      # применить миграции руками (деплой применяет их сам)
 ```
 
 ## Переменные окружения

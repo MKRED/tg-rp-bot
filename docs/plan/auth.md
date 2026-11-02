@@ -40,8 +40,8 @@
   `impersonation_variants` 205). Объём маленький → **одна транзакция**, без батчей.
 - Ключ пользователя: `HKDF(masterKey, "tg-rp-bot-user-<telegramId>")` (`utils/crypto.ts`), токен
   `v1:` + base64(iv‖tag‖ciphertext).
-- Миграции при старте контейнера **не применяются** (только вручную `drizzle-kit migrate`) — порядок
-  переключения контролируем сами.
+- Миграции при старте контейнера **не применяются** — их применяет шаг «Migrate DB» деплоя перед
+  перезапуском (или вручную `drizzle-kit migrate` заранее) — порядок переключения контролируем сами.
 
 ### Целевая схема
 - `users.id uuid PRIMARY KEY DEFAULT gen_random_uuid()`.

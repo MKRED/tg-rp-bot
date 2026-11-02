@@ -52,8 +52,8 @@ ENV NODE_ENV=production
 WORKDIR /app
 
 # node_modules хойстятся в корень монорепо. Тащим целиком (с dev-зависимостями):
-# drizzle-kit нужен, чтобы прогонять миграции из этого же образа
-# (`docker compose run --rm bot yarn drizzle-kit migrate`).
+# drizzle-kit нужен, чтобы прогонять миграции из этого же образа — так делает шаг «Migrate DB»
+# в .github/workflows/deploy.yml (`docker compose run --rm bot yarn drizzle-kit migrate`).
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/yarn.lock ./yarn.lock

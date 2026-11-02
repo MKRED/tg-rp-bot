@@ -51,7 +51,7 @@ yarn dev:all       # shared tsc --watch + bot (nest start --watch) + Vite via co
 yarn build:shared  # rebuild shared/dist (root test/build/dev do it first automatically)
 Stop-Process -Name "node"                # stop bot (PowerShell)
 yarn workspace bot drizzle-kit generate  # migration from schema changes
-yarn workspace bot drizzle-kit migrate   # apply migrations (→ PROD DB!)
+yarn workspace bot drizzle-kit migrate   # apply migrations by hand (→ PROD DB!) — deploy does it anyway
 yarn test          # bot + webapp unit tests (vitest run)
 yarn test:watch    # bot tests in watch mode
 cd bot && yarn vitest run src/path/file.test.ts   # single file (webapp: cd webapp); needs built shared/dist
@@ -227,11 +227,21 @@ API quirks, "why is it done this way?") — not restating the obvious.
 1. Edit `bot/src/db/schema.ts`.
 2. `yarn workspace bot drizzle-kit generate` → migration SQL in `bot/drizzle/`.
 3. pgvector: manually add `CREATE EXTENSION IF NOT EXISTS vector;` (drizzle-kit doesn't generate it).
-4. `yarn workspace bot drizzle-kit migrate` (remember: prod DB).
+4. Commit + deploy: the **Migrate DB** step in `.github/workflows/deploy.yml` applies pending migrations
+   from the new image right before the container restart (a failed migration stops the deploy; the old
+   container keeps running). Never at bot startup — local `yarn dev` shares the prod DB.
+   - **Additive** migration (new table/column with a default): may be applied by hand earlier
+     (`yarn workspace bot drizzle-kit migrate`) to try the new code locally — old prod code ignores it,
+     and the deploy step skips already-applied ones.
+   - **Destructive/renaming** (drop, rename, type change): **only via deploy, never by hand** — applied
+     early it breaks prod code until the deploy lands; via deploy the window is seconds.
+   - `generate` asks interactively about renames (unusable here) → `drizzle-kit generate --custom`, write
+     the SQL by hand and fix the new `meta/*_snapshot.json` to match `schema.ts` (a follow-up `generate`
+     must report no changes).
 
 **Rollback:** drizzle-kit is forward-only (no `migrate:down`). A **not yet applied** migration:
 `yarn workspace bot drizzle-kit drop` + delete the `.sql`. An **applied** one: write a new corrective
-migration (`generate` → edit SQL → `migrate`). Breaking prod changes only via forward migrations.
+migration (`generate` → edit SQL → deploy). Breaking prod changes only via forward migrations.
 
 ### Testing
 vitest in both packages, pool `forks`. Details and "why" — [docs/testing.md](docs/testing.md).
