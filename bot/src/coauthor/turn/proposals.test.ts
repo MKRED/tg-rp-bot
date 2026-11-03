@@ -8,6 +8,7 @@ const cards: CoauthorCardData[] = [
     id: 1,
     name: "Elena",
     brief: "",
+    images: [],
     blocks: [
       { id: "rel", title: "Relationships", format: "", content: "Sister: Mira" },
       { id: "fears", title: "Fears", format: "", content: "" },

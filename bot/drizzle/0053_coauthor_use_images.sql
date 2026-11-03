@@ -1,0 +1,1 @@
+ALTER TABLE "coauthor_chats" ADD COLUMN "use_images" boolean DEFAULT true NOT NULL;

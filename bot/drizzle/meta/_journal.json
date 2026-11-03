@@ -372,6 +372,13 @@
       "when": 1793721505012,
       "tag": "0052_coauthor_chats",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1793724478628,
+      "tag": "0053_coauthor_use_images",
+      "breakpoints": true
     }
   ]
 }

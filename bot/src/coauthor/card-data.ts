@@ -17,6 +17,7 @@ export function toCardData(card: Card): CoauthorCardData {
     id: card.id,
     name: card.name,
     brief: card.prompt,
+    images: card.referenceImages,
     blocks: card.categories
       .filter((c) => c.enabled)
       .map((c) => ({ id: c.id, title: c.title, format: c.description, content: c.content })),
@@ -29,5 +30,6 @@ export function toCardView(card: Card): CoauthorCard {
     id: card.id,
     name: card.name,
     blocks: card.categories.filter((c) => c.enabled).map((c) => ({ id: c.id, title: c.title, content: c.content })),
+    imageCount: card.referenceImages.length,
   };
 }

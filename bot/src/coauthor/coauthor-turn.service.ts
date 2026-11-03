@@ -1,5 +1,5 @@
 import { BadRequestException, HttpException, Injectable } from "@nestjs/common";
-import type { CoauthorAnswerInput, CoauthorChat } from "@tg-rp-bot/shared";
+import { modelSupportsImages, type CoauthorAnswerInput, type CoauthorChat } from "@tg-rp-bot/shared";
 import { CardsRepository } from "../cards/cards.repository.js";
 import { found } from "../common/found.js";
 import { MissingApiKeyError } from "../llm/errors.js";
@@ -98,6 +98,8 @@ export class CoauthorTurnService {
         webSearch: apiKey ? { search: (query) => this.webSearch.search(apiKey, query) } : null,
         maxSearchRounds,
         askUserEnabled: chat.useAskUser,
+        // Модель без зрения не падает, а молча выкидывает картинки — просто их не шлём (чат полезен и без них).
+        withImages: chat.useImages && modelSupportsImages(preset.model),
       });
 
       const saved = found(await this.repository.saveState(userId, chatId, state));

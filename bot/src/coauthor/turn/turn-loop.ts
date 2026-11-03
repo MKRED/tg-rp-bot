@@ -36,6 +36,8 @@ export interface CoauthorTurnParams {
   webSearch: WebSearcher | null;
   maxSearchRounds: number;
   askUserEnabled: boolean;
+  /** Отправлять картинки-референсы карточек: включено в чате и модель пресета их видит. */
+  withImages: boolean;
   onWebSearch?: (record: WebSearchRecord) => void;
 }
 
@@ -70,7 +72,7 @@ function callsInTurn(messages: StoredMessage[], name: string): number {
  * паузы ограничены COAUTHOR_MAX_ASK_PER_TURN на сообщение пользователя.
  */
 export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<CoauthorTurnOutcome> {
-  const { llm, baseOptions, customPrompt, cards, state, webSearch, maxSearchRounds, askUserEnabled } = params;
+  const { llm, baseOptions, customPrompt, cards, state, webSearch, maxSearchRounds, askUserEnabled, withImages } = params;
   const { userId } = baseOptions;
   const t0 = Date.now();
 
@@ -90,7 +92,7 @@ export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<Coaut
 
     const result = await llm.complete({
       ...baseOptions,
-      messages: buildCoauthorMessages(customPrompt, cards, state.proposals, state.messages, COAUTHOR_HISTORY_TOKEN_BUDGET),
+      messages: buildCoauthorMessages(customPrompt, cards, state.proposals, state.messages, COAUTHOR_HISTORY_TOKEN_BUDGET, withImages),
       ...(tools.length > 0 && { tools, toolChoice: "auto" as const }),
     });
 

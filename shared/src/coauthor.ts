@@ -43,6 +43,8 @@ export interface CoauthorCard {
   id: number;
   name: string;
   blocks: CoauthorBlock[];
+  /** Сколько у карточки картинок-референсов (сами картинки клиенту здесь не нужны). */
+  imageCount: number;
 }
 
 /**
@@ -80,6 +82,8 @@ export interface CoauthorChat {
   systemPrompt: string;
   useAskUser: boolean;
   useWebSearch: boolean;
+  /** Картинки-референсы карточек уходят модели (если модель пресета их видит). */
+  useImages: boolean;
   feed: CoauthorFeedItem[];
   proposals: CoauthorProposal[];
   /** Идёт ход ИИ — после обновления страницы клиент опрашивает чат, пока флаг не снимется. */
@@ -105,6 +109,7 @@ export interface CoauthorChatInput {
   systemPrompt: string;
   useAskUser: boolean;
   useWebSearch: boolean;
+  useImages: boolean;
 }
 
 /** Тело POST /coauthor/:id/messages. */

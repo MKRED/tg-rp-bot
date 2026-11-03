@@ -1,5 +1,6 @@
 import { useCards } from "../../features/cards";
 import type { CoauthorCardOption, CoauthorPresetOption } from "../../features/coauthor";
+import { modelSupportsImages } from "@tg-rp-bot/shared";
 import { presetSummary, usePresets } from "../../features/generation-presets";
 
 /**
@@ -10,6 +11,11 @@ export function useCoauthorFormOptions() {
   const { items: rawCards, loading: cardsLoading } = useCards();
   const { items: rawPresets, loading: presetsLoading } = usePresets();
   const cards: CoauthorCardOption[] = rawCards.map((c) => ({ id: c.id, name: c.name }));
-  const presets: CoauthorPresetOption[] = rawPresets.map((p) => ({ id: p.id, name: p.name, summary: presetSummary(p) }));
+  const presets: CoauthorPresetOption[] = rawPresets.map((p) => ({
+    id: p.id,
+    name: p.name,
+    summary: presetSummary(p),
+    supportsImages: modelSupportsImages(p.model),
+  }));
   return { cards, cardsLoading, presets, presetsLoading };
 }

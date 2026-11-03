@@ -80,6 +80,7 @@ export class CoauthorRepository {
         systemPrompt: encryptField(input.systemPrompt.trim(), key),
         useAskUser: input.useAskUser,
         useWebSearch: input.useWebSearch,
+        useImages: input.useImages,
       })
       .returning();
     const created = rows[0]!;
@@ -105,6 +106,7 @@ export class CoauthorRepository {
         systemPrompt: encryptField(input.systemPrompt.trim(), key),
         useAskUser: input.useAskUser,
         useWebSearch: input.useWebSearch,
+        useImages: input.useImages,
         ...(state && { state: encryptField(serializeCoauthorState(state), key) }),
       })
       .where(and(eq(schema.coauthorChats.id, id), eq(schema.coauthorChats.userId, userId)))

@@ -299,6 +299,8 @@ export const coauthorChats = pgTable("coauthor_chats", {
   systemPrompt: text("system_prompt").notNull().default(""),
   useAskUser: boolean("use_ask_user").notNull().default(true),
   useWebSearch: boolean("use_web_search").notNull().default(false),
+  // Картинки-референсы карточек уходят модели (только модели со зрением, см. turn/prompt.ts).
+  useImages: boolean("use_images").notNull().default(true),
   state: text("state").notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })

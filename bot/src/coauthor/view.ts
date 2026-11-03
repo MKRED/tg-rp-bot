@@ -20,6 +20,7 @@ export function toChatView(record: CoauthorChatRecord, cards: Card[], running: b
     systemPrompt: record.systemPrompt,
     useAskUser: record.useAskUser,
     useWebSearch: record.useWebSearch,
+    useImages: record.useImages,
     feed: buildFeed(record.state),
     proposals: record.state.proposals.filter((p) => visibleIds.has(p.cardId)),
     running,

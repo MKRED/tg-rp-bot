@@ -1,10 +1,10 @@
 import { DEFAULT_COAUTHOR_SYSTEM_PROMPT, type CoauthorProposal } from "@tg-rp-bot/shared";
-import type { ChatMessage, ToolCallMessage, ToolResultMessage } from "../../llm/types.js";
+import type { ChatMessage, MultimodalUserMessage, ToolCallMessage, ToolResultMessage, UserContentPart } from "../../llm/types.js";
 import type { StoredMessage } from "./state.js";
 import { GET_CARDS_TOOL_NAME } from "./tools.js";
 import { trimHistory } from "./trim.js";
 
-export type PromptMessage = ChatMessage | ToolCallMessage | ToolResultMessage;
+export type PromptMessage = ChatMessage | MultimodalUserMessage | ToolCallMessage | ToolResultMessage;
 
 /** Карточка в том виде, в каком её получает модель (только включённые блоки). */
 export interface CoauthorCardData {
@@ -12,6 +12,8 @@ export interface CoauthorCardData {
   name: string;
   /** Основной промпт карточки — бриф персонажа. */
   brief: string;
+  /** Картинки-референсы (data URL) — уходят модели, только если в чате включены картинки. */
+  images: string[];
   blocks: Array<{ id: string; title: string; format: string; content: string }>;
 }
 
@@ -88,10 +90,11 @@ export function buildCoauthorMessages(
   proposals: CoauthorProposal[],
   history: StoredMessage[],
   historyTokenBudget: number,
+  withImages = false,
 ): PromptMessage[] {
   return [
     { role: "system", content: buildSystemPrompt(customPrompt) },
-    { role: "user", content: OPENING_USER },
+    openingUserMessage(cards, withImages),
     {
       role: "assistant",
       content: null,
@@ -102,6 +105,23 @@ export function buildCoauthorMessages(
     { role: "assistant", content: OPENING_ASSISTANT },
     ...trimHistory(history, historyTokenBudget).map(toPromptMessage),
   ];
+}
+
+/**
+ * Первое сообщение пользователя. Картинки DeepSeek принимает только в user-сообщениях (не в результате
+ * get_cards), поэтому референсы всех карточек едут здесь — каждая группа с подписью, чья она: модель
+ * связывает картинку с карточкой по имени и card_id. Сообщение стабильно, пока не меняются сами
+ * картинки, — префикс промпта с ними попадает в кэш провайдера.
+ */
+function openingUserMessage(cards: CoauthorCardData[], withImages: boolean): ChatMessage | MultimodalUserMessage {
+  const withRefs = withImages ? cards.filter((c) => c.images.length > 0) : [];
+  if (withRefs.length === 0) return { role: "user", content: OPENING_USER };
+  const parts: UserContentPart[] = [{ type: "text", text: OPENING_USER }];
+  for (const card of withRefs) {
+    parts.push({ type: "text", text: `Reference images of ${card.name} (card_id ${card.id}) — how the character looks:` });
+    for (const url of card.images) parts.push({ type: "image_url", image_url: { url } });
+  }
+  return { role: "user", content: parts };
 }
 
 /** Сохранённое сообщение → сообщение протокола. */

@@ -22,6 +22,8 @@ export interface CoauthorPresetOption {
   id: number;
   name: string;
   summary: string;
+  /** Модель пресета видит картинки (иначе тумблер «Учитывать картинки» недоступен). */
+  supportsImages: boolean;
 }
 
 /** Карточка для выбора в чат. */

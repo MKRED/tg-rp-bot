@@ -19,6 +19,15 @@ interface CoauthorChatFormProps {
   presetsLoading: boolean;
   /** Подпись под названием: при создании оно собирается из имён карточек, если его не трогать. */
   namePlaceholder?: string;
+  /** Сколько картинок-референсов у выбранных карточек; undefined — неизвестно (форма создания). */
+  imageCount?: number;
+}
+
+/** Пояснение тумблера картинок: почему он недоступен или во что обходится. */
+function imagesDescription(supported: boolean, imageCount: number | undefined): string {
+  if (!supported) return "Модель пресета не видит картинки — выберите пресет с deepseek-flash";
+  if (imageCount === 0) return "У карточек чата нет картинок-референсов";
+  return "ИИ увидит картинки-референсы карточек — для блоков внешности и сходства персонажей. Каждая картинка ≈ 1000 токенов в каждом запросе";
 }
 
 /**
@@ -28,8 +37,20 @@ interface CoauthorChatFormProps {
  * меняли. Хранится пустая строка, пока текст совпадает со стандартным: так улучшения стандарта доходят
  * до чата сами. Протокол инструментов сервер дописывает отдельно, его здесь нет.
  */
-export function CoauthorChatForm({ value, onChange, cards, cardsLoading, presets, presetsLoading, namePlaceholder }: CoauthorChatFormProps) {
+export function CoauthorChatForm({
+  value,
+  onChange,
+  cards,
+  cardsLoading,
+  presets,
+  presetsLoading,
+  namePlaceholder,
+  imageCount,
+}: CoauthorChatFormProps) {
   const customized = value.systemPrompt.trim() !== "";
+  // Пресет ещё не выбран или список грузится — не блокируем тумблер раньше времени.
+  const imagesSupported = presets.find((p) => p.id === value.presetId)?.supportsImages ?? true;
+  const imagesAvailable = imagesSupported && imageCount !== 0;
 
   return (
     <>
@@ -80,6 +101,15 @@ export function CoauthorChatForm({ value, onChange, cards, cardsLoading, presets
           description="Для персонажей из канона: ИИ проверит факты в интернете"
           checked={value.useWebSearch}
           onChange={(e) => onChange({ useWebSearch: e.currentTarget.checked })}
+        />
+        {/* Недоступный тумблер показывает выключенное состояние, но выбор пользователя не трогаем:
+            сменит пресет на модель со зрением — картинки снова пойдут. */}
+        <Switch
+          label="Учитывать картинки"
+          description={imagesDescription(imagesSupported, imageCount)}
+          checked={value.useImages && imagesAvailable}
+          disabled={!imagesAvailable}
+          onChange={(e) => onChange({ useImages: e.currentTarget.checked })}
         />
       </SettingsCard>
     </>

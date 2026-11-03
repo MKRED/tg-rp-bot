@@ -38,4 +38,7 @@ export class CoauthorChatInputDto implements CoauthorChatInput {
 
   @IsFlag()
   useWebSearch = false;
+
+  @IsFlag()
+  useImages = false;
 }

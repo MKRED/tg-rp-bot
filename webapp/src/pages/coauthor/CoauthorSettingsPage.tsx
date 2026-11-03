@@ -11,6 +11,7 @@ import {
   removeCoauthorChat,
   updateCoauthorChat,
   useCoauthorChat,
+  type CoauthorChat,
   type CoauthorChatInput,
 } from "../../features/coauthor";
 import { AppPage } from "../../shared/components/AppPage";
@@ -19,6 +20,20 @@ import { EmptyState } from "../../shared/components/EmptyState";
 import { confirmAction } from "../../shared/telegram/confirm";
 import { useToast } from "../../shared/toast";
 import { useCoauthorFormOptions } from "./useCoauthorFormOptions";
+
+/**
+ * Картинки выбранных карточек. undefined — среди выбранных есть только что добавленная карточка: её
+ * картинок экран не знает (они приходят с чатом), и гасить тумблер по неполным данным нельзя.
+ */
+function selectedImageCount(cards: CoauthorChat["cards"], cardIds: number[]): number | undefined {
+  let total = 0;
+  for (const id of cardIds) {
+    const card = cards.find((c) => c.id === id);
+    if (!card) return undefined;
+    total += card.imageCount;
+  }
+  return total;
+}
 
 /** Настройки чата соавтора: состав карточек, пресет, свой промпт, очистка и удаление. */
 export function CoauthorSettingsPage() {
@@ -42,6 +57,7 @@ export function CoauthorSettingsPage() {
       systemPrompt: chat.systemPrompt,
       useAskUser: chat.useAskUser,
       useWebSearch: chat.useWebSearch,
+      useImages: chat.useImages,
     });
   }, [chat]);
 
@@ -95,7 +111,12 @@ export function CoauthorSettingsPage() {
         <EmptyState icon={Feather} title="Чат не найден" description="Возможно, он был удалён." />
       ) : (
         <>
-          <CoauthorChatForm value={value} onChange={(patch) => setValue((prev) => prev && { ...prev, ...patch })} {...options} />
+          <CoauthorChatForm
+            value={value}
+            onChange={(patch) => setValue((prev) => prev && { ...prev, ...patch })}
+            {...options}
+            imageCount={selectedImageCount(chat.cards, value.cardIds)}
+          />
           <Button fullWidth size="md" loading={saving} disabled={value.cardIds.length === 0} onClick={() => void save()}>
             Сохранить
           </Button>

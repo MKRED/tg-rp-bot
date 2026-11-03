@@ -6,7 +6,7 @@ vi.mock("../../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), in
 const { runCoauthorTurn, COAUTHOR_MAX_LLM_ROUNDS } = await import("./turn-loop.js");
 const { emptyCoauthorState } = await import("./state.js");
 
-const cards = [{ id: 1, name: "Elena", brief: "", blocks: [{ id: "fears", title: "Fears", format: "", content: "" }] }];
+const cards = [{ id: 1, name: "Elena", brief: "", images: [], blocks: [{ id: "fears", title: "Fears", format: "", content: "" }] }];
 
 const call = (id: string, name: string, args: unknown): ToolCall => ({
   id,
@@ -37,6 +37,7 @@ const params = (llm: ChatCompleter, state = emptyCoauthorState()) => {
     webSearch: null,
     maxSearchRounds: 0,
     askUserEnabled: true,
+    withImages: false,
   };
 };
 

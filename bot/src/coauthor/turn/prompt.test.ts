@@ -4,7 +4,7 @@ import { buildCoauthorMessages, buildSystemPrompt, cardsSnapshot, TOOL_CALL_REAS
 import type { StoredMessage } from "./state.js";
 
 const cards: CoauthorCardData[] = [
-  { id: 1, name: "Elena", brief: "Harbor master", blocks: [{ id: "fears", title: "Fears", format: "- ...", content: "" }] },
+  { id: 1, name: "Elena", brief: "Harbor master", images: [], blocks: [{ id: "fears", title: "Fears", format: "- ...", content: "" }] },
 ];
 
 describe("buildSystemPrompt", () => {
@@ -41,5 +41,25 @@ describe("buildCoauthorMessages", () => {
     expect(JSON.parse((messages[3] as { content: string }).content).cards[0].card_id).toBe(1);
     expect((messages[5] as { content: string }).content).toBe("[Review: accepted Elena → Fears]\n\nFill Mira's fears");
     expect(messages[6]).toMatchObject({ reasoning_content: TOOL_CALL_REASONING_STUB });
+  });
+});
+
+describe("картинки-референсы", () => {
+  const withRefs: CoauthorCardData[] = [
+    { ...cards[0]!, images: ["data:image/jpeg;base64,AAA"] },
+    { id: 2, name: "Mira", brief: "", images: [], blocks: [] },
+  ];
+
+  it("уходят в первое user-сообщение с подписью карточки", () => {
+    const opening = buildCoauthorMessages("", withRefs, [], [], 1000, true)[1]!;
+    expect(opening.role).toBe("user");
+    const parts = opening.content as Array<{ type: string; text?: string; image_url?: { url: string } }>;
+    expect(parts.map((p) => p.type)).toEqual(["text", "text", "image_url"]);
+    expect(parts[1]!.text).toContain("Elena (card_id 1)");
+    expect(parts[2]!.image_url!.url).toBe("data:image/jpeg;base64,AAA");
+  });
+
+  it("выключены — обычное текстовое сообщение", () => {
+    expect(typeof buildCoauthorMessages("", withRefs, [], [], 1000, false)[1]!.content).toBe("string");
   });
 });

@@ -14,6 +14,7 @@ const EMPTY: CoauthorChatInput = {
   systemPrompt: "",
   useAskUser: true,
   useWebSearch: false,
+  useImages: true,
 };
 
 /** Создание чата соавтора: карточки, пресет, промпт. Пустое название — имена карточек через «и». */
