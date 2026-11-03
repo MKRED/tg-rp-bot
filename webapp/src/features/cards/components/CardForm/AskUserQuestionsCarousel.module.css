@@ -44,3 +44,15 @@
   overflow-wrap: anywhere;
   text-align: start;
 }
+
+/* Подпись «рекомендует ИИ» прижата к вариантам: она про них, а не про поле ответа ниже. */
+.legend {
+  margin-top: calc(var(--mantine-spacing-xs) / -2);
+}
+
+/* Иконка рекомендации ИИ — на самом варианте и в подписи под ними; акцент, чтобы её было видно на
+   default-кнопке без подсветки. */
+.recommendedIcon {
+  flex-shrink: 0;
+  color: light-dark(var(--mantine-color-accent-6), var(--mantine-color-accent-4));
+}

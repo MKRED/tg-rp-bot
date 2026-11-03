@@ -13,11 +13,13 @@ function mapCategoryTexts(categories: CardCategory[], key: Buffer, cipher: Field
     pendingQuestions: c.pendingQuestions?.map((q) => ({
       question: cipher(q.question, key),
       options: q.options?.map((o) => cipher(o, key)),
+      ...(q.recommended !== undefined && { recommended: cipher(q.recommended, key) }),
     })),
     askUserAnswers: c.askUserAnswers?.map((a) => ({
       question: cipher(a.question, key),
       answer: cipher(a.answer, key),
       options: a.options?.map((o) => cipher(o, key)),
+      ...(a.recommended !== undefined && { recommended: cipher(a.recommended, key) }),
       // Флаг, не текст: без явного переноса дополнение пользователя после записи стало бы «ответом».
       ...(a.unprompted && { unprompted: true as const }),
     })),

@@ -223,6 +223,7 @@ export class CardGenerationService {
         question: q.question,
         answer: (input.skipped ? "" : input.answers[i]!.trim()) || ASK_USER_DECLINED_ANSWER,
         options: q.options,
+        recommended: q.recommended,
       }));
       answeredCount = answers.length;
       const note = input.note?.trim();

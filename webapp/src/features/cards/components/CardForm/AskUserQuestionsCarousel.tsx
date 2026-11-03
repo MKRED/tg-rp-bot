@@ -1,7 +1,7 @@
 import { ASK_USER_NOTE_MAX_LENGTH } from "@tg-rp-bot/shared";
 import { Badge, Button, Group, Paper, Stack, Text, Textarea } from "@mantine/core";
 import { AnimatePresence, motion } from "framer-motion";
-import { MessageCircleQuestion, PenLine } from "lucide-react";
+import { MessageCircleQuestion, PenLine, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { MOTION_TRANSITION } from "../../../../shared/theme/motion";
 import type { AskUserQuestion } from "../../types/card";
@@ -141,17 +141,33 @@ export function AskUserQuestionsCarousel({
                 <Text fw={500}>{question.question}</Text>
                 {question.options && question.options.length > 0 && (
                   <Group gap="xs">
-                    {question.options.map((option) => (
-                      <Button
-                        key={option}
-                        variant="default"
-                        size="compact-md"
-                        classNames={{ root: styles.option, label: styles.optionLabel }}
-                        onClick={() => applyOption(option)}
-                      >
-                        {option}
-                      </Button>
-                    ))}
+                    {question.options.map((option) => {
+                      // Рекомендация модели — только иконка, в ответ сама не подставляется: модели
+                      // уходит лишь то, что пользователь выбрал, а пустой ответ по-прежнему — «реши сама».
+                      const recommended = option === question.recommended;
+                      return (
+                        <Button
+                          key={option}
+                          variant="default"
+                          size="compact-md"
+                          classNames={{ root: styles.option, label: styles.optionLabel }}
+                          rightSection={recommended ? <Sparkles size={14} className={styles.recommendedIcon} aria-hidden /> : undefined}
+                          aria-label={recommended ? `${option} — рекомендует ИИ` : undefined}
+                          title={recommended ? "Рекомендует ИИ" : undefined}
+                          onClick={() => applyOption(option)}
+                        >
+                          {option}
+                        </Button>
+                      );
+                    })}
+                  </Group>
+                )}
+                {question.recommended && (
+                  <Group gap={6} className={styles.legend} aria-hidden>
+                    <Sparkles size={13} className={styles.recommendedIcon} />
+                    <Text size="xs" c="dimmed">
+                      рекомендует ИИ
+                    </Text>
                   </Group>
                 )}
                 <Textarea

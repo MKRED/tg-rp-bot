@@ -5,6 +5,8 @@ export interface AskUserQuestion {
   question: string;
   /** Варианты-подсказки от модели — пользователь всё равно может ввести свой текст. */
   options?: string[];
+  /** Вариант, который модель советует, — всегда один из options дословно (иначе сервер его отбрасывает). */
+  recommended?: string;
 }
 
 /**
@@ -12,6 +14,7 @@ export interface AskUserQuestion {
  * были у исходного AskUserQuestion: сервер хранит их вместе с ответом, чтобы реплей в сборке промпта
  * восстанавливал tool_call модели один в один, а не усечённым — иначе история показывала бы модели,
  * что её же прошлые вызовы ask_user никогда не предлагали options, и она перестала бы их предлагать.
+ * recommended хранится по той же причине.
  *
  * unprompted — это не ответ на вопрос модели, а дополнение, которое пользователь написал сам на
  * последнем шаге карусели: question пустой, текст в answer. В реплее такие записи не выдаются за
@@ -21,6 +24,7 @@ export interface AskUserAnswer {
   question: string;
   answer: string;
   options?: string[];
+  recommended?: string;
   unprompted?: true;
 }
 

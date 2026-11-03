@@ -87,7 +87,7 @@ function webSearchExchange(category: CardCategory): ToolContextMessage[] {
 
 /**
  * Накопленные askUserAnswers категории: вызов ask_user с вопросами как аргументами и tool-результат
- * с ответами. Аргументы восстанавливаются ВКЛЮЧАЯ options — их отбрасывание показывало бы модели,
+ * с ответами. Аргументы восстанавливаются ВКЛЮЧАЯ options и recommended — их отбрасывание показывало бы модели,
  * что её же прошлые вызовы ask_user никогда не предлагали варианты, и она по шаблону переставала бы
  * предлагать их дальше в этом же диалоге.
  */
@@ -114,7 +114,7 @@ function askUserExchange(category: CardCategory): ToolContextMessage[] {
           function: {
             name: ASK_USER_TOOL_NAME,
             arguments: JSON.stringify({
-              questions: answers.map((a) => ({ question: a.question, options: a.options })),
+              questions: answers.map((a) => ({ question: a.question, options: a.options, recommended: a.recommended })),
             }),
           },
         },

@@ -56,6 +56,17 @@ describe("parseAskUserArguments", () => {
     ).toEqual([{ question: "Кто?", options: undefined }]);
   });
 
+  it("recommended сохраняется, только если совпадает с одним из options", () => {
+    const parse = (q: object) => parseAskUserArguments(JSON.stringify({ questions: [{ question: "Кто?", ...q }] }));
+    expect(parse({ options: ["Эльф", "Гном"], recommended: " Гном " })).toEqual([
+      { question: "Кто?", options: ["Эльф", "Гном"], recommended: "Гном" },
+    ]);
+    expect(parse({ options: ["Эльф", "Гном"], recommended: "Орк" })).toEqual([
+      { question: "Кто?", options: ["Эльф", "Гном"] },
+    ]);
+    expect(parse({ recommended: "Гном" })).toEqual([{ question: "Кто?", options: undefined }]);
+  });
+
   it("обрезает вопросы сверх ASK_USER_MAX_QUESTIONS (4)", () => {
     const questions = Array.from({ length: 6 }, (_, i) => ({ question: `Вопрос ${i}` }));
     const result = parseAskUserArguments(JSON.stringify({ questions }));

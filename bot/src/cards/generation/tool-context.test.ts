@@ -58,6 +58,14 @@ describe("buildToolContextMessages", () => {
     expect(result.additional_user_instructions).toEqual(["Она левша"]);
   });
 
+  it("recommended восстанавливается в аргументах вызова ask_user", () => {
+    const answered = { question: "Раса?", answer: "Гном", options: ["Эльф", "Гном"], recommended: "Гном" };
+    const messages = build(category({ askUserAnswers: [answered] }));
+    expect(JSON.parse(messages[0].tool_calls[0].function.arguments)).toEqual({
+      questions: [{ question: "Раса?", options: ["Эльф", "Гном"], recommended: "Гном" }],
+    });
+  });
+
   it("без дополнений результат ask_user не содержит поля дополнений", () => {
     const messages = build(category({ askUserAnswers: [{ question: "Пол?", answer: "Женский" }] }));
     expect(Object.keys(JSON.parse(messages[1].content))).toEqual(["answers", "note"]);

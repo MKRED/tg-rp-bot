@@ -35,7 +35,8 @@ export const ASK_USER_TOOL: ToolDefinition = {
       "questions at once, not one call per question. Each question can suggest a few answer options, " +
       "but the user may also type a free-form answer instead. Ask only about things the user decides — " +
       "their intent, preferences, or an open choice that substantially changes the block. Never ask for " +
-      "facts you can find with web_search, and don't ask about minor details: make a reasonable choice yourself.",
+      "facts you can find with web_search, and don't ask about minor details: make a reasonable choice yourself. " +
+      "When one option fits the brief best, mark it as recommended — the user sees it highlighted.",
     parameters: {
       type: "object",
       properties: {
@@ -51,6 +52,10 @@ export const ASK_USER_TOOL: ToolDefinition = {
                 type: "array",
                 items: { type: "string" },
                 description: "Optional suggested answers to offer the user",
+              },
+              recommended: {
+                type: "string",
+                description: "Optional: the option you recommend, copied exactly from options",
               },
             },
             required: ["question"],
@@ -87,7 +92,13 @@ export function parseAskUserArguments(rawArguments: string): AskUserQuestion[] |
         ? (optionsRaw as string[])
         : undefined;
 
-    questions.push({ question: q.trim(), options });
+    // Рекомендация засчитывается, только если совпадает с одним из вариантов: иначе подсвечивать
+    // нечего, а показывать её отдельным текстом — значит выдать за вариант то, чего в списке нет.
+    const recommendedRaw = (raw as Record<string, unknown>).recommended;
+    const recommended =
+      typeof recommendedRaw === "string" ? options?.find((o) => o.trim() === recommendedRaw.trim()) : undefined;
+
+    questions.push({ question: q.trim(), options, ...(recommended !== undefined && { recommended }) });
   }
   return questions;
 }
