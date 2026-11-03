@@ -21,6 +21,21 @@ export class EmptyCompletionError extends Error {
 }
 
 /**
+ * HTTP 200, но тело — не ответ chat completion (не JSON, `null`, нет choices). Так бывает у DeepSeek под
+ * нагрузкой: соединение часами держится пустыми keep-alive строками и может закрыться без ответа.
+ * Ретраибл, как 5xx. bodySnippet — начало тела для лога (пустые строки обрезаны).
+ */
+export class MalformedCompletionError extends Error {
+  constructor(
+    readonly provider: string,
+    readonly bodySnippet: string,
+  ) {
+    super(`${provider} returned a malformed completion body: ${JSON.stringify(bodySnippet)}`);
+    this.name = "MalformedCompletionError";
+  }
+}
+
+/**
  * У пользователя не задан персональный ключ LLM-провайдера (BYOK — общего ключа из env больше нет).
  * Штатное состояние, не авария: сообщение готово для показа пользователю как есть.
  */

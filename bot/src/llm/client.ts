@@ -5,6 +5,7 @@ import { CHAT_COMPLETIONS_PATH } from "./constants.js";
 import { type LlmDebugResponse, recordLlmCall } from "./debugCapture.js";
 import { redactImageUrls } from "./redact-images.js";
 import { EmptyCompletionError, LlmHttpError } from "./errors.js";
+import { parseCompletionBody } from "./responseBody.js";
 import type { LlmProvider } from "./providers.js";
 import { buildBody, makeHeaders } from "./request.js";
 import type {
@@ -103,7 +104,7 @@ async function chatCompletionSingle(
         const text = await response.text().catch(() => "");
         throw new LlmHttpError(provider.name, response.status, text);
       }
-      const json = (await response.json()) as LlmResponse;
+      const json = parseCompletionBody(provider.name, await response.text());
       // Ответ с tool_calls обычно приходит с пустым/null content — это не отказ/пустая генерация,
       // а штатный запрос вызвать инструмент, гвард на пустой текст здесь не применим. Но только если
       // инструменты предлагались: tool_calls в ответ на запрос БЕЗ tools вызывающий выполнить не
