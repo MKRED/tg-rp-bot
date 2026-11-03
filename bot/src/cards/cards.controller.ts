@@ -5,6 +5,7 @@ import { AnswerCardQuestionsDto } from "./dto/answer-card-questions.dto.js";
 import { CardInputDto } from "./dto/card-input.dto.js";
 import { GenerateCardBlockDto } from "./dto/generate-card-block.dto.js";
 import { CardGenerationService } from "./generation/card-generation.service.js";
+import { generationStatus } from "./generation/generation-status.js";
 
 /**
  * /api/cards — карточки «Мастерской» текущего пользователя: CRUD и поблочная генерация. Форма
@@ -55,6 +56,15 @@ export class CardsController {
     // Явный categoryId — всегда клик «Перегенерировать»: сбрасываем контекст инструментов блока
     // (ответы ask_user и веб-поиски). forceAskUser — кнопка «с вопросами»: первый ход модели — ask_user.
     return this.generation.generate(userId, id, body.categoryId, body.categoryId !== undefined, body.forceAskUser === true);
+  }
+
+  /**
+   * Статус генерации блока — для страницы, обновлённой посреди долгой генерации (см.
+   * CardGenerationStatus в @tg-rp-bot/shared). generation: null — ни идущей, ни недавней генерации нет.
+   */
+  @Get(":id/generation")
+  generationStatus(@CurrentUser() userId: string, @Param("id", ParseIntPipe) id: number) {
+    return { generation: generationStatus.get(id, userId) };
   }
 
   /** Ответ (или отказ — skipped) на вопросы ask_user категории; вопросы хранятся на карточке, без таймаута. */

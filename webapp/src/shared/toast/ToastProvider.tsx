@@ -1,5 +1,5 @@
 import { Notifications, notifications } from "@mantine/notifications";
-import { Check, X } from "lucide-react";
+import { Check, Hourglass, X } from "lucide-react";
 import { type ReactNode, useCallback, useMemo } from "react";
 import { type ToastOptions, ToastContext } from "./context";
 import styles from "./Toast.module.css";
@@ -15,12 +15,12 @@ const TOAST_Z_INDEX = 10000;
  */
 export function ToastProvider({ children }: { children: ReactNode }) {
   const showToast = useCallback((opts: ToastOptions) => {
-    const isError = opts.type === "error";
+    const type = opts.type ?? "success";
     notifications.clean();
     notifications.show({
       message: opts.message,
-      color: isError ? "red" : "teal",
-      icon: isError ? <X size={16} /> : <Check size={16} />,
+      color: type === "error" ? "red" : type === "info" ? "accent" : "teal",
+      icon: type === "error" ? <X size={16} /> : type === "info" ? <Hourglass size={16} /> : <Check size={16} />,
       autoClose: opts.duration ?? DEFAULT_DURATION_MS,
       withBorder: true,
     });

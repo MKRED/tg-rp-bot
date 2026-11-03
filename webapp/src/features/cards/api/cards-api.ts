@@ -1,5 +1,10 @@
 import { apiFetch } from "../../../shared/api/client";
-import type { AnswerCardQuestionsInput, CardGenerationStep, GenerateCardBlockInput } from "@tg-rp-bot/shared";
+import type {
+  AnswerCardQuestionsInput,
+  CardGenerationStatus,
+  CardGenerationStep,
+  GenerateCardBlockInput,
+} from "@tg-rp-bot/shared";
 import type { Card, CardInput, CardListItem } from "../types/card";
 
 export function listCards(): Promise<{ cards: CardListItem[] }> {
@@ -54,4 +59,9 @@ export function answerCardBlockQuestions(
     method: "POST",
     body: JSON.stringify({ categoryId, ...input }),
   });
+}
+
+/** Статус генерации блока — после обновления страницы посреди долгой генерации (см. useGenerationResume). */
+export function getCardGenerationStatus(id: number): Promise<{ generation: CardGenerationStatus | null }> {
+  return apiFetch<{ generation: CardGenerationStatus | null }>(`/cards/${id}/generation`);
 }

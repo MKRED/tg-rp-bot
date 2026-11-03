@@ -1,31 +1,17 @@
-import type { AnswerCardQuestionsInput, CardGenerationError } from "@tg-rp-bot/shared";
+import type { AnswerCardQuestionsInput } from "@tg-rp-bot/shared";
 import { useState } from "react";
-import { ApiError } from "../../../../shared/api/client";
 import { confirmAction } from "../../../../shared/telegram/confirm";
 import { useToast } from "../../../../shared/toast";
 import { answerCardBlockQuestions, generateCardBlock } from "../../api/cards-api";
+import { generationErrorMessage } from "../../lib/generationErrors";
 import type { CardCategory } from "../../types/card";
-
-// satisfies — каждый код отказа сервера обязан иметь текст (контракт в @tg-rp-bot/shared).
-const ERROR_MESSAGES: Record<string, string> = {
-  preset_required: "Сначала выберите пресет ИИ для генерации",
-  nothing_to_generate: "Все включённые блоки уже сгенерированы",
-  target_not_found: "Этот блок больше не актуален — обновите карточку",
-  busy: "Генерация уже идёт, подождите",
-  images_unsupported: "Модель пресета не видит картинки — выберите пресет с deepseek-flash",
-  not_found: "Карточка не найдена",
-  no_pending_question: "Вопрос уже неактуален — сгенерируйте блок заново",
-  answers_mismatch: "Не удалось отправить ответы — попробуйте сгенерировать блок заново",
-} satisfies Record<CardGenerationError, string>;
-
-function errorMessage(err: unknown): string {
-  const code = err instanceof ApiError ? err.message : "";
-  return ERROR_MESSAGES[code] ?? (code || "Не удалось сгенерировать блок");
-}
+import { useGenerationResume } from "./useGenerationResume";
 
 interface UseCardGenerationArgs {
   /** undefined — карточка ещё не сохранена (роут генерации требует существующий id). */
   cardId: number | undefined;
+  /** Блоки формы — названия для уведомлений о генерации, подхваченной после обновления страницы. */
+  categories: CardCategory[];
   /**
    * Есть ли несохранённые правки формы. Генерация читает prompt и categories с сервера (последнюю
    * СОХРАНЁННУЮ версию), поэтому при правках результат разошёлся бы с формой — перед запросом
@@ -56,6 +42,7 @@ interface UseCardGenerationArgs {
  */
 export function useCardGeneration({
   cardId,
+  categories,
   formDirty,
   saveForm,
   onPendingQuestions,
@@ -66,6 +53,7 @@ export function useCardGeneration({
   // Какая из двух кнопок блока запустила генерацию — только чтобы крутить индикатор на нажатой.
   const [generatingForced, setGeneratingForced] = useState(false);
   const [answering, setAnswering] = useState(false);
+  useGenerationResume({ cardId, categories, setGeneratingId, onPendingQuestions, onGenerated });
 
   /**
    * id уже сужен вызывающим до number — ранний выход по undefined после setGeneratingId оставил бы
@@ -83,7 +71,7 @@ export function useCardGeneration({
       onGenerated(result.categoryId, result.content, result.toolContextTokens);
       setGeneratingId(null);
     } catch (err) {
-      showToast({ type: "error", message: errorMessage(err) });
+      showToast({ type: "error", message: generationErrorMessage(err) });
       setGeneratingId(null);
     }
   };
@@ -101,7 +89,7 @@ export function useCardGeneration({
       onGenerated(result.categoryId, result.content, result.toolContextTokens);
       setGeneratingId(null);
     } catch (err) {
-      showToast({ type: "error", message: errorMessage(err) });
+      showToast({ type: "error", message: generationErrorMessage(err) });
       // Вопрос мог устареть (другая вкладка уже ответила) — не оставляем карусель в тупике,
       // пользователь начнёт заново кнопкой «Сгенерировать».
       onPendingQuestions(categoryId, undefined);

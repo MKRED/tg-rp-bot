@@ -1,7 +1,8 @@
 import { createContext } from "react";
 
 /** Тип уведомления — задаёт иконку и цвет акцента. */
-export type ToastType = "success" | "error";
+/** info — нейтральное «процесс идёт», не успех и не ошибка. */
+export type ToastType = "success" | "error" | "info";
 
 export interface ToastOptions {
   /** Текст уведомления. */

@@ -21,6 +21,7 @@ import { tryLockCard, unlockCard } from "../card-lock.js";
 import { CardsRepository } from "../cards.repository.js";
 import { ASK_USER_DECLINED_ANSWER, ASK_USER_MAX_ANSWERED_QUESTIONS } from "./ask-user-tool.js";
 import { assembleCardBlockPrompt } from "./prompt-assembly.js";
+import { generationStatus } from "./generation-status.js";
 import { countToolContextTokens } from "./tool-context.js";
 import { runCardGenerationToolLoop } from "./tool-loop.js";
 
@@ -75,6 +76,8 @@ export class CardGenerationService {
     forceAskUser = false,
   ): Promise<CardGenerationStep> {
     if (!tryLockCard(cardId)) throw refuse(409, "busy");
+    // Статус — только под локом: иначе отказ "busy" затёр бы статус идущей генерации.
+    generationStatus.start(cardId, userId);
     const t0 = Date.now();
     // Поиски копятся здесь, а не в результате цикла: при ошибке LLM результата нет, а сохранить надо.
     const searches: WebSearchRecord[] = [];
@@ -113,6 +116,8 @@ export class CardGenerationService {
         // случай, что «генерировать больше нечего» у обычной кнопки.
         throw categoryId ? refuse(400, "target_not_found") : refuse(409, "nothing_to_generate");
       }
+
+      generationStatus.setTarget(cardId, assembled.targetCategoryId);
 
       // Поиск идёт через тот же ключ DeepSeek, что и генерация. Без ключа поиска нет, но и сама
       // генерация упадёт MissingApiKeyError на первом вызове LLM (→ 400 no_api_key, см. toHttpError).
@@ -153,6 +158,7 @@ export class CardGenerationService {
         const saved = await this.cards.setCategoryPendingQuestions(userId, cardId, targetId, questions, performed);
         searches.length = 0;
         if (!saved) throw refuse(404, "not_found");
+        generationStatus.finish(cardId, { state: "questions", categoryId: targetId });
         return { status: "questions", categoryId: targetId, questions, toolContextTokens: toolContextTokens(saved, targetId) };
       }
 
@@ -165,6 +171,7 @@ export class CardGenerationService {
         { durationMs: Date.now() - t0, userId, cardId, categoryId: targetId, searchesCount: performed.length },
         "Card block generated",
       );
+      generationStatus.finish(cardId, { state: "done", categoryId: targetId });
       // Только поля блока, не вся карточка: клиент мержит точечно, не затирая категории, которые
       // пользователь мог параллельно править локально (ещё не сохранены).
       return { status: "done", categoryId: targetId, content, toolContextTokens: toolContextTokens(saved, targetId) };
@@ -173,7 +180,9 @@ export class CardGenerationService {
       if (searchTargetId && searches.length > 0) {
         await this.saveSearchesAfterFailure(userId, cardId, searchTargetId, searches);
       }
-      throw toHttpError(err, userId, cardId);
+      const httpError = toHttpError(err, userId, cardId);
+      generationStatus.finish(cardId, { state: "failed", categoryId: searchTargetId, error: failureCode(httpError) });
+      throw httpError;
     } finally {
       unlockCard(cardId);
     }
@@ -279,6 +288,15 @@ export class CardGenerationService {
 function toolContextTokens(card: Card, categoryId: string): number {
   const category = card.categories.find((c) => c.id === categoryId);
   return category ? countToolContextTokens(category) : 0;
+}
+
+/** Код исхода failed для статуса генерации: код отказа клиенту, иначе обобщённый — детали только в логе. */
+function failureCode(err: unknown): string {
+  if (!(err instanceof HttpException)) return "generation_failed";
+  const body = err.getResponse();
+  if (typeof body === "string") return body;
+  const code = (body as { error?: unknown }).error;
+  return typeof code === "string" ? code : "generation_failed";
 }
 
 /**

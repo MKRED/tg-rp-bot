@@ -179,6 +179,18 @@ export type CardGenerationStep =
   | { status: "questions"; categoryId: string; questions: AskUserQuestion[]; toolContextTokens: number };
 
 /**
+ * GET /cards/:id/generation — что сейчас с генерацией блока карточки. Нужен, когда страницу обновили
+ * посреди долгой генерации: запрос со старой страницы оборвался, а сервер продолжает ждать ИИ.
+ * running — генерация ещё идёт (categoryId нет, пока сервер не выбрал цель — это миллисекунды);
+ * остальные — чем закончилась последняя генерация (помнится недолго, см. generation-status.ts).
+ * error в failed — код отказа (CardGenerationError, no_api_key) или "generation_failed".
+ */
+export type CardGenerationStatus =
+  | { state: "running"; categoryId?: string }
+  | { state: "done" | "questions"; categoryId: string }
+  | { state: "failed"; categoryId?: string; error: string };
+
+/**
  * Тело POST /cards/:id/generate. categoryId — явная «Перегенерировать» этого блока, без него —
  * следующий незаполненный. forceAskUser — кнопка «с вопросами»: модель обязана вызвать ask_user
  * (в начале или в конце — CardInput.askUserFirst сохранённой карточки); действует только при

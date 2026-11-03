@@ -50,6 +50,7 @@ export function GenerationCard({
 }: GenerationCardProps) {
   const { generatingId, generatingForced, answering, generate, respond } = useCardGeneration({
     cardId,
+    categories,
     formDirty,
     saveForm,
     onPendingQuestions,

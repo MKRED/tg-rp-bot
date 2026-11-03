@@ -40,7 +40,8 @@ bot/src/
                   у cards/ ещё card-lock.ts (лок карточки, общий для PUT и генерации) и generation/ — поблочная
                   генерация: card-generation.service (Nest-сервис) + prompt-assembly (в т.ч. картинки-референсы карточки
                   в первом user-сообщении, см. docs/llm.md «Картинки») / tool-loop (web_search +
-                  ask_user) / ask-user-tool / tool-context (контекст инструментов блока — ответы ask_user,
+                  ask_user) / ask-user-tool / generation-status (статус идущей генерации в памяти — по нему webapp после
+                  обновления страницы подхватывает долгую генерацию, GET /api/cards/:id/generation) / tool-context (контекст инструментов блока — ответы ask_user,
                   дополнения пользователя к ним и результаты web_search хранятся на категории, реплеятся в промпт этого и следующих блоков,
                   сбрасываются «Перегенерировать»; там же подсчёт его веса в токенах для экрана);
                   card-templates/ — /api/card-templates: шаблоны карточек (системный промпт, поля, тумблеры
