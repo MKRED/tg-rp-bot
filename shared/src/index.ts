@@ -16,3 +16,4 @@ export * from "./rp-chat.js";
 export * from "./sse.js";
 export * from "./narrator.js";
 export * from "./auth.js";
+export * from "./coauthor.js";

@@ -2,7 +2,7 @@
 // перехвата (персистятся в user_settings, синхронны между устройствами).
 
 /** Ярлык типа вызова — чтобы в списке было видно, что за запрос. */
-export type LlmCallLabel = "rp" | "impersonate" | "narrator" | "translate" | "compact" | "cards" | "other";
+export type LlmCallLabel = "rp" | "impersonate" | "narrator" | "translate" | "compact" | "cards" | "coauthor" | "other";
 
 /** Вызов инструмента в ответе модели (формат OpenAI-совместимого API, function calling). */
 export interface LlmToolCall {

@@ -1,0 +1,30 @@
+.bar {
+  flex-shrink: 0;
+  border-top: 1px solid var(--app-color-divider);
+  background: var(--app-color-page);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  padding-bottom: calc(
+    var(--mantine-spacing-xs) + var(--tg-viewport-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+  );
+}
+
+.row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--mantine-spacing-xs);
+  max-width: var(--app-chat-width, 48rem);
+  margin-inline: auto;
+}
+
+.field {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Как у поля RP-чата: 22px строки + отступы 10 + рамка = 44px, ровно по кнопке рядом. */
+.input {
+  min-height: 44px;
+  background-color: var(--mantine-color-body);
+  padding-block: 10px;
+  line-height: 22px;
+}

@@ -47,6 +47,9 @@ bot/src/
                   card-templates/ — /api/card-templates: шаблоны карточек (системный промпт, поля, тумблеры
                   инструментов). Связи с карточками нет — webapp копирует шаблон в карточку при выборе;
                   валидация полей и шифрование общие с cards/ (dto/card-categories.ts, card-crypto.ts)
+  coauthor/     — /api/coauthor: «Соавтор», чат с ИИ над несколькими карточками (правки блоков — предложения,
+                  пользователь принимает/отклоняет); turn/ — чистая логика хода (промпт, обрезка, цикл инструментов,
+                  правки, лента), chat-lock.ts — лок чата + running/lastError. Подробно — docs/coauthor.md
   settings/     — /api/settings (всё в строке user_settings): llm/ (ключ DeepSeek, BYOK, шифруется
                   ключом пользователя; verify — /models, баланс), web-search/ (лимит раундов поиска — только
                   controller/repository, без сервиса), translate/ (режим перевода PromptEditorOverlay) — у
@@ -189,12 +192,12 @@ webapp/src/
   init.ts       — инициализация @telegram-apps SDK (защищённая) + initData.restore()
   app/          — оболочка: App.tsx (ThemeProvider + MantineProvider + HashRouter), routes.ts, BackButtonBridge, deepLink.ts
   pages/        — экраны-маршруты (один на маршрут): home/ characters/ personas/ cards/ card-templates/
-                  generation-presets/ rp-templates/ rp-chat/ narrator/ knowledge-books/
+                  coauthor/ generation-presets/ rp-templates/ rp-chat/ narrator/ knowledge-books/
                   narrator-templates/ debug/
   features/     — доменные модули (по подпапкам-категориям + barrel index.ts):
                   characters/ personas/ cards/ (черновики «Мастерской», с выгрузкой в персонажа/персону;
                   там же шаблоны карточек — форма, выбор/смена шаблона в карточке, «Сохранить как шаблон» —
-                  и общий редактор полей FieldsEditor)
+                  и общий редактор полей FieldsEditor) coauthor/ (чат «Соавтора»: лента, карточки с diff правок)
                   generation-presets/ rp-templates/ rp-chat/ narrator/
                   knowledge-books/ narrator-templates/ debug/ llm-settings/ (per-user ключ
                   DeepSeek, BYOK, экран /settings) web-search-settings/ (лимит раундов веб-поиска,

@@ -2,6 +2,7 @@ import {
   BookOpen,
   Bug,
   Clapperboard,
+  Feather,
   FileText,
   LayoutTemplate,
   type LucideIcon,
@@ -49,7 +50,10 @@ export const HOME_MENU: HomeMenuSection[] = [
   },
   {
     title: "Мастерская",
-    items: [{ icon: Sparkles, label: "Карточки", description: "Крафт карточек персонажей и персон", route: ROUTES.cards }],
+    items: [
+      { icon: Sparkles, label: "Карточки", description: "Крафт карточек персонажей и персон", route: ROUTES.cards },
+      { icon: Feather, label: "Соавтор", description: "Чат с ИИ над несколькими карточками", route: ROUTES.coauthor },
+    ],
   },
   {
     title: "Конфигурация",

@@ -33,7 +33,7 @@ interface WebSearchOutcome {
  * Ошибки (битые аргументы, сбой поиска) уходят в content — модель узнаёт о неудаче тем же путём,
  * что и об успехе, и может ответить без этого результата, а не всей генерацией. searchesLeft —
  * остаток ПОСЛЕ этого вызова: модель видит его в результате и решает, на что потратить оставшееся. */
-async function runWebSearchCall(
+export async function runWebSearchCall(
   call: ToolCall,
   webSearch: WebSearcher,
   searchesLeft: number,
@@ -57,7 +57,7 @@ async function runWebSearchCall(
     return { content: JSON.stringify({ results, searches_left: searchesLeft }), record: { query, results }, authFailed: false };
   } catch (err) {
     const authFailed = err instanceof WebSearchHttpError && err.isAccountProblem;
-    logger.error({ err, query, authFailed }, "Web search failed during card generation");
+    logger.error({ err, query, authFailed }, "Web search failed during tool loop");
     return {
       content: JSON.stringify({ error: authFailed ? "web search unavailable for this account" : "web search failed" }),
       authFailed,

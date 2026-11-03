@@ -280,6 +280,36 @@ export const cardTemplates = pgTable("card_templates", {
 export type CardTemplateRow = typeof cardTemplates.$inferSelect;
 
 /**
+ * Чаты «Соавтора» (`/coauthor`): разговор с ИИ над несколькими карточками сразу. Модель видит все
+ * карточки чата и предлагает правки блоков, пользователь принимает или отклоняет их.
+ * cardIds — карточки чата по порядку (не FK: удалённая карточка просто пропадает из чата на чтении).
+ * systemPrompt — своя редактируемая часть промпта; пустая строка — стандартная (см. @tg-rp-bot/shared).
+ * state — вся переписка с моделью, предложенные правки и ожидающие вопросы одним JSON (CoauthorState
+ * в coauthor/turn/state.ts), зашифрованным per-user целиком: там тексты карточек и чата.
+ * presetId — FK без onDelete, как у cards: используемый пресет нельзя удалить.
+ */
+export const coauthorChats = pgTable("coauthor_chats", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  cardIds: jsonb("card_ids").$type<number[]>().notNull().default(sql`'[]'::jsonb`),
+  presetId: bigint("preset_id", { mode: "number" }).references(() => generationPresets.id),
+  systemPrompt: text("system_prompt").notNull().default(""),
+  useAskUser: boolean("use_ask_user").notNull().default(true),
+  useWebSearch: boolean("use_web_search").notNull().default(false),
+  state: text("state").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export type CoauthorChatRow = typeof coauthorChats.$inferSelect;
+
+/**
  * Пресеты настроек генерации («Настройки ответа ИИ»). Один пользователь — много пресетов,
  * описывающих, КАК нейросеть сэмплирует ответ (сэмплинг, лимиты токенов, reasoning). Режимо-
  * независим — общий для RP-чата и narrator (промпты живут отдельно: у RP-чата — в rp_templates,

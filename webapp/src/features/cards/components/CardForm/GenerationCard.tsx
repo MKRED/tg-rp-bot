@@ -4,7 +4,7 @@ import { PromptEditorField } from "../../../../shared/components/PromptEditorFie
 import { SettingsCard } from "../../../../shared/components/SettingsCard";
 import { confirmAction } from "../../../../shared/telegram/confirm";
 import type { CardCategory } from "../../types/card";
-import { AskUserQuestionsCarousel } from "./AskUserQuestionsCarousel";
+import { AskUserQuestionsCarousel } from "../../../../shared/components/AskUserQuestionsCarousel";
 import { useCardGeneration } from "./useCardGeneration";
 
 interface GenerationCardProps {
@@ -107,7 +107,8 @@ export function GenerationCard({
           return (
             <AskUserQuestionsCarousel
               key={category.id}
-              categoryTitle={title}
+              title={`Уточнение — «${title}»`}
+              noteHint="Необязательно. Любые пожелания по этому блоку, о которых ИИ не спросил."
               questions={pending}
               submitting={answering}
               onSubmit={(answers, note) => void respond(category.id, { skipped: false, answers, note })}

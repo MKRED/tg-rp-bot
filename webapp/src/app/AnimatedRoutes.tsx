@@ -52,6 +52,18 @@ const CardExportPage = lazy(() =>
     default: m.CardExportPage,
   }))
 );
+const CoauthorListPage = lazy(() =>
+  import("../pages/coauthor/CoauthorListPage").then((m) => ({ default: m.CoauthorListPage }))
+);
+const CoauthorNewPage = lazy(() =>
+  import("../pages/coauthor/CoauthorNewPage").then((m) => ({ default: m.CoauthorNewPage }))
+);
+const CoauthorChatPage = lazy(() =>
+  import("../pages/coauthor/CoauthorChatPage").then((m) => ({ default: m.CoauthorChatPage }))
+);
+const CoauthorSettingsPage = lazy(() =>
+  import("../pages/coauthor/CoauthorSettingsPage").then((m) => ({ default: m.CoauthorSettingsPage }))
+);
 const CardTemplatesListPage = lazy(() =>
   import("../pages/card-templates/CardTemplatesListPage").then((m) => ({ default: m.CardTemplatesListPage }))
 );
@@ -154,6 +166,10 @@ export function AnimatedRoutes() {
           <Route path={ROUTES.cardNew} element={<CardEditPage />} />
           <Route path={ROUTES.cardEdit} element={<CardEditPage />} />
           <Route path={ROUTES.cardExport} element={<CardExportPage />} />
+          <Route path={ROUTES.coauthor} element={<CoauthorListPage />} />
+          <Route path={ROUTES.coauthorNew} element={<CoauthorNewPage />} />
+          <Route path={ROUTES.coauthorSettings} element={<CoauthorSettingsPage />} />
+          <Route path={ROUTES.coauthorView} element={<CoauthorChatPage />} />
           <Route path={ROUTES.cardTemplates} element={<CardTemplatesListPage />} />
           <Route path={ROUTES.cardTemplateNew} element={<CardTemplateEditPage />} />
           <Route path={ROUTES.cardTemplateEdit} element={<CardTemplateEditPage />} />

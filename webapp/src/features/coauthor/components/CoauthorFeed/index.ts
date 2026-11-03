@@ -1,0 +1,1 @@
+export { CoauthorFeed } from "./CoauthorFeed";

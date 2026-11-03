@@ -43,6 +43,14 @@ export const ROUTES = {
   cardEdit: "/cards/:id",
   /** Экран выгрузки карточки в персонажа/персону — доступен только для уже сохранённой карточки. */
   cardExport: "/cards/:id/export",
+  /** Соавтор: чаты с ИИ над несколькими карточками. */
+  coauthor: "/coauthor",
+  /** Создание чата соавтора. */
+  coauthorNew: "/coauthor/new",
+  /** Чат соавтора по id (статический `new` приоритетнее `:id`). */
+  coauthorView: "/coauthor/:id",
+  /** Настройки чата соавтора. */
+  coauthorSettings: "/coauthor/:id/settings",
   /** Список шаблонов карточек «Мастерской». */
   cardTemplates: "/card-templates",
   /** Форма создания нового шаблона карточки. */
@@ -138,6 +146,12 @@ export const personaEditPath = (id: number): string => `/personas/${id}`;
 /** Путь к редактированию конкретной карточки. */
 export const cardEditPath = (id: number): string => `/cards/${id}`;
 
+/** Путь к чату соавтора. */
+export const coauthorViewPath = (id: number): string => `/coauthor/${id}`;
+
+/** Путь к настройкам чата соавтора. */
+export const coauthorSettingsPath = (id: number): string => `/coauthor/${id}/settings`;
+
 /** Путь к редактированию шаблона карточки. */
 export const cardTemplateEditPath = (id: number): string => `/card-templates/${id}`;
 
@@ -160,6 +174,12 @@ export function parentPath(pathname: string): string {
     return `/cards/${id}`;
   }
   if (pathname.startsWith("/cards/")) return ROUTES.cards;
+  if (/^\/coauthor\/\d+\/settings$/.test(pathname)) {
+    // Настройки → назад к самому чату
+    const id = pathname.split("/")[2];
+    return `/coauthor/${id}`;
+  }
+  if (pathname.startsWith("/coauthor/")) return ROUTES.coauthor;
   if (/^\/chats\/\d+\/(settings|graph)$/.test(pathname)) {
     // Настройки и граф → назад к чату
     const id = pathname.split("/")[2];

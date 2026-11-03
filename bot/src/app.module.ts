@@ -6,6 +6,7 @@ import { AvatarsModule } from "./avatars/avatars.module.js";
 import { CardTemplatesModule } from "./card-templates/card-templates.module.js";
 import { CardsModule } from "./cards/cards.module.js";
 import { CharactersModule } from "./characters/characters.module.js";
+import { CoauthorModule } from "./coauthor/coauthor.module.js";
 import { ApiExceptionFilter } from "./common/api-exception.filter.js";
 import { createValidationPipe } from "./common/validation-pipe.js";
 import { DatabaseModule } from "./database/database.module.js";
@@ -43,6 +44,7 @@ import { UserKeysModule } from "./user-keys/user-keys.module.js";
     NarratorTemplatesModule,
     CardsModule,
     CardTemplatesModule,
+    CoauthorModule,
     SettingsModule,
     DebugModule,
     TranslateModule,

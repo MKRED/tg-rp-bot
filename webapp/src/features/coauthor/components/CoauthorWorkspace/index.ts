@@ -1,0 +1,1 @@
+export { CoauthorWorkspace } from "./CoauthorWorkspace";

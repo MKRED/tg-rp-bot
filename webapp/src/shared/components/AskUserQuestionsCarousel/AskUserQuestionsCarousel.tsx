@@ -1,14 +1,16 @@
-import { ASK_USER_NOTE_MAX_LENGTH } from "@tg-rp-bot/shared";
+import { ASK_USER_NOTE_MAX_LENGTH, type AskUserQuestion } from "@tg-rp-bot/shared";
 import { Badge, Button, Group, Paper, Stack, Text, Textarea } from "@mantine/core";
 import { AnimatePresence, motion } from "framer-motion";
 import { MessageCircleQuestion, PenLine, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
-import { MOTION_TRANSITION } from "../../../../shared/theme/motion";
-import type { AskUserQuestion } from "../../types/card";
+import { MOTION_TRANSITION } from "../../theme/motion";
 import styles from "./AskUserQuestionsCarousel.module.css";
 
 interface AskUserQuestionsCarouselProps {
-  categoryTitle: string;
+  /** Заголовок карусели («Уточнение — «Внешность»»). */
+  title: string;
+  /** Пояснение шага «Дополнение»: к чему относится свободный текст. */
+  noteHint?: string;
   questions: AskUserQuestion[];
   submitting: boolean;
   /** answers — по порядку вопросов, пустая строка — вопрос оставлен без ответа; note — дополнение от себя. */
@@ -17,15 +19,15 @@ interface AskUserQuestionsCarouselProps {
 }
 
 /**
- * Карусель уточняющих вопросов ask_user — встаёт вместо блока, который модель попросила уточнить
- * перед генерацией. Шаги листаются свободно («Назад»/«Далее» и номера шагов), отвечать на всё не
+ * Карусель уточняющих вопросов ask_user — в генерации карточки встаёт вместо блока, который модель
+ * попросила уточнить, в «Соавторе» — в ленту чата. Шаги листаются свободно («Назад»/«Далее» и номера шагов), отвечать на всё не
  * обязательно: неотвеченный вопрос уходит модели как отказ. Последний шаг — постоянное «Дополнение»:
  * свободный текст от пользователя по этому блоку, о чём модель не спрашивала. Вопросы хранятся на
- * самой категории на сервере — можно свернуть Mini App и вернуться позже, карточка при этом не занята
- * (черновик ответов живёт только в этом компоненте).
+ * на сервере — можно свернуть Mini App и вернуться позже (черновик ответов живёт только в этом компоненте).
  */
 export function AskUserQuestionsCarousel({
-  categoryTitle,
+  title,
+  noteHint = "Необязательно. Любые пожелания, о которых ИИ не спросил.",
   questions,
   submitting,
   onSubmit,
@@ -81,7 +83,7 @@ export function AskUserQuestionsCarousel({
       <Stack gap="sm">
         <Group gap="xs" wrap="nowrap">
           <MessageCircleQuestion size={18} className={styles.icon} aria-hidden />
-          <Text fw={600} className={styles.title}>{`Уточнение — «${categoryTitle}»`}</Text>
+          <Text fw={600} className={styles.title}>{title}</Text>
           <Badge variant="light" className={styles.badge}>
             {isNote ? "Дополнение" : `${step + 1} из ${questions.length}`}
           </Badge>
@@ -124,7 +126,7 @@ export function AskUserQuestionsCarousel({
               <Stack gap="sm">
                 <Text fw={500}>Хотите что-то добавить от себя?</Text>
                 <Text size="sm" c="dimmed">
-                  Необязательно. Любые пожелания по этому блоку, о которых ИИ не спросил.
+                  {noteHint}
                 </Text>
                 <Textarea
                   autosize

@@ -12,5 +12,7 @@ import { CardGenerationService } from "./generation/card-generation.service.js";
   imports: [LlmModule, PresetsModule, SettingsModule, WebSearchModule],
   controllers: [CardsController],
   providers: [CardsService, CardsRepository, CardGenerationService],
+  // Соавтор читает и правит блоки карточек тем же репозиторием (и под тем же card-lock).
+  exports: [CardsRepository],
 })
 export class CardsModule {}

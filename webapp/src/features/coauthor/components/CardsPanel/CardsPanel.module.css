@@ -1,0 +1,148 @@
+.panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Персонажей до четырёх — на узком экране ряд прокручивается вбок, а не переносится. */
+.chips {
+  flex-shrink: 0;
+  display: flex;
+  gap: var(--mantine-spacing-xs);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+/* Полоса решений: сколько правок ждут и «Принять все» — под персонажами, чтобы не теснить их. */
+.reviewBar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  margin: 0 var(--mantine-spacing-md) var(--mantine-spacing-sm);
+  padding: 6px 6px 6px var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-primary-color-light);
+}
+
+.reviewText {
+  flex: 1;
+  min-width: 0;
+  color: var(--mantine-primary-color-light-color);
+}
+
+.chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  max-width: 12rem;
+  padding: 0 var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-xl);
+  background: var(--mantine-color-body);
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-sm);
+  transition: background-color 150ms ease, color 150ms ease;
+
+  &[data-active] {
+    background: var(--mantine-primary-color-light);
+    color: var(--mantine-color-text);
+    box-shadow: inset 0 0 0 1px var(--mantine-primary-color-filled);
+  }
+}
+
+.chipName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chipCount {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.blocks {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-sm);
+  padding: 0 var(--mantine-spacing-md) var(--mantine-spacing-md);
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-lg);
+  background: var(--mantine-color-body);
+
+  &[data-proposal] {
+    box-shadow: inset 0 0 0 1.5px var(--mantine-primary-color-filled);
+  }
+
+  &[data-empty] {
+    opacity: 0.75;
+  }
+}
+
+.blockTitle {
+  flex: 1;
+  min-width: 0;
+}
+
+.diffToggle {
+  align-self: flex-start;
+}
+
+.text {
+  font-size: var(--mantine-font-size-sm);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+
+  /* Свёрнутый длинный блок — шесть строк. */
+  &[data-collapsed] {
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+.ins {
+  text-decoration: none;
+  border-radius: 3px;
+  background: var(--mantine-color-green-light);
+  color: var(--mantine-color-green-light-color);
+}
+
+.del {
+  border-radius: 3px;
+  background: var(--mantine-color-red-light);
+  color: var(--mantine-color-red-light-color);
+}
+
+.more {
+  align-self: flex-start;
+  font-size: var(--mantine-font-size-xs);
+  color: var(--mantine-primary-color-filled);
+}
+
+.grow {
+  flex: 1;
+}

@@ -1,0 +1,121 @@
+.feed {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-sm);
+  width: 100%;
+  max-width: var(--app-chat-width, 48rem);
+  margin-inline: auto;
+  padding: var(--mantine-spacing-md);
+}
+
+/* Пузыри — как в RP-чате: свои заливкой акцента справа, ответы ИИ на фоне карточки слева. */
+.user,
+.assistant {
+  max-width: 85%;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-lg);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+
+  @media (min-width: 48em) {
+    max-width: 75%;
+  }
+}
+
+.user {
+  margin-left: auto;
+  border-bottom-right-radius: var(--mantine-radius-xs);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
+}
+
+.assistant {
+  border-bottom-left-radius: var(--mantine-radius-xs);
+  background: var(--mantine-color-body);
+  color: var(--mantine-color-text);
+}
+
+.thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-lg);
+  background: var(--mantine-color-body);
+}
+
+.edits {
+  max-width: 85%;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-lg);
+  background: var(--mantine-color-body);
+
+  &[data-pending] {
+    box-shadow: inset 0 0 0 1px var(--mantine-primary-color-filled);
+  }
+
+  @media (min-width: 48em) {
+    max-width: 75%;
+  }
+}
+
+.editsIcon {
+  flex-shrink: 0;
+  color: var(--mantine-primary-color-filled);
+}
+
+.editsText {
+  flex: 1;
+  min-width: 0;
+}
+
+.answered {
+  max-width: 85%;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-lg);
+  background: var(--mantine-color-body);
+
+  @media (min-width: 48em) {
+    max-width: 75%;
+  }
+}
+
+.answeredTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--mantine-spacing-lg) var(--mantine-spacing-md);
+}
+
+.emptyIcon {
+  color: var(--mantine-primary-color-filled);
+}
+
+/* Подсказки — длинные фразы: перенос строк вместо обрезки. */
+.suggestion {
+  height: auto;
+  min-height: 44px;
+  padding-block: var(--mantine-spacing-xs);
+  white-space: normal;
+  text-align: left;
+
+  & :global(.mantine-Button-label) {
+    white-space: normal;
+  }
+}

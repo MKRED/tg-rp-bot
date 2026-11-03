@@ -9,7 +9,7 @@ import {
   type CardInput,
   type WebSearchRecord,
 } from "@tg-rp-bot/shared";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { schema } from "../db/index.js";
 import type { Card } from "../db/schema.js";
 import { DatabaseService } from "../database/database.service.js";
@@ -71,6 +71,19 @@ export class CardsRepository {
       .where(and(eq(schema.cards.id, id), eq(schema.cards.userId, userId)));
     const row = rows[0];
     return row ? decryptRow(row, await this.keys.forUser(userId)) : undefined;
+  }
+
+  /** Несколько карточек пользователя по id (расшифрованы); чужие и удалённые просто не попадают в ответ. */
+  async findMany(userId: string, ids: number[]): Promise<Card[]> {
+    if (ids.length === 0) return [];
+    const t0 = Date.now();
+    const rows = await this.database.db
+      .select()
+      .from(schema.cards)
+      .where(and(eq(schema.cards.userId, userId), inArray(schema.cards.id, ids)));
+    const key = await this.keys.forUser(userId);
+    logger.debug({ durationMs: Date.now() - t0, userId, requested: ids.length, found: rows.length }, "Cards fetched by ids");
+    return rows.map((row) => decryptRow(row, key));
   }
 
   /**
