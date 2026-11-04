@@ -9,6 +9,9 @@ export type {
   CoauthorFeedItem,
   CoauthorProposal,
   CoauthorReviewResult,
+  CoauthorStep,
+  CoauthorStepEvent,
+  CoauthorStreamError,
 } from "@tg-rp-bot/shared";
 export {
   COAUTHOR_MESSAGE_MAX_LENGTH,

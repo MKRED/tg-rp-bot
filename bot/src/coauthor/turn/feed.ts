@@ -1,6 +1,7 @@
-import type { CoauthorFeedItem } from "@tg-rp-bot/shared";
+import type { CoauthorFeedItem, CoauthorStep } from "@tg-rp-bot/shared";
 import { ASK_USER_DECLINED_ANSWER, parseAskUserArguments } from "../../cards/generation/ask-user-tool.js";
 import type { CoauthorState } from "./state.js";
+import { callStep } from "./steps.js";
 import { ASK_USER_TOOL_NAME, EDIT_BLOCK_TOOL_NAME } from "./tools.js";
 
 function parseJson(raw: string | undefined): Record<string, unknown> | undefined {
@@ -16,11 +17,14 @@ function parseJson(raw: string | undefined): Record<string, unknown> | undefined
 /**
  * Лента чата для экрана из истории протокола: сообщения пользователя (без служебного [Review]),
  * текст ответов модели, вопросы ask_user с ответами и правки, предложенные за ход. Правки одного
- * хода подряд склеиваются в один элемент — на экране это одна плашка «N правок».
+ * хода подряд склеиваются в один элемент — на экране это одна плашка «N правок». Шаги одного сообщения
+ * пользователя — один элемент на месте первого шага: хранить их отдельно не нужно, всё есть в вызовах.
  */
 export function buildFeed(state: CoauthorState): CoauthorFeedItem[] {
   const results = new Map<string, string>();
   for (const m of state.messages) if (m.role === "tool") results.set(m.toolCallId, m.content);
+  // На паузе ask_user результаты остальных вызовов раунда ещё не в истории.
+  for (const [id, content] of Object.entries(state.pending?.results ?? {})) results.set(id, content);
 
   const feed: CoauthorFeedItem[] = [];
   const pushEdits = (ids: string[]) => {
@@ -30,15 +34,29 @@ export function buildFeed(state: CoauthorState): CoauthorFeedItem[] {
     else feed.push({ kind: "edits", proposalIds: ids });
   };
 
+  let turnSteps: CoauthorStep[] | undefined;
   for (const m of state.messages) {
     if (m.role === "user") {
       feed.push({ kind: "user", text: m.content });
+      turnSteps = undefined;
       continue;
     }
     if (m.role !== "assistant") continue;
     if (!("toolCalls" in m)) {
       if (m.content) feed.push({ kind: "assistant", text: m.content });
       continue;
+    }
+    const steps = m.toolCalls.flatMap((call) => {
+      const raw = { id: call.id, name: call.function.name, arguments: call.function.arguments };
+      const step = callStep(raw, results.get(call.id) ?? "{}");
+      return step && step.status !== "failed" ? [step] : [];
+    });
+    if (steps.length > 0) {
+      if (!turnSteps) {
+        turnSteps = [];
+        feed.push({ kind: "steps", steps: turnSteps });
+      }
+      turnSteps.push(...steps);
     }
     if (m.content?.trim()) feed.push({ kind: "assistant", text: m.content.trim() });
 

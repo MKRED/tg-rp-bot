@@ -124,14 +124,24 @@ export interface LlmResponse {
   };
 }
 
+/** Кусок вызова инструмента в дельте стрима: id и имя — в первом куске, дальше только arguments. */
+export interface LlmStreamToolCallDelta {
+  index: number;
+  id?: string;
+  function?: { name?: string; arguments?: string };
+}
+
 /** Одна SSE-дельта при стриминге (choices[0].delta). */
 export interface LlmStreamDelta {
   model?: string;
   choices: Array<{
-    delta: { content?: string; role?: string };
+    delta: { content?: string; role?: string; reasoning_content?: string | null; tool_calls?: LlmStreamToolCallDelta[] };
     finish_reason?: string | null;
   }>;
 }
+
+/** Стрим: вызов инструмента продвинулся; arguments — всё, что пришло на этот момент (JSON неполон). */
+export type OnToolCallDelta = (call: { id: string; name: string; arguments: string }) => void;
 
 /**
  * Кто умеет выполнить chat completion для пользователя — LlmService (ключ/модель из его настроек).
@@ -143,5 +153,6 @@ export interface ChatCompleter {
     options: ChatCompletionOptions,
     onChunk?: (token: string) => void,
     onReset?: () => void,
+    onToolCall?: OnToolCallDelta,
   ): Promise<ChatCompletionResult>;
 }

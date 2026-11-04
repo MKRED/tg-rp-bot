@@ -8,18 +8,21 @@ import { EmptyCompletionError, LlmHttpError } from "./errors.js";
 import { parseCompletionBody } from "./responseBody.js";
 import type { LlmProvider } from "./providers.js";
 import { buildBody, makeHeaders } from "./request.js";
+import { ToolCallAccumulator } from "./stream-accumulator.js";
 import type {
   ChatCompletionOptions,
   ChatCompletionResult,
   LlmResponse,
   LlmStreamDelta,
+  OnToolCallDelta,
 } from "./types.js";
 
 /**
  * Chat completion у заданного провайдера (ключ/модель пользователя резолвит LlmService — BYOK).
  *
  * Если передан `onChunk` — использует streaming (Server-Sent Events): каждый токен
- * передаётся в коллбэк, итоговая строка накапливается и возвращается как обычно.
+ * передаётся в коллбэк, итоговая строка накапливается и возвращается как обычно. Вызовы инструментов
+ * и reasoning собираются из дельт, результат такой же, как у single-shot; `onToolCall` видит вызов по ходу.
  * Без `onChunk` — обычный single-shot запрос.
  *
  * Запрос идёт обычным fetch без undici-dispatcher, поэтому НЕ проходит через
@@ -30,6 +33,7 @@ export async function requestChatCompletion(
   options: ChatCompletionOptions,
   onChunk?: (token: string) => void,
   onReset?: () => void,
+  onToolCall?: OnToolCallDelta,
 ): Promise<ChatCompletionResult> {
   const model = options.model ?? provider.defaultModel;
   const url = `${provider.baseUrl}${CHAT_COMPLETIONS_PATH}`;
@@ -48,7 +52,7 @@ export async function requestChatCompletion(
   try {
     // Тестируем onChunk (а не streaming) — так TS сужает его до определённого в stream-ветке.
     const result = onChunk
-      ? await chatCompletionStreaming(options, provider, model, url, t0, onChunk, onReset)
+      ? await chatCompletionStreaming(options, provider, model, url, t0, onChunk, onReset, onToolCall)
       : await chatCompletionSingle(options, provider, model, url, t0);
     response = {
       ok: true,
@@ -158,11 +162,32 @@ async function chatCompletionStreaming(
   t0: number,
   onChunk: (token: string) => void,
   onReset?: () => void,
+  onToolCall?: OnToolCallDelta,
 ): Promise<ChatCompletionResult> {
   return retry<ChatCompletionResult>(
     async () => {
-      const result = await streamOnce(options, provider, model, url, onChunk);
-      if (isUnusableCompletion(result.content)) {
+      // Обрыв посреди потока тоже ретраится: без сброса клиент склеил бы показанное со следующей попыткой.
+      let emitted = false;
+      const result = await streamOnce(
+        options,
+        provider,
+        model,
+        url,
+        (token) => {
+          emitted = true;
+          onChunk(token);
+        },
+        (call) => {
+          emitted = true;
+          onToolCall?.(call);
+        },
+      ).catch((err: unknown) => {
+        if (emitted) onReset?.();
+        throw err;
+      });
+      // Как в single-shot: tool_calls с пустым текстом — штатный ответ, если инструменты предлагались.
+      const hasToolCalls = !!options.tools?.length && !!result.toolCalls?.length;
+      if (!hasToolCalls && isUnusableCompletion(result.content)) {
         // Стёрли плохой ответ у клиента прямо сейчас (а не после backoff-задержки).
         onReset?.();
         throw new EmptyCompletionError();
@@ -194,6 +219,7 @@ async function streamOnce(
   model: string,
   url: string,
   onChunk: (token: string) => void,
+  onToolCall: OnToolCallDelta,
 ): Promise<ChatCompletionResult> {
   const response = await fetch(url, {
     method: "POST",
@@ -214,6 +240,8 @@ async function streamOnce(
   const decoder = new TextDecoder();
   let buffer = "";
   let fullContent = "";
+  let reasoning = "";
+  const toolCalls = new ToolCallAccumulator();
   let responseModel = model;
 
   try {
@@ -237,9 +265,15 @@ async function streamOnce(
           continue;
         }
         if (parsed.model) responseModel = parsed.model;
-        // reasoning_content DeepSeek (thinking-режим) читаем намеренно НЕ — пользователю
-        // показываем только финальный ответ (delta.content), «мысли» отбрасываем.
-        const delta = parsed.choices[0]?.delta?.content;
+        const choice = parsed.choices[0]?.delta;
+        // reasoning_content DeepSeek (thinking-режим) пользователю не показываем (только delta.content),
+        // но копим: при tool_calls его нужно вернуть модели в следующем запросе.
+        if (choice?.reasoning_content) reasoning += choice.reasoning_content;
+        for (const delta of choice?.tool_calls ?? []) {
+          const call = toolCalls.add(delta);
+          if (call) onToolCall(call);
+        }
+        const delta = choice?.content;
         if (delta) {
           fullContent += delta;
           onChunk(delta);
@@ -250,5 +284,10 @@ async function streamOnce(
     reader.releaseLock();
   }
 
-  return { content: fullContent, model: responseModel };
+  return {
+    content: fullContent,
+    model: responseModel,
+    toolCalls: toolCalls.result(),
+    ...(reasoning && { reasoningContent: reasoning }),
+  };
 }

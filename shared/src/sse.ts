@@ -5,6 +5,8 @@
  *   reset       — сервер ретраит пустой/отказной ответ: стереть показанный текст ({});
  *   userMessage — сохранённая реплика игрока (сообщение целиком);
  *   status      — промежуточная фаза narrator ({ phase }, напр. "compacting");
+ *   step        — шаг хода соавтора (CoauthorStepEvent);
+ *   ping        — соавтор: поток жив, пока модель молча думает ({});
  *   done        — готовый результат (сообщение/вариант), конец потока;
  *   error       — ошибка генерации ({ message } — текст готов к показу), конец потока.
  */
@@ -13,6 +15,8 @@ export const SSE_EVENTS = {
   reset: "reset",
   userMessage: "userMessage",
   status: "status",
+  step: "step",
+  ping: "ping",
   done: "done",
   error: "error",
 } as const;

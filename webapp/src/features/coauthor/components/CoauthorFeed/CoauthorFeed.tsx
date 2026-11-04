@@ -3,17 +3,22 @@ import { motion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { AskUserQuestionsCarousel } from "../../../../shared/components/AskUserQuestionsCarousel";
 import { MOTION_TRANSITION } from "../../../../shared/theme/motion";
+import { liveShowsActivity, type LiveItem } from "../../lib/liveTurn";
 import type { CoauthorAnswerInput, CoauthorChat } from "../../types/coauthor";
 import { AnsweredQuestions } from "./AnsweredQuestions";
 import { EditsChip } from "./EditsChip";
 import { EmptyChat } from "./EmptyChat";
 import { FeedText } from "./FeedText";
+import { StepsList } from "./StepsList";
+import { TurnSteps } from "./TurnSteps";
 import styles from "./CoauthorFeed.module.css";
 
 interface CoauthorFeedProps {
   chat: CoauthorChat;
   /** Отправленное сообщение, на которое ещё нет ответа. */
   sendingText: string | null;
+  /** Шаги и текст своего идущего хода, по мере прихода из потока. */
+  live: LiveItem[];
   /** ИИ сейчас работает (своя отправка, ответ на вопросы или ход, начатый до обновления страницы). */
   thinking: boolean;
   answering: boolean;
@@ -23,7 +28,7 @@ interface CoauthorFeedProps {
 }
 
 /** Лента чата соавтора — единственное, что здесь прокручивается. Держится у низа при новых сообщениях. */
-export function CoauthorFeed({ chat, sendingText, thinking, answering, onAnswer, onOpenCard, onSuggest }: CoauthorFeedProps) {
+export function CoauthorFeed({ chat, sendingText, live, thinking, answering, onAnswer, onOpenCard, onSuggest }: CoauthorFeedProps) {
   const endRef = useRef<HTMLDivElement>(null);
   const firstScroll = useRef(true);
   // Каждое слагаемое — отдельно: ответ ИИ приходит в том же коммите, где пропадают отправленное
@@ -32,6 +37,14 @@ export function CoauthorFeed({ chat, sendingText, thinking, answering, onAnswer,
     endRef.current?.scrollIntoView({ behavior: firstScroll.current ? "auto" : "smooth" });
     firstScroll.current = false;
   }, [chat.feed.length, sendingText, thinking]);
+
+  // Страница обновлена посреди хода: потока нет, шаги приходят опросом.
+  const items: LiveItem[] = live.length > 0 ? live : chat.liveSteps?.length ? [{ type: "steps", steps: chat.liveSteps }] : [];
+  // Текст приходит часто: плавная прокрутка на каждый кусок дёргалась бы.
+  const liveSize = items.reduce((sum, item) => sum + (item.type === "text" ? item.text.length : item.steps.length), 0);
+  useEffect(() => {
+    if (liveSize > 0) endRef.current?.scrollIntoView({ behavior: "auto" });
+  }, [liveSize]);
 
   if (chat.feed.length === 0 && !sendingText && !thinking) {
     return (
@@ -56,6 +69,9 @@ export function CoauthorFeed({ chat, sendingText, thinking, answering, onAnswer,
                   <FeedText text={item.text} />
                 </div>
               );
+              break;
+            case "steps":
+              node = <TurnSteps steps={item.steps} cards={chat.cards} />;
               break;
             case "edits":
               node = <EditsChip chat={chat} proposalIds={item.proposalIds} onOpen={onOpenCard} />;
@@ -86,12 +102,21 @@ export function CoauthorFeed({ chat, sendingText, thinking, answering, onAnswer,
             <div className={styles.user}>{sendingText}</div>
           </motion.div>
         )}
-        {thinking && (
+        {items.map((item, i) =>
+          item.type === "text" ? (
+            <div key={i} className={styles.assistant}>
+              <FeedText text={item.text} />
+            </div>
+          ) : (
+            <StepsList key={i} steps={item.steps} cards={chat.cards} />
+          ),
+        )}
+        {thinking && !liveShowsActivity(items) && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={MOTION_TRANSITION}>
             <div className={styles.thinking} role="status">
               <Loader type="dots" size="sm" />
               <Text size="sm" c="dimmed">
-                ИИ работает над карточками…
+                Думает…
               </Text>
             </div>
           </motion.div>

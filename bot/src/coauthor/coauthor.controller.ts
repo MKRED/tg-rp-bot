@@ -1,13 +1,18 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Post, Put } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Post, Put, RequestMethod, Sse } from "@nestjs/common";
+import { METHOD_METADATA } from "@nestjs/common/constants.js";
 import { CurrentUser } from "../auth/current-user.decorator.js";
 import { CoauthorTurnService } from "./coauthor-turn.service.js";
 import { CoauthorService } from "./coauthor.service.js";
 import { CoauthorAnswerDto, CoauthorMessageDto, CoauthorReviewDto } from "./dto/coauthor-actions.dto.js";
 import { CoauthorChatInputDto } from "./dto/coauthor-chat-input.dto.js";
 
+/** Штатный @Sse на POST: webapp стримит через POST + fetch, тело несёт сообщение или ответы. */
+const POST = { [METHOD_METADATA]: RequestMethod.POST };
+
 /**
  * /api/coauthor — чаты «Соавтора». Все действия отвечают полным чатом `{ chat }`: лента, правки и
  * карточки меняются вместе, точечный мерж на клиенте того не стоит. Действия — POST с 200 (ничего не создают).
+ * Ход ИИ — SSE-поток: шаги и текст по мере работы, полный чат — в событии done.
  */
 @Controller("coauthor")
 export class CoauthorController {
@@ -43,20 +48,20 @@ export class CoauthorController {
   }
 
   /** Сообщение пользователя → ход ИИ (десятки секунд). */
-  @Post(":id/messages")
+  @Sse(":id/messages", POST)
   @HttpCode(200)
-  async send(@CurrentUser() userId: string, @Param("id", ParseIntPipe) id: number, @Body() body: CoauthorMessageDto) {
-    return { chat: await this.turns.send(userId, id, body.text) };
+  send(@CurrentUser() userId: string, @Param("id", ParseIntPipe) id: number, @Body() body: CoauthorMessageDto) {
+    return this.turns.send(userId, id, body.text);
   }
 
   /** Ответ на вопросы ИИ — ход продолжается. */
-  @Post(":id/answer")
+  @Sse(":id/answer", POST)
   @HttpCode(200)
-  async answer(@CurrentUser() userId: string, @Param("id", ParseIntPipe) id: number, @Body() body: CoauthorAnswerDto) {
+  answer(@CurrentUser() userId: string, @Param("id", ParseIntPipe) id: number, @Body() body: CoauthorAnswerDto) {
     const input = body.skipped
       ? { skipped: true as const, note: body.note }
       : { skipped: false as const, answers: body.answers ?? [], note: body.note };
-    return { chat: await this.turns.answer(userId, id, input) };
+    return this.turns.answer(userId, id, input);
   }
 
   /** Принять или отклонить правки; ответ — `{ chat, stale }`. */

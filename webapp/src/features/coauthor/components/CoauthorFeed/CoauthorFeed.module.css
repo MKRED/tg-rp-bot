@@ -119,3 +119,51 @@
     white-space: normal;
   }
 }
+
+/* Шаги хода — служебная строка под перепиской, без пузыря: это не реплика. */
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 2px var(--mantine-spacing-xs);
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mantine-spacing-xs);
+}
+
+.stepIcon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  height: 1.3rem;
+  color: var(--mantine-color-dimmed);
+}
+
+.stepLabel {
+  min-width: 0;
+  word-break: break-word;
+}
+
+/* Высота под палец: строка узкая, а нажимают её на телефоне. */
+.stepsToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  padding-inline: var(--mantine-spacing-xs);
+  border-radius: var(--mantine-radius-sm);
+}
+
+.stepsChevron {
+  color: var(--mantine-color-dimmed);
+  transition: transform 150ms ease;
+
+  &[data-open] {
+    transform: rotate(180deg);
+  }
+}

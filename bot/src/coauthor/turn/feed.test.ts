@@ -49,3 +49,37 @@ describe("buildFeed", () => {
     expect(buildFeed(state).at(-1)).toEqual({ kind: "questions", questions: [{ question: "Tone?" }], answers: null });
   });
 });
+
+describe("buildFeed: шаги хода", () => {
+  it("шаги одного сообщения — один элемент перед правками, неудачные вызовы не показываются", () => {
+    const state = emptyCoauthorState();
+    const edit = (id: string, block: string) => ({
+      id,
+      type: "function" as const,
+      function: { name: "edit_block", arguments: JSON.stringify({ card_id: 1, block_id: block, content: "x" }) },
+    });
+    state.messages = [
+      { role: "user", content: "Go" },
+      { role: "assistant", content: null, toolCalls: [{ id: "s1", type: "function", function: { name: "web_search", arguments: '{"query":"q"}' } }] },
+      { role: "tool", toolCallId: "s1", content: '{"results":[]}' },
+      { role: "assistant", content: null, toolCalls: [edit("e1", "fears"), edit("e2", "nope")] },
+      { role: "tool", toolCallId: "e1", content: '{"ok":true,"proposal_id":"p1"}' },
+      { role: "tool", toolCallId: "e2", content: '{"error":"no block"}' },
+      { role: "assistant", content: "Done." },
+      { role: "user", content: "Thanks" },
+    ];
+    expect(buildFeed(state)).toEqual([
+      { kind: "user", text: "Go" },
+      {
+        kind: "steps",
+        steps: [
+          { id: "s1", status: "done", kind: "search", query: "q" },
+          { id: "e1", status: "done", kind: "edit", cardId: 1, blockId: "fears" },
+        ],
+      },
+      { kind: "edits", proposalIds: ["p1"] },
+      { kind: "assistant", text: "Done." },
+      { kind: "user", text: "Thanks" },
+    ]);
+  });
+});

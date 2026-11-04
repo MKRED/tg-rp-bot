@@ -1,6 +1,5 @@
 import { apiFetch } from "../../../shared/api/client";
 import type {
-  CoauthorAnswerInput,
   CoauthorChat,
   CoauthorChatInput,
   CoauthorChatListItem,
@@ -25,15 +24,6 @@ export function updateCoauthorChat(id: number, input: CoauthorChatInput): Promis
 
 export function removeCoauthorChat(id: number): Promise<{ ok: true }> {
   return apiFetch(`/coauthor/${id}`, { method: "DELETE" });
-}
-
-/** Сообщение → ход ИИ; ответ приходит, когда ход закончился (десятки секунд). */
-export function sendCoauthorMessage(id: number, text: string): Promise<{ chat: CoauthorChat }> {
-  return apiFetch(`/coauthor/${id}/messages`, { method: "POST", body: JSON.stringify({ text }) });
-}
-
-export function answerCoauthorQuestions(id: number, input: CoauthorAnswerInput): Promise<{ chat: CoauthorChat }> {
-  return apiFetch(`/coauthor/${id}/answer`, { method: "POST", body: JSON.stringify(input) });
 }
 
 export function reviewCoauthorProposals(id: number, proposalIds: string[], accept: boolean): Promise<CoauthorReviewResult> {

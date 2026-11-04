@@ -1,4 +1,4 @@
-import type { WebSearchRecord } from "@tg-rp-bot/shared";
+import type { CoauthorStep, WebSearchRecord } from "@tg-rp-bot/shared";
 import { parseAskUserArguments } from "../../cards/generation/ask-user-tool.js";
 import { runWebSearchCall } from "../../cards/generation/tool-loop.js";
 import type { ChatCompleter, ChatCompletionOptions, ToolCall } from "../../llm/types.js";
@@ -8,6 +8,7 @@ import { WEB_SEARCH_TOOL_NAME, webSearchTool } from "../../web-search/web-search
 import { buildCoauthorMessages, STALE_CARDS_RESULT, type CoauthorCardData } from "./prompt.js";
 import { proposeEdit } from "./proposals.js";
 import type { CoauthorState, StoredMessage } from "./state.js";
+import { callStep } from "./steps.js";
 import {
   ASK_USER_TOOL_NAME,
   COAUTHOR_ASK_USER_TOOL,
@@ -39,6 +40,12 @@ export interface CoauthorTurnParams {
   /** Отправлять картинки-референсы карточек: включено в чате и модель пресета их видит. */
   withImages: boolean;
   onWebSearch?: (record: WebSearchRecord) => void;
+  /** Шаг начался или закончился. Правка уже записана в state.proposals к моменту шага с итоговым статусом. */
+  onStep?: (step: CoauthorStep) => void;
+  /** Кусок текста ответа модели. */
+  onToken?: (text: string) => void;
+  /** Модель перезапущена после сбоя: показанный текст и незавершённые шаги этой попытки недействительны. */
+  onReset?: () => void;
 }
 
 export type CoauthorTurnOutcome = "done" | "questions";
@@ -70,11 +77,23 @@ function callsInTurn(messages: StoredMessage[], name: string): number {
  *
  * Конечность: не больше COAUTHOR_MAX_LLM_ROUNDS вызовов модели, последний — без инструментов;
  * паузы ограничены COAUTHOR_MAX_ASK_PER_TURN на сообщение пользователя.
+ *
+ * Модель всегда стримится: edit_block несёт весь текст блока, и шаг виден, пока он пишется, а не после.
  */
 export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<CoauthorTurnOutcome> {
   const { llm, baseOptions, customPrompt, cards, state, webSearch, maxSearchRounds, askUserEnabled, withImages } = params;
   const { userId } = baseOptions;
   const t0 = Date.now();
+
+  // Шаг показывается один раз, как только его можно назвать; дальше аргументы только дописываются.
+  const announced = new Set<string>();
+  const announce = (call: { id: string; name: string; arguments: string }) => {
+    if (announced.has(call.id)) return;
+    const step = callStep(call);
+    if (!step) return;
+    announced.add(call.id);
+    params.onStep?.(step);
+  };
 
   for (let round = 1; ; round++) {
     const searchesUsed = callsInTurn(state.messages, WEB_SEARCH_TOOL_NAME);
@@ -90,11 +109,19 @@ export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<Coaut
           ]
         : [];
 
-    const result = await llm.complete({
-      ...baseOptions,
-      messages: buildCoauthorMessages(customPrompt, cards, state.proposals, state.messages, COAUTHOR_HISTORY_TOKEN_BUDGET, withImages),
-      ...(tools.length > 0 && { tools, toolChoice: "auto" as const }),
-    });
+    const result = await llm.complete(
+      {
+        ...baseOptions,
+        messages: buildCoauthorMessages(customPrompt, cards, state.proposals, state.messages, COAUTHOR_HISTORY_TOKEN_BUDGET, withImages),
+        ...(tools.length > 0 && { tools, toolChoice: "auto" as const }),
+      },
+      (text) => params.onToken?.(text),
+      () => {
+        announced.clear();
+        params.onReset?.();
+      },
+      announce,
+    );
 
     logger.debug(
       { userId, round, offered: tools.map((t) => t.function.name), called: result.toolCalls?.map((c) => c.function.name) ?? [] },
@@ -119,32 +146,41 @@ export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<Coaut
     let pause: { toolCallId: string; questions: NonNullable<ReturnType<typeof parseAskUserArguments>> } | undefined;
     let searchesLeft = maxSearchRounds - searchesUsed;
 
-    for (const call of result.toolCalls) {
+    const runCall = async (call: ToolCall): Promise<void> => {
       if (!offered.has(call.function.name)) {
         // Модель подсматривает вызовы в истории и зовёт выключенный или исчерпанный инструмент.
         logger.warn({ userId, tool: call.function.name }, "Coauthor turn: вызван непредложенный инструмент");
         results[call.id] = JSON.stringify({ error: `tool unavailable: ${call.function.name}` });
-        continue;
+        return;
       }
       if (call.function.name === ASK_USER_TOOL_NAME) {
         const questions = pause ? undefined : parseAskUserArguments(call.function.arguments);
         if (questions) pause = { toolCallId: call.id, questions };
         else results[call.id] = JSON.stringify({ error: pause ? "only one ask_user call per turn" : "invalid arguments" });
-        continue;
+        return;
       }
       if (call.function.name === WEB_SEARCH_TOOL_NAME) {
         if (searchesLeft <= 0 || !webSearch) {
           results[call.id] = JSON.stringify({ error: "search budget is used up", searches_left: 0 });
-          continue;
+          return;
         }
         searchesLeft--;
         const outcome = await runWebSearchCall(call, webSearch, searchesLeft);
         results[call.id] = outcome.content;
         if (outcome.record) params.onWebSearch?.(outcome.record);
         if (outcome.authFailed) searchesLeft = 0;
-        continue;
+        return;
       }
       results[call.id] = runLocalTool(call, state, cards);
+    };
+
+    for (const call of result.toolCalls) {
+      const raw = { id: call.id, name: call.function.name, arguments: call.function.arguments };
+      // Без стрима или без дельт шаг ещё не показан, а поиск идёт секунды — объявляем до запуска.
+      announce(raw);
+      await runCall(call);
+      const finished = callStep(raw, results[call.id] ?? "{}");
+      if (finished) params.onStep?.(finished);
     }
 
     if (pause) {

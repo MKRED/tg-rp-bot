@@ -15,6 +15,7 @@ import logger from "../logger.js";
 import { PresetsRepository } from "../presets/presets.repository.js";
 import { orderedCards, toCardData } from "./card-data.js";
 import { getTurnError, isChatLocked, tryLockChat, unlockChat } from "./chat-lock.js";
+import { getTurnProgress } from "./turn-progress.js";
 import { CoauthorRepository, type CoauthorChatRecord } from "./coauthor.repository.js";
 import { dropOrphanedProposals, reviewNote } from "./turn/proposals.js";
 import { emptyCoauthorState } from "./turn/state.js";
@@ -149,7 +150,7 @@ export class CoauthorService {
   /** Чат для клиента — с карточками в текущем состоянии. */
   async view(userId: string, chat: CoauthorChatRecord): Promise<CoauthorChat> {
     const cards = await this.cards.findMany(userId, chat.cardIds);
-    return toChatView(chat, cards, isChatLocked(chat.id), getTurnError(chat.id));
+    return toChatView(chat, cards, isChatLocked(chat.id), getTurnError(chat.id), getTurnProgress(chat.id));
   }
 
   private async withLock<T>(id: number, work: () => Promise<T>): Promise<T> {

@@ -96,4 +96,46 @@ describe("runCoauthorTurn", () => {
     expect(requests).toHaveLength(COAUTHOR_MAX_LLM_ROUNDS);
     expect(requests.at(-1)!.tools).toBeUndefined();
   });
+
+  it("шаг объявляется по дельтам один раз и завершается итоговым статусом", async () => {
+    const args = JSON.stringify({ card_id: 1, block_id: "fears", content: "Storms" });
+    const steps: unknown[] = [];
+    const replies: ChatCompletionResult[] = [
+      { content: "", model: "m", toolCalls: [call("e1", "edit_block", { card_id: 1, block_id: "fears", content: "Storms" })] },
+      { content: "Ok", model: "m" },
+    ];
+    const llm: ChatCompleter = {
+      complete: async (_options, _onChunk, _onReset, onToolCall) => {
+        // Две дельты после того, как id уже читаются: шаг не должен задвоиться.
+        onToolCall?.({ id: "e1", name: "edit_block", arguments: args.slice(0, -5) });
+        onToolCall?.({ id: "e1", name: "edit_block", arguments: args });
+        return replies.shift()!;
+      },
+    };
+    const p = params(llm);
+    let proposalsAtDone = -1;
+    await runCoauthorTurn({
+      ...p,
+      onStep: (step) => {
+        steps.push(step);
+        if (step.status === "done") proposalsAtDone = p.state.proposals.length;
+      },
+    });
+    expect(steps).toEqual([
+      { id: "e1", status: "running", kind: "edit", cardId: 1, blockId: "fears" },
+      { id: "e1", status: "done", kind: "edit", cardId: 1, blockId: "fears" },
+    ]);
+    // Клиент берёт снимок правок в момент шага done — правка уже должна быть там.
+    expect(proposalsAtDone).toBe(1);
+  });
+
+  it("без дельт шаг всё равно появляется, ошибка инструмента — failed", async () => {
+    const steps: Array<{ status: string }> = [];
+    const { llm } = fakeLlm([
+      { content: "", model: "m", toolCalls: [call("e1", "edit_block", { card_id: 99, block_id: "x", content: "y" })] },
+      { content: "Ok", model: "m" },
+    ]);
+    await runCoauthorTurn({ ...params(llm), onStep: (step) => steps.push(step) });
+    expect(steps.map((s) => s.status)).toEqual(["running", "failed"]);
+  });
 });

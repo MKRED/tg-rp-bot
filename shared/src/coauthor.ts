@@ -61,6 +61,29 @@ export interface CoauthorProposal {
   status: "pending" | "accepted" | "rejected" | "superseded";
 }
 
+/** Шаг хода ИИ на экране: вызов инструмента. id — id вызова; failed — модель получила ошибку и исправится сама. */
+export type CoauthorStep = { id: string; status: "running" | "done" | "failed" } & (
+  | { kind: "cards" }
+  | { kind: "search"; query: string }
+  | { kind: "edit"; cardId: number; blockId: string }
+);
+
+/** Новый шаг — в конец, уже известный (тот же id) — на своём месте с новым статусом. */
+export function upsertCoauthorStep(steps: CoauthorStep[], step: CoauthorStep): CoauthorStep[] {
+  return steps.some((s) => s.id === step.id) ? steps.map((s) => (s.id === step.id ? step : s)) : [...steps, step];
+}
+
+/** Событие step в потоке хода. proposals — все правки чата: новая могла заменить прошлую правку того же блока. */
+export interface CoauthorStepEvent {
+  step: CoauthorStep;
+  proposals?: CoauthorProposal[];
+}
+
+/** Событие error в потоке хода: код как у HTTP-ошибок (CoauthorError или no_api_key). */
+export interface CoauthorStreamError {
+  code: string;
+}
+
 /** Элемент ленты чата. Лента собирается сервером из истории диалога с моделью. */
 export type CoauthorFeedItem =
   | { kind: "user"; text: string }
@@ -68,7 +91,9 @@ export type CoauthorFeedItem =
   /** Вопросы ИИ (ask_user). answers: null — ещё ждут ответа; skipped — пользователь пропустил. */
   | { kind: "questions"; questions: AskUserQuestion[]; answers: string[] | null; skipped?: boolean }
   /** Правки, предложенные за ход модели, — статусы смотреть в proposals. */
-  | { kind: "edits"; proposalIds: string[] };
+  | { kind: "edits"; proposalIds: string[] }
+  /** Что ИИ делал за этот ход, без неудачных вызовов. */
+  | { kind: "steps"; steps: CoauthorStep[] };
 
 /** Полный чат соавтора (GET /coauthor/:id и ответы всех действий). */
 export interface CoauthorChat {
@@ -88,6 +113,8 @@ export interface CoauthorChat {
   proposals: CoauthorProposal[];
   /** Идёт ход ИИ — после обновления страницы клиент опрашивает чат, пока флаг не снимется. */
   running: boolean;
+  /** Шаги идущего хода — только пока running: страница, обновлённая посреди хода, показывает их без потока. */
+  liveSteps?: CoauthorStep[];
   /** Код ошибки последнего хода, если он упал (помнится недолго). */
   lastError?: string;
 }

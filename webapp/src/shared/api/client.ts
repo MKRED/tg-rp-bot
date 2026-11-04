@@ -43,6 +43,21 @@ export function reportAuthFailure(status: number): void {
   if (status === 401 && !initData.raw()) notifyUnauthorized();
 }
 
+/**
+ * Ошибка неудачного ответа. Сервер иногда шлёт содержательный текст (например MissingApiKeyError) в
+ * теле — используем его, если есть; иначе — прежний общий текст.
+ */
+export async function apiErrorFrom(res: Response, path: string): Promise<ApiError> {
+  reportAuthFailure(res.status);
+  const body = await res.json().catch(() => null);
+  const serverMessage =
+    body && typeof body === "object" && ("message" in body || "error" in body)
+      ? ((body as { message?: unknown; error?: unknown }).message ??
+        (body as { message?: unknown; error?: unknown }).error)
+      : undefined;
+  return new ApiError(res.status, typeof serverMessage === "string" ? serverMessage : `API ${path} failed: ${res.status}`);
+}
+
 /** Типизированный fetch к /api/* с автоматической подстановкой заголовков авторизации. */
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
@@ -50,20 +65,6 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   for (const [name, value] of Object.entries(getAuthHeaders())) headers.set(name, value);
 
   const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
-  if (!res.ok) {
-    reportAuthFailure(res.status);
-    // Сервер иногда шлёт содержательный текст (например MissingApiKeyError) в теле —
-    // используем его, если есть; иначе — прежний общий текст.
-    const body = await res.json().catch(() => null);
-    const serverMessage =
-      body && typeof body === "object" && ("message" in body || "error" in body)
-        ? ((body as { message?: unknown; error?: unknown }).message ??
-          (body as { message?: unknown; error?: unknown }).error)
-        : undefined;
-    throw new ApiError(
-      res.status,
-      typeof serverMessage === "string" ? serverMessage : `API ${path} failed: ${res.status}`,
-    );
-  }
+  if (!res.ok) throw await apiErrorFrom(res, path);
   return res.json() as Promise<T>;
 }

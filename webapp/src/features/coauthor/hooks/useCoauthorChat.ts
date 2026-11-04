@@ -8,7 +8,8 @@ const POLL_MS = 3000;
 /**
  * Чат соавтора. Если сервер сообщает running (ход начат до обновления страницы или в другой вкладке),
  * хук опрашивает чат, пока ход не закончится, — ответ ИИ подхватывается без ручного обновления.
- * polling: false — пока своя отправка ждёт ответа, опрос не нужен (результат придёт в ответе POST).
+ * Своя отправка идёт потоком (useCoauthorActions): chat.running при этом не взводится, опроса нет.
+ * polling: false — экрану ход не важен (настройки).
  */
 export function useCoauthorChat(id: number, polling = true) {
   const [chat, setChat] = useState<CoauthorChat>();

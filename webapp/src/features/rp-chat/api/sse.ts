@@ -1,5 +1,5 @@
 import { getApiBase, getAuthHeaders, reportAuthFailure } from "../../../shared/api/client";
-import { parseSSELines } from "./parseSSE";
+import { parseSSELines } from "../../../shared/api/parseSSE";
 
 /**
  * Открывает POST-SSE-поток к API бота и вызывает onEvent для каждого завершённого события.

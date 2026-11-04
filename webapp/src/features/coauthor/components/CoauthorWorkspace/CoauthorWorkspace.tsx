@@ -26,7 +26,7 @@ export function CoauthorWorkspace({ chat, setChat, onSettings }: CoauthorWorkspa
   const inputRef = useRef<CoauthorInputHandle>(null);
   const [tab, setTab] = useState<CoauthorTab>("chat");
   const [selectedCardId, setSelectedCardId] = useState(chat.cards[0]?.id ?? 0);
-  const { send, sendingText, answer, answering, review, reviewing } = useCoauthorActions(chat.id, setChat);
+  const { send, sendingText, live, answer, answering, review, reviewing } = useCoauthorActions(chat.id, setChat);
 
   // Ход, который мы застали идущим (страницу обновили посреди него), упал — узнаём из lastError после
   // опроса. Только на переходе running → нет: ошибку своей отправки уже показал тост, а старая ошибка
@@ -69,6 +69,7 @@ export function CoauthorWorkspace({ chat, setChat, onSettings }: CoauthorWorkspa
           <CoauthorFeed
             chat={chat}
             sendingText={sendingText}
+            live={live}
             thinking={thinking}
             answering={answering}
             onAnswer={(input) => void answer(input)}
