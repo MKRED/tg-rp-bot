@@ -10,6 +10,7 @@ import {
   LEADING_USER_MARKER,
 } from "./storyPromptBuilder.constants.js";
 import type { StoryPromptOptions } from "./storyPromptBuilder.types.js";
+import { storyHistoryContent } from "./historyContent.js";
 
 // Реэкспорт публичной поверхности билдера для потребителей (storyHandlers/narrator-templates).
 export {
@@ -22,6 +23,7 @@ export {
   LEADING_USER_MARKER,
 } from "./storyPromptBuilder.constants.js";
 export type { StoryPromptOptions } from "./storyPromptBuilder.types.js";
+export { storyHistoryContent, wrapDirective } from "./historyContent.js";
 
 /** Текст non-history компонента запроса (с обёрткой, если нужна) или null, если он пуст. */
 function componentText(
@@ -54,10 +56,13 @@ function resolveHistory(opts: StoryPromptOptions, fixedSystemTokens: number): St
   const reserve = opts.maxTokens ?? DEFAULT_OUTPUT_RESERVE;
   const fixed = fixedSystemTokens + countTokens(opts.leadingUserMarker) + PER_MESSAGE_OVERHEAD;
   const available = opts.contextSize - reserve - fixed;
+  // Стоимость узла — по тексту, который реально уйдёт в модель (маркер / обёрнутая директива).
+  // Обрезка оставляет самые свежие узлы, поэтому последний узел истории остаётся последним и после неё.
+  const last = opts.history.at(-1);
   const trimmed = trimHistoryToBudget(
     opts.history,
     available,
-    (m) => countTokens(m.content) + PER_MESSAGE_OVERHEAD,
+    (m) => countTokens(storyHistoryContent(m, m === last, opts.continueMarker)) + PER_MESSAGE_OVERHEAD,
   );
   const dropped = opts.history.length - trimmed.length;
   if (dropped > 0) opts.onTrim?.({ dropped, kept: trimmed.length, total: opts.history.length });
@@ -86,7 +91,7 @@ export function resolveNarratorMarkers(
  *     отдельным сообщением;
  *   - history → синтетический leading-user (массив не должен начинаться с assistant) + активный путь:
  *     assistant-биты как есть; user-ходы (continue/directive) НЕЙТРАЛИЗУЮТСЯ в CONTINUE_MARKER, КРОМЕ
- *     последнего (живого триггера) — он сохраняет свой текст.
+ *     последнего (живого триггера) — он сохраняет свой текст; живая директива обёрнута в `<directive>`.
  *   - opts.mergeSystemPrompts=true → все non-history компоненты, стоящие в promptOrder ДО history,
  *     схлопываются в одно system-сообщение; каждый блок обёрнут в `<componentId>…</componentId>`.
  *     Компоненты ПОСЛЕ history (напр. postHistory) не трогает — уходят как обычно, отдельным сообщением.
@@ -139,13 +144,9 @@ export function buildStoryMessages(opts: StoryPromptOptions): ChatMessage[] {
     // user-ход — тогда после leading-user идут два user-сообщения подряд. Инвариант «массив
     // не начинается с assistant» это не нарушает, так что специально схлопывать не нужно.
     result.push({ role: "user", content: opts.leadingUserMarker });
+    // Отыгранные user-ходы → continueMarker, живая директива → <directive>…</directive> (storyHistoryContent).
     history.forEach((m, i) => {
-      if (m.role === "user" && i !== lastIndex) {
-        // Отыгранный user-ход → нейтрализуем (последствие уже в следующем бите).
-        result.push({ role: "user", content: opts.continueMarker });
-      } else {
-        result.push({ role: m.role, content: m.content });
-      }
+      result.push({ role: m.role, content: storyHistoryContent(m, i === lastIndex, opts.continueMarker) });
     });
   }
 
