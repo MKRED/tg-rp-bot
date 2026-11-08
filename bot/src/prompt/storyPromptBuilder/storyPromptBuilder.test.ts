@@ -10,6 +10,7 @@ import {
   LEADING_USER_MARKER,
   resolveNarratorMarkers,
   type StoryPromptOptions,
+  wrapDirective,
 } from "./storyPromptBuilder.js";
 
 let nextId = 1;
@@ -95,10 +96,10 @@ describe("buildStoryMessages — нейтрализация", () => {
     const hasDeer = result.some((m) => m.content.includes("deer runs onto the road"));
     expect(hasDeer).toBe(false);
 
-    // Живой триггер (последний) сохраняет свой текст.
+    // Живой триггер (последний) сохраняет свой текст — в обёртке <directive>.
     const last = result[result.length - 1]!;
     expect(last.role).toBe("user");
-    expect(last.content).toBe("make the mood tense");
+    expect(last.content).toBe(wrapDirective("make the mood tense"));
   });
 
   it("массив заканчивается user-ходом и НЕ начинается с assistant", () => {
@@ -238,7 +239,7 @@ describe("buildStoryMessages — порядок промптов", () => {
     expect(last.role).toBe("system");
     expect(last.content).toBe("POST_HISTORY_TEXT");
     // Живой триггер остаётся отдельным user-сообщением, не слит с postHistory.
-    const trigger = result.find((m) => m.content === "make the mood tense");
+    const trigger = result.find((m) => m.content === wrapDirective("make the mood tense"));
     expect(trigger?.role).toBe("user");
   });
 });
@@ -377,7 +378,7 @@ describe("buildStoryMessages — mergeSystemPrompts", () => {
     const mergedSystemMsg = unbounded.find((m) => m.role === "system")!;
     const fixedSystemTokens = countTokens(mergedSystemMsg.content) + PER_MESSAGE_OVERHEAD;
     const leadingUserCost = countTokens(LEADING_USER_MARKER) + PER_MESSAGE_OVERHEAD;
-    const lastTriggerCost = countTokens("make the mood tense") + PER_MESSAGE_OVERHEAD;
+    const lastTriggerCost = countTokens(wrapDirective("make the mood tense")) + PER_MESSAGE_OVERHEAD;
 
     // contextSize впритык под fixed+leading — на историю не остаётся ни токена (budget<=0).
     const onTrimNone = vi.fn();
@@ -397,7 +398,7 @@ describe("buildStoryMessages — mergeSystemPrompts", () => {
       onTrim: onTrimOne,
     });
     expect(onTrimOne.mock.calls[0]![0].kept).toBe(1);
-    expect(resultOne[resultOne.length - 1]!.content).toBe("make the mood tense");
+    expect(resultOne[resultOne.length - 1]!.content).toBe(wrapDirective("make the mood tense"));
   });
 });
 
@@ -414,7 +415,7 @@ describe("buildStoryMessages — обрезка под контекст", () => 
     );
     expect(onTrim).toHaveBeenCalledOnce();
     // Живой триггер всё равно на месте (последний user).
-    expect(result[result.length - 1]!.content).toBe("make the mood tense");
+    expect(result[result.length - 1]!.content).toBe(wrapDirective("make the mood tense"));
   });
 
   it("без contextSize не обрезает (onTrim не зовётся)", () => {

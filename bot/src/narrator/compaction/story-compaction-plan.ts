@@ -3,7 +3,12 @@ import type { NarratorTemplate } from "../../db/schema.js";
 import type { ChatMessage } from "../../llm/types.js";
 import { PER_MESSAGE_OVERHEAD } from "../../prompt/budget.js";
 import { planCompactionSegments } from "../../prompt/compactionPlan.js";
-import { COMPACTION_CONTEXT_HEADER, DEFAULT_COMPACTION_PROMPT, resolveNarratorMarkers } from "../../prompt/storyPromptBuilder/index.js";
+import {
+  COMPACTION_CONTEXT_HEADER,
+  DEFAULT_COMPACTION_PROMPT,
+  resolveNarratorMarkers,
+  storyHistoryContent,
+} from "../../prompt/storyPromptBuilder/index.js";
 import { countTokens } from "../../utils/index.js";
 import type { StoryContext } from "../generation/story-completion.js";
 import { compactAvailable, resolveCompactFloor } from "./compact-gate.js";
@@ -56,7 +61,8 @@ export type CompactionPlan = { floor: number; chain: CompactionRow[]; segments: 
 /**
  * План одного прохода сжатия (вызывать, когда compactBlockReason вернул null): живой хвост режется на
  * сегменты по ~contextSize−floor токенов, чтобы общий вход упал до floor. Стоимость сообщения хвоста —
- * КАК В ПРОМПТЕ: отыгранные user-ходы нейтрализуются в continueMarker шаблона (кроме последнего), иначе
+ * КАК В ПРОМПТЕ: отыгранные user-ходы нейтрализуются в continueMarker шаблона (кроме последнего, живая
+ * директива — в обёртке `<directive>`), иначе
  * бюджет разъедется с фактическим запросом. План считается по состоянию до сжатия — токены новых
  * пересказов в floor не заложены (предохранитель — обрезка истории при генерации).
  */
@@ -70,7 +76,7 @@ export function planStoryCompaction(ctx: StoryContext, untrimmed: ChatMessage[])
   const { continueMarker } = resolveNarratorMarkers(ctx.template);
   const lastIdx = liveTail.length - 1;
   const tokensOf = (m: StoryMessage, i: number) =>
-    (m.role === "user" && i !== lastIdx ? countTokens(continueMarker) : countTokens(m.content)) + PER_MESSAGE_OVERHEAD;
+    countTokens(storyHistoryContent(m, i === lastIdx, continueMarker)) + PER_MESSAGE_OVERHEAD;
   const tailItems = liveTail.map((m, i) => ({ isBeat: m.kind === "beat", tokens: tokensOf(m, i) }));
   // Всё вне хвоста: system-блоки, уже существующие пересказы, leading-user.
   const overhead = promptTokens(untrimmed) - tailItems.reduce((s, t) => s + t.tokens, 0);
