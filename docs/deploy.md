@@ -17,3 +17,9 @@
 безвредны, а удаления/переименования в это окно могут ронять запросы к затронутой таблице. Поэтому
 такие миграции руками заранее не применяются (правила — CLAUDE.md, «DB schema changes»).
 Подробности инфраструктуры сервера — в auto-memory `server-deploy-setup`.
+
+**Edge-nginx** (контейнер `nginx`, конфиг `/mnt/ssd/dockerdirs/nginx/conf.d/miniapp.aoshi.ru.conf` на сервере)
+проксирует всё на контейнер бота. В HTTPS-блоке нужен `client_max_body_size 16m;`: по умолчанию nginx режет
+тело больше 1 МБ (413), а через него идут картинки — ответ агента ComfyUI с результатом генерации (~2 МБ PNG
+в base64) и прикреплённые к холсту картинки. Тот же порядок величины — `JSON_BODY_LIMIT` в `bot/src/main.ts` (8 МБ).
+После правки: `docker exec nginx nginx -t && docker exec nginx nginx -s reload`.
