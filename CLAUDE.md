@@ -81,7 +81,7 @@ shared/src/ — @tg-rp-bot/shared: API contract types (JSON over the wire) + con
 ```
 bot and webapp domains mirror each other: characters, personas, cards (+ card-templates: bot module, webapp
 lives inside `features/cards`), coauthor (multi-card AI chat — [docs/coauthor.md](docs/coauthor.md)),
-generation-presets, rp-templates, rp-chat, narrator, knowledge-books, narrator-templates, debug.
+generation-presets, rp-templates, rp-chat, narrator, knowledge-books, narrator-templates, debug, comfy-agent.
 
 Full tree, webapp layout rules, router/deep-link details — [docs/architecture.md](docs/architecture.md).
 
@@ -118,7 +118,7 @@ Full tree, webapp layout rules, router/deep-link details — [docs/architecture.
   themselves — the calling service passes the dependency as a parameter (e.g. `ChatCompleter` = injected
   `LlmService` for LLM calls, `WebSearcher` = injected `WebSearchService` with the user's DeepSeek key for web search).
 - **Auth:** global `AuthGuard` (`auth/`) — every controller is protected (only `@Public()` routes skip it —
-  `/health`, `/api/auth/register|login|logout`; don't add more without a reason). Login is either Telegram
+  `/health`, `/api/auth/register|login|logout`, and `/api/comfy-agent/agent/*`, which check their own agent Bearer token; don't add more without a reason). Login is either Telegram
   `initData` (Mini App) or a session cookie (browser, login + password); both resolve to the same internal
   id — read it with `@CurrentUser() userId: string` (UUID), never the Telegram profile. Only endpoints that
   are Telegram by nature (`me/`: initData profile, Bot API calls needing the Telegram id) use
@@ -261,6 +261,7 @@ vitest in both packages, pool `forks`. Details and "why" — [docs/testing.md](d
 | Telegram | Bot API (via HTTP proxy) | `BOT_TOKEN`, `TELEGRAM_PROXY_URL` |
 | DeepSeek | LLM chat completion — the **only provider** — and web search (`POST /v1/tools/search`, card generation); server-side, per-user (BYOK), direct (no proxy) | in DB, not env |
 | Google / Yandex Translate | Machine translation — **unofficial keyless** endpoints, server-side, direct (no proxy); rate-limited per server IP | none |
+| ComfyUI | Image generation — runs on the **user's PC**, no key; the server reaches it only through a PowerShell agent doing HTTPS long-poll (direct, no proxy) — [docs/comfy-agent.md](docs/comfy-agent.md) | per-user agent token (SHA-256 in DB) |
 | Postgres | DB (drizzle) | `DATABASE_URL` |
 
 Provider resolution, `MissingApiKeyError`, reasoning/thinking rules — [docs/llm.md](docs/llm.md).
@@ -307,7 +308,7 @@ Docs describe the **current** state, not history — what's removed from code is
   API/model, new mandatory rule, significant structure change.
 - **docs/** — reference narratives; when editing a feature, update its file and keep only a thin link here:
   `architecture.md` (tree, webapp layout, router, proxy/Mini App boundaries), `llm.md` (provider, BYOK),
-  `narrator.md` (story director mode + compact), `coauthor.md` (multi-card AI chat), `testing.md`, `deploy.md`, `mantine.md`, `ui-workflow.md`
+  `narrator.md` (story director mode + compact), `coauthor.md` (multi-card AI chat), `comfy-agent.md` (user's ComfyUI via PC agent), `testing.md`, `deploy.md`, `mantine.md`, `ui-workflow.md`
   (UX-first + browser check for UI changes), `telegram-ui.md` (Telegram theme, platforms, viewport); `plan/` — roadmaps of upcoming large changes (update or remove as steps land).
 - **`.claude/agents/*.md`** — only replace stale literal facts (provider name, env var, path, command)
   that the diff changed; never rewrite agent frontmatter/role/instructions. Full rules live in

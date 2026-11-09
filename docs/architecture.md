@@ -19,7 +19,7 @@ bot/src/
   auth/         — AuthGuard (глобальный APP_GUARD: initData → cookie сессии → dev-обход; CSRF-заголовок) +
                   @CurrentUser() (внутренний userId) + @TelegramUser() (профиль Telegram — только для me/,
                   где нужен Telegram id для Bot API; без Telegram → 409) + initData.ts — проверка initData
-                  (чистая функция) + @Public() (маршрут без авторизации — health/, вход по логину) +
+                  (чистая функция) + @Public() (маршрут без авторизации — health/, вход по логину, агентские маршруты comfy-agent/) +
                   /api/auth (вход по логину и паролю: register/login/logout/session, лимит попыток —
                   @nestjs/throttler) + password/ (scrypt) + session/ (user_sessions, токен в httpOnly-cookie)
   database/     — DatabaseModule (@Global) + DatabaseService поверх drizzle-клиента из db/index.ts
@@ -50,6 +50,9 @@ bot/src/
   coauthor/     — /api/coauthor: «Соавтор», чат с ИИ над несколькими карточками (правки блоков — предложения,
                   пользователь принимает/отклоняет); turn/ — чистая логика хода (промпт, обрезка, цикл инструментов,
                   правки, лента), chat-lock.ts — лок чата + running/lastError. Подробно — docs/coauthor.md
+  comfy-agent/  — /api/comfy-agent: ComfyUI пользователя через агента на ПК (long-poll, RelayHub в памяти, установка
+                  по одноразовому коду, проверка готовности); агентские маршруты @Public + свой Bearer-токен.
+                  Скрипты агента — bot/assets/comfy-agent/. Подробно — docs/comfy-agent.md
   settings/     — /api/settings (всё в строке user_settings): llm/ (ключ DeepSeek, BYOK, шифруется
                   ключом пользователя; verify — /models, баланс), web-search/ (лимит раундов поиска — только
                   controller/repository, без сервиса), translate/ (режим перевода PromptEditorOverlay) — у
