@@ -75,10 +75,15 @@
   user-select: none;
 }
 
-/* Черновик — пунктирная рамка: ещё не сохранён. */
-.frame[data-draft="true"] {
-  outline: 1.5px dashed var(--mantine-color-dimmed);
-  outline-offset: -1.5px;
+/* Черновик — пунктирная рамка: ещё не сохранён. Отдельным слоем поверх картинки — outline самой рамки
+   картинка (она во весь холст) перекрывала, и пунктир рвался там, где она касается края. */
+.frame[data-draft="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1.5px dashed var(--mantine-color-dimmed);
+  border-radius: inherit;
+  pointer-events: none;
 }
 
 .frameImage {
@@ -145,6 +150,15 @@
 
 .dot[data-active="true"] {
   background: var(--mantine-primary-color-filled);
+}
+
+/* Точка оригинала — квадратная: видно, где исходник, а где черновики. */
+.dot[data-original="true"] {
+  border-radius: 2px;
+}
+
+.draftActions[data-hidden="true"] {
+  visibility: hidden;
 }
 
 /* Панель управления: снизу на телефоне, колонкой справа на ПК. */
@@ -227,6 +241,15 @@
   padding: 1px 6px;
   border: 1px solid var(--mantine-color-default-border);
   border-radius: var(--mantine-radius-sm);
+}
+
+.promptTools {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--mantine-spacing-xs);
+  /* ActionIcon выше чипов — подтягиваем строку к полю, чтобы не росла панель. */
+  margin-top: -4px;
 }
 
 .tagButtons {

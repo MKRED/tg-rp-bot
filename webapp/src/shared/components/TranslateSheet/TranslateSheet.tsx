@@ -20,6 +20,10 @@ interface TranslateSheetProps {
   langOptions: LangOption[];
   onPick: (text: string) => void;
   onClose: () => void;
+  /** Исходный текст при открытии вместо общего черновика (холст: текущий промпт). В черновик не пишется, пока его не поправят. */
+  initialText?: string;
+  /** Подсказка под результатом — куда он вставится. */
+  pickHint?: string;
 }
 
 const MODE_KEY = "translate-mode";
@@ -32,18 +36,24 @@ const DRAFT_KEY = "translate-draft-text";
  * вставляет его в поле ввода чата). Метод (Google / Яндекс / ИИ), язык и сам текст поля хранятся в localStorage —
  * один черновик на все чаты и истории. Содержимое монтируется при открытии.
  */
-export function TranslateSheet({ opened, translate, langOptions, onPick, onClose }: TranslateSheetProps) {
+export function TranslateSheet({ opened, onClose, ...body }: TranslateSheetProps) {
   return (
     <ResponsiveSheet opened={opened} onClose={onClose} title="Перевод">
-      <TranslateSheetBody translate={translate} langOptions={langOptions} onPick={onPick} />
+      <TranslateSheetBody {...body} />
     </ResponsiveSheet>
   );
 }
 
-function TranslateSheetBody({ translate: translateFn, langOptions, onPick }: Omit<TranslateSheetProps, "opened" | "onClose">) {
+function TranslateSheetBody({
+  translate: translateFn,
+  langOptions,
+  onPick,
+  initialText,
+  pickHint = "Нажмите, чтобы вставить в сообщение",
+}: Omit<TranslateSheetProps, "opened" | "onClose">) {
   const { loading, result, error, translate, reset } = useComposeTranslate(translateFn);
   // Черновик поля — общий на все чаты/истории, переживает закрытие шторки и перезагрузку.
-  const [text, setText] = useState(() => localStorage.getItem(DRAFT_KEY) ?? "");
+  const [text, setText] = useState(() => initialText ?? localStorage.getItem(DRAFT_KEY) ?? "");
   const [mode, setMode] = useState<TranslateMode>(() => parseTranslateEngine(localStorage.getItem(MODE_KEY)));
   const [targetLang, setTargetLang] = useState(() => localStorage.getItem(LANG_KEY) ?? "en");
 
@@ -112,7 +122,7 @@ function TranslateSheetBody({ translate: translateFn, langOptions, onPick }: Omi
               <RpText text={result} />
             </Text>
             <Text size="xs" c="dimmed" mt={6}>
-              Нажмите, чтобы вставить в сообщение
+              {pickHint}
             </Text>
           </UnstyledButton>
         ) : (

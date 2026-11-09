@@ -36,9 +36,9 @@ export function referenceKey(canvasId: number, slot: number, thumb: string): str
 }
 
 /**
- * Холст: крупно черновик (листается свайпом и стрелками) или, пока черновиков нет, картинка 1 —
- * то, что будем править. Под черновиком — «Сохранить» и «Отбросить». Во время генерации поверх
- * текущей картинки — время и «Остановить».
+ * Холст листается свайпом и стрелками: первым — оригинал (картинка 1), за ним черновики, новые первыми.
+ * Так результат сравнивается с исходником одним свайпом. Пришёл новый черновик — показываем его.
+ * Под черновиком — «Сохранить» и «Отбросить». Во время генерации поверх текущей картинки — время и «Остановить».
  */
 export function CanvasStage({ canvas, actions }: CanvasStageProps) {
   const { drafts, generation } = canvas;
@@ -49,13 +49,18 @@ export function CanvasStage({ canvas, actions }: CanvasStageProps) {
   // Свайп мышью заканчивается кликом по картинке — он не должен открывать просмотр.
   const swiped = useRef(false);
 
-  // Пришёл новый черновик — показываем его (он первый).
-  const newestId = drafts[0]?.id;
-  useEffect(() => setIndex(0), [newestId]);
-  const safeIndex = Math.min(index, Math.max(0, drafts.length - 1));
-  const draft = drafts[safeIndex];
-
   const baseThumb = canvas.references[0];
+  // Слайд 0 — оригинал, если картинка 1 прикреплена; дальше черновики.
+  const offset = baseThumb ? 1 : 0;
+  const slideCount = offset + drafts.length;
+
+  // Пришёл новый черновик — показываем его (первый после оригинала).
+  const newestId = drafts[0]?.id;
+  useEffect(() => setIndex(newestId === undefined ? 0 : offset), [newestId, offset]);
+  const safeIndex = Math.min(index, Math.max(0, slideCount - 1));
+  const draftIndex = safeIndex - offset;
+  const draft = draftIndex >= 0 ? drafts[draftIndex] : undefined;
+  const showingOriginal = !draft && Boolean(baseThumb);
   const draftImage = useRemoteImage(draft ? `item:${canvas.id}:${draft.id}` : null, () =>
     getItemImage(canvas.id, draft!.id).then((r) => r.image),
   );
@@ -66,7 +71,7 @@ export function CanvasStage({ canvas, actions }: CanvasStageProps) {
   const src = draft ? draftImage.src : (baseImage.src ?? baseThumb);
   const running = generation.status === "running";
 
-  const go = (delta: number) => setIndex((i) => Math.min(drafts.length - 1, Math.max(0, i + delta)));
+  const go = (delta: number) => setIndex((i) => Math.min(slideCount - 1, Math.max(0, i + delta)));
 
   const save = async () => {
     if (!draft || !draftImage.src) return;
@@ -97,7 +102,7 @@ export function CanvasStage({ canvas, actions }: CanvasStageProps) {
           <img
             className={styles.frameImage}
             src={src}
-            alt={draft ? "Черновик" : "Картинка 1"}
+            alt={draft ? "Черновик" : "Оригинал"}
             data-dimmed={running}
             draggable={false}
             onClick={() => !running && !swiped.current && setZoom(true)}
@@ -117,19 +122,25 @@ export function CanvasStage({ canvas, actions }: CanvasStageProps) {
 
         {draft && !running && (
           <Badge className={styles.frameChip} variant="default" size="lg" radius="sm">
-            Черновик {safeIndex + 1} из {drafts.length} · {MODEL_LABEL[draft.model]}
+            Черновик {draftIndex + 1} из {drafts.length} · {MODEL_LABEL[draft.model]}
+          </Badge>
+        )}
+        {/* Подпись оригинала — только когда есть с чем сравнивать, иначе он и так единственный. */}
+        {showingOriginal && drafts.length > 0 && !running && (
+          <Badge className={styles.frameChip} variant="default" size="lg" radius="sm">
+            Оригинал
           </Badge>
         )}
 
-        {drafts.length > 1 && !running && (
+        {slideCount > 1 && !running && (
           <>
             {safeIndex > 0 && (
-              <ActionIcon className={`${styles.frameNav} ${styles.frameNavPrev}`} variant="default" radius="xl" onClick={() => go(-1)} aria-label="Предыдущий черновик">
+              <ActionIcon className={`${styles.frameNav} ${styles.frameNavPrev}`} variant="default" radius="xl" onClick={() => go(-1)} aria-label="Предыдущая картинка">
                 <ChevronLeft size={18} />
               </ActionIcon>
             )}
-            {safeIndex < drafts.length - 1 && (
-              <ActionIcon className={`${styles.frameNav} ${styles.frameNavNext}`} variant="default" radius="xl" onClick={() => go(1)} aria-label="Следующий черновик">
+            {safeIndex < slideCount - 1 && (
+              <ActionIcon className={`${styles.frameNav} ${styles.frameNavNext}`} variant="default" radius="xl" onClick={() => go(1)} aria-label="Следующая картинка">
                 <ChevronRight size={18} />
               </ActionIcon>
             )}
@@ -151,31 +162,39 @@ export function CanvasStage({ canvas, actions }: CanvasStageProps) {
       </div>
 
       <div className={styles.dots}>
-        {drafts.length > 1 &&
-          drafts.map((d, i) => (
+        {slideCount > 1 &&
+          Array.from({ length: slideCount }, (_, i) => (
             <button
-              key={d.id}
+              key={i < offset ? "original" : drafts[i - offset]!.id}
               type="button"
               className={styles.dot}
               data-active={i === safeIndex}
+              data-original={i < offset}
               onClick={() => setIndex(i)}
-              aria-label={`Черновик ${i + 1}`}
+              aria-label={i < offset ? "Оригинал" : `Черновик ${i - offset + 1}`}
             />
           ))}
       </div>
 
-      {draft && !running && (
-        <Group gap="xs" wrap="nowrap">
+      {/* На оригинале кнопки скрыты, но место держат: иначе рамка меняла бы высоту при свайпе
+          и сравнивать картинки было бы неудобно. */}
+      {drafts.length > 0 && !running && (
+        <Group gap="xs" wrap="nowrap" className={styles.draftActions} data-hidden={!draft} aria-hidden={!draft}>
           <Button
             flex={1}
             leftSection={<Check size={16} />}
             loading={actions.busy === "save"}
-            disabled={!draftImage.src || actions.busy !== null}
+            disabled={!draft || !draftImage.src || actions.busy !== null}
             onClick={() => void save()}
           >
             Сохранить
           </Button>
-          <Button variant="default" disabled={actions.busy !== null} loading={actions.busy === "delete"} onClick={() => void actions.deleteItem(draft.id)}>
+          <Button
+            variant="default"
+            disabled={!draft || actions.busy !== null}
+            loading={actions.busy === "delete"}
+            onClick={() => draft && void actions.deleteItem(draft.id)}
+          >
             Отбросить
           </Button>
         </Group>

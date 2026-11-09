@@ -7,6 +7,7 @@ import type { ComfyAgentStatus } from "@tg-rp-bot/shared";
 import type { CanvasState } from "../../hooks/useCanvas";
 import { generateBlocker, insertImageTag } from "../../lib/promptTags";
 import type { ComfyModelId, ImageCanvas } from "../../types/imageCanvas";
+import { PromptTranslateButton } from "./PromptTranslateButton";
 import { ReferenceTiles } from "./ReferenceTiles";
 import styles from "./CanvasWorkspace.module.css";
 
@@ -121,7 +122,8 @@ export function Composer({ canvas, actions, agent, draftPrompt, onDraftPromptApp
         aria-label="Что сделать с картинкой"
       />
 
-      {canvas.references.length > 0 && (
+      {/* Под полем: слева вставка тегов картинок, справа перевод промпта. */}
+      <div className={styles.promptTools}>
         <div className={styles.tagButtons}>
           {canvas.references.map((_, i) => (
             <UnstyledButton key={i} onClick={() => insertTag(i + 1)} aria-label={`Вставить <image${i + 1}>`}>
@@ -131,7 +133,8 @@ export function Composer({ canvas, actions, agent, draftPrompt, onDraftPromptApp
             </UnstyledButton>
           ))}
         </div>
-      )}
+        <PromptTranslateButton prompt={prompt} onPick={changePrompt} />
+      </div>
 
       {offline && (
         <Text size="xs" c="orange">
