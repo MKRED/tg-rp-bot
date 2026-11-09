@@ -7,6 +7,7 @@ import { getItemImage, getReferenceImage } from "../../api/image-canvas-api";
 import type { CanvasState } from "../../hooks/useCanvas";
 import { useRemoteImage } from "../../hooks/useRemoteImage";
 import { makeThumb } from "../../lib/canvasImages";
+import { slideKeyDelta, slideKeysBlocked } from "../../lib/slideKeys";
 import type { ImageCanvas } from "../../types/imageCanvas";
 import styles from "./CanvasWorkspace.module.css";
 
@@ -72,6 +73,22 @@ export function CanvasStage({ canvas, actions }: CanvasStageProps) {
   const running = generation.status === "running";
 
   const go = (delta: number) => setIndex((i) => Math.min(slideCount - 1, Math.max(0, i + delta)));
+
+  // Стрелки ←/→ на компьютере. Обработчик на window живёт весь экран, а число слайдов и просмотр меняются.
+  const keyGo = useRef<(delta: -1 | 1) => void>(() => undefined);
+  keyGo.current = (delta) => {
+    if (!zoom) go(delta);
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const delta = slideKeyDelta(e);
+      if (delta === null || slideKeysBlocked(e.target)) return;
+      e.preventDefault();
+      keyGo.current(delta);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const save = async () => {
     if (!draft || !draftImage.src) return;

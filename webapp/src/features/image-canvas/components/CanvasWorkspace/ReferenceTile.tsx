@@ -5,8 +5,8 @@ import { suspendVerticalSwipes } from "../../../../shared/telegram/verticalSwipe
 import styles from "./CanvasWorkspace.module.css";
 
 interface ReferenceTileProps {
-  /** Значение для Reorder — прежний слот картинки, стабилен на время перетаскивания. */
-  value: number;
+  /** Значение для Reorder — ключ картинки (tileKeys), стабилен и при перестановке. */
+  value: string;
   /** Текущее место плитки — номер на ней и N в `<imageN>`. */
   position: number;
   count: number;

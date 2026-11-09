@@ -1,14 +1,14 @@
 import { Loader, Menu, UnstyledButton } from "@mantine/core";
 import { AnimatePresence, Reorder } from "framer-motion";
 import { ImagePlus } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ImageLightbox } from "../../../../shared/components/ImageLightbox";
 import { useToast } from "../../../../shared/toast";
 import { getReferenceImage } from "../../api/image-canvas-api";
 import type { CanvasState } from "../../hooks/useCanvas";
 import { loadRemoteImage } from "../../hooks/useRemoteImage";
 import { prepareReference } from "../../lib/canvasImages";
-import { identityOrder, isReordered, swapOrder } from "../../lib/referenceOrder";
+import { arrangedKeys, isReordered, orderFromKeys, swapOrder, tileKeys } from "../../lib/referenceOrder";
 import { ClipboardImageError, canReadClipboardImage, imageFromDataTransfer, readClipboardImage } from "../../lib/clipboardImage";
 import { MAX_CANVAS_REFERENCES, type ImageCanvas } from "../../types/imageCanvas";
 import { referenceKey } from "./CanvasStage";
@@ -72,12 +72,14 @@ export function ReferenceTiles({ canvas, actions, disabled }: ReferenceTilesProp
       });
   };
 
-  // Порядок на время протяжки: order[i] — слот картинки на месте i. Новый холст с сервера — исходный порядок.
+  // Порядок на время протяжки — ключи картинок (не слоты: см. tileKeys). Новый холст с сервера — его порядок.
   const count = canvas.references.length;
-  const [order, setOrder] = useState(() => identityOrder(count));
-  useEffect(() => setOrder(identityOrder(canvas.references.length)), [canvas.references]);
-  const orderRef = useRef(order);
-  orderRef.current = order;
+  const keys = useMemo(() => tileKeys(canvas.references), [canvas.references]);
+  const [dragged, setDragged] = useState(keys);
+  useEffect(() => setDragged(keys), [keys]);
+  const order = arrangedKeys(keys, dragged);
+  const orderRef = useRef<number[]>([]);
+  orderRef.current = orderFromKeys(keys, order);
   const [menuSlot, setMenuSlot] = useState<number | null>(null);
   // Отпущенная после протяжки плитка получает click — он не должен открывать меню.
   const draggedAt = useRef(0);
@@ -128,14 +130,14 @@ export function ReferenceTiles({ canvas, actions, disabled }: ReferenceTilesProp
 
   return (
     <div className={styles.refs}>
-      <Reorder.Group as="div" axis="x" values={order} onReorder={setOrder} className={styles.refs}>
-        {order.map((from, position) => (
+      <Reorder.Group as="div" axis="x" values={order} onReorder={setDragged} className={styles.refs}>
+        {order.map((key, position) => (
           <ReferenceTile
-            key={from}
-            value={from}
+            key={key}
+            value={key}
             position={position}
             count={count}
-            thumb={canvas.references[from]!}
+            thumb={canvas.references[keys.indexOf(key)]!}
             preparing={preparing === position}
             busy={busy}
             menuOpened={menuSlot === position}
