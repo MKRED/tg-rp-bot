@@ -1,13 +1,14 @@
 import { FileButton, Loader, Menu, UnstyledButton } from "@mantine/core";
 import { AnimatePresence } from "framer-motion";
 import { ImagePlus } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ImageLightbox } from "../../../../shared/components/ImageLightbox";
 import { useToast } from "../../../../shared/toast";
 import { getReferenceImage } from "../../api/image-canvas-api";
 import type { CanvasState } from "../../hooks/useCanvas";
 import { loadRemoteImage } from "../../hooks/useRemoteImage";
 import { prepareReference } from "../../lib/canvasImages";
+import { ClipboardImageError, canReadClipboardImage, imageFromDataTransfer, readClipboardImage } from "../../lib/clipboardImage";
 import { MAX_CANVAS_REFERENCES, type ImageCanvas } from "../../types/imageCanvas";
 import { referenceKey } from "./CanvasStage";
 import styles from "./CanvasWorkspace.module.css";
@@ -21,6 +22,8 @@ interface ReferenceTilesProps {
 /**
  * Прикреплённые картинки: номер на плитке — тот же N, что в `<imageN>`. Тап по плитке — меню
  * «Посмотреть / Заменить / Убрать»; плитка «+» добавляет следующую, пока не набралось три.
+ * Из буфера: Ctrl+V на экране (картинка — в следующий слот, текст вставляется как обычно) и пункт
+ * «Вставить из буфера» у «+» — на телефоне событие вставки вне поля ввода не приходит.
  */
 export function ReferenceTiles({ canvas, actions, disabled }: ReferenceTilesProps) {
   const { showToast } = useToast();
@@ -60,6 +63,36 @@ export function ReferenceTiles({ canvas, actions, disabled }: ReferenceTilesProp
 
   const busy = disabled || actions.busy === "reference" || preparing !== null;
   const nextSlot = canvas.references.length;
+  const full = nextSlot >= MAX_CANVAS_REFERENCES;
+
+  const addFromClipboard = async () => {
+    try {
+      await attach(nextSlot, await readClipboardImage());
+    } catch (err) {
+      showToast({ type: "error", message: err instanceof ClipboardImageError ? err.message : "Не удалось вставить картинку" });
+    }
+  };
+
+  // Ctrl+V: обработчик на window живёт всё время экрана, а слот и занятость меняются — берём свежие.
+  const pasteRef = useRef<(file: File) => void>(() => undefined);
+  pasteRef.current = (file) => {
+    if (busy) return;
+    if (full) {
+      showToast({ type: "error", message: `Можно прикрепить не больше ${MAX_CANVAS_REFERENCES} картинок` });
+      return;
+    }
+    void attach(nextSlot, file);
+  };
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const file = imageFromDataTransfer(e.clipboardData);
+      if (!file) return; // текст — обычная вставка в поле
+      e.preventDefault();
+      pasteRef.current(file);
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, []);
 
   return (
     <div className={styles.refs}>
@@ -88,17 +121,42 @@ export function ReferenceTiles({ canvas, actions, disabled }: ReferenceTilesProp
           </Menu.Dropdown>
         </Menu>
       ))}
-      {nextSlot < MAX_CANVAS_REFERENCES && (
-        <FileButton accept="image/*" onChange={(file) => void attach(nextSlot, file)} resetRef={(fn) => {
-            resetRefs.current[nextSlot] = fn;
-          }}>
-          {(props) => (
-            <UnstyledButton {...props} className={`${styles.refTile} ${styles.refAdd}`} disabled={busy} aria-label="Прикрепить картинку">
-              {preparing === nextSlot ? <Loader size="xs" /> : <ImagePlus size={20} />}
-            </UnstyledButton>
-          )}
-        </FileButton>
-      )}
+      {!full &&
+        (canReadClipboardImage() ? (
+          <Menu position="top-start" withinPortal>
+            <Menu.Target>
+              <UnstyledButton className={`${styles.refTile} ${styles.refAdd}`} disabled={busy} aria-label="Прикрепить картинку">
+                {preparing === nextSlot ? <Loader size="xs" /> : <ImagePlus size={20} />}
+              </UnstyledButton>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <FileButton
+                accept="image/*"
+                onChange={(file) => void attach(nextSlot, file)}
+                resetRef={(fn) => {
+                  resetRefs.current[nextSlot] = fn;
+                }}
+              >
+                {(props) => <Menu.Item {...props}>Выбрать файл</Menu.Item>}
+              </FileButton>
+              <Menu.Item onClick={() => void addFromClipboard()}>Вставить из буфера</Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        ) : (
+          <FileButton
+            accept="image/*"
+            onChange={(file) => void attach(nextSlot, file)}
+            resetRef={(fn) => {
+              resetRefs.current[nextSlot] = fn;
+            }}
+          >
+            {(props) => (
+              <UnstyledButton {...props} className={`${styles.refTile} ${styles.refAdd}`} disabled={busy} aria-label="Прикрепить картинку">
+                {preparing === nextSlot ? <Loader size="xs" /> : <ImagePlus size={20} />}
+              </UnstyledButton>
+            )}
+          </FileButton>
+        ))}
       <AnimatePresence>{viewing && <ImageLightbox src={viewing.src} onClose={() => setViewing(null)} />}</AnimatePresence>
     </div>
   );

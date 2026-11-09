@@ -25,31 +25,46 @@
 }
 
 /* Вкладка «Холст»: телефон — картинка сверху, панель снизу; ПК — картинка слева, панель справа. */
+/* Телефон: открытая клавиатура съедает больше половины высоты. Картинка не сжимается ниже своего
+   минимума — вместо этого прокручивается вся вкладка (иначе холст превращался в полоску, а кнопки
+   «Сохранить / Отбросить» наезжали на панель). */
 .canvasBody {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 
   @media (min-width: 62em) {
     flex-direction: row;
+    overflow: hidden;
   }
 }
 
 .stage {
-  flex: 1;
+  flex: 1 0 auto;
   min-height: 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--mantine-spacing-xs);
   padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+
+  @media (min-width: 62em) {
+    flex: 1;
+  }
 }
 
 .frame {
   position: relative;
-  flex: 1;
-  min-height: 0;
+  /* Основа 0: высоту задаёт свободное место, а не размер картинки (она внутри абсолютная). */
+  flex: 1 1 0;
+  min-height: 220px;
+
+  @media (min-width: 62em) {
+    min-height: 0;
+  }
   display: flex;
   align-items: center;
   justify-content: center;
@@ -67,8 +82,10 @@
 }
 
 .frameImage {
-  max-width: 100%;
-  max-height: 100%;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   cursor: zoom-in;
 }
