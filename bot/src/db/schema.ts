@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  index,
   boolean,
   integer,
   jsonb,
@@ -789,3 +790,65 @@ export const storyCompactions = pgTable("story_compactions", {
 
 export type StoryCompaction = typeof storyCompactions.$inferSelect;
 export type NewStoryCompaction = typeof storyCompactions.$inferInsert;
+
+/**
+ * Холсты раздела «Картинки» (`/images`): редактирование картинок в ComfyUI пользователя через агента
+ * (docs/comfy-agent.md, docs/plan/image-generation.md). Своё у каждого холста: прикреплённые картинки,
+ * модель, черновик промпта, черновики результатов и сохранённые варианты (image_canvas_items).
+ * prompt и картинки (references, referenceThumbs — data URL) шифруются per-user, как референсы карточек.
+ * gen* — текущая генерация: сервер ведёт её сам (prompt_id в ComfyUI) и после перезапуска продолжает
+ * следить за ней; genRequest — зашифрованный JSON параметров запуска (промпт, модель, seed) для черновика.
+ */
+export const imageCanvases = pgTable("image_canvases", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  model: text("model").notNull().default("qwen"),
+  prompt: text("prompt").notNull().default(""),
+  references: jsonb("references").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  referenceThumbs: jsonb("reference_thumbs").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  genStatus: text("gen_status").notNull().default("idle"),
+  genPromptId: text("gen_prompt_id"),
+  genStartedAt: timestamp("gen_started_at", { withTimezone: true }),
+  genError: text("gen_error"),
+  genRequest: text("gen_request"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export type ImageCanvasRow = typeof imageCanvases.$inferSelect;
+
+/**
+ * Результаты генерации холста: kind "draft" — несохранённый (не больше MAX_CANVAS_DRAFTS, старые
+ * вытесняются), "variant" — сохранённый пользователем (миниатюра thumb появляется при сохранении).
+ * image, thumb, prompt шифруются per-user. Картинка — PNG из ComfyUI data URL'ом (~1,5–2 МБ).
+ */
+export const imageCanvasItems = pgTable(
+  "image_canvas_items",
+  {
+    id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+    canvasId: bigint("canvas_id", { mode: "number" })
+      .notNull()
+      .references(() => imageCanvases.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    image: text("image").notNull(),
+    thumb: text("thumb"),
+    prompt: text("prompt").notNull().default(""),
+    model: text("model").notNull(),
+    seed: bigint("seed", { mode: "number" }).notNull(),
+    width: integer("width"),
+    height: integer("height"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("image_canvas_items_canvas_idx").on(t.canvasId, t.kind)],
+);
+
+export type ImageCanvasItemRow = typeof imageCanvasItems.$inferSelect;

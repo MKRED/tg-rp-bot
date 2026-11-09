@@ -6,7 +6,7 @@ import {
   ServiceUnavailableException,
   UnauthorizedException,
 } from "@nestjs/common";
-import type { ComfyAgentErrorCode, ComfyAgentInstallCode, ComfyAgentStatus } from "@tg-rp-bot/shared";
+import { REQUIRED_COMFY_AGENT_VERSION, type ComfyAgentErrorCode, type ComfyAgentInstallCode, type ComfyAgentStatus } from "@tg-rp-bot/shared";
 import logger from "../logger.js";
 import { generateAgentToken, hashAgentToken, parseAgentBearer } from "./agent-token.js";
 import { ComfyAgentRepository } from "./comfy-agent.repository.js";
@@ -27,6 +27,9 @@ import {
  */
 @Injectable()
 export class ComfyAgentService {
+  /** Версия агента по последнему poll — в памяти, как и сам статус «онлайн». */
+  private readonly versions = new Map<string, number>();
+
   constructor(
     private readonly repository: ComfyAgentRepository,
     private readonly hub: RelayHub,
@@ -35,10 +38,13 @@ export class ComfyAgentService {
 
   async status(userId: string): Promise<ComfyAgentStatus> {
     const lastSeen = this.hub.lastSeen(userId);
+    const agentVersion = this.versions.get(userId) ?? null;
     return {
       hasToken: await this.repository.hasToken(userId),
       online: this.hub.isOnline(userId),
       lastSeenAt: lastSeen === null ? null : new Date(lastSeen).toISOString(),
+      agentVersion,
+      agentOutdated: agentVersion !== null && agentVersion < REQUIRED_COMFY_AGENT_VERSION,
     };
   }
 
@@ -85,8 +91,10 @@ export class ComfyAgentService {
     return userId;
   }
 
-  async poll(userId: string, signal: AbortSignal): Promise<AgentJob[]> {
-    if (!this.hub.isOnline(userId)) logger.info({ userId }, "Comfy agent connected");
+  /** version — из заголовка X-Agent-Version; агент первой версии его не шлёт (= 1). */
+  async poll(userId: string, signal: AbortSignal, version = 1): Promise<AgentJob[]> {
+    if (!this.hub.isOnline(userId)) logger.info({ userId, version }, "Comfy agent connected");
+    this.versions.set(userId, version);
     const jobs = await this.hub.poll(userId, signal);
     if (jobs.length > 0) logger.debug({ userId, jobIds: jobs.map((j) => j.id) }, "Comfy agent took jobs");
     return jobs;
@@ -117,14 +125,16 @@ export class ComfyAgentService {
       throw toHttpError(err);
     }
     logger.info({ userId, path: req.path, status: res.status, durationMs: Date.now() - t0 }, "ComfyUI request via agent done");
+    if (res.status === 0 && res.error === AGENT_BLOCKED) {
+      throw comfyError("comfy_agent_outdated", 502, "Агент на ПК устарел: установите его заново (Настройки → ComfyUI)");
+    }
     if (res.status === 0) throw comfyError("comfy_unreachable", 502, `Агент не смог подключиться к ComfyUI: ${res.error ?? "нет ответа"}`);
-    if (res.status >= 400) throw comfyError("comfy_error", 502, `ComfyUI ответил ошибкой ${res.status}`);
+    if (res.status >= 400 && !req.acceptErrorStatus) throw comfyError("comfy_error", 502, `ComfyUI ответил ошибкой ${res.status}`);
     return res;
   }
 
   async callComfyJson<T>(userId: string, req: ComfyRequest, timeoutMs?: number): Promise<T> {
-    const res = await this.callComfy(userId, req, timeoutMs);
-    return JSON.parse(Buffer.from(res.bodyBase64, "base64").toString("utf8")) as T;
+    return parseJsonBody<T>(await this.callComfy(userId, req, timeoutMs));
   }
 
   /** Проверка цепочки целиком: сервер → агент → ComfyUI. */
@@ -136,14 +146,22 @@ export class ComfyAgentService {
 /** Запрос к ComfyUI со стороны кода сервера: JSON-тело — обычным объектом. */
 export interface ComfyRequest extends Omit<AgentJobRequest, "bodyBase64" | "contentType"> {
   json?: unknown;
+  /** Готовое тело (например multipart) — вместо json. */
+  body?: { data: Buffer; contentType: string };
+  /** Вернуть ответ ComfyUI с кодом ≥ 400 как есть: вызывающий сам разберёт текст ошибки. */
+  acceptErrorStatus?: boolean;
 }
 
-function toJobRequest({ json, ...rest }: ComfyRequest): AgentJobRequest {
+/** Ответ агента на запрос вне его белого списка: агент старой версии не знает нового пути. */
+const AGENT_BLOCKED = "blocked by agent allowlist";
+
+function toJobRequest({ json, body, acceptErrorStatus: _, ...rest }: ComfyRequest): AgentJobRequest {
+  if (body) return { ...rest, contentType: body.contentType, bodyBase64: body.data.toString("base64") };
   if (json === undefined) return rest;
   return { ...rest, contentType: "application/json", bodyBase64: Buffer.from(JSON.stringify(json)).toString("base64") };
 }
 
-function comfyError(code: ComfyAgentErrorCode, status: 502 | 503 | 504, message: string): HttpException {
+export function comfyError(code: ComfyAgentErrorCode, status: 502 | 503 | 504, message: string): HttpException {
   const body = { error: code, message };
   if (status === 503) return new ServiceUnavailableException(body);
   if (status === 504) return new GatewayTimeoutException(body);
@@ -158,4 +176,9 @@ function toHttpError(err: unknown): unknown {
     return comfyError("comfy_agent_timeout", 504, "Агент на ПК не ответил вовремя");
   }
   return err;
+}
+
+/** Тело ответа агента как JSON. */
+export function parseJsonBody<T>(res: AgentResponse): T {
+  return JSON.parse(Buffer.from(res.bodyBase64, "base64").toString("utf8")) as T;
 }

@@ -64,6 +64,12 @@ const CoauthorChatPage = lazy(() =>
 const CoauthorSettingsPage = lazy(() =>
   import("../pages/coauthor/CoauthorSettingsPage").then((m) => ({ default: m.CoauthorSettingsPage }))
 );
+const ImagesListPage = lazy(() =>
+  import("../pages/images/ImagesListPage").then((m) => ({ default: m.ImagesListPage }))
+);
+const ImageCanvasPage = lazy(() =>
+  import("../pages/images/ImageCanvasPage").then((m) => ({ default: m.ImageCanvasPage }))
+);
 const CardTemplatesListPage = lazy(() =>
   import("../pages/card-templates/CardTemplatesListPage").then((m) => ({ default: m.CardTemplatesListPage }))
 );
@@ -169,6 +175,8 @@ export function AnimatedRoutes() {
           <Route path={ROUTES.coauthor} element={<CoauthorListPage />} />
           <Route path={ROUTES.coauthorNew} element={<CoauthorNewPage />} />
           <Route path={ROUTES.coauthorSettings} element={<CoauthorSettingsPage />} />
+          <Route path={ROUTES.images} element={<ImagesListPage />} />
+          <Route path={ROUTES.imageCanvas} element={<ImageCanvasPage />} />
           <Route path={ROUTES.coauthorView} element={<CoauthorChatPage />} />
           <Route path={ROUTES.cardTemplates} element={<CardTemplatesListPage />} />
           <Route path={ROUTES.cardTemplateNew} element={<CardTemplateEditPage />} />

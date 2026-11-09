@@ -21,7 +21,7 @@ const TEXT_ENCODER: RequiredFile = { folder: "text_encoders", loader: "CLIPLoade
 const VAE: RequiredFile = { folder: "vae", loader: "VAELoader", input: "vae_name", file: "qwen_image_2.1_vae_bf16.safetensors" };
 
 // Ноды, общие для обоих графов редактирования (docs/plan/image-generation-workflows/8 и 9).
-const COMMON_NODES = ["UNETLoader", "CLIPLoader", "VAELoader", "LoadImage", "TextEncodeQwenImage21", "QwenImage21Cache", "VAEDecode", "SaveImageAdvanced"];
+const COMMON_NODES = ["UNETLoader", "CLIPLoader", "VAELoader", "LoadImage", "TextEncodeQwenImage21", "QwenImage21Cache", "VAEDecode", "SaveImage"];
 
 /** Что нужно в ComfyUI для каждой модели — по рабочим графам 8 (Turbo) и 9 (обычная). */
 export const MODEL_REQUIREMENTS: ModelRequirement[] = [

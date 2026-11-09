@@ -81,7 +81,8 @@ shared/src/ — @tg-rp-bot/shared: API contract types (JSON over the wire) + con
 ```
 bot and webapp domains mirror each other: characters, personas, cards (+ card-templates: bot module, webapp
 lives inside `features/cards`), coauthor (multi-card AI chat — [docs/coauthor.md](docs/coauthor.md)),
-generation-presets, rp-templates, rp-chat, narrator, knowledge-books, narrator-templates, debug, comfy-agent.
+generation-presets, rp-templates, rp-chat, narrator, knowledge-books, narrator-templates, debug, comfy-agent,
+image-canvas (section «Картинки»: ComfyUI image editing on canvases — [docs/image-canvas.md](docs/image-canvas.md)).
 
 Full tree, webapp layout rules, router/deep-link details — [docs/architecture.md](docs/architecture.md).
 
@@ -308,7 +309,7 @@ Docs describe the **current** state, not history — what's removed from code is
   API/model, new mandatory rule, significant structure change.
 - **docs/** — reference narratives; when editing a feature, update its file and keep only a thin link here:
   `architecture.md` (tree, webapp layout, router, proxy/Mini App boundaries), `llm.md` (provider, BYOK),
-  `narrator.md` (story director mode + compact), `coauthor.md` (multi-card AI chat), `comfy-agent.md` (user's ComfyUI via PC agent), `testing.md`, `deploy.md`, `mantine.md`, `ui-workflow.md`
+  `narrator.md` (story director mode + compact), `coauthor.md` (multi-card AI chat), `comfy-agent.md` (user's ComfyUI via PC agent), `image-canvas.md` (image editing canvases), `testing.md`, `deploy.md`, `mantine.md`, `ui-workflow.md`
   (UX-first + browser check for UI changes), `telegram-ui.md` (Telegram theme, platforms, viewport); `plan/` — roadmaps of upcoming large changes (update or remove as steps land).
 - **`.claude/agents/*.md`** — only replace stale literal facts (provider name, env var, path, command)
   that the diff changed; never rewrite agent frontmatter/role/instructions. Full rules live in

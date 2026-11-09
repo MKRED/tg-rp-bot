@@ -102,6 +102,28 @@ describe("ComfyAgentService", () => {
   });
 });
 
+describe("ComfyAgentService: версия агента", () => {
+  it("агент без заголовка версии (1) — устаревший, версия 2 — нет", async () => {
+    const { service } = setup();
+    expect(await service.status("u1")).toMatchObject({ agentVersion: null, agentOutdated: false });
+    void service.poll("u1", new AbortController().signal);
+    expect(await service.status("u1")).toMatchObject({ agentVersion: 1, agentOutdated: true });
+    void service.poll("u1", new AbortController().signal, 2);
+    expect(await service.status("u1")).toMatchObject({ agentVersion: 2, agentOutdated: false });
+  });
+
+  it("ответ «вне белого списка» от старого агента — 502 comfy_agent_outdated", async () => {
+    const { service } = setup();
+    const poll = service.poll("u1", new AbortController().signal);
+    const call = service.callComfy("u1", { method: "POST", path: "/api/queue", json: { delete: ["x"] } });
+    const [job] = await poll;
+    service.complete("u1", job!.id, { status: 0, contentType: null, bodyBase64: "", error: "blocked by agent allowlist" });
+    const { status, body } = await errorBody(call);
+    expect(status).toBe(502);
+    expect(body).toMatchObject({ error: "comfy_agent_outdated" });
+  });
+});
+
 describe("ComfyAgentService: тело запроса", () => {
   it("JSON-тело уходит агенту байтами в base64 без потери больших чисел", async () => {
     const { service } = setup();

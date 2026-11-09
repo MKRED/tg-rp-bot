@@ -4,6 +4,7 @@ import {
   Clapperboard,
   Feather,
   FileText,
+  Images,
   LayoutTemplate,
   type LucideIcon,
   MessageCircle,
@@ -53,6 +54,7 @@ export const HOME_MENU: HomeMenuSection[] = [
     items: [
       { icon: Sparkles, label: "Карточки", description: "Крафт карточек персонажей и персон", route: ROUTES.cards },
       { icon: Feather, label: "Соавтор", description: "Чат с ИИ над несколькими карточками", route: ROUTES.coauthor },
+      { icon: Images, label: "Картинки", description: "Правка картинок в своём ComfyUI", route: ROUTES.images },
     ],
   },
   {

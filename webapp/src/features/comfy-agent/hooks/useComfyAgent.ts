@@ -18,7 +18,7 @@ export interface InstallCommand {
  * ComfyUI, которая запускается сама, когда агент выходит в сеть.
  */
 export function useComfyAgent() {
-  const [status, setStatus] = useState<ComfyAgentStatus>({ hasToken: false, online: false, lastSeenAt: null });
+  const [status, setStatus] = useState<ComfyAgentStatus>({ hasToken: false, online: false, lastSeenAt: null, agentVersion: null, agentOutdated: false });
   const [loading, setLoading] = useState(true);
   const [install, setInstall] = useState<InstallCommand | null>(null);
   const [creatingCode, setCreatingCode] = useState(false);

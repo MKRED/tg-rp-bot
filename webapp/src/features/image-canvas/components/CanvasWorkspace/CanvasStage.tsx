@@ -1,0 +1,187 @@
+import { ActionIcon, Alert, Badge, Button, Group, Loader, Text } from "@mantine/core";
+import { AnimatePresence } from "framer-motion";
+import { Check, ChevronLeft, ChevronRight, ImagePlus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ImageLightbox } from "../../../../shared/components/ImageLightbox";
+import { getItemImage, getReferenceImage } from "../../api/image-canvas-api";
+import type { CanvasState } from "../../hooks/useCanvas";
+import { useRemoteImage } from "../../hooks/useRemoteImage";
+import { makeThumb } from "../../lib/canvasImages";
+import type { ImageCanvas } from "../../types/imageCanvas";
+import styles from "./CanvasWorkspace.module.css";
+
+const MODEL_LABEL = { qwen: "Qwen", qwen_turbo: "Turbo" } as const;
+/** Сдвиг пальца, после которого свайп листает черновик. */
+const SWIPE_PX = 50;
+
+interface CanvasStageProps {
+  canvas: ImageCanvas;
+  actions: CanvasState;
+}
+
+/** Секунды с начала генерации — тикают раз в секунду. */
+function useElapsed(startedAt: string | null): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!startedAt) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [startedAt]);
+  return startedAt ? Math.max(0, Math.round((now - Date.parse(startedAt)) / 1000)) : 0;
+}
+
+/** Ключ кэша картинки слота: по миниатюре — заменённая картинка не возьмётся из кэша. */
+export function referenceKey(canvasId: number, slot: number, thumb: string): string {
+  return `ref:${canvasId}:${slot}:${thumb.length}:${thumb.slice(-24)}`;
+}
+
+/**
+ * Холст: крупно черновик (листается свайпом и стрелками) или, пока черновиков нет, картинка 1 —
+ * то, что будем править. Под черновиком — «Сохранить» и «Отбросить». Во время генерации поверх
+ * текущей картинки — время и «Остановить».
+ */
+export function CanvasStage({ canvas, actions }: CanvasStageProps) {
+  const { drafts, generation } = canvas;
+  const [index, setIndex] = useState(0);
+  const [zoom, setZoom] = useState(false);
+  const elapsed = useElapsed(generation.status === "running" ? generation.startedAt : null);
+  const swipeStart = useRef<number | null>(null);
+  // Свайп мышью заканчивается кликом по картинке — он не должен открывать просмотр.
+  const swiped = useRef(false);
+
+  // Пришёл новый черновик — показываем его (он первый).
+  const newestId = drafts[0]?.id;
+  useEffect(() => setIndex(0), [newestId]);
+  const safeIndex = Math.min(index, Math.max(0, drafts.length - 1));
+  const draft = drafts[safeIndex];
+
+  const baseThumb = canvas.references[0];
+  const draftImage = useRemoteImage(draft ? `item:${canvas.id}:${draft.id}` : null, () =>
+    getItemImage(canvas.id, draft!.id).then((r) => r.image),
+  );
+  const baseImage = useRemoteImage(!draft && baseThumb ? referenceKey(canvas.id, 0, baseThumb) : null, () =>
+    getReferenceImage(canvas.id, 0).then((r) => r.image),
+  );
+  // Пока полная картинка 1 грузится — её миниатюра, чтобы холст не стоял пустым.
+  const src = draft ? draftImage.src : (baseImage.src ?? baseThumb);
+  const running = generation.status === "running";
+
+  const go = (delta: number) => setIndex((i) => Math.min(drafts.length - 1, Math.max(0, i + delta)));
+
+  const save = async () => {
+    if (!draft || !draftImage.src) return;
+    await actions.saveDraft(draft.id, await makeThumb(draftImage.src));
+  };
+
+  return (
+    <div className={styles.stage}>
+      {generation.status === "error" && generation.error && (
+        <Alert color="red" variant="light" p="xs">
+          <Text size="sm">{generation.error}</Text>
+        </Alert>
+      )}
+
+      <div
+        className={styles.frame}
+        data-draft={Boolean(draft)}
+        onPointerDown={(e) => (swipeStart.current = e.clientX)}
+        onPointerUp={(e) => {
+          if (swipeStart.current === null) return;
+          const dx = e.clientX - swipeStart.current;
+          swipeStart.current = null;
+          swiped.current = Math.abs(dx) > SWIPE_PX;
+          if (swiped.current) go(dx < 0 ? 1 : -1);
+        }}
+      >
+        {src ? (
+          <img
+            className={styles.frameImage}
+            src={src}
+            alt={draft ? "Черновик" : "Картинка 1"}
+            data-dimmed={running}
+            draggable={false}
+            onClick={() => !running && !swiped.current && setZoom(true)}
+          />
+        ) : draft && !draftImage.failed ? (
+          <Loader />
+        ) : (
+          !running && (
+            <div className={styles.frameOverlay}>
+              <ImagePlus size={32} color="var(--mantine-color-dimmed)" />
+              <Text size="sm" c="dimmed" maw={260}>
+                Прикрепите внизу картинку, которую нужно изменить, и напишите, что сделать
+              </Text>
+            </div>
+          )
+        )}
+
+        {draft && !running && (
+          <Badge className={styles.frameChip} variant="default" size="lg" radius="sm">
+            Черновик {safeIndex + 1} из {drafts.length} · {MODEL_LABEL[draft.model]}
+          </Badge>
+        )}
+
+        {drafts.length > 1 && !running && (
+          <>
+            {safeIndex > 0 && (
+              <ActionIcon className={`${styles.frameNav} ${styles.frameNavPrev}`} variant="default" radius="xl" onClick={() => go(-1)} aria-label="Предыдущий черновик">
+                <ChevronLeft size={18} />
+              </ActionIcon>
+            )}
+            {safeIndex < drafts.length - 1 && (
+              <ActionIcon className={`${styles.frameNav} ${styles.frameNavNext}`} variant="default" radius="xl" onClick={() => go(1)} aria-label="Следующий черновик">
+                <ChevronRight size={18} />
+              </ActionIcon>
+            )}
+          </>
+        )}
+
+        {running && (
+          <div className={styles.frameOverlay}>
+            <Loader />
+            <Text fw={500}>Генерация · {elapsed} с</Text>
+            <Text size="xs" c="dimmed" maw={260}>
+              Первая генерация после запуска ComfyUI дольше: загружаются модели
+            </Text>
+            <Button variant="default" size="xs" loading={actions.busy === "cancel"} onClick={() => void actions.cancel()}>
+              Остановить
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <div className={styles.dots}>
+        {drafts.length > 1 &&
+          drafts.map((d, i) => (
+            <button
+              key={d.id}
+              type="button"
+              className={styles.dot}
+              data-active={i === safeIndex}
+              onClick={() => setIndex(i)}
+              aria-label={`Черновик ${i + 1}`}
+            />
+          ))}
+      </div>
+
+      {draft && !running && (
+        <Group gap="xs" wrap="nowrap">
+          <Button
+            flex={1}
+            leftSection={<Check size={16} />}
+            loading={actions.busy === "save"}
+            disabled={!draftImage.src || actions.busy !== null}
+            onClick={() => void save()}
+          >
+            Сохранить
+          </Button>
+          <Button variant="default" disabled={actions.busy !== null} loading={actions.busy === "delete"} onClick={() => void actions.deleteItem(draft.id)}>
+            Отбросить
+          </Button>
+        </Group>
+      )}
+
+      <AnimatePresence>{zoom && src && <ImageLightbox src={src} onClose={() => setZoom(false)} />}</AnimatePresence>
+    </div>
+  );
+}

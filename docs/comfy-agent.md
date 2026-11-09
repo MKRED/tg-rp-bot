@@ -22,6 +22,9 @@
 - `GET /api/comfy-agent/agent/poll` — long-poll (удержание ~20 с), отдаёт задания.
 - `POST /api/comfy-agent/agent/result/:id` — агент возвращает результат.
 - Очередь заданий живёт в памяти процесса (`relay/relay-hub.ts`, `RelayHub`), не в БД.
+- Агент шлёт версию в заголовке `X-Agent-Version` (сейчас 2; без заголовка — 1). Статус отдаёт `agentVersion` и
+  `agentOutdated` (меньше `REQUIRED_COMFY_AGENT_VERSION`): карточка в Настройках просит установить заново.
+  Ответ старого агента «blocked by agent allowlist» сервер превращает в 502 `comfy_agent_outdated`.
 - Запросы к ComfyUI агент выполняет на `127.0.0.1` по белому списку (`comfy-paths.ts`); список проверяется
   и на сервере, и в агенте.
 - `GET /api/comfy-agent/check` — готовность ComfyUI: версия, видеокарта, ноды и файлы моделей

@@ -53,6 +53,8 @@ bot/src/
   comfy-agent/  — /api/comfy-agent: ComfyUI пользователя через агента на ПК (long-poll, RelayHub в памяти, установка
                   по одноразовому коду, проверка готовности); агентские маршруты @Public + свой Bearer-токен.
                   Скрипты агента — bot/assets/comfy-agent/. Подробно — docs/comfy-agent.md
+  image-canvas/ — /api/image-canvases: раздел «Картинки» — холсты, генерация в ComfyUI через comfy-agent (граф —
+                  graph/, слежение за заданием — generation/), черновики и варианты. Подробно — docs/image-canvas.md
   settings/     — /api/settings (всё в строке user_settings): llm/ (ключ DeepSeek, BYOK, шифруется
                   ключом пользователя; verify — /models, баланс), web-search/ (лимит раундов поиска — только
                   controller/repository, без сервиса), translate/ (режим перевода PromptEditorOverlay) — у

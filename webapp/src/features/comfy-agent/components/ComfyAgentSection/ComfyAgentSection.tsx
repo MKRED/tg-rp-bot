@@ -99,14 +99,28 @@ function StatusBadge({ hasToken, online }: { hasToken: boolean; online: boolean 
 }
 
 function OnlineBody({
+  status,
   readiness,
   checking,
   checkError,
   runCheck,
+  creatingCode,
+  requestInstallCommand,
   disconnectButton,
 }: ComfyAgentSectionProps & { disconnectButton: ReactNode }) {
   return (
     <>
+      {/* Агент старой версии работает, но не умеет новых запросов (отмена генерации) — просим обновить. */}
+      {status.agentOutdated && (
+        <Group gap="xs" justify="space-between" wrap="nowrap">
+          <Text size="sm" c="orange">
+            Агент на ПК устарел — установите его заново.
+          </Text>
+          <Button variant="light" color="orange" size="xs" loading={creatingCode} onClick={() => void requestInstallCommand()}>
+            Обновить
+          </Button>
+        </Group>
+      )}
       {checking && !readiness ? (
         <Group gap="xs">
           <Loader size="xs" />

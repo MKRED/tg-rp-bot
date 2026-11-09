@@ -44,7 +44,9 @@ if (-not $Token) {
 $Server = $Server.TrimEnd("/")
 $Comfy = $Comfy.TrimEnd("/")
 # X-Requested-With — CSRF-заголовок, который сервер требует у изменяющих запросов без initData.
-$Headers = @{ Authorization = "Bearer $Token"; "X-Requested-With" = "tg-rp-bot" }
+# Версия агента: сервер сравнивает её с нужной и просит переустановить устаревшего агента.
+$AgentVersion = 2
+$Headers = @{ Authorization = "Bearer $Token"; "X-Requested-With" = "tg-rp-bot"; "X-Agent-Version" = "$AgentVersion" }
 
 # Тот же список, что bot/src/comfy-agent/comfy-paths.ts.
 $Allowed = @(
@@ -55,7 +57,8 @@ $Allowed = @(
   @{ Method = "GET"; Pattern = '^/api/view$' },
   @{ Method = "POST"; Pattern = '^/api/prompt$' },
   @{ Method = "POST"; Pattern = '^/api/upload/image$' },
-  @{ Method = "POST"; Pattern = '^/api/interrupt$' }
+  @{ Method = "POST"; Pattern = '^/api/interrupt$' },
+  @{ Method = "POST"; Pattern = '^/api/queue$' }
 )
 
 function Write-Log([string]$Message) {

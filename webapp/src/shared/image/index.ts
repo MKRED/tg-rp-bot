@@ -75,6 +75,6 @@ export async function buildAvatarImages(src: string, crop: CropArea): Promise<Av
  * Картинка целиком (без кропа), ужатая до длинной стороны maxSide JPEG — для референсов, которые
  * уходят модели изображением. src — обычно object URL выбранного файла.
  */
-export async function buildScaledImage(src: string, maxSide: number): Promise<string> {
-  return renderFull(await loadImage(src), maxSide);
+export async function buildScaledImage(src: string, maxSide: number, quality = FULL_QUALITY): Promise<string> {
+  return renderFull(await loadImage(src), maxSide, quality);
 }

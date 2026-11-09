@@ -20,14 +20,19 @@ export class AgentLinkController {
 
   /** Long-poll: задания сразу или пустой список через ~20 с. */
   @Get("poll")
-  async poll(@Headers("authorization") authorization: string | undefined, @Res({ passthrough: true }) res: Response) {
+  async poll(
+    @Headers("authorization") authorization: string | undefined,
+    @Headers("x-agent-version") versionHeader: string | undefined,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const userId = await this.agents.authenticateAgent(authorization);
     // Соединение оборвалось до ответа — задания не должны уйти в закрытый сокет.
     const aborted = new AbortController();
     res.on("close", () => {
       if (!res.writableFinished) aborted.abort();
     });
-    return { jobs: await this.agents.poll(userId, aborted.signal) };
+    const version = Number.parseInt(versionHeader ?? "", 10);
+    return { jobs: await this.agents.poll(userId, aborted.signal, Number.isFinite(version) ? version : 1) };
   }
 
   @Post("result/:id")

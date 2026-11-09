@@ -98,6 +98,10 @@ export const ROUTES = {
 
   /** Настройки приложения (тема оформления, в перспективе — персональные ключи API ИИ). */
   settings: "/settings",
+  /** Раздел «Картинки»: список холстов. */
+  images: "/images",
+  /** Холст по id: редактирование картинки через ComfyUI пользователя. */
+  imageCanvas: "/images/:id",
 } as const;
 
 /** Путь к конкретной истории. */
@@ -148,6 +152,9 @@ export const cardEditPath = (id: number): string => `/cards/${id}`;
 
 /** Путь к чату соавтора. */
 export const coauthorViewPath = (id: number): string => `/coauthor/${id}`;
+
+/** Путь к холсту раздела «Картинки». */
+export const imageCanvasPath = (id: number): string => `/images/${id}`;
 
 /** Путь к настройкам чата соавтора. */
 export const coauthorSettingsPath = (id: number): string => `/coauthor/${id}/settings`;
@@ -201,6 +208,7 @@ export function parentPath(pathname: string): string {
   if (pathname.startsWith("/narrator-templates/")) return ROUTES.narratorTemplates;
   if (pathname.startsWith("/rp-templates/")) return ROUTES.rpTemplates;
   if (pathname.startsWith("/card-templates/")) return ROUTES.cardTemplates;
+  if (pathname.startsWith("/images/")) return ROUTES.images;
   if (pathname.startsWith("/debug/")) return ROUTES.home;
   return ROUTES.home;
 }

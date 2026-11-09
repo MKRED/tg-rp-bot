@@ -22,6 +22,10 @@ describe("parentPath", () => {
     expect(parentPath("/cards/5")).toBe(ROUTES.cards);
   });
 
+  it("холст → список холстов", () => {
+    expect(parentPath("/images/4")).toBe(ROUTES.images);
+  });
+
   it("списки и неизвестные пути → главная", () => {
     expect(parentPath("/books")).toBe(ROUTES.home);
     expect(parentPath("/debug/llm")).toBe(ROUTES.home);

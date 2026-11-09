@@ -9,7 +9,17 @@ export interface ComfyAgentStatus {
   online: boolean;
   /** Когда агент последний раз выходил на связь (ISO), null — ни разу с запуска сервера. */
   lastSeenAt: string | null;
+  /** Версия агента на ПК; null — не выходил на связь с запуска сервера. */
+  agentVersion: number | null;
+  /** Агент старше нужной версии: часть функций не сработает, нужно установить заново. */
+  agentOutdated: boolean;
 }
+
+/**
+ * Версия агента, которую ждёт сервер. Агент шлёт свою в заголовке X-Agent-Version; первая версия
+ * заголовка не слала. 2 — отмена генерации умеет убирать задание из очереди (POST /api/queue).
+ */
+export const REQUIRED_COMFY_AGENT_VERSION = 2;
 
 /**
  * Одноразовый код для команды установки агента. Токен агента в команду не попадает: его выпускает
@@ -26,7 +36,8 @@ export type ComfyAgentErrorCode =
   | "comfy_agent_offline"
   | "comfy_agent_timeout"
   | "comfy_unreachable"
-  | "comfy_error";
+  | "comfy_error"
+  | "comfy_agent_outdated";
 
 /** Модели, которые умеет запускать приложение. */
 export type ComfyModelId = "qwen" | "qwen_turbo";

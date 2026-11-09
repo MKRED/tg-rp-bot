@@ -12,6 +12,8 @@ const ALLOWED: Array<{ method: "GET" | "POST"; pattern: RegExp }> = [
   { method: "POST", pattern: /^\/api\/prompt$/ },
   { method: "POST", pattern: /^\/api\/upload\/image$/ },
   { method: "POST", pattern: /^\/api\/interrupt$/ },
+  // Удаление своего ещё не начатого задания из очереди при отмене (агент версии 2+).
+  { method: "POST", pattern: /^\/api\/queue$/ },
 ];
 
 export type ComfyMethod = "GET" | "POST";
