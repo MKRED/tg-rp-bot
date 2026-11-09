@@ -20,17 +20,6 @@ interface CanvasStageProps {
   actions: CanvasState;
 }
 
-/** Секунды с начала генерации — тикают раз в секунду. */
-function useElapsed(startedAt: string | null): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!startedAt) return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [startedAt]);
-  return startedAt ? Math.max(0, Math.round((now - Date.parse(startedAt)) / 1000)) : 0;
-}
-
 /** Ключ кэша картинки слота: по миниатюре — заменённая картинка не возьмётся из кэша. */
 export function referenceKey(canvasId: number, slot: number, thumb: string): string {
   return `ref:${canvasId}:${slot}:${thumb.length}:${thumb.slice(-24)}`;
@@ -39,13 +28,13 @@ export function referenceKey(canvasId: number, slot: number, thumb: string): str
 /**
  * Холст листается свайпом и стрелками: первым — оригинал (картинка 1), за ним черновики, новые первыми.
  * Так результат сравнивается с исходником одним свайпом. Пришёл новый черновик — показываем его.
- * Под черновиком — «Сохранить» и «Отбросить». Во время генерации поверх текущей картинки — время и «Остановить».
+ * Под черновиком — «Сохранить» и «Отбросить». Полноэкранный просмотр листается так же и держит тот же слайд.
+ * Генерация холст не закрывает: её ход и «Остановить» — на кнопке запуска (GenerateButton).
  */
 export function CanvasStage({ canvas, actions }: CanvasStageProps) {
   const { drafts, generation } = canvas;
   const [index, setIndex] = useState(0);
   const [zoom, setZoom] = useState(false);
-  const elapsed = useElapsed(generation.status === "running" ? generation.startedAt : null);
   const swipeStart = useRef<number | null>(null);
   // Свайп мышью заканчивается кликом по картинке — он не должен открывать просмотр.
   const swiped = useRef(false);
@@ -70,8 +59,8 @@ export function CanvasStage({ canvas, actions }: CanvasStageProps) {
   );
   // Пока полная картинка 1 грузится — её миниатюра, чтобы холст не стоял пустым.
   const src = draft ? draftImage.src : (baseImage.src ?? baseThumb);
-  const running = generation.status === "running";
 
+  const caption = draft ? `Черновик ${draftIndex + 1} из ${drafts.length} · ${MODEL_LABEL[draft.model]}` : "Оригинал";
   const go = (delta: number) => setIndex((i) => Math.min(slideCount - 1, Math.max(0, i + delta)));
 
   // Стрелки ←/→ на компьютере. Обработчик на window живёт весь экран, а число слайдов и просмотр меняются.
@@ -120,36 +109,33 @@ export function CanvasStage({ canvas, actions }: CanvasStageProps) {
             className={styles.frameImage}
             src={src}
             alt={draft ? "Черновик" : "Оригинал"}
-            data-dimmed={running}
             draggable={false}
-            onClick={() => !running && !swiped.current && setZoom(true)}
+            onClick={() => !swiped.current && setZoom(true)}
           />
         ) : draft && !draftImage.failed ? (
           <Loader />
         ) : (
-          !running && (
-            <div className={styles.frameOverlay}>
-              <ImagePlus size={32} color="var(--mantine-color-dimmed)" />
-              <Text size="sm" c="dimmed" maw={260}>
-                Прикрепите внизу картинку, которую нужно изменить, и напишите, что сделать
-              </Text>
-            </div>
-          )
+          <div className={styles.frameOverlay}>
+            <ImagePlus size={32} color="var(--mantine-color-dimmed)" />
+            <Text size="sm" c="dimmed" maw={260}>
+              Прикрепите внизу картинку, которую нужно изменить, и напишите, что сделать
+            </Text>
+          </div>
         )}
 
-        {draft && !running && (
+        {draft && (
           <Badge className={styles.frameChip} variant="default" size="lg" radius="sm">
-            Черновик {draftIndex + 1} из {drafts.length} · {MODEL_LABEL[draft.model]}
+            {caption}
           </Badge>
         )}
         {/* Подпись оригинала — только когда есть с чем сравнивать, иначе он и так единственный. */}
-        {showingOriginal && drafts.length > 0 && !running && (
+        {showingOriginal && drafts.length > 0 && (
           <Badge className={styles.frameChip} variant="default" size="lg" radius="sm">
             Оригинал
           </Badge>
         )}
 
-        {slideCount > 1 && !running && (
+        {slideCount > 1 && (
           <>
             {safeIndex > 0 && (
               <ActionIcon className={`${styles.frameNav} ${styles.frameNavPrev}`} variant="default" radius="xl" onClick={() => go(-1)} aria-label="Предыдущая картинка">
@@ -164,18 +150,6 @@ export function CanvasStage({ canvas, actions }: CanvasStageProps) {
           </>
         )}
 
-        {running && (
-          <div className={styles.frameOverlay}>
-            <Loader />
-            <Text fw={500}>Генерация · {elapsed} с</Text>
-            <Text size="xs" c="dimmed" maw={260}>
-              Первая генерация после запуска ComfyUI дольше: загружаются модели
-            </Text>
-            <Button variant="default" size="xs" loading={actions.busy === "cancel"} onClick={() => void actions.cancel()}>
-              Остановить
-            </Button>
-          </div>
-        )}
       </div>
 
       <div className={styles.dots}>
@@ -195,7 +169,7 @@ export function CanvasStage({ canvas, actions }: CanvasStageProps) {
 
       {/* На оригинале кнопки скрыты, но место держат: иначе рамка меняла бы высоту при свайпе
           и сравнивать картинки было бы неудобно. */}
-      {drafts.length > 0 && !running && (
+      {drafts.length > 0 && (
         <Group gap="xs" wrap="nowrap" className={styles.draftActions} data-hidden={!draft} aria-hidden={!draft}>
           <Button
             flex={1}
@@ -217,7 +191,20 @@ export function CanvasStage({ canvas, actions }: CanvasStageProps) {
         </Group>
       )}
 
-      <AnimatePresence>{zoom && src && <ImageLightbox src={src} onClose={() => setZoom(false)} />}</AnimatePresence>
+      {/* В просмотр — только полная картинка (миниатюра оригинала там была бы мутной): пока грузится — спиннер. */}
+      <AnimatePresence>
+        {zoom && (
+          <ImageLightbox
+            src={draft ? draftImage.src : baseImage.src}
+            navigation={{
+              caption: slideCount > 1 ? caption : undefined,
+              onPrev: safeIndex > 0 ? () => go(-1) : undefined,
+              onNext: safeIndex < slideCount - 1 ? () => go(1) : undefined,
+            }}
+            onClose={() => setZoom(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

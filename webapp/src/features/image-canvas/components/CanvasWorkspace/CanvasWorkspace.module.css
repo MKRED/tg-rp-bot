@@ -95,10 +95,6 @@
   cursor: zoom-in;
 }
 
-.frameImage[data-dimmed="true"] {
-  opacity: 0.35;
-}
-
 .frameChip {
   position: absolute;
   top: var(--mantine-spacing-xs);

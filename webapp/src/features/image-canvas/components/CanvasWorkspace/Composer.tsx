@@ -1,5 +1,4 @@
-import { Anchor, Button, SegmentedControl, Text, Textarea, UnstyledButton } from "@mantine/core";
-import { Sparkles } from "lucide-react";
+import { Anchor, SegmentedControl, Text, Textarea, UnstyledButton } from "@mantine/core";
 import { useEffect, useRef, useState } from "react";
 import { useTransitionNavigate } from "../../../../app/useTransitionNavigate";
 import { ROUTES } from "../../../../app/routes";
@@ -7,6 +6,7 @@ import type { ComfyAgentStatus } from "@tg-rp-bot/shared";
 import type { CanvasState } from "../../hooks/useCanvas";
 import { generateBlocker, insertImageTag } from "../../lib/promptTags";
 import type { ComfyModelId, ImageCanvas } from "../../types/imageCanvas";
+import { GenerateButton } from "./GenerateButton";
 import { PromptTranslateButton } from "./PromptTranslateButton";
 import { ReferenceTiles } from "./ReferenceTiles";
 import styles from "./CanvasWorkspace.module.css";
@@ -151,14 +151,7 @@ export function Composer({ canvas, actions, agent, draftPrompt, onDraftPromptApp
         </Text>
       )}
 
-      <Button
-        leftSection={<Sparkles size={16} />}
-        disabled={running || Boolean(blocker)}
-        loading={actions.busy === "generate"}
-        onClick={start}
-      >
-        {running ? "Идёт генерация…" : "Сгенерировать"}
-      </Button>
+      <GenerateButton canvas={canvas} actions={actions} blocker={blocker} onStart={start} />
     </div>
   );
 }

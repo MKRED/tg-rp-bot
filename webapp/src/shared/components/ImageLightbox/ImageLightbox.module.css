@@ -70,3 +70,38 @@
   left: 50%;
   transform: translate(-50%, -50%);
 }
+
+/* Подпись листаемого просмотра («Черновик 1 из 3») — слева сверху, на одной линии с кнопками. */
+.caption {
+  position: absolute;
+  top: calc(
+    var(--mantine-spacing-xs)
+    + var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px))
+    + var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
+  left: var(--mantine-spacing-sm);
+  z-index: 2;
+  padding: 6px var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-xl);
+  background-color: alpha(var(--mantine-color-black), 0.45);
+  color: var(--mantine-color-white);
+  font-size: var(--mantine-font-size-sm);
+  line-height: 32px;
+  cursor: default;
+}
+
+/* Стрелки листания — по вертикальному центру у краёв экрана. */
+.nav {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  transform: translateY(-50%);
+}
+
+.navPrev {
+  left: var(--mantine-spacing-sm);
+}
+
+.navNext {
+  right: var(--mantine-spacing-sm);
+}
