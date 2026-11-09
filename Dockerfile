@@ -32,6 +32,8 @@ COPY bot/nest-cli.json bot/nest-cli.json
 COPY bot/drizzle.config.ts bot/drizzle.config.ts
 COPY bot/drizzle bot/drizzle
 COPY bot/src bot/src
+# Скрипты агента ComfyUI: сервер отдаёт их установщику (src/comfy-agent/install).
+COPY bot/assets bot/assets
 
 # Исходники webapp.
 COPY webapp/tsconfig.json webapp/tsconfig.json

@@ -17,3 +17,4 @@ export * from "./sse.js";
 export * from "./narrator.js";
 export * from "./auth.js";
 export * from "./coauthor.js";
+export * from "./comfy-agent.js";

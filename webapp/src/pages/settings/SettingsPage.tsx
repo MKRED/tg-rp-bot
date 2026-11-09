@@ -1,6 +1,7 @@
 import { Button, Group, Stack, Text } from "@mantine/core";
 import { type ReactNode, useState } from "react";
 import { BrowserLoginSection, useAuth, useBrowserLogin } from "../../features/auth";
+import { ComfyAgentSection, useComfyAgent } from "../../features/comfy-agent";
 import { LlmSettingsSection, useLlmSettings } from "../../features/llm-settings";
 import { TranslateSettingsSection, useTranslateSettings } from "../../features/translate-settings";
 import { useWebSearchSettings, WebSearchSettingsSection } from "../../features/web-search-settings";
@@ -29,7 +30,7 @@ function AppearanceField({ label, description, children }: { label: string; desc
 
 /**
  * Экран «Настройки»: оформление (тема, палитра, шрифты), аккаунт (выход в браузере / логин для браузера в Mini App),
- * персональный ключ ИИ (DeepSeek), лимит веб-поиска, дефолты перевода в редакторе промптов.
+ * персональный ключ ИИ (DeepSeek), лимит веб-поиска, дефолты перевода в редакторе промптов, свой ComfyUI.
  *
  * Статусы грузятся на уровне страницы: пока не пришли все ответы, AppPage показывает один лоадер
  * вместо частичного контента — иначе карточки появлялись бы по очереди и сдвигали уже отрисованные.
@@ -40,10 +41,11 @@ export function SettingsPage() {
   const { loading: translateLoading, ...translate } = useTranslateSettings();
   const { mode, session, logout } = useAuth();
   const { loading: browserLoginLoading, ...browserLogin } = useBrowserLogin();
+  const { loading: comfyLoading, ...comfy } = useComfyAgent();
   const [loggingOut, setLoggingOut] = useState(false);
 
   return (
-    <AppPage title="Настройки" loading={llmLoading || webSearchLoading || translateLoading || browserLoginLoading}>
+    <AppPage title="Настройки" loading={llmLoading || webSearchLoading || translateLoading || browserLoginLoading || comfyLoading}>
       <SettingsCard title="Оформление" description="Сохраняется на этом устройстве.">
         <AppearanceField label="Тема" description="«Авто» — светлая или тёмная, как в Telegram.">
           <ThemeToggle />
@@ -89,6 +91,7 @@ export function SettingsPage() {
       <LlmSettingsSection {...llm} />
       <WebSearchSettingsSection {...webSearch} />
       <TranslateSettingsSection {...translate} />
+      <ComfyAgentSection {...comfy} />
     </AppPage>
   );
 }

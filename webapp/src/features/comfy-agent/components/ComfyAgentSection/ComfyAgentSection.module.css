@@ -1,0 +1,55 @@
+.command {
+  position: relative;
+  padding: var(--mantine-spacing-sm);
+  padding-right: calc(var(--mantine-spacing-sm) + 36px);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-default-hover);
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--mantine-font-size-xs);
+  line-height: 1.5;
+  word-break: break-all;
+  user-select: all;
+}
+
+.copyButton {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.steps {
+  margin: 0;
+  padding-left: var(--mantine-spacing-lg);
+  font-size: var(--mantine-font-size-sm);
+}
+
+.steps li + li {
+  margin-top: var(--mantine-spacing-xs);
+}
+
+.modelRow {
+  display: flex;
+  gap: var(--mantine-spacing-xs);
+  align-items: flex-start;
+}
+
+.modelIcon {
+  flex: none;
+  margin-top: 2px;
+}
+
+.ready {
+  color: var(--mantine-color-green-filled);
+}
+
+.notReady {
+  color: var(--mantine-color-red-filled);
+}
+
+.missing {
+  margin: 4px 0 0;
+  padding-left: var(--mantine-spacing-md);
+  font-size: var(--mantine-font-size-xs);
+  color: var(--mantine-color-dimmed);
+  word-break: break-all;
+}

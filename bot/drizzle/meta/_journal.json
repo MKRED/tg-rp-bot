@@ -379,6 +379,13 @@
       "when": 1793724478628,
       "tag": "0053_coauthor_use_images",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1794045908541,
+      "tag": "0054_comfy_agent_token",
+      "breakpoints": true
     }
   ]
 }

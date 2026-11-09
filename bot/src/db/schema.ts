@@ -8,6 +8,7 @@ import {
   real,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
@@ -117,12 +118,18 @@ export const userSettings = pgTable("user_settings", {
   // пользователя, платить thinking-токены за каждый — дорого и медленно для того, что должно
   // ощущаться мгновенным во время редактирования промпта); иначе — уровень effort.
   promptTranslateReasoningEffort: text("prompt_translate_reasoning_effort").notNull().default("off"),
+  // SHA-256 (hex) токена агента ComfyUI на ПК пользователя (см. comfy-agent/). Сам токен показывается
+  // один раз при выпуске и не хранится. NULL — агент не подключали или токен отозван.
+  comfyAgentTokenHash: text("comfy_agent_token_hash"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow()
     .$onUpdate(() => new Date()),
-});
+}, (t) => [
+  // Агент приходит только с токеном: пользователя ищем по хешу на каждом long-poll.
+  uniqueIndex("user_settings_comfy_agent_token_hash_idx").on(t.comfyAgentTokenHash),
+]);
 
 export type UserSettings = typeof userSettings.$inferSelect;
 export type NewUserSettings = typeof userSettings.$inferInsert;

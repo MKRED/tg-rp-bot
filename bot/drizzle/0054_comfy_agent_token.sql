@@ -1,0 +1,2 @@
+ALTER TABLE "user_settings" ADD COLUMN "comfy_agent_token_hash" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "user_settings_comfy_agent_token_hash_idx" ON "user_settings" USING btree ("comfy_agent_token_hash");
