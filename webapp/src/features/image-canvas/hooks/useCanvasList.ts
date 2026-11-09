@@ -18,7 +18,7 @@ export function useCanvasList() {
       .finally(() => setLoading(false));
   }, []);
 
-  const create = useCallback((): Promise<ImageCanvas> => createCanvas(), []);
+  const create = useCallback((name?: string): Promise<ImageCanvas> => createCanvas(name), []);
 
   return { items, loading, error, create };
 }

@@ -83,6 +83,14 @@ export interface CanvasReferenceInput {
   thumb: string;
 }
 
+/**
+ * Новый порядок картинок: order[i] — прежний слот картинки, которая встаёт на место i
+ * (перестановка 0..N-1). Теги `<imageN>` в промпте не меняются — они указывают на слот.
+ */
+export interface ReorderCanvasReferencesInput {
+  order: number[];
+}
+
 /** Сохранить черновик в варианты: миниатюру готовит webapp (у него уже есть картинка). */
 export interface SaveCanvasDraftInput {
   thumb: string;

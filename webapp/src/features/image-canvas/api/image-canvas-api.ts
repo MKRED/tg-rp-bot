@@ -5,6 +5,7 @@ import type {
   ImageCanvas,
   ImageCanvasListItem,
   ImageCanvasPatch,
+  ReorderCanvasReferencesInput,
 } from "../types/imageCanvas";
 
 const BASE = "/image-canvases";
@@ -13,8 +14,9 @@ export function listCanvases(): Promise<ImageCanvasListItem[]> {
   return apiFetch<ImageCanvasListItem[]>(BASE);
 }
 
-export function createCanvas(): Promise<ImageCanvas> {
-  return apiFetch<ImageCanvas>(BASE, { method: "POST", body: "{}" });
+/** Пустое имя — сервер назовёт «Новый холст». */
+export function createCanvas(name?: string): Promise<ImageCanvas> {
+  return apiFetch<ImageCanvas>(BASE, { method: "POST", body: JSON.stringify(name ? { name } : {}) });
 }
 
 export function getCanvas(id: number): Promise<ImageCanvas> {
@@ -32,6 +34,12 @@ export function deleteCanvas(id: number): Promise<{ ok: true }> {
 /** slot = числу картинок — добавить в конец, меньше — заменить. */
 export function setReference(id: number, slot: number, input: CanvasReferenceInput): Promise<ImageCanvas> {
   return apiFetch<ImageCanvas>(`${BASE}/${id}/references/${slot}`, { method: "PUT", body: JSON.stringify(input) });
+}
+
+/** order[i] — прежний слот картинки, которая встаёт на место i. */
+export function reorderReferences(id: number, order: number[]): Promise<ImageCanvas> {
+  const body: ReorderCanvasReferencesInput = { order };
+  return apiFetch<ImageCanvas>(`${BASE}/${id}/references/order`, { method: "PUT", body: JSON.stringify(body) });
 }
 
 export function removeReference(id: number, slot: number): Promise<ImageCanvas> {

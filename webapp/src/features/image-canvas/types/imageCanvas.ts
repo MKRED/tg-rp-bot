@@ -8,6 +8,7 @@ export type {
   ImageCanvas,
   ImageCanvasListItem,
   ImageCanvasPatch,
+  ReorderCanvasReferencesInput,
 } from "@tg-rp-bot/shared";
 export {
   CANVAS_REFERENCE_MAX_SIDE,

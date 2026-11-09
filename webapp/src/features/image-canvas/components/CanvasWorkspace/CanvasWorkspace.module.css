@@ -192,6 +192,17 @@
   gap: 6px;
 }
 
+/* Плитка в Reorder: тянется только по горизонтали, вертикальная прокрутка панели остаётся. */
+.refItem {
+  flex: none;
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.refItem:active {
+  cursor: grabbing;
+}
+
 .refTile {
   position: relative;
   width: 44px;

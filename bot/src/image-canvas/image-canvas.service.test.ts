@@ -88,6 +88,14 @@ describe("ImageCanvasService", () => {
     expect(current()).toEqual({ references: ["b", "c"], thumbs: ["thumb1", "thumb2"] });
   });
 
+  it("перестановка картинок — вместе с миниатюрами; не перестановка текущих слотов — 400", async () => {
+    const { service, current } = setup({ references: ["a", "b", "c"] });
+    await service.reorderReferences("u1", 1, [2, 0, 1]);
+    expect(current()).toEqual({ references: ["c", "a", "b"], thumbs: ["thumb2", "thumb0", "thumb1"] });
+    expect(await status(service.reorderReferences("u1", 1, [0, 1]))).toBe(400);
+    expect(await status(service.reorderReferences("u1", 1, [0, 0, 1]))).toBe(400);
+  });
+
   it("«В работу» — вариант становится картинкой 1", async () => {
     const { service, current } = setup({ references: ["a", "b"] });
     await service.useVariant("u1", 1, 7);

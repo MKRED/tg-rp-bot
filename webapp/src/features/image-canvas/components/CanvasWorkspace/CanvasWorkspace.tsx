@@ -1,9 +1,8 @@
-import { ActionIcon, Button, Menu, SegmentedControl, Stack, Text, TextInput } from "@mantine/core";
+import { ActionIcon, Menu, SegmentedControl, Text } from "@mantine/core";
 import { EllipsisVertical } from "lucide-react";
 import { useState } from "react";
 import { ROUTES } from "../../../../app/routes";
 import { useTransitionNavigate } from "../../../../app/useTransitionNavigate";
-import { ResponsiveSheet } from "../../../../shared/components/ResponsiveSheet";
 import { confirmAction } from "../../../../shared/telegram/confirm";
 import { useToast } from "../../../../shared/toast";
 import { useComfyAgentStatus } from "../../../comfy-agent";
@@ -13,6 +12,7 @@ import type { ImageCanvas } from "../../types/imageCanvas";
 import { CanvasStage } from "./CanvasStage";
 import { Composer } from "./Composer";
 import { VariantsGallery } from "./VariantsGallery";
+import { CanvasNameSheet } from "../CanvasNameSheet";
 import styles from "./CanvasWorkspace.module.css";
 
 type CanvasTab = "canvas" | "variants";
@@ -33,7 +33,6 @@ export function CanvasWorkspace({ canvas, actions }: CanvasWorkspaceProps) {
   const [tab, setTab] = useState<CanvasTab>("canvas");
   const [repeatPrompt, setRepeatPrompt] = useState<string | null>(null);
   const [renaming, setRenaming] = useState(false);
-  const [name, setName] = useState(canvas.name);
 
   const remove = async () => {
     const confirmed = await confirmAction("Холст удалится вместе с картинками, черновиками и вариантами.", { title: "Удалить холст?" });
@@ -47,9 +46,8 @@ export function CanvasWorkspace({ canvas, actions }: CanvasWorkspaceProps) {
     }
   };
 
-  const rename = async () => {
-    if (!name.trim()) return;
-    await actions.patch({ name: name.trim() });
+  const rename = async (name: string) => {
+    await actions.patch({ name });
     setRenaming(false);
   };
 
@@ -73,10 +71,7 @@ export function CanvasWorkspace({ canvas, actions }: CanvasWorkspaceProps) {
             </Menu.Target>
             <Menu.Dropdown>
               <Menu.Item
-                onClick={() => {
-                  setName(canvas.name);
-                  setRenaming(true);
-                }}
+                onClick={() => setRenaming(true)}
               >
                 Переименовать
               </Menu.Item>
@@ -122,14 +117,14 @@ export function CanvasWorkspace({ canvas, actions }: CanvasWorkspaceProps) {
         />
       )}
 
-      <ResponsiveSheet opened={renaming} onClose={() => setRenaming(false)} title="Название холста">
-        <Stack gap="sm">
-          <TextInput value={name} onChange={(e) => setName(e.currentTarget.value)} maxLength={200} data-autofocus />
-          <Button disabled={!name.trim()} onClick={() => void rename()}>
-            Сохранить
-          </Button>
-        </Stack>
-      </ResponsiveSheet>
+      <CanvasNameSheet
+        opened={renaming}
+        title="Название холста"
+        submitLabel="Сохранить"
+        initialName={canvas.name}
+        onSubmit={(name) => void rename(name)}
+        onClose={() => setRenaming(false)}
+      />
     </>
   );
 }

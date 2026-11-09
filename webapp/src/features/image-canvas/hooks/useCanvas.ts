@@ -86,6 +86,8 @@ export function useCanvas(id: number) {
     patch,
     setReference: (slot: number, input: { image: string; thumb: string }) =>
       run("reference", () => api.setReference(id, slot, input), "Не удалось прикрепить картинку"),
+    reorderReferences: (order: number[]) =>
+      run("reference", () => api.reorderReferences(id, order), "Не удалось переставить картинки"),
     removeReference: (slot: number) => run("reference", () => api.removeReference(id, slot), "Не удалось убрать картинку"),
     generate: () => run("generate", () => api.generate(id), "Не удалось запустить генерацию"),
     cancel: () => run("cancel", () => api.cancelGeneration(id), "Не удалось остановить генерацию"),

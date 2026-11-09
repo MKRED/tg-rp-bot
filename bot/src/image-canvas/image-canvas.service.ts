@@ -85,6 +85,21 @@ export class ImageCanvasService {
     );
   }
 
+  /** Переставить картинки (order[i] — прежний слот новой i-й). Теги в промпте не трогаем — так решил пользователь. */
+  async reorderReferences(userId: string, id: number, order: number[]): Promise<ImageCanvas> {
+    const canvas = await this.require(userId, id);
+    const references = await this.references(userId, id);
+    if (!isPermutation(order, references.length)) {
+      throw new BadRequestException("Порядок картинок устарел — обновите холст");
+    }
+    return this.saveReferences(
+      userId,
+      id,
+      order.map((from) => references[from]!),
+      order.map((from) => canvas.referenceThumbs[from]!),
+    );
+  }
+
   async getReference(userId: string, id: number, slot: number): Promise<CanvasImageResponse> {
     const image = (await this.references(userId, id))[slot];
     if (!image) throw new NotFoundException("Картинки нет");
@@ -160,4 +175,11 @@ export class ImageCanvasService {
   private async view(userId: string, canvas: CanvasRecord): Promise<ImageCanvas> {
     return toCanvasView(canvas, await this.items.list(userId, canvas.id));
   }
+}
+
+/** order — перестановка 0..length-1 (каждый слот ровно один раз). */
+export function isPermutation(order: number[], length: number): boolean {
+  if (order.length !== length) return false;
+  const seen = new Set(order);
+  return seen.size === length && order.every((n) => Number.isInteger(n) && n >= 0 && n < length);
 }

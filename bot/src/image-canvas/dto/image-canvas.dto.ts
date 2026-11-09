@@ -5,9 +5,11 @@ import {
   type CanvasReferenceInput,
   type ComfyModelId,
   type ImageCanvasPatch,
+  MAX_CANVAS_REFERENCES,
+  type ReorderCanvasReferencesInput,
   type SaveCanvasDraftInput,
 } from "@tg-rp-bot/shared";
-import { IsIn, IsOptional, IsString, Matches, MaxLength } from "class-validator";
+import { ArrayMaxSize, IsArray, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from "class-validator";
 
 /** Картинка — только data URL изображения в base64 (сервер его разбирает и грузит в ComfyUI). */
 const DATA_IMAGE = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
@@ -49,6 +51,16 @@ export class CanvasReferenceDto implements CanvasReferenceInput {
   @MaxLength(MAX_CANVAS_THUMB_CHARS, { message: "Thumbnail is too large" })
   @Matches(DATA_IMAGE, { message: "thumb must be a PNG, JPEG or WebP data URL" })
   thumb!: string;
+}
+
+/** PUT /api/image-canvases/:id/references/order — что это перестановка текущих слотов, проверяет сервис. */
+export class ReorderCanvasReferencesDto implements ReorderCanvasReferencesInput {
+  @IsArray()
+  @ArrayMaxSize(MAX_CANVAS_REFERENCES)
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(MAX_CANVAS_REFERENCES - 1, { each: true })
+  order!: number[];
 }
 
 /** POST /api/image-canvases/:id/items/:itemId/save */

@@ -1,6 +1,12 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Put } from "@nestjs/common";
 import { CurrentUser } from "../auth/current-user.decorator.js";
-import { CanvasReferenceDto, CreateImageCanvasDto, ImageCanvasPatchDto, SaveCanvasDraftDto } from "./dto/image-canvas.dto.js";
+import {
+  CanvasReferenceDto,
+  CreateImageCanvasDto,
+  ImageCanvasPatchDto,
+  ReorderCanvasReferencesDto,
+  SaveCanvasDraftDto,
+} from "./dto/image-canvas.dto.js";
 import { ImageCanvasService } from "./image-canvas.service.js";
 
 /**
@@ -35,6 +41,12 @@ export class ImageCanvasController {
   @Delete(":id")
   remove(@CurrentUser() userId: string, @Param("id", ParseIntPipe) id: number) {
     return this.canvases.delete(userId, id);
+  }
+
+  // Объявлен до :slot-маршрутов: иначе "order" ушло бы в ParseIntPipe слота и дало 400.
+  @Put(":id/references/order")
+  reorderReferences(@CurrentUser() userId: string, @Param("id", ParseIntPipe) id: number, @Body() body: ReorderCanvasReferencesDto) {
+    return this.canvases.reorderReferences(userId, id, body.order);
   }
 
   @Get(":id/references/:slot")
