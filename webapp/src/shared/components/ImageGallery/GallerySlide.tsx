@@ -1,7 +1,7 @@
 import { Loader } from "@mantine/core";
 import { memo, useEffect, useRef } from "react";
 import { type ReactZoomPanPinchRef, TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
-import { doubleTapTarget } from "./zoomTarget";
+import { doubleTapTarget } from "./zoomPan";
 import styles from "./ImageGallery.module.css";
 
 const MAX_SCALE = 5;
@@ -48,18 +48,17 @@ export const GallerySlide = memo(function GallerySlide({ src, active, offset, on
       if (!zoom || !wrapper || !content) return;
       const rect = wrapper.getBoundingClientRect();
       const { positionX, positionY, scale } = zoom.instance.state;
-      const target = doubleTapTarget({
-        px: clientX - rect.left,
-        py: clientY - rect.top,
-        x: positionX,
-        y: positionY,
-        scale,
-        maxScale: MAX_SCALE,
-        wrapperW: wrapper.offsetWidth,
-        wrapperH: wrapper.offsetHeight,
-        contentW: content.offsetWidth,
-        contentH: content.offsetHeight,
-      });
+      const target = doubleTapTarget(
+        { x: positionX, y: positionY, scale },
+        { x: clientX - rect.left, y: clientY - rect.top },
+        {
+          stageW: wrapper.offsetWidth,
+          stageH: wrapper.offsetHeight,
+          contentW: content.offsetWidth,
+          contentH: content.offsetHeight,
+        },
+        MAX_SCALE,
+      );
       zoom.setTransform(target.x, target.y, target.scale, 250, "easeOut");
     };
     zoomToggleRef.current = toggle;
