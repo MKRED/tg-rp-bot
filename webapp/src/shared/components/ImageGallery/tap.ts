@@ -9,3 +9,11 @@ export const DOUBLE_TAP_MS = 300;
 export function isTap(dx: number, dy: number, durationMs: number): boolean {
   return Math.hypot(dx, dy) < TAP_MOVE_PX && durationMs < TAP_MAX_MS;
 }
+
+/** Второй тап двойного — не дальше этого от первого (палец попадает не в ту же точку). */
+const DOUBLE_TAP_RADIUS_PX = 40;
+
+/** Второй тап рядом с первым — пара складывается в двойной тап. */
+export function isNearTap(dx: number, dy: number): boolean {
+  return Math.hypot(dx, dy) < DOUBLE_TAP_RADIUS_PX;
+}

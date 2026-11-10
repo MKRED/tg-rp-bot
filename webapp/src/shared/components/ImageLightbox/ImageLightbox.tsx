@@ -1,5 +1,5 @@
 import { ActionIcon, Loader } from "@mantine/core";
-import { motion } from "framer-motion";
+import { motion, useIsPresent } from "framer-motion";
 import { Send, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -51,6 +51,8 @@ export function ImageLightbox({ src, onSend, onClose }: ImageLightboxProps) {
   // включать ограничение границами/инерцию только в приближённом состоянии. State, а не
   // ref: от него зависят пропы limitToBounds / velocityAnimation.
   const [zoomed, setZoomed] = useState(false);
+  // Закрытый просмотр ещё гаснет поверх страницы — касания в это время пропускаем к ней.
+  const isPresent = useIsPresent();
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -110,6 +112,7 @@ export function ImageLightbox({ src, onSend, onClose }: ImageLightboxProps) {
     <motion.div
       className={styles.root}
       onClick={handleBackdropClick}
+      style={{ pointerEvents: isPresent ? undefined : "none" }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

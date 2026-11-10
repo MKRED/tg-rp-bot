@@ -1,15 +1,15 @@
 import { ActionIcon, Text } from "@mantine/core";
-import { type AnimationPlaybackControls, animate, motion, useMotionValue } from "framer-motion";
+import { type AnimationPlaybackControls, animate, motion, useIsPresent, useMotionValue } from "framer-motion";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal, flushSync } from "react-dom";
 import { useOverlayBack } from "../../hooks/useOverlayBack";
 import { suspendVerticalSwipes } from "../../telegram/verticalSwipes";
 import { MOTION_TRANSITION } from "../../theme/motion";
-import { GallerySlide } from "./GallerySlide";
+import { GallerySlide, type ZoomToggle } from "./GallerySlide";
 import { GalleryStrip } from "./GalleryStrip";
 import type { GalleryItem } from "./types";
-import { useSingleTap } from "./useSingleTap";
+import { useTaps } from "./useTaps";
 import { useSwipeTrack } from "./useSwipeTrack";
 import styles from "./ImageGallery.module.css";
 
@@ -99,9 +99,14 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
     onRelease: settle,
   });
 
-  // Одиночный тап прячет шапку, миниатюры и стрелки — посмотреть на картинку без них.
+  // Одиночный тап прячет шапку, миниатюры и стрелки — посмотреть на картинку без них; двойной — зум
+  // текущего слайда к точке тапа.
   const [chrome, setChrome] = useState(true);
-  const tap = useSingleTap(() => setChrome((v) => !v));
+  const zoomToggle = useRef<ZoomToggle | null>(null);
+  const tap = useTaps({
+    onTap: () => setChrome((v) => !v),
+    onDoubleTap: (cx, cy) => zoomToggle.current?.(cx, cy),
+  });
 
   // Обработчик клавиш живёт всю галерею, а текущая картинка меняется — берём свежий go.
   const goRef = useRef(go);
@@ -122,6 +127,10 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
   useOverlayBack(onClose);
   useEffect(() => suspendVerticalSwipes(), []);
 
+  // Закрытая галерея ещё ~200 мс гаснет поверх страницы — касания в это время идут странице, а не ей
+  // (иначе тап по кнопке холста сразу после закрытия попадал в гаснущий «×» и терялся).
+  const isPresent = useIsPresent();
+
   const item = items[current];
 
   return createPortal(
@@ -129,6 +138,10 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
       className={styles.root}
       data-strip={items.length > 1}
       data-chrome={chrome}
+      style={{ pointerEvents: isPresent ? undefined : "none" }}
+      // Любое касание (в т.ч. «×» и миниатюр) снимает ждущий одиночный тап: иначе он прятал шапку прямо
+      // под пальцем, и нажатие «×» терялось.
+      onPointerDownCapture={tap.cancelPending}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -173,6 +186,7 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
                   active={i === current}
                   offset={i - current}
                   onZoomChange={setZoomed}
+                  zoomToggleRef={zoomToggle}
                 />
               )
             );
