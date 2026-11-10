@@ -30,11 +30,13 @@ export function useSwipeTrack({ x, enabled, hasPrev, hasNext, width, onGrab, onR
   const active = useRef<{ id: number; startX: number; samples: { x: number; t: number }[]; cancel: () => void } | null>(null);
 
   const onPointerDown = (e: React.PointerEvent) => {
-    // Второй палец — это пинч: протяжку отменяем, ленту возвращаем.
-    if (active.current) {
-      active.current.cancel();
+    const stale = active.current;
+    if (stale) {
+      stale.cancel();
       opts.current.onRelease(0, 0);
-      return;
+      // Второй палец — это пинч: протяжку отменили, ленту возвращаем. Тот же указатель (или снова мышь) —
+      // его отпускание потерялось (кнопку отпустили за окном): старую протяжку сняли, начинаем новую.
+      if (stale.id !== e.pointerId && e.pointerType !== "mouse") return;
     }
     if (!opts.current.enabled || (e.pointerType === "mouse" && e.button !== 0)) return;
 

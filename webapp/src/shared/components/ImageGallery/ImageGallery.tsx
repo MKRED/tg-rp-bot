@@ -6,19 +6,21 @@ import { createPortal, flushSync } from "react-dom";
 import { useOverlayBack } from "../../hooks/useOverlayBack";
 import { suspendVerticalSwipes } from "../../telegram/verticalSwipes";
 import { MOTION_TRANSITION } from "../../theme/motion";
-import { GallerySlide, type ZoomToggle } from "./GallerySlide";
+import { GallerySlide } from "./GallerySlide";
 import { GalleryStrip } from "./GalleryStrip";
 import type { GalleryItem } from "./types";
 import { useTaps } from "./useTaps";
 import { useSwipeTrack } from "./useSwipeTrack";
+import { type ZoomHandle, useZoomGestures } from "./zoomPan";
 import styles from "./ImageGallery.module.css";
 
 /**
  * Доводка ленты после отпускания: пружина стартует со скоростью пальца и тормозит без перелёта
  * (затухание чуть выше критического 2·√stiffness). Фиксированная длительность давала рывок на стыке:
- * медленно отпущенная лента вдруг срывалась, а брошенная — притормаживала.
+ * медленно отпущенная лента вдруг срывалась, а брошенная — притормаживала. Жёсткость и порог остановки —
+ * чтобы последние пиксели не доползали заметно долго (~0.5 с на ширину экрана).
  */
-const SETTLE_SPRING = { type: "spring", stiffness: 170, damping: 27, restDelta: 0.5, restSpeed: 20 } as const;
+const SETTLE_SPRING = { type: "spring", stiffness: 260, damping: 33, restDelta: 1, restSpeed: 40 } as const;
 
 interface ImageGalleryProps {
   items: GalleryItem[];
@@ -44,12 +46,18 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
   const stageRef = useRef<HTMLDivElement>(null);
   // Идущая доводка ленты и куда она ведёт (−1/+1 — к соседней, 0 — на место).
   const settling = useRef<{ controls: AnimationPlaybackControls; step: -1 | 0 | 1 } | null>(null);
+  // Куда едет доводка — для «2 из 5» и подсветки миниатюры: они переключаются сразу, как лента поехала к
+  // соседней, а не когда она доползёт (иначе картинка уже на месте, а номер ещё старый).
+  const [heading, setHeading] = useState<-1 | 0 | 1>(0);
 
   const hasPrev = current > 0;
   const hasNext = current < items.length - 1;
 
   const select = (next: number) => {
-    flushSync(() => setShown(next));
+    flushSync(() => {
+      setShown(next);
+      setHeading(0);
+    });
     x.set(0);
     setZoomed(false);
     onIndexChange(next);
@@ -63,6 +71,7 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
     const target = current + step;
     const controls = animate(x, -step * stageWidth(), { ...SETTLE_SPRING, velocity });
     settling.current = { controls, step };
+    setHeading(step);
     void controls.then(() => {
       // Доводку перехватили пальцем или сменили картинку — переключаться уже не нам.
       if (settling.current?.controls !== controls) return;
@@ -78,6 +87,7 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
     if (!pending) return;
     pending.controls.stop();
     settling.current = null;
+    setHeading(0);
     if (pending.step === 0) return;
     const offset = x.get();
     select(current + pending.step);
@@ -102,10 +112,12 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
   // Одиночный тап прячет шапку, миниатюры и стрелки — посмотреть на картинку без них; двойной — зум
   // текущего слайда к точке тапа.
   const [chrome, setChrome] = useState(true);
-  const zoomToggle = useRef<ZoomToggle | null>(null);
+  const zoomRef = useRef<ZoomHandle | null>(null);
+  // Пинч, перетаскивание приближенной картинки и колесо — у текущего слайда.
+  const zoomGestures = useZoomGestures(zoomRef, stageRef);
   const tap = useTaps({
     onTap: () => setChrome((v) => !v),
-    onDoubleTap: (cx, cy) => zoomToggle.current?.(cx, cy),
+    onDoubleTap: (cx, cy) => zoomRef.current?.toggleAt(zoomGestures.toStage(cx, cy)),
   });
 
   // Обработчик клавиш живёт всю галерею, а текущая картинка меняется — берём свежий go.
@@ -131,7 +143,9 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
   // (иначе тап по кнопке холста сразу после закрытия попадал в гаснущий «×» и терялся).
   const isPresent = useIsPresent();
 
-  const item = items[current];
+  // Номер, подпись и подсветка миниатюры — картинки, к которой едет лента.
+  const target = Math.min(Math.max(current + heading, 0), items.length - 1);
+  const item = items[target];
 
   return createPortal(
     <motion.div
@@ -151,7 +165,7 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
         <span />
         <div className={styles.title}>
           <Text fw={600} c="white">
-            {current + 1} из {items.length}
+            {target + 1} из {items.length}
           </Text>
           {item?.caption && (
             <Text size="xs" c="gray.5" truncate>
@@ -168,8 +182,12 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
         ref={stageRef}
         className={styles.stage}
         onPointerDown={(e) => {
+          // Мышь (в отличие от пальца) не захватывается неявно: отпустили кнопку над шапкой или за окном —
+          // сцена об этом не узнаёт, и жест «висит» (двойной клик и листание переставали работать).
+          if (e.pointerType === "mouse") e.currentTarget.setPointerCapture(e.pointerId);
           tap.onPointerDown(e);
           onPointerDown(e);
+          zoomGestures.onPointerDown(e);
         }}
         onPointerUp={tap.onPointerUp}
         onPointerCancel={tap.onPointerCancel}
@@ -186,7 +204,7 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
                   active={i === current}
                   offset={i - current}
                   onZoomChange={setZoomed}
-                  zoomToggleRef={zoomToggle}
+                  zoomRef={zoomRef}
                 />
               )
             );
@@ -205,7 +223,7 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
         )}
       </div>
 
-      {items.length > 1 && <GalleryStrip items={items} index={current} onSelect={(i) => {
+      {items.length > 1 && <GalleryStrip items={items} index={target} onSelect={(i) => {
             settling.current?.controls.stop();
             settling.current = null;
             select(i);

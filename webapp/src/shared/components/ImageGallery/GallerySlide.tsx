@@ -1,14 +1,10 @@
 import { Loader } from "@mantine/core";
+import { motion } from "framer-motion";
 import { memo, useEffect, useRef } from "react";
-import { type ReactZoomPanPinchRef, TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
-import { doubleTapTarget } from "./zoomPan";
+import { type ZoomHandle, useZoomPan } from "./zoomPan";
 import styles from "./ImageGallery.module.css";
 
 const MAX_SCALE = 5;
-/** Двойной тап у библиотеки выключен — он свой (useTaps), см. там почему. */
-const NO_DOUBLE_CLICK = { disabled: true } as const;
-/** Двойной тап зумит к точке под пальцем (clientX/Y) или возвращает к 1×. */
-export type ZoomToggle = (clientX: number, clientY: number) => void;
 
 interface GallerySlideProps {
   src?: string;
@@ -17,82 +13,49 @@ interface GallerySlideProps {
   /** Сдвиг от текущего слайда: −1 — слева, 0 — на экране, 1 — справа. */
   offset: number;
   onZoomChange: (zoomed: boolean) => void;
-  /** Сюда текущий слайд кладёт переключатель зума для двойного тапа галереи. */
-  zoomToggleRef: React.RefObject<ZoomToggle | null>;
+  /** Сюда текущий слайд кладёт управление своим зумом — им пользуются жесты и двойной тап галереи. */
+  zoomRef: React.RefObject<ZoomHandle | null>;
 }
 
 /**
- * Слайд ленты. Обёртка зума — на весь экран, а внутри — элемент ровно по размеру картинки: так
- * centerZoomedOut держит меньшую сторону по центру, а приближенную картинку не пускает дальше краёв
- * экрана (если бы элемент был во весь экран, его чёрные поля вокруг картинки утягивались бы в кадр).
- * Обёртка есть у каждого слайда, включена только у текущего — при листании React переносит тот же
- * элемент (ключ — картинка), и соседняя не мигает. Пропсы обёртки не меняются от зума: смена настроек
- * посреди анимации двойного тапа обрывала её.
+ * Слайд ленты. Картинку вписывает CSS (во весь экран по центру, панели лежат поверх), зум и
+ * сдвиг — transform поверх раскладки (useZoomPan). Слайды — с ключом по картинке:
+ * при листании React переносит тот же элемент, и соседняя не мигает.
  */
-export const GallerySlide = memo(function GallerySlide({ src, active, offset, onZoomChange, zoomToggleRef }: GallerySlideProps) {
-  const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
+export const GallerySlide = memo(function GallerySlide({ src, active, offset, onZoomChange, zoomRef }: GallerySlideProps) {
   const activeRef = useRef(active);
   activeRef.current = active;
+  const zoom = useZoomPan({
+    maxScale: MAX_SCALE,
+    onZoomChange: (zoomed) => {
+      if (activeRef.current) onZoomChange(zoomed);
+    },
+  });
+  const { handle } = zoom;
 
-  // Ушли со слайда — возвращаем к 1× по центру, чтобы вернуться к нему целиком.
+  // Текущий слайд отдаёт галерее управление зумом; ушли с него — к 1×, чтобы вернуться к нему целиком.
   useEffect(() => {
-    if (!active) transformRef.current?.centerView(1, 0);
-  }, [active]);
-
-  useEffect(() => {
-    if (!active) return;
-    const toggle: ZoomToggle = (clientX, clientY) => {
-      const zoom = transformRef.current;
-      const wrapper = zoom?.instance.wrapperComponent;
-      const content = zoom?.instance.contentComponent;
-      if (!zoom || !wrapper || !content) return;
-      const rect = wrapper.getBoundingClientRect();
-      const { positionX, positionY, scale } = zoom.instance.state;
-      const target = doubleTapTarget(
-        { x: positionX, y: positionY, scale },
-        { x: clientX - rect.left, y: clientY - rect.top },
-        {
-          stageW: wrapper.offsetWidth,
-          stageH: wrapper.offsetHeight,
-          contentW: content.offsetWidth,
-          contentH: content.offsetHeight,
-        },
-        MAX_SCALE,
-      );
-      zoom.setTransform(target.x, target.y, target.scale, 250, "easeOut");
-    };
-    zoomToggleRef.current = toggle;
+    if (!active) {
+      handle.reset();
+      return;
+    }
+    zoomRef.current = handle;
     return () => {
-      if (zoomToggleRef.current === toggle) zoomToggleRef.current = null;
+      if (zoomRef.current === handle) zoomRef.current = null;
     };
-  }, [active, zoomToggleRef]);
+  }, [active, handle, zoomRef]);
+
+  // Поворот экрана меняет раскладку под картинкой — приближение по старым размерам уже не к месту.
+  useEffect(() => {
+    const onResize = () => handle.reset();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [handle]);
 
   return (
     <div className={styles.slide} style={{ left: `${offset * 100}%` }}>
       {src ? (
-        <TransformWrapper
-          ref={transformRef}
-          disabled={!active}
-          minScale={1}
-          maxScale={MAX_SCALE}
-          centerOnInit
-          centerZoomedOut
-          doubleClick={NO_DOUBLE_CLICK}
-          onTransform={(_ref, state) => {
-            if (activeRef.current) onZoomChange(state.scale > 1.01);
-          }}
-        >
-          <TransformComponent wrapperClass={styles.zoomArea}>
-            <img
-              className={styles.image}
-              src={src}
-              alt=""
-              draggable={false}
-              // Размер элемента появляется только после загрузки — центрируем по нему.
-              onLoad={() => transformRef.current?.centerView(1, 0)}
-            />
-          </TransformComponent>
-        </TransformWrapper>
+        <motion.img ref={zoom.imgRef} className={styles.image} src={src} alt="" draggable={false} style={zoom.style} />
       ) : (
         <Loader color="white" />
       )}

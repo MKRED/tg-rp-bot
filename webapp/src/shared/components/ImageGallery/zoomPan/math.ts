@@ -72,6 +72,13 @@ export function rubberBand(over: number, size: number): number {
   return Math.sign(over) * ((abs * RUBBER_K * size) / (size + RUBBER_K * abs));
 }
 
+/** Обратная к rubberBand: какой сдвиг пальца дал видимый заход за край `shown`. */
+export function unrubberBand(shown: number, size: number): number {
+  if (size <= 0) return 0;
+  const abs = Math.min(Math.abs(shown), size * 0.999);
+  return Math.sign(shown) * ((abs * size) / (RUBBER_K * (size - abs)));
+}
+
 /** Сдвиг по оси при перетаскивании: внутри границ — как есть, за ними — с резинкой. */
 export function rubberAxis(pos: number, size: number, stage: number): number {
   const [min, max] = axisBounds(size, stage);
@@ -89,6 +96,27 @@ export function rubberTransform(t: Transform, g: Geometry): Transform {
   };
 }
 
+/** Обратная к rubberAxis: «сырой» сдвиг, который после резинки даёт видимый `pos`. */
+export function unrubberAxis(pos: number, size: number, stage: number): number {
+  const [min, max] = axisBounds(size, stage);
+  if (pos > max) return max + unrubberBand(pos - max, stage);
+  if (pos < min) return min + unrubberBand(pos - min, stage);
+  return pos;
+}
+
+/**
+ * Точка отсчёта жеста по видимому состоянию. Картинку могут взять, пока она за краем (пружинит обратно
+ * или после пинча): без обратного пересчёта резинка применилась бы второй раз, и на первом же движении
+ * картинка прыгнула бы к краю.
+ */
+export function unrubberTransform(t: Transform, g: Geometry): Transform {
+  return {
+    x: unrubberAxis(t.x, g.contentW * t.scale, g.stageW),
+    y: unrubberAxis(t.y, g.contentH * t.scale, g.stageH),
+    scale: t.scale,
+  };
+}
+
 /** Сколько горизонтального сдвига не помещается в края: >0 — картинку тянут вправо за левый край. */
 export function panOverflow(t: Transform, g: Geometry): number {
   const [min, max] = axisBounds(g.contentW * t.scale, g.stageW);
@@ -101,6 +129,13 @@ export function panOverflow(t: Transform, g: Geometry): number {
 export function softLimitScale(scale: number, min: number, max: number): number {
   if (scale > max) return max * (scale / max) ** SCALE_RESISTANCE;
   if (scale < min) return min * (scale / min) ** SCALE_RESISTANCE;
+  return scale;
+}
+
+/** Обратная к softLimitScale: «сырой» масштаб пальцев, который дал видимый `scale`. */
+export function unsoftLimitScale(scale: number, min: number, max: number): number {
+  if (scale > max) return max * (scale / max) ** (1 / SCALE_RESISTANCE);
+  if (scale < min) return min * (scale / min) ** (1 / SCALE_RESISTANCE);
   return scale;
 }
 

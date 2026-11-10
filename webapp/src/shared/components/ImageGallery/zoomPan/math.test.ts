@@ -11,6 +11,9 @@ import {
   rubberAxis,
   rubberBand,
   softLimitScale,
+  unrubberAxis,
+  unrubberTransform,
+  unsoftLimitScale,
   zoomAt,
 } from "./math";
 
@@ -57,6 +60,24 @@ describe("резинка", () => {
     expect(rubberAxis(-300, 1200, 400)).toBe(-300);
     expect(rubberAxis(100, 1200, 400)).toBeCloseTo(rubberBand(100, 400));
     expect(rubberAxis(-900, 1200, 400)).toBeCloseTo(-800 + rubberBand(-100, 400));
+  });
+});
+
+describe("обратные к резинке и пределу масштаба", () => {
+  it("взятая за краем картинка не прыгает: резинка(обратная(p)) = p", () => {
+    for (const p of [-1100, -900, -300, 0, 60, 250]) {
+      expect(rubberAxis(unrubberAxis(p, 1200, 400), 1200, 400)).toBeCloseTo(p, 6);
+    }
+  });
+
+  it("внутри границ сдвиг не меняется", () => {
+    expect(unrubberTransform({ x: -300, y: 100, scale: 3 }, g)).toEqual({ x: -300, y: 100, scale: 3 });
+  });
+
+  it("поджатый пределом масштаб восстанавливается в «сырой»", () => {
+    for (const s of [0.6, 0.9, 1, 3, 5.2, 6]) {
+      expect(softLimitScale(unsoftLimitScale(s, 1, 5), 1, 5)).toBeCloseTo(s, 6);
+    }
   });
 });
 

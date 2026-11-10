@@ -9,14 +9,13 @@ interface TapHandlers {
 }
 
 /**
- * Одиночный и двойной тап по полю картинки — одним окном (DOUBLE_TAP_MS). Двойной тап свой, а не
- * библиотеки зума: у той окно 200 мс между касаниями (тапы через 200–300 мс не давали ничего — ни зума,
- * ни панелей), а её зум обрывал эмулированный mousedown, который браузер шлёт после касания.
- * Касание вторым пальцем (пинч) тапом не считается.
+ * Одиночный и двойной тап по полю картинки — одним окном (DOUBLE_TAP_MS), чтобы одиночный не срабатывал
+ * вместе с двойным. Касание вторым пальцем (пинч) тапом не считается.
  */
 export function useTaps({ onTap, onDoubleTap }: TapHandlers) {
   const down = useRef<{ x: number; y: number; t: number; id: number } | null>(null);
-  const pointers = useRef(0);
+  // Пальцы на сцене — по id, а не счётчиком: потерянное отпускание (тот же id нажат снова) не копится.
+  const pointers = useRef(new Set<number>());
   const multi = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const lastTap = useRef<{ t: number; x: number; y: number } | null>(null);
@@ -26,14 +25,16 @@ export function useTaps({ onTap, onDoubleTap }: TapHandlers) {
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const onPointerDown = (e: React.PointerEvent) => {
-    // Без этого после касания браузер шлёт эмулированные mousedown/mouseup, а библиотека зума на mousedown
-    // останавливает идущую анимацию — зум двойным тапом обрывался на старте. click при этом остаётся.
+    // Без эмулированных mousedown/mouseup после касания (click при этом остаётся): жестам они не нужны,
+    // а фокус и выделение от них на сцене только мешают.
     if (e.pointerType !== "mouse") e.preventDefault();
     // Новое касание в окне двойного тапа: ждущий одиночный тап снимаем сразу — иначе он сработал бы
     // до отпускания второго (панели мигнули бы вместе с зумом). Не тап получился — одиночного тоже нет.
     clearTimeout(timer.current);
-    pointers.current += 1;
-    if (pointers.current > 1) multi.current = true;
+    // Этот же указатель уже «нажат» — его отпускание потерялось: начинаем с чистого листа.
+    if (pointers.current.has(e.pointerId)) pointers.current.clear();
+    pointers.current.add(e.pointerId);
+    if (pointers.current.size > 1) multi.current = true;
     else {
       multi.current = false;
       down.current = { x: e.clientX, y: e.clientY, t: e.timeStamp, id: e.pointerId };
@@ -41,7 +42,7 @@ export function useTaps({ onTap, onDoubleTap }: TapHandlers) {
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
-    pointers.current = Math.max(0, pointers.current - 1);
+    pointers.current.delete(e.pointerId);
     const start = down.current;
     if (!start || start.id !== e.pointerId) return;
     down.current = null;
@@ -53,8 +54,8 @@ export function useTaps({ onTap, onDoubleTap }: TapHandlers) {
     if (prev && start.t - prev.t < DOUBLE_TAP_MS && isNearTap(e.clientX - prev.x, e.clientY - prev.y)) {
       lastTap.current = null;
       const { clientX, clientY } = e;
-      // Зум — после touchend/mouseup этого же касания: на них библиотека завершает протяжку и, если
-      // позиция успела сдвинуться, выравнивает картинку своей анимацией, обрывая нашу.
+      // Зум — после того как жесты сцены обработают это же отпускание: в зуме оно завершает перетаскивание
+      // (end() запускает доводку), и зум двойного тапа должен её сменить, а не наоборот.
       timer.current = setTimeout(() => handlers.current.onDoubleTap(clientX, clientY), 0);
       return;
     }
@@ -62,8 +63,8 @@ export function useTaps({ onTap, onDoubleTap }: TapHandlers) {
     timer.current = setTimeout(() => handlers.current.onTap(), DOUBLE_TAP_MS);
   };
 
-  const onPointerCancel = () => {
-    pointers.current = Math.max(0, pointers.current - 1);
+  const onPointerCancel = (e: React.PointerEvent) => {
+    pointers.current.delete(e.pointerId);
     down.current = null;
   };
 
