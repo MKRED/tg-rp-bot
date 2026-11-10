@@ -2,18 +2,17 @@ import { Badge, Button, Group, Loader, Stack, Text, UnstyledButton } from "@mant
 import { AnimatePresence } from "framer-motion";
 import { Download, Images, Repeat, Send, Trash2, Wand2 } from "lucide-react";
 import { useState } from "react";
-import { imageCanvasPath } from "../../../../app/routes";
 import { sendPhotoToChat } from "../../../../shared/api/sendPhoto";
 import { EmptyState } from "../../../../shared/components/EmptyState";
 import { ImageLightbox } from "../../../../shared/components/ImageLightbox";
 import { ResponsiveSheet } from "../../../../shared/components/ResponsiveSheet";
+import { downloadFile, imageFile, makeShareable } from "../../../../shared/image/share";
 import { confirmAction } from "../../../../shared/telegram/confirm";
 import { isInsideTelegram } from "../../../../shared/telegram/initData";
 import { useToast } from "../../../../shared/toast";
 import { getItemImage } from "../../api/image-canvas-api";
 import type { CanvasState } from "../../hooks/useCanvas";
 import { useRemoteImage } from "../../hooks/useRemoteImage";
-import { downloadDataUrl, makeShareable } from "../../lib/canvasImages";
 import { MAX_CANVAS_VARIANTS, type CanvasVariant, type ImageCanvas } from "../../types/imageCanvas";
 import styles from "./CanvasWorkspace.module.css";
 
@@ -102,10 +101,11 @@ function VariantDetails({ canvas, variant, actions, onClose, onToCanvas, onRepea
     setSharing(true);
     try {
       if (inTelegram) {
-        await sendPhotoToChat(await makeShareable(image.src), { label: canvas.name, deepLink: imageCanvasPath(canvas.id) });
-        showToast({ type: "success", message: "Отправлено в чат с ботом" });
+        await sendPhotoToChat(await makeShareable(image.src));
+        showToast({ type: "success", message: "Отправлено в чат" });
       } else {
-        downloadDataUrl(image.src, `${canvas.name}-${variant.id}.png`);
+        const file = await imageFile(image.src, `${canvas.name}-${variant.id}`);
+        downloadFile(file, file.name);
       }
     } catch (err) {
       console.error("Failed to share canvas variant", err);

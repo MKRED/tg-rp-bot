@@ -13,7 +13,7 @@ const newService = () =>
   new MeService({ dataUrl: media.getProfilePhotoDataUrl } as unknown as A[0], { send: media.sendLightboxPhoto } as unknown as A[1]);
 const logger = (await import("../logger.js")).default;
 
-const REQ = { image: "data:image/jpeg;base64,AAAA", label: "Алиса", deepLink: "/characters/1" };
+const REQ = { image: "data:image/jpeg;base64,AAAA" };
 
 describe("MeService", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -32,10 +32,10 @@ describe("MeService", () => {
     expect(logger.error).toHaveBeenCalled();
   });
 
-  it("отправка фото: image уходит как dataUrl в личку по Telegram id", async () => {
+  it("отправка фото: image уходит в личку по Telegram id", async () => {
     media.sendLightboxPhoto.mockResolvedValue(undefined);
     await newService().sendPhoto(5, REQ);
-    expect(media.sendLightboxPhoto).toHaveBeenCalledWith(5, { dataUrl: REQ.image, label: "Алиса", deepLink: "/characters/1" });
+    expect(media.sendLightboxPhoto).toHaveBeenCalledWith(5, REQ.image);
   });
 
   it("отправка фото: сбой Bot API — 502 { error: send_failed }", async () => {

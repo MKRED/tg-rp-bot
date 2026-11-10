@@ -23,18 +23,3 @@ export async function prepareReference(file: File): Promise<{ image: string; thu
 export function makeThumb(dataUrl: string): Promise<string> {
   return buildScaledImage(dataUrl, CANVAS_THUMB_MAX_SIDE, THUMB_QUALITY);
 }
-
-/** Копия для отправки в чат с ботом: PNG из ComfyUI бывает больше лимита фото — шлём JPEG. */
-export function makeShareable(dataUrl: string): Promise<string> {
-  return buildScaledImage(dataUrl, 2048, 0.92);
-}
-
-/** Скачать картинку в браузере (в Telegram webview не работает — там отправка в чат). */
-export function downloadDataUrl(dataUrl: string, filename: string): void {
-  const link = document.createElement("a");
-  link.href = dataUrl;
-  link.download = filename;
-  document.body.append(link);
-  link.click();
-  link.remove();
-}

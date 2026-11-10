@@ -1,6 +1,6 @@
 import { Loader } from "@mantine/core";
 import { motion } from "framer-motion";
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { type ZoomHandle, useZoomPan } from "./zoomPan";
 import styles from "./ImageGallery.module.css";
 
@@ -20,7 +20,8 @@ interface GallerySlideProps {
 /**
  * Слайд ленты. Картинку вписывает CSS (во весь экран по центру, панели лежат поверх), зум и
  * сдвиг — transform поверх раскладки (useZoomPan). Слайды — с ключом по картинке:
- * при листании React переносит тот же элемент, и соседняя не мигает.
+ * при листании React переносит тот же элемент, и соседняя не мигает. Пока нет src или картинка ещё не
+ * декодирована — спиннер, затем картинка плавно проявляется.
  */
 export const GallerySlide = memo(function GallerySlide({ src, active, offset, onZoomChange, zoomRef }: GallerySlideProps) {
   const activeRef = useRef(active);
@@ -52,12 +53,33 @@ export const GallerySlide = memo(function GallerySlide({ src, active, offset, on
     return () => window.removeEventListener("resize", onResize);
   }, [handle]);
 
+  // Загружена ли картинка текущего src. Из кэша (data URL) onLoad мог прийти раньше обработчика —
+  // проверяем complete после рендера.
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
+  const loaded = !!src && loadedSrc === src;
+  useEffect(() => {
+    const img = zoom.imgRef.current;
+    if (src && img?.complete && img.naturalWidth > 0) setLoadedSrc(src);
+  }, [src, zoom.imgRef]);
+
   return (
     <div className={styles.slide} style={{ left: `${offset * 100}%` }}>
-      {src ? (
-        <motion.img ref={zoom.imgRef} className={styles.image} src={src} alt="" draggable={false} style={zoom.style} />
-      ) : (
-        <Loader color="white" />
+      {src && (
+        <motion.img
+          ref={zoom.imgRef}
+          className={styles.image}
+          data-loaded={loaded}
+          src={src}
+          alt=""
+          draggable={false}
+          style={zoom.style}
+          onLoad={() => setLoadedSrc(src)}
+        />
+      )}
+      {!loaded && (
+        <div className={styles.slideLoader}>
+          <Loader color="white" />
+        </div>
       )}
     </div>
   );

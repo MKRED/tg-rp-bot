@@ -99,8 +99,8 @@ bot/src/
                   общая для ручного POST /compact и авто-сжатия; story-compaction-plan — чистый план)
   me/           — /api/me: профиль из initData, фото профиля (GET /photo) и фото из лайтбокса себе в
                   чат (POST /send-photo) — controller / service / dto/; media/ — profile-photo (ProfilePhotoService:
-                  Bot API + кэш на час) и lightbox-photo (LightboxPhotoService: sendPhoto с web_app-кнопкой deep
-                  link и «Закрыть»); бот и прокси-агент — из telegram/ через DI
+                  Bot API + кэш на час) и lightbox-photo (LightboxPhotoService: sendPhoto без подписи, только
+                  с кнопкой «Закрыть»); бот и прокси-агент — из telegram/ через DI
   translate/    — POST /api/translate/text: безэнтитный батч-перевод абзацев (режим перевода
                   PromptEditorOverlay) — controller / service / dto/ (+ DTO перевода сообщений, общие для rp-chat/ и
                   narrator/); engine/ — движок перевода без Nest
@@ -235,8 +235,8 @@ lib/        — чистые хелперы и данные (форматтер�
   связана с роутером в `app/BackButtonBridge.tsx` — `navigate(parentPath(...))`, т.е. вверх по иерархии,
   а не по истории. Catch-all `*` → главная: на Telegram Web launch-параметры приходят в hash, и без
   редиректа роутер показал бы пустой экран.
-- **Deep-link из бота** (`app/deepLink.ts` + `main.tsx`): web_app-кнопка под фото из лайтбокса открывает
-  Mini App с `?dl=<путь>` (напр. `/characters/123`). `resolveDeepLink()` вызывается **до** `render()`
+- **Deep-link из бота** (`app/deepLink.ts` + `main.tsx`): web_app-кнопка под фото, отправленными в чат
+  раньше (новые уходят только с «Закрыть»), открывает Mini App с `?dl=<путь>` (напр. `/characters/123`). `resolveDeepLink()` вызывается **до** `render()`
   (после `initTelegram()`, который уже считал launch-данные из hash) и переписывает hash на маршрут —
   иначе catch-all успел бы увести на главную. Делать это в компоненте внутри роутера НЕЛЬЗЯ: эффект
   `<Navigate>` из catch-all в том же flush перебьёт переход.

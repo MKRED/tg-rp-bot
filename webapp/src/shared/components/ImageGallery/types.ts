@@ -5,6 +5,15 @@ export interface GalleryItem {
   src?: string;
   /** Миниатюра для полосы внизу; нет — полоса покажет полную картинку, когда та загрузится. */
   thumb?: string;
-  /** Подпись сверху («Черновик 1 · Qwen»); нет — «2 из 5». */
+  /** Подпись в шапке слева («Черновик 1 · Qwen»); нет — шапка без подписи. */
   caption?: string;
+}
+
+/** Пункт меню «⋮» в шапке просмотра. */
+export interface GalleryAction {
+  key: string;
+  label: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
 }

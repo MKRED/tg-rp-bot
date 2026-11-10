@@ -1,14 +1,17 @@
-import { ActionIcon, Text } from "@mantine/core";
+import { ActionIcon } from "@mantine/core";
 import { type AnimationPlaybackControls, animate, motion, useIsPresent, useMotionValue } from "framer-motion";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal, flushSync } from "react-dom";
 import { useOverlayBack } from "../../hooks/useOverlayBack";
 import { suspendVerticalSwipes } from "../../telegram/verticalSwipes";
 import { MOTION_TRANSITION } from "../../theme/motion";
+import { GalleryHeader } from "./GalleryHeader";
 import { GallerySlide } from "./GallerySlide";
 import { GalleryStrip } from "./GalleryStrip";
 import type { GalleryItem } from "./types";
+import { useGalleryKeys } from "./useGalleryKeys";
+import { useImageActions } from "./useImageActions";
 import { useTaps } from "./useTaps";
 import { useSwipeTrack } from "./useSwipeTrack";
 import { type ZoomHandle, useZoomGestures } from "./zoomPan";
@@ -31,10 +34,13 @@ interface ImageGalleryProps {
 }
 
 /**
- * Полноэкранная галерея как в галерее телефона: чёрный фон, сверху «2 из 5» и подпись, картинка едет за
- * пальцем и соседняя въезжает следом, снизу полоса миниатюр. Зум — пинч, двойной тап, колесо; в зуме палец
- * двигает картинку, а не ленту. Одиночный тап прячет и возвращает панели. На компьютере — стрелки по краям и клавиши ←/→. Закрытие — «×», Esc,
- * «Назад» (Telegram, системная на телефоне, браузер). Рендерится в body через portal; AnimatePresence в родителе даёт плавное закрытие.
+ * Полноэкранный просмотр картинок как в галерее телефона: чёрный фон, шапка как в просмотре фото Telegram
+ * («←», подпись, меню «⋮» с отправкой в чат или скачиванием, под ней «2 из 5»), картинка едет за пальцем
+ * и соседняя въезжает следом, снизу полоса миниатюр. Одна картинка — без счётчика, полосы и листания.
+ * Зум — пинч, двойной тап, колесо; в зуме палец двигает картинку, а не ленту. Одиночный тап прячет и
+ * возвращает панели. На компьютере — стрелки по краям и клавиши ←/→. Закрытие — «←», Esc, «Назад»
+ * (Telegram, системная на телефоне, браузер). Рендерится в body через portal; AnimatePresence в
+ * родителе даёт плавное закрытие.
  */
 export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGalleryProps) {
   // Свой индекс: смену слайда после анимации ленты нужно применить в тот же кадр, что и сброс сдвига.
@@ -120,19 +126,11 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
     onDoubleTap: (cx, cy) => zoomRef.current?.toggleAt(zoomGestures.toStage(cx, cy)),
   });
 
-  // Обработчик клавиш живёт всю галерею, а текущая картинка меняется — берём свежий go.
-  const goRef = useRef(go);
-  goRef.current = go;
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-      if (e.key === "ArrowLeft") goRef.current(-1);
-      if (e.key === "ArrowRight") goRef.current(1);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  // Меню «⋮» открыто: тап по картинке только закрывает меню, панели не прячет; клавиши — useGalleryKeys.
+  const [menuOpened, setMenuOpened] = useState(false);
+  const menuOpen = useRef(false);
+  menuOpen.current = menuOpened;
+  useGalleryKeys({ menuOpen: menuOpened, closeMenu: () => setMenuOpened(false), go, onClose });
 
   // «Назад» (Telegram, системная на телефоне, браузер) закрывает галерею, а свайп вниз не сворачивает
   // Mini App посреди листания.
@@ -140,12 +138,19 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
   useEffect(() => suspendVerticalSwipes(), []);
 
   // Закрытая галерея ещё ~200 мс гаснет поверх страницы — касания в это время идут странице, а не ей
-  // (иначе тап по кнопке холста сразу после закрытия попадал в гаснущий «×» и терялся).
+  // (иначе тап по кнопке холста сразу после закрытия попадал в гаснущую «←» и терялся).
   const isPresent = useIsPresent();
+
+  const selectFromStrip = (i: number) => {
+    settling.current?.controls.stop();
+    settling.current = null;
+    select(i);
+  };
 
   // Номер, подпись и подсветка миниатюры — картинки, к которой едет лента.
   const target = Math.min(Math.max(current + heading, 0), items.length - 1);
   const item = items[target];
+  const imageActions = useImageActions(item?.src);
 
   return createPortal(
     <motion.div
@@ -153,30 +158,27 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
       data-strip={items.length > 1}
       data-chrome={chrome}
       style={{ pointerEvents: isPresent ? undefined : "none" }}
-      // Любое касание (в т.ч. «×» и миниатюр) снимает ждущий одиночный тап: иначе он прятал шапку прямо
-      // под пальцем, и нажатие «×» терялось.
+      // Любое касание (в т.ч. «←» и миниатюр) снимает ждущий одиночный тап: иначе он прятал шапку прямо
+      // под пальцем, и нажатие «←» терялось.
       onPointerDownCapture={tap.cancelPending}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={MOTION_TRANSITION}
     >
-      <div className={styles.header}>
-        <span />
-        <div className={styles.title}>
-          <Text fw={600} c="white">
-            {target + 1} из {items.length}
-          </Text>
-          {item?.caption && (
-            <Text size="xs" c="gray.5" truncate>
-              {item.caption}
-            </Text>
-          )}
-        </div>
-        <ActionIcon size={44} radius="xl" variant="subtle" color="gray.0" aria-label="Закрыть" onClick={onClose}>
-          <X size={24} />
-        </ActionIcon>
-      </div>
+      <GalleryHeader
+        caption={item?.caption}
+        counter={items.length > 1 ? `${target + 1} из ${items.length}` : undefined}
+        actions={imageActions.actions}
+        busy={imageActions.busy}
+        menuOpened={menuOpened}
+        onMenuChange={(opened) => {
+          menuOpen.current = opened;
+          setMenuOpened(opened);
+          if (opened) imageActions.prepare();
+        }}
+        onClose={onClose}
+      />
 
       <div
         ref={stageRef}
@@ -185,7 +187,7 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
           // Мышь (в отличие от пальца) не захватывается неявно: отпустили кнопку над шапкой или за окном —
           // сцена об этом не узнаёт, и жест «висит» (двойной клик и листание переставали работать).
           if (e.pointerType === "mouse") e.currentTarget.setPointerCapture(e.pointerId);
-          tap.onPointerDown(e);
+          if (!menuOpen.current) tap.onPointerDown(e);
           onPointerDown(e);
           zoomGestures.onPointerDown(e);
         }}
@@ -223,11 +225,7 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
         )}
       </div>
 
-      {items.length > 1 && <GalleryStrip items={items} index={target} onSelect={(i) => {
-            settling.current?.controls.stop();
-            settling.current = null;
-            select(i);
-          }} />}
+      {items.length > 1 && <GalleryStrip items={items} index={target} onSelect={selectFromStrip} />}
     </motion.div>,
     document.body,
   );

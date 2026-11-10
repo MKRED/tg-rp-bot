@@ -1,7 +1,5 @@
-import { DEEP_LINK_PATH_RE, MAX_PHOTO_BUTTON_LABEL, type SendPhotoRequest } from "@tg-rp-bot/shared";
-import { Transform } from "class-transformer";
-import { IsNotEmpty, Matches, ValidateBy } from "class-validator";
-import { MAX_IMAGE_FULL_CHARS } from "../../common/image-limits.js";
+import { MAX_SEND_PHOTO_CHARS, type SendPhotoRequest } from "@tg-rp-bot/shared";
+import { ValidateBy } from "class-validator";
 
 const isDataImageUrl = (v: unknown): v is string => typeof v === "string" && v.startsWith("data:image/");
 
@@ -22,20 +20,9 @@ const IsRequiredDataImageUrl = (maxChars: number) =>
     },
   });
 
-/** Тело POST /me/send-photo. Тексты ошибок — те же, что отдавал Hono. */
+/** Тело POST /me/send-photo. Тексты ошибок — те же, что отдавал Hono. Лишние поля (подпись и ссылка от
+ * закэшированного старого webapp) отбрасывает whitelist ValidationPipe. */
 export class SendPhotoDto implements SendPhotoRequest {
-  /** Лимит — как у полноразмерного фото персонажа. */
-  @IsRequiredDataImageUrl(MAX_IMAGE_FULL_CHARS)
+  @IsRequiredDataImageUrl(MAX_SEND_PHOTO_CHARS)
   image!: string;
-
-  /** Подпись кнопки: обрезается по trim и до лимита Telegram, а не отклоняется. */
-  @Transform(({ value }: { value: unknown }) =>
-    typeof value === "string" ? value.trim().slice(0, MAX_PHOTO_BUTTON_LABEL) : "",
-  )
-  @IsNotEmpty({ message: "Label is required" })
-  label!: string;
-
-  @Transform(({ value }: { value: unknown }) => (typeof value === "string" ? value : ""))
-  @Matches(DEEP_LINK_PATH_RE, { message: "Invalid deepLink" })
-  deepLink!: string;
 }

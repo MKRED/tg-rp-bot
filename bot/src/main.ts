@@ -7,7 +7,7 @@ import logger from "./logger.js";
 import { serveWebapp } from "./webapp-static/serve-webapp.js";
 
 // Лимит JSON-тела: в Express по умолчанию 100 КБ, а персонаж несёт миниатюру (до 900 тыс. символов)
-// и полное фото (до 2,5 млн) data URL'ами — см. common/image-limits.ts.
+// и полное фото (до 2,5 млн), фото в чат — до 6 млн символов data URL; см. common/image-limits.ts и shared.
 const JSON_BODY_LIMIT = "8mb";
 
 async function bootstrap(): Promise<void> {

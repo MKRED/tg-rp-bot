@@ -1,9 +1,6 @@
 import { Avatar, UnstyledButton } from "@mantine/core";
 import { AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { personaEditPath } from "../../../../app/routes";
-import { sendPhotoToChat } from "../../../../shared/api/sendPhoto";
-import { isInsideTelegram } from "../../../../shared/telegram/initData";
 import { ImageLightbox } from "../../../../shared/components/ImageLightbox";
 import { nameInitials } from "../../../../shared/text/initials";
 import { usePersonaImage } from "../../hooks/usePersonaImage";
@@ -64,12 +61,6 @@ export function PersonaAvatar({ id, hasImage, name, size = 40, enlargeable = fal
         {open && src && (
           <ImageLightbox
             src={lightboxSrc}
-            // «Отправить в чат» — через бота в личку по Telegram id; в браузере (вход по логину) его нет.
-            onSend={
-              isInsideTelegram()
-                ? (photo) => sendPhotoToChat(photo, { label: name, deepLink: personaEditPath(id) })
-                : undefined
-            }
             onClose={() => setOpen(false)}
           />
         )}

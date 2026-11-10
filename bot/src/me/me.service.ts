@@ -32,9 +32,9 @@ export class MeService {
    * Фото из лайтбокса в личку: на мобильных скачивание картинки из webview не работает — отправка в
    * чат заменяет «скачать». Сбой Bot API — 502 send_failed.
    */
-  async sendPhoto(telegramId: number, { image, label, deepLink }: SendPhotoRequest): Promise<void> {
+  async sendPhoto(telegramId: number, { image }: SendPhotoRequest): Promise<void> {
     try {
-      await this.lightboxPhotos.send(telegramId, { dataUrl: image, label, deepLink });
+      await this.lightboxPhotos.send(telegramId, image);
     } catch (err) {
       // Частый случай — 403: пользователь заблокировал бота / не начинал диалог.
       logger.error({ err, telegramId }, "Failed to send lightbox photo to chat");
