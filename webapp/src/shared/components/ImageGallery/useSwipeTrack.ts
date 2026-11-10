@@ -1,6 +1,6 @@
 import type { MotionValue } from "framer-motion";
 import { useRef } from "react";
-import { swipeStep } from "./swipeStep";
+import { nearestStep, swipeStep } from "./swipeStep";
 
 /** Сопротивление на краю: за последней картинкой лента идёт за пальцем втрое медленнее. */
 const EDGE_RESISTANCE = 0.3;
@@ -14,36 +14,41 @@ interface SwipeTrackOptions {
   hasPrev: boolean;
   hasNext: boolean;
   width: () => number;
-  /** Палец отпущен: −1/+1 — листать, 0 — вернуть ленту на место. */
-  onRelease: (step: -1 | 0 | 1) => void;
+  /** Палец лёг на ленту: если она ещё доезжает — перехватить её с того места, где она сейчас. */
+  onGrab: () => void;
+  /** Палец отпущен: −1/+1 — листать, 0 — вернуть ленту на место; velocity — скорость пальца, px/с. */
+  onRelease: (step: -1 | 0 | 1, velocity: number) => void;
 }
 
 /**
  * Лента идёт за пальцем, отпустили — решаем, листать ли (swipeStep). Свой обработчик, а не drag из
  * framer-motion: второй палец (пинч-зум) должен отменять протяжку, а drag этого не умеет.
  */
-export function useSwipeTrack({ x, enabled, hasPrev, hasNext, width, onRelease }: SwipeTrackOptions) {
-  const opts = useRef({ enabled, hasPrev, hasNext, width, onRelease });
-  opts.current = { enabled, hasPrev, hasNext, width, onRelease };
+export function useSwipeTrack({ x, enabled, hasPrev, hasNext, width, onGrab, onRelease }: SwipeTrackOptions) {
+  const opts = useRef({ enabled, hasPrev, hasNext, width, onGrab, onRelease });
+  opts.current = { enabled, hasPrev, hasNext, width, onGrab, onRelease };
   const active = useRef<{ id: number; startX: number; samples: { x: number; t: number }[]; cancel: () => void } | null>(null);
 
   const onPointerDown = (e: React.PointerEvent) => {
     // Второй палец — это пинч: протяжку отменяем, ленту возвращаем.
     if (active.current) {
       active.current.cancel();
-      opts.current.onRelease(0);
+      opts.current.onRelease(0, 0);
       return;
     }
     if (!opts.current.enabled || (e.pointerType === "mouse" && e.button !== 0)) return;
 
+    // Лента могла ещё доезжать — перехватываем её, и протяжка продолжается с её текущего сдвига.
+    opts.current.onGrab();
+    const base = x.get();
     const id = e.pointerId;
     const startX = e.clientX;
     const samples = [{ x: startX, t: e.timeStamp }];
 
     const offsetOf = (clientX: number) => {
-      const dx = clientX - startX;
+      const offset = base + clientX - startX;
       const { hasPrev: prev, hasNext: next } = opts.current;
-      return (dx > 0 && !prev) || (dx < 0 && !next) ? dx * EDGE_RESISTANCE : dx;
+      return (offset > 0 && !prev) || (offset < 0 && !next) ? offset * EDGE_RESISTANCE : offset;
     };
     const move = (ev: PointerEvent) => {
       if (ev.pointerId !== id) return;
@@ -54,11 +59,16 @@ export function useSwipeTrack({ x, enabled, hasPrev, hasNext, width, onRelease }
     const up = (ev: PointerEvent) => {
       if (ev.pointerId !== id) return;
       cleanup();
-      const first = samples[0]!;
-      const dt = ev.timeStamp - first.t;
-      const velocity = dt > 0 ? ((ev.clientX - first.x) / dt) * 1000 : 0;
+      // Скорость — по последним ~100 мс: палец остановился и отпустил — скорость нулевая, а не средняя за жест.
+      const recent = samples.find((s) => ev.timeStamp - s.t <= VELOCITY_WINDOW_MS);
+      const dt = recent ? ev.timeStamp - recent.t : 0;
+      const velocity = recent && dt > 0 ? ((ev.clientX - recent.x) / dt) * 1000 : 0;
       const { hasPrev: prev, hasNext: next, width: w } = opts.current;
-      opts.current.onRelease(ev.type === "pointercancel" ? 0 : swipeStep(offsetOf(ev.clientX), velocity, w(), prev, next));
+      const offset = offsetOf(ev.clientX);
+      // Перехваченная на ходу лента (base ≠ 0) доводится к ближайшей картинке, свежий жест — по порогу.
+      const decide = base === 0 ? swipeStep : nearestStep;
+      const step = ev.type === "pointercancel" ? 0 : decide(offset, velocity, w(), prev, next);
+      opts.current.onRelease(step, velocity);
     };
     const cleanup = () => {
       window.removeEventListener("pointermove", move);

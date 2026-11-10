@@ -1,7 +1,10 @@
 import { Loader } from "@mantine/core";
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import { type ReactZoomPanPinchRef, TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import styles from "./ImageGallery.module.css";
+
+/** Двойной тап переключает 1× ↔ ~2.5× (e^step), а не прыгает в максимум. */
+const DOUBLE_TAP = { mode: "toggle", step: 0.9 } as const;
 
 interface GallerySlideProps {
   src?: string;
@@ -9,21 +12,25 @@ interface GallerySlideProps {
   active: boolean;
   /** Сдвиг от текущего слайда: −1 — слева, 0 — на экране, 1 — справа. */
   offset: number;
-  /** Текущий слайд приближен — тогда палец двигает картинку, а не ленту. */
-  zoomed: boolean;
   onZoomChange: (zoomed: boolean) => void;
 }
 
 /**
- * Слайд ленты. Обёртка зума есть у каждого слайда, но включена только у текущего — тогда при листании
- * React переносит тот же элемент (ключ — картинка), и уже загруженная соседняя не мигает.
+ * Слайд ленты. Обёртка зума — на весь экран, а внутри — элемент ровно по размеру картинки: так
+ * centerZoomedOut держит меньшую сторону по центру, а приближенную картинку не пускает дальше краёв
+ * экрана (если бы элемент был во весь экран, его чёрные поля вокруг картинки утягивались бы в кадр).
+ * Обёртка есть у каждого слайда, включена только у текущего — при листании React переносит тот же
+ * элемент (ключ — картинка), и соседняя не мигает. Пропсы обёртки не меняются от зума: смена настроек
+ * посреди анимации двойного тапа обрывала её.
  */
-export function GallerySlide({ src, active, offset, zoomed, onZoomChange }: GallerySlideProps) {
+export const GallerySlide = memo(function GallerySlide({ src, active, offset, onZoomChange }: GallerySlideProps) {
   const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
+  const activeRef = useRef(active);
+  activeRef.current = active;
 
-  // Ушли со слайда — сбрасываем зум, чтобы вернуться к нему целиком.
+  // Ушли со слайда — возвращаем к 1× по центру, чтобы вернуться к нему целиком.
   useEffect(() => {
-    if (!active) transformRef.current?.resetTransform(0);
+    if (!active) transformRef.current?.centerView(1, 0);
   }, [active]);
 
   return (
@@ -34,15 +41,22 @@ export function GallerySlide({ src, active, offset, zoomed, onZoomChange }: Gall
           disabled={!active}
           minScale={1}
           maxScale={5}
-          // Без зума палец листает ленту, а не двигает картинку: пан включается только в приближении.
-          panning={{ disabled: !(active && zoomed) }}
-          doubleClick={{ mode: "toggle", step: 0.9 }}
+          centerOnInit
+          centerZoomedOut
+          doubleClick={DOUBLE_TAP}
           onTransform={(_ref, state) => {
-            if (active) onZoomChange(state.scale > 1.01);
+            if (activeRef.current) onZoomChange(state.scale > 1.01);
           }}
         >
-          <TransformComponent wrapperClass={styles.zoomArea} contentClass={styles.zoomArea}>
-            <img className={styles.image} src={src} alt="" draggable={false} />
+          <TransformComponent wrapperClass={styles.zoomArea}>
+            <img
+              className={styles.image}
+              src={src}
+              alt=""
+              draggable={false}
+              // Размер элемента появляется только после загрузки — центрируем по нему.
+              onLoad={() => transformRef.current?.centerView(1, 0)}
+            />
           </TransformComponent>
         </TransformWrapper>
       ) : (
@@ -50,4 +64,4 @@ export function GallerySlide({ src, active, offset, zoomed, onZoomChange }: Gall
       )}
     </div>
   );
-}
+});

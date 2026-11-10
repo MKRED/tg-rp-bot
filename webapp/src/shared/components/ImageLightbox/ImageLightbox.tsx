@@ -8,7 +8,7 @@ import {
   TransformComponent,
   TransformWrapper,
 } from "react-zoom-pan-pinch";
-import { pushBackInterceptor } from "../../telegram/backInterceptor";
+import { useOverlayBack } from "../../hooks/useOverlayBack";
 import { useToast } from "../../toast";
 import { MOTION_TRANSITION } from "../../theme/motion";
 import styles from "./ImageLightbox.module.css";
@@ -60,8 +60,8 @@ export function ImageLightbox({ src, onSend, onClose }: ImageLightboxProps) {
     return () => window.removeEventListener("keydown", handleKey);
   }, [onClose]);
 
-  // Нативная «Назад» закрывает просмотр, а не уводит со страницы.
-  useEffect(() => pushBackInterceptor(onClose), [onClose]);
+  // «Назад» (Telegram, системная на телефоне, браузер) закрывает просмотр, а не уводит со страницы.
+  useOverlayBack(onClose);
 
   // Контент библиотеки — fit-content по картинке, поэтому центрируем императивно после того,
   // как у <img> появятся размеры (centerOnInit не сработает на ещё не загруженном фото).

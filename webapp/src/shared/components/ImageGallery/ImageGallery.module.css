@@ -95,20 +95,20 @@
   justify-content: center;
 }
 
-/* Область зума — весь слайд: картинка вписана в него и центрирована без ручного centerView. */
+/* Обёртка зума — весь слайд; её края — граница, дальше которой приближенная картинка не уезжает. */
 .zoomArea {
   width: 100% !important;
   height: 100% !important;
 }
 
-/* Отступы — часть картинки: без зума она вписана между панелями, а в зуме растёт вместе с отступами
-   и уходит под полупрозрачные панели, но до краёв её можно дотянуть. */
+/* Элемент картинки — ровно по картинке (без полей): без зума она вписана между панелями (отступ —
+   по большей из них с обеих сторон, чтобы стоять по центру экрана), в зуме растёт под них до краёв. */
 .image {
-  box-sizing: border-box;
-  width: 100%;
-  height: 100%;
-  padding: var(--gallery-top) 0 var(--gallery-bottom);
-  object-fit: contain;
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100vw;
+  max-height: calc(100dvh - 2 * max(var(--gallery-top), var(--gallery-bottom)));
   /* Библиотека зума гасит pointer-events у картинки — двойной тап по ней должен работать. */
   pointer-events: auto !important;
 }

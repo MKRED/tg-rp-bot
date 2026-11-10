@@ -16,3 +16,18 @@ export function swipeStep(offset: number, velocity: number, width: number, hasPr
   if (offset < 0) return hasNext ? 1 : 0;
   return hasPrev ? -1 : 0;
 }
+
+/** Сколько секунд броска учитываем, прикидывая, где лента остановилась бы сама. */
+const PROJECTION_S = 0.15;
+
+/**
+ * Для ленты, перехваченной пальцем на ходу: доводим к ближайшей картинке с учётом броска (а не по
+ * порогу от начала жеста — тот считается от новой картинки, и простое касание повело бы ленту назад).
+ */
+export function nearestStep(offset: number, velocity: number, width: number, hasPrev: boolean, hasNext: boolean): -1 | 0 | 1 {
+  const projected = offset + velocity * PROJECTION_S;
+  const step = Math.round(-projected / width);
+  if (step >= 1) return hasNext ? 1 : 0;
+  if (step <= -1) return hasPrev ? -1 : 0;
+  return 0;
+}

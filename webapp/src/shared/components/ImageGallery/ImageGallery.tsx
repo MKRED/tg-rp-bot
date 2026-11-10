@@ -1,9 +1,9 @@
 import { ActionIcon, Text } from "@mantine/core";
-import { animate, motion, useMotionValue } from "framer-motion";
+import { type AnimationPlaybackControls, animate, motion, useMotionValue } from "framer-motion";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal, flushSync } from "react-dom";
-import { pushBackInterceptor } from "../../telegram/backInterceptor";
+import { useOverlayBack } from "../../hooks/useOverlayBack";
 import { suspendVerticalSwipes } from "../../telegram/verticalSwipes";
 import { MOTION_TRANSITION } from "../../theme/motion";
 import { GallerySlide } from "./GallerySlide";
@@ -12,6 +12,13 @@ import type { GalleryItem } from "./types";
 import { useSingleTap } from "./useSingleTap";
 import { useSwipeTrack } from "./useSwipeTrack";
 import styles from "./ImageGallery.module.css";
+
+/**
+ * Доводка ленты после отпускания: пружина стартует со скоростью пальца и тормозит без перелёта
+ * (затухание чуть выше критического 2·√stiffness). Фиксированная длительность давала рывок на стыке:
+ * медленно отпущенная лента вдруг срывалась, а брошенная — притормаживала.
+ */
+const SETTLE_SPRING = { type: "spring", stiffness: 170, damping: 27, restDelta: 0.5, restSpeed: 20 } as const;
 
 interface ImageGalleryProps {
   items: GalleryItem[];
@@ -25,7 +32,7 @@ interface ImageGalleryProps {
  * Полноэкранная галерея как в галерее телефона: чёрный фон, сверху «2 из 5» и подпись, картинка едет за
  * пальцем и соседняя въезжает следом, снизу полоса миниатюр. Зум — пинч, двойной тап, колесо; в зуме палец
  * двигает картинку, а не ленту. Одиночный тап прячет и возвращает панели. На компьютере — стрелки по краям и клавиши ←/→. Закрытие — «×», Esc,
- * «Назад» Telegram. Рендерится в body через portal; AnimatePresence в родителе даёт плавное закрытие.
+ * «Назад» (Telegram, системная на телефоне, браузер). Рендерится в body через portal; AnimatePresence в родителе даёт плавное закрытие.
  */
 export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGalleryProps) {
   // Свой индекс: смену слайда после анимации ленты нужно применить в тот же кадр, что и сброс сдвига.
@@ -35,7 +42,8 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
   const [zoomed, setZoomed] = useState(false);
   const x = useMotionValue(0);
   const stageRef = useRef<HTMLDivElement>(null);
-  const animating = useRef(false);
+  // Идущая доводка ленты и куда она ведёт (−1/+1 — к соседней, 0 — на место).
+  const settling = useRef<{ controls: AnimationPlaybackControls; step: -1 | 0 | 1 } | null>(null);
 
   const hasPrev = current > 0;
   const hasNext = current < items.length - 1;
@@ -47,31 +55,47 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
     onIndexChange(next);
   };
 
+  const stageWidth = () => stageRef.current?.offsetWidth ?? window.innerWidth;
+
   // −1/+1 — доводим ленту до соседней картинки и переключаемся на неё; 0 — возвращаем на место.
-  const settle = (step: -1 | 0 | 1) => {
-    const width = stageRef.current?.offsetWidth ?? window.innerWidth;
-    if (step === 0) {
-      void animate(x, 0, MOTION_TRANSITION);
-      return;
-    }
-    animating.current = true;
-    void animate(x, -step * width, MOTION_TRANSITION).then(() => {
-      animating.current = false;
-      select(current + step);
+  const settle = (step: -1 | 0 | 1, velocity = 0) => {
+    settling.current?.controls.stop();
+    const target = current + step;
+    const controls = animate(x, -step * stageWidth(), { ...SETTLE_SPRING, velocity });
+    settling.current = { controls, step };
+    void controls.then(() => {
+      // Доводку перехватили пальцем или сменили картинку — переключаться уже не нам.
+      if (settling.current?.controls !== controls) return;
+      settling.current = null;
+      if (step !== 0) select(target);
     });
   };
 
+  // Палец лёг на доезжающую ленту: останавливаем её; если она ехала к соседней — переключаемся на ту
+  // сразу и пересчитываем сдвиг от неё, чтобы картинка под пальцем не прыгнула.
+  const grab = () => {
+    const pending = settling.current;
+    if (!pending) return;
+    pending.controls.stop();
+    settling.current = null;
+    if (pending.step === 0) return;
+    const offset = x.get();
+    select(current + pending.step);
+    x.set(offset + pending.step * stageWidth());
+  };
+
   const go = (step: -1 | 1) => {
-    if (animating.current || zoomed || (step < 0 ? !hasPrev : !hasNext)) return;
+    if (settling.current || zoomed || (step < 0 ? !hasPrev : !hasNext)) return;
     settle(step);
   };
 
   const { onPointerDown } = useSwipeTrack({
     x,
-    enabled: items.length > 1 && !zoomed && !animating.current,
+    enabled: items.length > 1 && !zoomed,
     hasPrev,
     hasNext,
-    width: () => stageRef.current?.offsetWidth ?? window.innerWidth,
+    width: stageWidth,
+    onGrab: grab,
     onRelease: settle,
   });
 
@@ -93,8 +117,9 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // «Назад» Telegram закрывает галерею, а свайп вниз не сворачивает Mini App посреди листания.
-  useEffect(() => pushBackInterceptor(onClose), [onClose]);
+  // «Назад» (Telegram, системная на телефоне, браузер) закрывает галерею, а свайп вниз не сворачивает
+  // Mini App посреди листания.
+  useOverlayBack(onClose);
   useEffect(() => suspendVerticalSwipes(), []);
 
   const item = items[current];
@@ -147,7 +172,6 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
                   src={slide.src}
                   active={i === current}
                   offset={i - current}
-                  zoomed={zoomed}
                   onZoomChange={setZoomed}
                 />
               )
@@ -167,7 +191,11 @@ export function ImageGallery({ items, index, onIndexChange, onClose }: ImageGall
         )}
       </div>
 
-      {items.length > 1 && <GalleryStrip items={items} index={current} onSelect={(i) => !animating.current && select(i)} />}
+      {items.length > 1 && <GalleryStrip items={items} index={current} onSelect={(i) => {
+            settling.current?.controls.stop();
+            settling.current = null;
+            select(i);
+          }} />}
     </motion.div>,
     document.body,
   );
