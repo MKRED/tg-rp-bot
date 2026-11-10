@@ -12,8 +12,6 @@ import { pushBackInterceptor } from "../../telegram/backInterceptor";
 import { useToast } from "../../toast";
 import { MOTION_TRANSITION } from "../../theme/motion";
 import styles from "./ImageLightbox.module.css";
-import { LightboxNav, type LightboxNavigation } from "./LightboxNav";
-import { swipeDirection } from "./swipe";
 
 interface ImageLightboxProps {
   /**
@@ -27,11 +25,6 @@ interface ImageLightboxProps {
    * скачивание файла не работает, а отправка в чат с ботом — нативно. Без onSend кнопки нет.
    */
   onSend?: (src: string) => Promise<void>;
-  /**
-   * Листание соседних картинок прямо в просмотре (стрелки, ←/→, свайп без зума). Родитель меняет src —
-   * просмотр ждёт новую картинку и сбрасывает зум.
-   */
-  navigation?: LightboxNavigation;
   onClose: () => void;
 }
 
@@ -47,7 +40,7 @@ interface ImageLightboxProps {
  * зум не активен (иначе тап в процессе пана случайно закрывал бы просмотр; в зуме закрываем
  * кнопкой). Тап по самой картинке не закрывает — там работают жесты зума.
  */
-export function ImageLightbox({ src, onSend, navigation, onClose }: ImageLightboxProps) {
+export function ImageLightbox({ src, onSend, onClose }: ImageLightboxProps) {
   const [loaded, setLoaded] = useState(false);
   // Идёт отправка фото в чат — блокируем кнопку, чтобы не отправить дубль по повторному тапу.
   const [sending, setSending] = useState(false);
@@ -59,39 +52,13 @@ export function ImageLightbox({ src, onSend, navigation, onClose }: ImageLightbo
   // ref: от него зависят пропы limitToBounds / velocityAnimation.
   const [zoomed, setZoomed] = useState(false);
 
-  // Обработчик клавиш живёт весь просмотр, а колбэки листания меняются с каждой картинкой — берём свежие.
-  const navRef = useRef(navigation);
-  navRef.current = navigation;
-
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
-      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-      if (e.key === "ArrowLeft") navRef.current?.onPrev?.();
-      if (e.key === "ArrowRight") navRef.current?.onNext?.();
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [onClose]);
-
-  // Свайп листает, только пока картинка не приближена (в зуме палец двигает картинку) и жест
-  // однопальцевый (два пальца — пинч). После свайпа следующий click не должен закрыть просмотр.
-  const swipe = useRef<{ x: number; y: number; id: number } | null>(null);
-  const swiped = useRef(false);
-  const handlePointerDown = (e: React.PointerEvent) => {
-    swipe.current = !navigation || zoomed || swipe.current ? null : { x: e.clientX, y: e.clientY, id: e.pointerId };
-    swiped.current = false;
-  };
-  const handlePointerUp = (e: React.PointerEvent) => {
-    const start = swipe.current;
-    swipe.current = null;
-    if (!start || start.id !== e.pointerId || zoomed) return;
-    const dir = swipeDirection(e.clientX - start.x, e.clientY - start.y);
-    if (dir === null) return;
-    swiped.current = true;
-    if (dir < 0) navRef.current?.onPrev?.();
-    else navRef.current?.onNext?.();
-  };
 
   // Нативная «Назад» закрывает просмотр, а не уводит со страницы.
   useEffect(() => pushBackInterceptor(onClose), [onClose]);
@@ -119,7 +86,6 @@ export function ImageLightbox({ src, onSend, navigation, onClose }: ImageLightbo
   const handleBackdropClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if ((e.target as HTMLElement).tagName === "IMG") return; // жест по картинке
-    if (swiped.current) return; // это был свайп-листание, а не тап
     if (zoomed) return; // в зуме закрываем только кнопкой «×»
     onClose();
   };
@@ -144,9 +110,6 @@ export function ImageLightbox({ src, onSend, navigation, onClose }: ImageLightbo
     <motion.div
       className={styles.root}
       onClick={handleBackdropClick}
-      onPointerDownCapture={handlePointerDown}
-      onPointerUpCapture={handlePointerUp}
-      onPointerCancelCapture={() => (swipe.current = null)}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -240,8 +203,6 @@ export function ImageLightbox({ src, onSend, navigation, onClose }: ImageLightbo
           </TransformComponent>
         </TransformWrapper>
       )}
-
-      {navigation && <LightboxNav {...navigation} />}
 
       {!loaded && (
         <div className={styles.loader}>

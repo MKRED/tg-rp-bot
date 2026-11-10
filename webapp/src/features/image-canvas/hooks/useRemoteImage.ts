@@ -67,3 +67,29 @@ export function useRemoteImage(key: string | null, load: () => Promise<string>):
 
   return state.key === key ? { src: state.src, failed: state.failed } : { src: undefined, failed: false };
 }
+
+/**
+ * Несколько полных картинок сразу (галерея: соседние слайды и миниатюры черновиков). Грузит, пока enabled,
+ * в порядке списка — первой ставьте ту, что на экране. Возвращает загруженные по ключу.
+ */
+export function useRemoteImages(entries: { key: string; load: () => Promise<string> }[], enabled: boolean): Record<string, string> {
+  const [loaded, setLoaded] = useState<Record<string, string>>({});
+  const keys = entries.map((e) => e.key).join("|");
+
+  useEffect(() => {
+    if (!enabled) return;
+    let alive = true;
+    for (const { key, load } of entries) {
+      loadRemoteImage(key, load)
+        .then((src) => alive && setLoaded((prev) => (prev[key] === src ? prev : { ...prev, [key]: src })))
+        .catch((err) => console.error("Failed to load gallery image", { key, err }));
+    }
+    return () => {
+      alive = false;
+    };
+    // entries — новый массив на каждом рендере; набор картинок определяют ключи.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keys, enabled]);
+
+  return loaded;
+}

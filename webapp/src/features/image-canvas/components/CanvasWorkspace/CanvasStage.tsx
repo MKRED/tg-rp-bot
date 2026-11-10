@@ -2,10 +2,10 @@ import { ActionIcon, Alert, Badge, Button, Group, Loader, Text } from "@mantine/
 import { AnimatePresence } from "framer-motion";
 import { Check, ChevronLeft, ChevronRight, ImagePlus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { ImageLightbox } from "../../../../shared/components/ImageLightbox";
+import { ImageGallery } from "../../../../shared/components/ImageGallery";
 import { getItemImage, getReferenceImage } from "../../api/image-canvas-api";
 import type { CanvasState } from "../../hooks/useCanvas";
-import { useRemoteImage } from "../../hooks/useRemoteImage";
+import { useRemoteImage, useRemoteImages } from "../../hooks/useRemoteImage";
 import { makeThumb } from "../../lib/canvasImages";
 import { slideKeyDelta, slideKeysBlocked } from "../../lib/slideKeys";
 import type { ImageCanvas } from "../../types/imageCanvas";
@@ -28,7 +28,7 @@ export function referenceKey(canvasId: number, slot: number, thumb: string): str
 /**
  * Холст листается свайпом и стрелками: первым — оригинал (картинка 1), за ним черновики, новые первыми.
  * Так результат сравнивается с исходником одним свайпом. Пришёл новый черновик — показываем его.
- * Под черновиком — «Сохранить» и «Отбросить». Полноэкранный просмотр листается так же и держит тот же слайд.
+ * Под черновиком — «Сохранить» и «Отбросить». Полноэкранная галерея листает те же слайды и держит текущий.
  * Генерация холст не закрывает: её ход и «Остановить» — на кнопке запуска (GenerateButton).
  */
 export function CanvasStage({ canvas, actions }: CanvasStageProps) {
@@ -61,6 +61,20 @@ export function CanvasStage({ canvas, actions }: CanvasStageProps) {
   const src = draft ? draftImage.src : (baseImage.src ?? baseThumb);
 
   const caption = draft ? `Черновик ${draftIndex + 1} из ${drafts.length} · ${MODEL_LABEL[draft.model]}` : "Оригинал";
+
+  // Галерея: те же слайды, что на холсте. Полные картинки грузим, пока она открыта, — текущую первой.
+  const slides = [
+    ...(baseThumb
+      ? [{ key: referenceKey(canvas.id, 0, baseThumb), thumb: baseThumb, caption: "Оригинал", load: () => getReferenceImage(canvas.id, 0).then((r) => r.image) }]
+      : []),
+    ...drafts.map((d, i) => ({
+      key: `item:${canvas.id}:${d.id}`,
+      thumb: undefined,
+      caption: `Черновик ${i + 1} · ${MODEL_LABEL[d.model]}`,
+      load: () => getItemImage(canvas.id, d.id).then((r) => r.image),
+    })),
+  ];
+  const galleryImages = useRemoteImages([...slides.slice(safeIndex), ...slides.slice(0, safeIndex)], zoom);
   const go = (delta: number) => setIndex((i) => Math.min(slideCount - 1, Math.max(0, i + delta)));
 
   // Стрелки ←/→ на компьютере. Обработчик на window живёт весь экран, а число слайдов и просмотр меняются.
@@ -191,16 +205,12 @@ export function CanvasStage({ canvas, actions }: CanvasStageProps) {
         </Group>
       )}
 
-      {/* В просмотр — только полная картинка (миниатюра оригинала там была бы мутной): пока грузится — спиннер. */}
       <AnimatePresence>
         {zoom && (
-          <ImageLightbox
-            src={draft ? draftImage.src : baseImage.src}
-            navigation={{
-              caption: slideCount > 1 ? caption : undefined,
-              onPrev: safeIndex > 0 ? () => go(-1) : undefined,
-              onNext: safeIndex < slideCount - 1 ? () => go(1) : undefined,
-            }}
+          <ImageGallery
+            items={slides.map(({ key, thumb, caption: title }) => ({ key, thumb, caption: title, src: galleryImages[key] }))}
+            index={safeIndex}
+            onIndexChange={setIndex}
             onClose={() => setZoom(false)}
           />
         )}
