@@ -1,0 +1,20 @@
+/* Кнопка стоит первой в шапке: сдвигаем её влево на внутренний отступ подложки, чтобы сама стрелка
+   встала на линию контента, а не уехала вправо на ширину отступа. */
+.button {
+  flex-shrink: 0;
+  margin-left: calc(-1 * var(--mantine-spacing-xs));
+}
+
+/* Плавающая кнопка — над контентом экрана (граф ReactFlow держит свои слои до z-index ~5), ниже
+   safe area; родитель (FullHeightPage) задаёт position: relative. */
+.floating {
+  position: absolute;
+  z-index: 10;
+  top: calc(
+    var(--mantine-spacing-sm) +
+    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+    var(--tg-viewport-content-safe-area-inset-top, 0px)
+  );
+  left: var(--mantine-spacing-sm);
+  box-shadow: var(--mantine-shadow-sm);
+}

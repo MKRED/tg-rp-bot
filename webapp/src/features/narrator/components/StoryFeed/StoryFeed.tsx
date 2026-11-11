@@ -2,6 +2,8 @@ import { Button, Loader } from "@mantine/core";
 import { motion } from "framer-motion";
 import { BookX, Clapperboard, CloudOff } from "lucide-react";
 import { forwardRef, useEffect, useImperativeHandle, useRef, type ReactNode } from "react";
+import { ROUTES } from "../../../../app/routes";
+import { useTransitionNavigate } from "../../../../app/useTransitionNavigate";
 import { EmptyState } from "../../../../shared/components/EmptyState";
 import { InfiniteSentinel } from "../../../../shared/components/InfiniteSentinel";
 import { useRenderWindow } from "../../../../shared/hooks/useRenderWindow";
@@ -77,6 +79,7 @@ export const StoryFeed = forwardRef<StoryFeedHandle, StoryFeedProps>(function St
     for (const m of messages) animatedIds.current.add(m.id);
   }, [messages]);
 
+  const navigate = useTransitionNavigate();
   const renderWindow = useRenderWindow(scrollRef, messages.length, storyId);
   // Каскад отсчитываем от первого нового сообщения — новые появляются быстро при любой длине истории.
   const firstNewIdx = messages.findIndex((m) => !animatedIds.current.has(m.id));
@@ -84,7 +87,19 @@ export const StoryFeed = forwardRef<StoryFeedHandle, StoryFeedProps>(function St
   const content = () => {
     if (loading) return <Loader />;
     if (error === "not_found") {
-      return <EmptyState icon={BookX} title="История не найдена" description="Возможно, она была удалена." />;
+      // Как у экранов персонажа/карточки: явный путь к списку, а не только «Назад».
+      return (
+        <EmptyState
+          icon={BookX}
+          title="История не найдена"
+          description="Возможно, она была удалена."
+          action={
+            <Button variant="default" onClick={() => navigate(ROUTES.stories)}>
+              К списку историй
+            </Button>
+          }
+        />
+      );
     }
     if (error) {
       return (

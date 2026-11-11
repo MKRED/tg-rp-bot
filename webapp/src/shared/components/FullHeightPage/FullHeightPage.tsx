@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { usePageTitle } from "../../hooks/usePageTitle";
+import { BackNavButton } from "../BackNavButton";
 import { PageTransition } from "../PageTransition";
 import styles from "./FullHeightPage.module.css";
 
@@ -8,6 +9,8 @@ interface FullHeightPageProps {
   title?: string;
   /** Дискриминатор фазы (loading/ready) — перезапускает анимацию появления, как у AppPage. */
   phase?: string;
+  /** Плавающая «Назад» в браузере — когда у экрана нет своей шапки с кнопкой (граф, ошибка загрузки). */
+  floatingBack?: boolean;
   children: ReactNode;
 }
 
@@ -17,13 +20,14 @@ interface FullHeightPageProps {
  * `flex: 1; min-height: 0`. Остальное как у AppPage: фон палитры,
  * верхний отступ safe area. Нижний отступ safe area — забота нижнего элемента экрана (поле ввода).
  */
-export function FullHeightPage({ title, phase, children }: FullHeightPageProps) {
+export function FullHeightPage({ title, phase, floatingBack, children }: FullHeightPageProps) {
   usePageTitle(title);
   return (
     <div className={styles.page}>
       <PageTransition phase={phase} className={styles.body}>
         {children}
       </PageTransition>
+      {floatingBack && <BackNavButton floating />}
     </div>
   );
 }

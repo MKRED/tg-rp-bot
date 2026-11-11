@@ -13,7 +13,7 @@ export function ImageCanvasPage() {
   const { canvas, loading, error } = actions;
 
   return (
-    <FullHeightPage title={canvas?.name ?? "Холст"} phase={loading ? "loading" : "ready"}>
+    <FullHeightPage title={canvas?.name ?? "Холст"} phase={loading ? "loading" : "ready"} floatingBack={!canvas}>
       {canvas ? (
         <CanvasWorkspace canvas={canvas} actions={actions} />
       ) : (

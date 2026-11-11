@@ -77,10 +77,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
     if (dropReturn) setState({ kind: "anonymous", returnHere: true });
   }, [dropReturn]);
 
-  if (state.kind === "loading") return <AppPage loading centered />;
+  if (state.kind === "loading") return <AppPage loading centered back={false} />;
   if (state.kind === "error") {
     return (
-      <AppPage centered>
+      <AppPage centered back={false}>
         <Stack align="center" ta="center">
           <Title order={3}>Сервер недоступен</Title>
           <Text c="dimmed">{state.message}</Text>

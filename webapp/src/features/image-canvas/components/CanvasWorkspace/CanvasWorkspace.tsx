@@ -3,6 +3,7 @@ import { EllipsisVertical } from "lucide-react";
 import { useState } from "react";
 import { ROUTES } from "../../../../app/routes";
 import { useTransitionNavigate } from "../../../../app/useTransitionNavigate";
+import { BackNavButton } from "../../../../shared/components/BackNavButton";
 import { confirmAction } from "../../../../shared/telegram/confirm";
 import { useToast } from "../../../../shared/toast";
 import { useComfyAgentStatus } from "../../../comfy-agent";
@@ -55,6 +56,7 @@ export function CanvasWorkspace({ canvas, actions }: CanvasWorkspaceProps) {
     <>
       <header className={styles.header}>
         <div className={styles.headerRow}>
+          <BackNavButton />
           <div className={styles.headerTitle}>
             <Text fw={600} truncate>
               {canvas.name}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ROUTES, parentPath } from "./routes";
+import { ROUTES, backTarget, hasBackTarget, parentPath } from "./routes";
 
 describe("parentPath", () => {
   it("запись книги знаний → её книга", () => {
@@ -30,5 +30,32 @@ describe("parentPath", () => {
     expect(parentPath("/books")).toBe(ROUTES.home);
     expect(parentPath("/debug/llm")).toBe(ROUTES.home);
     expect(parentPath("/unknown")).toBe(ROUTES.home);
+  });
+});
+
+describe("hasBackTarget", () => {
+  it("на главной и на входе «Назад» нет", () => {
+    expect(hasBackTarget(ROUTES.home)).toBe(false);
+    expect(hasBackTarget(ROUTES.login)).toBe(false);
+  });
+
+  it("на вложенных экранах есть", () => {
+    expect(hasBackTarget("/settings")).toBe(true);
+    expect(hasBackTarget("/characters/3")).toBe(true);
+  });
+});
+
+describe("backTarget", () => {
+  it("без state — родитель по иерархии", () => {
+    expect(backTarget("/cards/5/export", null)).toBe("/cards/5");
+    expect(backTarget("/characters/3", undefined)).toBe(ROUTES.characters);
+  });
+
+  it("state.returnTo важнее родителя", () => {
+    expect(backTarget("/characters/3", { returnTo: "/chats/9/settings" })).toBe("/chats/9/settings");
+  });
+
+  it("returnTo не строкой игнорируется", () => {
+    expect(backTarget("/characters/3", { returnTo: 42 })).toBe(ROUTES.characters);
   });
 });

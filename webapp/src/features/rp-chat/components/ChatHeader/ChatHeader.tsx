@@ -1,6 +1,7 @@
 import { ActionIcon, Text } from "@mantine/core";
 import { GitBranch, Settings } from "lucide-react";
 import { CharacterAvatar } from "../../../characters/components/CharacterAvatar";
+import { BackNavButton } from "../../../../shared/components/BackNavButton";
 import styles from "./ChatHeader.module.css";
 
 interface ChatHeaderProps {
@@ -11,11 +12,12 @@ interface ChatHeaderProps {
   onGraphClick: () => void;
 }
 
-/** Шапка чата: аватар (нажатие — фото целиком), название, граф веток и настройки. */
+/** Шапка чата: «Назад» (только в браузере), аватар (нажатие — фото целиком), название, граф веток и настройки. */
 export function ChatHeader({ character, title, onSettingsClick, onGraphClick }: ChatHeaderProps) {
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
+        <BackNavButton />
         <CharacterAvatar id={character.id} hasImage={character.hasImage} name={character.name} size={40} enlargeable />
         <Text fw={600} truncate className={styles.title}>
           {title ?? character.name}

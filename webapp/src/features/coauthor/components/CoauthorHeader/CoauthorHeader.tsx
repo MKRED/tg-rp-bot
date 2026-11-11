@@ -1,5 +1,6 @@
 import { ActionIcon, Badge, SegmentedControl, Text } from "@mantine/core";
 import { SlidersHorizontal } from "lucide-react";
+import { BackNavButton } from "../../../../shared/components/BackNavButton";
 import styles from "./CoauthorHeader.module.css";
 
 export type CoauthorTab = "chat" | "cards";
@@ -20,7 +21,7 @@ function cardsWord(count: number): string {
 }
 
 /**
- * Шапка чата соавтора: название, число карточек, настройки. Вкладки «Чат / Карточки» — только на
+ * Шапка чата соавтора: «Назад» (только в браузере), название, число карточек, настройки. Вкладки «Чат / Карточки» — только на
  * телефоне: на ПК обе панели стоят рядом (CSS прячет переключатель). Счётчик на «Карточках» —
  * ожидающие решения правки: виден из чата, куда идти.
  */
@@ -28,6 +29,7 @@ export function CoauthorHeader({ name, cardCount, pendingCount, tab, onTab, onSe
   return (
     <header className={styles.header}>
       <div className={styles.row}>
+        <BackNavButton />
         <div className={styles.title}>
           <Text fw={600} truncate>
             {name}

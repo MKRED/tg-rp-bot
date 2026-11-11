@@ -212,3 +212,18 @@ export function parentPath(pathname: string): string {
   if (pathname.startsWith("/debug/")) return ROUTES.home;
   return ROUTES.home;
 }
+
+/** Экраны без «Назад»: главная (корень иерархии) и вход в браузере (до входа уходить некуда). */
+export function hasBackTarget(pathname: string): boolean {
+  return pathname !== ROUTES.home && pathname !== ROUTES.login;
+}
+
+/**
+ * Куда ведёт «Назад» — одна точка для кнопки Telegram и кнопки в шапке в браузере.
+ * Явный `state.returnTo` (напр. настройки чата → редактирование персонажа) важнее статического
+ * parentPath: так возвращаемся туда, откуда открыли экран, а не к общему списку.
+ */
+export function backTarget(pathname: string, state: unknown): string {
+  const returnTo = (state as { returnTo?: unknown } | null)?.returnTo;
+  return typeof returnTo === "string" ? returnTo : parentPath(pathname);
+}

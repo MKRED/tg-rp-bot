@@ -1,6 +1,7 @@
 import { Container, Group, Loader, Stack, Text, Title } from "@mantine/core";
 import type { ReactNode } from "react";
 import { usePageTitle } from "../../hooks/usePageTitle";
+import { BackNavButton } from "../BackNavButton";
 import { PageTransition } from "../PageTransition";
 import styles from "./AppPage.module.css";
 
@@ -22,6 +23,8 @@ interface AppPageProps {
   width?: number;
   /** Контент по центру экрана по вертикали (короткие экраны: вход, ошибка), а не сверху. */
   centered?: boolean;
+  /** Кнопка «Назад» в браузере (по умолчанию есть); false — экраны вне иерархии (вход, ошибка входа). */
+  back?: boolean;
   children?: ReactNode;
 }
 
@@ -29,7 +32,7 @@ interface AppPageProps {
  * Каркас экрана: фон страницы, отступы safe area, колонка ограниченной ширины, анимация
  * появления. Каждый экран рендерится внутри него (или FullHeightPage).
  */
-export function AppPage({ title, tabTitle, description, actions, loading, width = CONTENT_WIDTH, centered, children }: AppPageProps) {
+export function AppPage({ title, tabTitle, description, actions, loading, width = CONTENT_WIDTH, centered, back = true, children }: AppPageProps) {
   usePageTitle(tabTitle ?? title);
   return (
     <div className={centered ? `${styles.page} ${styles.centered}` : styles.page}>
@@ -45,7 +48,14 @@ export function AppPage({ title, tabTitle, description, actions, loading, width 
               {title && (
                 <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
                   <div className={styles.heading}>
-                    <Title order={2}>{title}</Title>
+                    {/* «Назад» в браузере — слева от заголовка, как в шапке Telegram; описание ниже
+                        начинается от края колонки. */}
+                    <Group gap={4} wrap="nowrap" align="flex-start">
+                      {back && <BackNavButton className={styles.back} />}
+                      <Title order={2} className={styles.title}>
+                        {title}
+                      </Title>
+                    </Group>
                     {description && (
                       <Text size="sm" c="dimmed">
                         {description}

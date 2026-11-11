@@ -1,22 +1,17 @@
 import { useEffect } from "react";
-import { useLocation } from "react-router-dom";
 import { backButton } from "@telegram-apps/sdk-react";
-import { ROUTES, parentPath } from "./routes";
-import { useTransitionNavigate } from "./useTransitionNavigate";
-import { consumeBackInterceptor } from "../shared/telegram/backInterceptor";
-import { checkNavigationGuards } from "../shared/telegram/navigationGuard";
+import { useGoBack } from "./useGoBack";
 
 /**
  * Мост нативной кнопки «Назад» Telegram ↔ роутер.
  *
- * На вложенных экранах показываем кнопку, по нажатию уходим к родительскому маршруту
- * (parentPath — вверх по иерархии, а не по истории), на главной — прячем. Навигация вверх,
- * а не navigate(-1): иначе после удаления пресета «Назад» вернул бы на его (уже мёртвый) URL.
- * Все вызовы SDK обёрнуты в isAvailable(): вне Telegram (dev-браузер) кнопки нет — мост молчит.
+ * На вложенных экранах показываем кнопку, по нажатию уходим вверх по иерархии (useGoBack — тот же
+ * переход, что у кнопки в шапке в браузере), на главной — прячем.
+ * Все вызовы SDK обёрнуты в isAvailable(): вне Telegram (браузер) кнопки нет — мост молчит,
+ * а «Назад» рисует шапка экрана (BackNavButton).
  */
 export function BackButtonBridge() {
-  const navigate = useTransitionNavigate();
-  const location = useLocation();
+  const { canGoBack, goBack } = useGoBack();
 
   // Монтируем кнопку один раз за время жизни приложения.
   useEffect(() => {
@@ -26,35 +21,21 @@ export function BackButtonBridge() {
     };
   }, []);
 
-  // Подписка на нажатие: уводим к родителю текущего экрана. Пересоздаём подписку при
-  // смене пути, чтобы в замыкании был актуальный pathname (от него зависит родитель).
-  // Если в state.returnTo передан явный путь возврата (напр. из настроек чата → редактирование
-  // персонажа) — используем его вместо статического parentPath.
+  // Подписка на нажатие пересоздаётся вместе с goBack: в замыкании актуальные путь и state.returnTo.
   useEffect(() => {
     if (!backButton.onClick.isAvailable()) return;
-    const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
-    return backButton.onClick(() => {
-      // Сначала отдаём нажатие открытому оверлею (редактор кропа/лайтбокс): он закроется,
-      // навигацию не делаем. Если оверлеев нет — спрашиваем гарды (напр. несохранённая форма
-      // покажет confirm) и только потом уходим к родителю.
-      if (consumeBackInterceptor()) return;
-      checkNavigationGuards()
-        .then((canLeave) => {
-          if (canLeave) navigate(returnTo ?? parentPath(location.pathname));
-        })
-        .catch((err) => console.error("Не удалось проверить гарды навигации", err));
-    });
-  }, [navigate, location.pathname, location.state]);
+    return backButton.onClick(goBack);
+  }, [goBack]);
 
   // Показ/скрытие в зависимости от текущего маршрута.
   useEffect(() => {
     if (!backButton.isMounted()) return;
-    if (location.pathname === ROUTES.home) {
-      if (backButton.hide.isAvailable()) backButton.hide();
-    } else {
+    if (canGoBack) {
       if (backButton.show.isAvailable()) backButton.show();
+    } else if (backButton.hide.isAvailable()) {
+      backButton.hide();
     }
-  }, [location.pathname]);
+  }, [canGoBack]);
 
   return null;
 }

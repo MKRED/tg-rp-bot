@@ -24,7 +24,7 @@ export function RpChatGraphPage() {
   );
 
   return (
-    <FullHeightPage title="Граф веток чата" phase={loading ? "loading" : "ready"}>
+    <FullHeightPage title="Граф веток чата" phase={loading ? "loading" : "ready"} floatingBack>
       <BranchGraph
         nodes={nodes}
         loading={loading}

@@ -231,9 +231,14 @@ lib/        — чистые хелперы и данные (форматтер�
 Пример потребителя: `import { CharacterForm, useCharacter } from "../../features/characters"`.
 
 ### Роутер и deep-link
-- **`HashRouter`** (react-router-dom): маршрут в hash переживает reload. Нативная кнопка «Назад» Telegram
-  связана с роутером в `app/BackButtonBridge.tsx` — `navigate(parentPath(...))`, т.е. вверх по иерархии,
-  а не по истории. Catch-all `*` → главная: на Telegram Web launch-параметры приходят в hash, и без
+- **`HashRouter`** (react-router-dom): маршрут в hash переживает reload.
+- **«Назад» — вверх по иерархии, а не по истории.** Куда вести, решает один хук `app/useGoBack.ts`:
+  `backTarget()` из `routes.ts` (`state.returnTo`, иначе `parentPath()`), перед уходом — перехватчики
+  оверлеев (`backInterceptor`) и гарды несохранённых форм (`navigationGuard`); на главной и `/login`
+  «Назад» нет (`hasBackTarget()`). Его используют обе кнопки: в Telegram — нативная BackButton
+  (`app/BackButtonBridge.tsx`), в браузере — `shared/components/BackNavButton` слева в шапке экрана
+  (`AppPage`, шапки чата/истории/соавтора/холста; на экранах без шапки — графы веток, ошибка загрузки —
+  плавающая, `FullHeightPage floatingBack`). В Telegram `BackNavButton` ничего не рисует. Catch-all `*` → главная: на Telegram Web launch-параметры приходят в hash, и без
   редиректа роутер показал бы пустой экран.
 - **Deep-link из бота** (`app/deepLink.ts` + `main.tsx`): web_app-кнопка под фото, отправленными в чат
   раньше (новые уходят только с «Закрыть»), открывает Mini App с `?dl=<путь>` (напр. `/characters/123`). `resolveDeepLink()` вызывается **до** `render()`
