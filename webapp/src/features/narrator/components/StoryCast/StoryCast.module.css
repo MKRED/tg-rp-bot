@@ -1,0 +1,15 @@
+/* Кружок нажатия вокруг стопки: видно, что она нажимается, и палец попадает с запасом. */
+.button {
+  display: flex;
+  padding: 2px;
+  border-radius: var(--mantine-radius-xl);
+  transition: background-color 150ms ease;
+
+  @mixin hover {
+    background: var(--mantine-color-default-hover);
+  }
+
+  &:active {
+    background: var(--mantine-color-default-hover);
+  }
+}

@@ -1,7 +1,7 @@
 import { ActionIcon, Text } from "@mantine/core";
 import { GitBranch, Settings } from "lucide-react";
 import type { StoryAvatarRef } from "../../types/story";
-import { StoryAvatars } from "../StoryAvatars";
+import { StoryCast } from "../StoryCast";
 import { BackNavButton } from "../../../../shared/components/BackNavButton";
 import styles from "./StoryHeader.module.css";
 
@@ -14,7 +14,10 @@ interface StoryHeaderProps {
   onSettingsClick: () => void;
 }
 
-/** Шапка истории: «Назад» (только в браузере), стопка аватаров книги, название, граф веток и настройки. */
+/**
+ * Шапка истории: «Назад» (только в браузере), стопка аватаров книги (нажатие — галерея их картинок),
+ * название, граф веток и настройки.
+ */
 export function StoryHeader({ title, avatars, onGraphClick, onSettingsClick }: StoryHeaderProps) {
   return (
     <header className={styles.header}>
@@ -22,7 +25,7 @@ export function StoryHeader({ title, avatars, onGraphClick, onSettingsClick }: S
         <BackNavButton />
         <div className={styles.avatars}>
           {/* Пять аватаров на телефоне оставили бы названию ~80px — показываем три места, остальные «+N». */}
-          <StoryAvatars avatars={avatars} size={36} max={3} />
+          <StoryCast avatars={avatars} size={36} max={3} />
         </div>
         <Text fw={600} truncate className={styles.title}>
           {title}
