@@ -5,16 +5,12 @@
   margin-left: calc(-1 * var(--mantine-spacing-xs));
 }
 
-/* Плавающая кнопка — над контентом экрана (граф ReactFlow держит свои слои до z-index ~5), ниже
-   safe area; родитель (FullHeightPage) задаёт position: relative. */
+/* Плавающая кнопка — над контентом экрана (граф ReactFlow держит свои слои до z-index ~5). Якорь —
+   тело FullHeightPage (position: relative), оно уже начинается ниже safe area, поэтому только отступ. */
 .floating {
   position: absolute;
   z-index: 10;
-  top: calc(
-    var(--mantine-spacing-sm) +
-    var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
-    var(--tg-viewport-content-safe-area-inset-top, 0px)
-  );
+  top: var(--mantine-spacing-sm);
   left: var(--mantine-spacing-sm);
   box-shadow: var(--mantine-shadow-sm);
 }

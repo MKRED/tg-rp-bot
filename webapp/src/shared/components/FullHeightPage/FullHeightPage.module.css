@@ -6,8 +6,6 @@
   flex-direction: column;
   /* Страница не прокручивается никогда — в том числе пока анимация появления сдвигает контент вниз. */
   overflow: hidden;
-  /* Якорь для плавающей «Назад» (BackNavButton floating). */
-  position: relative;
   background: var(--app-color-page);
   padding-top: calc(
     var(--tg-viewport-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
@@ -17,6 +15,8 @@
 
 /* Обёртка анимации появления занимает всю оставшуюся высоту и сама раскладывает детей колонкой. */
 .body {
+  /* Якорь для плавающей «Назад» (BackNavButton floating) — она внутри анимации появления. */
+  position: relative;
   flex: 1;
   min-height: 0;
   display: flex;

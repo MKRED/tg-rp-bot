@@ -112,7 +112,7 @@ export function StoryPage() {
   };
 
   return (
-    <FullHeightPage title={story ? (story.title ?? story.book.name) : "История"} floatingBack={!story}>
+    <FullHeightPage title={story ? (story.title ?? story.book.name) : "История"} floatingBack={!loading && !story}>
       {story && (
         <StoryHeader
           title={story.title ?? story.book.name}

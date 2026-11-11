@@ -9,7 +9,10 @@ interface FullHeightPageProps {
   title?: string;
   /** Дискриминатор фазы (loading/ready) — перезапускает анимацию появления, как у AppPage. */
   phase?: string;
-  /** Плавающая «Назад» в браузере — когда у экрана нет своей шапки с кнопкой (граф, ошибка загрузки). */
+  /**
+   * Плавающая «Назад» в браузере — когда у экрана нет своей шапки с кнопкой (граф, ошибка загрузки).
+   * Не включать на время загрузки экрана с шапкой: кнопка мелькнула бы в углу, а потом «прыгнула» в шапку.
+   */
   floatingBack?: boolean;
   children: ReactNode;
 }
@@ -24,10 +27,12 @@ export function FullHeightPage({ title, phase, floatingBack, children }: FullHei
   usePageTitle(title);
   return (
     <div className={styles.page}>
+      {/* Кнопка внутри анимации появления: иначе она возникала бы мгновенно, поверх ещё гаснущей
+          предыдущей страницы, а не вместе с этим экраном. */}
       <PageTransition phase={phase} className={styles.body}>
+        {floatingBack && <BackNavButton floating />}
         {children}
       </PageTransition>
-      {floatingBack && <BackNavButton floating />}
     </div>
   );
 }

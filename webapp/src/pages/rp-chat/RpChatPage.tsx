@@ -143,7 +143,7 @@ export function RpChatPage() {
   };
 
   return (
-    <FullHeightPage title={chat ? (chat.title ?? chat.character.name) : "Чат"} floatingBack={!chat}>
+    <FullHeightPage title={chat ? (chat.title ?? chat.character.name) : "Чат"} floatingBack={!loading && !chat}>
       {chat && (
         <ChatHeader
           character={chat.character}

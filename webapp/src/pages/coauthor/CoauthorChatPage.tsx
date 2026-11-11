@@ -16,7 +16,7 @@ export function CoauthorChatPage() {
   const { chat, setChat, loading, error } = useCoauthorChat(chatId);
 
   return (
-    <FullHeightPage title={chat?.name ?? "Соавтор"} phase={loading ? "loading" : "ready"} floatingBack={!chat}>
+    <FullHeightPage title={chat?.name ?? "Соавтор"} phase={loading ? "loading" : "ready"} floatingBack={!loading && !chat}>
       {chat ? (
         <CoauthorWorkspace chat={chat} setChat={setChat} onSettings={() => navigate(coauthorSettingsPath(chatId))} />
       ) : (
