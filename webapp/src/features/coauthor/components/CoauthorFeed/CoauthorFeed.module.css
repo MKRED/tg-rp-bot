@@ -115,8 +115,17 @@
   white-space: normal;
   text-align: left;
 
+  /* У метки Mantine межстрочный интервал впритык (line-height = размер шрифта) и overflow: hidden —
+     на второй строке хвосты букв («у», «д») срезались. */
+  & :global(.mantine-Button-inner) {
+    height: auto;
+  }
+
   & :global(.mantine-Button-label) {
+    height: auto;
     white-space: normal;
+    line-height: 1.35;
+    overflow: visible;
   }
 }
 

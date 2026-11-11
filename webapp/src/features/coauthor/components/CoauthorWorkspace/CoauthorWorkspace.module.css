@@ -21,11 +21,16 @@
   }
 }
 
-/* ПК: карточки — колонкой справа на фоне чуть темнее страницы. */
+/* ПК: карточки — колонкой справа на фоне чуть темнее страницы: блоки карточек (цвет поверхности)
+   на нём выделяются так же, как карточки на странице. default-hover в тёмной схеме светлее поверхности —
+   колонка выглядела заплаткой другой темы. */
 @media (min-width: 62em) {
   .cardsPane {
     flex: 0 0 26rem;
     border-left: 1px solid var(--app-color-divider);
-    background: var(--mantine-color-default-hover);
+    background: light-dark(
+      color-mix(in srgb, var(--app-color-page), black 3%),
+      color-mix(in srgb, var(--app-color-page), black 25%)
+    );
   }
 }

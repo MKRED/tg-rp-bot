@@ -2,6 +2,21 @@
   box-sizing: border-box;
 }
 
+/*
+  Полосы прокрутки — тонкие, в цвет схемы, без стрелок (наследуется всеми прокручиваемыми блоками).
+  Без этого на ПК (Windows) рисовалась системная серая полоса со стрелками — чужая для тёмной темы.
+  На телефонах полосы оверлейные и правило ни на что не влияет.
+*/
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--mantine-color-gray-4) transparent;
+}
+
+/* Схема — атрибут на самом html, поэтому light-dark() (он ищет атрибут у предка) здесь не сработает. */
+html[data-mantine-color-scheme="dark"] {
+  scrollbar-color: var(--mantine-color-dark-3) transparent;
+}
+
 html,
 body,
 #root {
