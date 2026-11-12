@@ -10,7 +10,7 @@ import { presetSummary, usePresets } from "../../features/generation-presets";
 export function useCoauthorFormOptions() {
   const { items: rawCards, loading: cardsLoading } = useCards();
   const { items: rawPresets, loading: presetsLoading } = usePresets();
-  const cards: CoauthorCardOption[] = rawCards.map((c) => ({ id: c.id, name: c.name }));
+  const cards: CoauthorCardOption[] = rawCards.map((c) => ({ id: c.id, name: c.name, updatedAt: c.updatedAt }));
   const presets: CoauthorPresetOption[] = rawPresets.map((p) => ({
     id: p.id,
     name: p.name,

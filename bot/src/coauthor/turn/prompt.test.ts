@@ -26,10 +26,3 @@ describe("cardsSnapshot", () => {
     expect(json.cards[0].blocks[0]).toMatchObject({ block_id: "fears", path: "cards/1/fears.md", content: "", pending_proposal: "Storms" });
   });
 });
-
-describe("limitsPrompt через buildSystemPrompt", () => {
-  it("вопросы выключены (maxQuestions 0) — про ask_user в лимитах ни слова", () => {
-    expect(buildSystemPrompt("", { maxRounds: 8, maxEdits: 5, maxQuestions: 0 })).not.toContain("ask_user pauses");
-    expect(buildSystemPrompt("", { maxRounds: 8, maxEdits: 5, maxQuestions: 2 })).toContain("up to 2 ask_user pauses");
-  });
-});

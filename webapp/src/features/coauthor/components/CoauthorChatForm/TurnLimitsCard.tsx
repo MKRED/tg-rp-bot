@@ -9,9 +9,9 @@ interface TurnLimitsCardProps {
 
 /**
  * Лимиты хода ИИ — отдельной карточкой под «ИИ»: это редкая настройка «на всякий случай», в основной
- * карточке она бы мешала. Тот же степпер, что на экране отладки. Вопросы скрыты при выключенных
- * уточняющих вопросах — лимит тогда ни на что не влияет. Лимит веб-поиска здесь не дублируем: он в
- * общих настройках поиска.
+ * карточке она бы мешала. Тот же степпер, что на экране отладки. Отдельного тумблера вопросов нет:
+ * у соавтора они включены всегда, частоту задаёт лимит. Лимит веб-поиска здесь не дублируем: он в общих
+ * настройках поиска.
  */
 export function TurnLimitsCard({ value, onChange }: TurnLimitsCardProps) {
   const { edits, questions, rounds } = COAUTHOR_LIMITS;
@@ -28,16 +28,14 @@ export function TurnLimitsCard({ value, onChange }: TurnLimitsCardProps) {
         max={edits.max}
         onCommit={(maxEdits) => onChange({ maxEdits })}
       />
-      {value.useAskUser && (
-        <StepperField
-          label="Вопросов за сообщение"
-          description="Сколько раз ИИ может остановиться и спросить вас"
-          value={value.maxQuestions}
-          min={questions.min}
-          max={questions.max}
-          onCommit={(maxQuestions) => onChange({ maxQuestions })}
-        />
-      )}
+      <StepperField
+        label="Вопросов за сообщение"
+        description="Сколько раз ИИ может остановиться и уточнить у вас"
+        value={value.maxQuestions}
+        min={questions.min}
+        max={questions.max}
+        onCommit={(maxQuestions) => onChange({ maxQuestions })}
+      />
       <StepperField
         label="Шагов ИИ"
         description="Вызовов модели за один заход: больше — ИИ успеет больше, но ответ дольше и дороже"

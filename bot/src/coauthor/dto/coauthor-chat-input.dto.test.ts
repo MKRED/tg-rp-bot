@@ -22,7 +22,7 @@ async function viaDto(body: unknown): Promise<Parsed> {
 describe("CoauthorChatInputDto", () => {
   it("дефолты у всех полей, повторы карточек схлопываются", async () => {
     expect(await viaDto({ name: " Sisters ", cardIds: [3, 3, 5] })).toEqual({
-      input: { name: "Sisters", cardIds: [3, 5], presetId: null, systemPrompt: "", useAskUser: false, useWebSearch: false, useImages: false, maxRounds: 8, maxEdits: 24, maxQuestions: 2 },
+      input: { name: "Sisters", cardIds: [3, 5], presetId: null, systemPrompt: "", useWebSearch: false, useImages: false, maxRounds: 8, maxEdits: 24, maxQuestions: 2 },
     });
   });
 

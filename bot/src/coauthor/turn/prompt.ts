@@ -46,12 +46,10 @@ export const STALE_CARDS_RESULT = JSON.stringify({
  * при исчерпании. Остаток она видит в результатах инструментов (edits_left, rounds_left, budget.ts).
  */
 function limitsPrompt(limits: CoauthorTurnLimits): string {
-  // maxQuestions 0 — вопросы в чате выключены (ask_user не предлагается): не обещаем модели паузы.
-  const questions = limits.maxQuestions > 0 ? ` and up to ${limits.maxQuestions} ask_user pauses` : "";
   return (
     "## Limits\n" +
     `- Per user message: up to ${limits.maxEdits} block edits (every block changed by edit_block or ` +
-    `apply_patch counts)${questions}.\n` +
+    `apply_patch counts) and up to ${limits.maxQuestions} ask_user pauses.\n` +
     `- One run allows ${limits.maxRounds} model calls; the last one has no tools, so finish your edits before it.\n` +
     "- Tool results show edits_left and rounds_left. If a request needs more edits than are left, do the most " +
     "important ones and tell the user what is left — they can ask you to continue."

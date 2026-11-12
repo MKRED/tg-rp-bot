@@ -32,7 +32,7 @@ const proposal = (id: string, cardId: number, baseContent: string): CoauthorProp
 /** Сервис с чатом над карточками 1 и 2 и заданными правками; cards — текущее содержимое блоков. */
 function setup(proposals: CoauthorProposal[], contents: Record<number, string>) {
   const state = { ...emptyCoauthorState(), proposals };
-  const chat = { id: 7, name: "Chat", cardIds: [1, 2], presetId: null, systemPrompt: "", useAskUser: true, useWebSearch: false, useImages: true, state };
+  const chat = { id: 7, name: "Chat", cardIds: [1, 2], presetId: null, systemPrompt: "", useWebSearch: false, useImages: true, state };
   const repo = {
     findOne: vi.fn().mockResolvedValue(chat),
     saveState: vi.fn().mockImplementation(async (_u, _id, saved) => ({ ...chat, state: saved })),

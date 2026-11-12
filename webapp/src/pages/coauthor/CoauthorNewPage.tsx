@@ -12,7 +12,6 @@ const EMPTY: CoauthorChatInput = {
   cardIds: [],
   presetId: null,
   systemPrompt: "",
-  useAskUser: true,
   useWebSearch: false,
   useImages: true,
   maxRounds: COAUTHOR_LIMITS.rounds.default,

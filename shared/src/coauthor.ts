@@ -19,7 +19,8 @@ export const COAUTHOR_SYSTEM_PROMPT_MAX_LENGTH = 12000;
  * - rounds — вызовов модели за один запуск хода (ответ на вопросы ИИ запускает ход заново); последний —
  *   без инструментов, поэтому минимум 2: с одним вызовом модель не смогла бы ничего поправить;
  * - edits — правок блоков за сообщение пользователя (каждый изменённый блок, неудачные попытки не в счёт);
- * - questions — пауз на вопросы ИИ за сообщение пользователя.
+ * - questions — пауз на вопросы ИИ за сообщение пользователя. Вопросы у соавтора включены всегда: это часть
+ *   совместной работы, а частоту задаёт этот лимит.
  */
 export const COAUTHOR_LIMITS = {
   rounds: { min: 2, max: 20, default: 8 },
@@ -126,7 +127,6 @@ export interface CoauthorChat {
   presetId: number | null;
   /** Свой системный промпт чата; пустая строка — стандартный (DEFAULT_COAUTHOR_SYSTEM_PROMPT). */
   systemPrompt: string;
-  useAskUser: boolean;
   useWebSearch: boolean;
   /** Картинки-референсы карточек уходят модели (если модель пресета их видит). */
   useImages: boolean;
@@ -158,7 +158,6 @@ export interface CoauthorChatInput extends CoauthorTurnLimits {
   cardIds: number[];
   presetId: number | null;
   systemPrompt: string;
-  useAskUser: boolean;
   useWebSearch: boolean;
   useImages: boolean;
 }

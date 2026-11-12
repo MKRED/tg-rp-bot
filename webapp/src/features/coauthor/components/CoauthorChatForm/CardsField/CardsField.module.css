@@ -1,0 +1,74 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+}
+
+/* Выбранные карточки — один блок со строками-разделителями, фоном как у заполненного поля ввода. */
+.selected {
+  border-radius: var(--mantine-radius-md);
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
+  overflow: hidden;
+}
+
+/* «Добавить карточку»: пунктир — место для ещё одной карточки, акцентный текст — это действие. */
+.add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mantine-spacing-xs);
+  min-height: 48px;
+  border: 1.5px dashed light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4));
+  border-radius: var(--mantine-radius-md);
+  color: light-dark(var(--mantine-color-accent-8), var(--mantine-color-accent-4));
+  font-weight: 600;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+
+  @media (hover: hover) {
+    &:hover {
+      border-color: var(--mantine-primary-color-filled);
+    }
+  }
+
+  &:active {
+    background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+  }
+}
+
+/* Список шторки во всю её ширину поверх внутреннего отступа, как у PickerField. */
+.list {
+  margin-inline: calc(-1 * var(--mantine-spacing-md));
+}
+
+/* Квадратик отметки: пустая рамка или залитый акцентом с галочкой. */
+.check {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--mantine-radius-sm);
+  border: 2px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-3));
+  color: var(--mantine-primary-color-contrast);
+
+  &[data-checked] {
+    border-color: var(--mantine-primary-color-filled);
+    background-color: var(--mantine-primary-color-filled);
+  }
+}
+
+/* «Готово» прилипает к низу шторки: при длинном списке до неё не надо листать. */
+.footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+  margin-inline: calc(-1 * var(--mantine-spacing-md));
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md) var(--mantine-spacing-xs);
+  background-color: var(--mantine-color-body);
+  border-top: 1px solid var(--app-color-divider);
+}

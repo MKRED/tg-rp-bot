@@ -151,7 +151,6 @@ export class CoauthorTurnService {
         state,
         webSearch: chat.useWebSearch ? { search: (query) => this.webSearch.search(apiKey, query) } : null,
         maxSearchRounds,
-        askUserEnabled: chat.useAskUser,
         limits: { maxRounds: chat.maxRounds, maxEdits: chat.maxEdits, maxQuestions: chat.maxQuestions },
         // Модель без зрения не падает, а молча выкидывает картинки — просто их не шлём (чат полезен и без них).
         withImages: chat.useImages && modelSupportsImages(preset.model),

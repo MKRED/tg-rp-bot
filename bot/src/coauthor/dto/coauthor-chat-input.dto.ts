@@ -35,9 +35,6 @@ export class CoauthorChatInputDto implements CoauthorChatInput {
   systemPrompt = "";
 
   @IsFlag()
-  useAskUser = false;
-
-  @IsFlag()
   useWebSearch = false;
 
   @IsFlag()

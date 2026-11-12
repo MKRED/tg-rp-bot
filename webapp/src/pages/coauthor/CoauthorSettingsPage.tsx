@@ -55,7 +55,6 @@ export function CoauthorSettingsPage() {
       cardIds: chat.cards.map((c) => c.id),
       presetId: chat.presetId,
       systemPrompt: chat.systemPrompt,
-      useAskUser: chat.useAskUser,
       useWebSearch: chat.useWebSearch,
       useImages: chat.useImages,
       maxRounds: chat.maxRounds,

@@ -37,7 +37,6 @@ const params = (llm: ResponsesCompleter, state = emptyCoauthorState()) => {
     state,
     webSearch: null,
     maxSearchRounds: 0,
-    askUserEnabled: true,
     withImages: false,
     limits: { maxRounds: 8, maxEdits: 24, maxQuestions: 2 },
   };
@@ -76,17 +75,6 @@ describe("runCoauthorTurn", () => {
     expect(p.state.pending?.toolCallId).toBe("a1");
     expect(JSON.parse(p.state.pending!.results.e1!).ok).toBe(true);
     expect(p.state.messages.at(-1)!.role).toBe("assistant");
-  });
-
-  it("выключенный ask_user — ошибка в результате, без паузы", async () => {
-    const { llm } = fakeLlm([
-      { content: "", model: "m", toolCalls: [call("a1", "ask_user", { questions: [{ question: "Tone?" }] })] },
-      { content: "ok", model: "m" },
-    ]);
-    const p = { ...params(llm), askUserEnabled: false };
-    expect(await runCoauthorTurn(p)).toBe("done");
-    const result = p.state.messages.find((m) => m.role === "tool");
-    expect(result && JSON.parse(result.content).error).toContain("unavailable");
   });
 
   it("модель зовёт инструменты бесконечно — последний раунд без tools", async () => {

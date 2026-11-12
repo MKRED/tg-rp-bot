@@ -8,7 +8,7 @@ import {
   type CoauthorChatInput,
   type CoauthorPresetOption,
 } from "../../types/coauthor";
-import { CardsChecklist } from "./CardsChecklist";
+import { CardsField } from "./CardsField";
 import { TurnLimitsCard } from "./TurnLimitsCard";
 
 interface CoauthorChatFormProps {
@@ -62,7 +62,7 @@ export function CoauthorChatForm({
           value={value.name}
           onChange={(e) => onChange({ name: e.currentTarget.value })}
         />
-        <CardsChecklist options={cards} loading={cardsLoading} value={value.cardIds} onChange={(cardIds) => onChange({ cardIds })} />
+        <CardsField options={cards} loading={cardsLoading} value={value.cardIds} onChange={(cardIds) => onChange({ cardIds })} />
       </SettingsCard>
 
       <SettingsCard title="ИИ" description="Каждую правку ИИ вы принимаете или отклоняете сами — карточки без вас не меняются.">
@@ -90,12 +90,6 @@ export function CoauthorChatForm({
               </Button>
             ) : undefined
           }
-        />
-        <Switch
-          label="Уточняющие вопросы"
-          description="ИИ сможет спросить, если запрос неоднозначный или выбор за вами"
-          checked={value.useAskUser}
-          onChange={(e) => onChange({ useAskUser: e.currentTarget.checked })}
         />
         <Switch
           label="Веб-поиск"

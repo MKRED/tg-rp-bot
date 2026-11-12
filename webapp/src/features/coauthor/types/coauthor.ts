@@ -34,4 +34,6 @@ export interface CoauthorPresetOption {
 export interface CoauthorCardOption {
   id: number;
   name: string;
+  /** ISO-строка: подпись «изменена …» в списке выбора. */
+  updatedAt: string;
 }

@@ -28,7 +28,6 @@ export interface CoauthorTurnParams {
   limits: CoauthorTurnLimits;
   webSearch: WebSearcher | null;
   maxSearchRounds: number;
-  askUserEnabled: boolean;
   /** Отправлять картинки-референсы карточек: включено в чате и модель пресета их видит. */
   withImages: boolean;
   onWebSearch?: (record: WebSearchRecord) => void;
@@ -59,7 +58,7 @@ export type CoauthorTurnOutcome = "done" | "questions";
  * Модель всегда стримится: edit_block несёт весь текст блока, и шаг виден, пока он пишется, а не после.
  */
 export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<CoauthorTurnOutcome> {
-  const { llm, baseOptions, customPrompt, cards, state, limits, webSearch, maxSearchRounds, askUserEnabled, withImages } = params;
+  const { llm, baseOptions, customPrompt, cards, state, limits, webSearch, maxSearchRounds, withImages } = params;
   const { userId } = baseOptions;
   const t0 = Date.now();
 
@@ -82,7 +81,7 @@ export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<Coaut
             GET_CARDS_TOOL,
             EDIT_BLOCK_TOOL,
             APPLY_PATCH_TOOL,
-            ...(askUserEnabled ? [COAUTHOR_ASK_USER_TOOL] : []),
+            COAUTHOR_ASK_USER_TOOL,
             ...(webSearch && searchesUsed < maxSearchRounds ? [webSearchTool(maxSearchRounds - searchesUsed)] : []),
           ]
         : [];
@@ -96,8 +95,7 @@ export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<Coaut
           proposals: state.proposals,
           history: state.messages,
           historyTokenBudget: COAUTHOR_HISTORY_TOKEN_BUDGET,
-          // Вопросы выключены — в протоколе о них ни слова (ask_user и так не предлагается).
-          limits: askUserEnabled ? limits : { ...limits, maxQuestions: 0 },
+          limits,
           withImages,
         }),
         ...(tools.length > 0 && { tools, toolChoice: "auto" as const }),

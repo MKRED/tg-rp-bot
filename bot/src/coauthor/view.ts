@@ -29,7 +29,6 @@ export function toChatView(
     cards: visible.map(toCardView),
     presetId: record.presetId,
     systemPrompt: record.systemPrompt,
-    useAskUser: record.useAskUser,
     useWebSearch: record.useWebSearch,
     useImages: record.useImages,
     maxRounds: record.maxRounds,
