@@ -20,4 +20,4 @@ export type {
   CoauthorChatListItem,
   CoauthorPresetOption,
 } from "./types/coauthor";
-export { MAX_COAUTHOR_CARDS, MAX_COAUTHOR_CHATS_PER_USER } from "./types/coauthor";
+export { COAUTHOR_LIMITS, MAX_COAUTHOR_CARDS, MAX_COAUTHOR_CHATS_PER_USER } from "./types/coauthor";

@@ -22,8 +22,15 @@ async function viaDto(body: unknown): Promise<Parsed> {
 describe("CoauthorChatInputDto", () => {
   it("дефолты у всех полей, повторы карточек схлопываются", async () => {
     expect(await viaDto({ name: " Sisters ", cardIds: [3, 3, 5] })).toEqual({
-      input: { name: "Sisters", cardIds: [3, 5], presetId: null, systemPrompt: "", useAskUser: false, useWebSearch: false, useImages: false },
+      input: { name: "Sisters", cardIds: [3, 5], presetId: null, systemPrompt: "", useAskUser: false, useWebSearch: false, useImages: false, maxRounds: 8, maxEdits: 24, maxQuestions: 2 },
     });
+  });
+
+  it("лимиты вне границ — ошибка (раундов меньше двух нельзя: последний без инструментов)", async () => {
+    expect(await viaDto({ name: "A", cardIds: [1], maxRounds: 1 })).toHaveProperty("error");
+    expect(await viaDto({ name: "A", cardIds: [1], maxEdits: 0 })).toHaveProperty("error");
+    expect(await viaDto({ name: "A", cardIds: [1], maxQuestions: 9 })).toHaveProperty("error");
+    expect(await viaDto({ name: "A", cardIds: [1], maxEdits: 3 })).toMatchObject({ input: { maxEdits: 3 } });
   });
 
   it("без карточек и больше четырёх — ошибка", async () => {

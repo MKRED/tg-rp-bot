@@ -14,6 +14,27 @@ export const COAUTHOR_MESSAGE_MAX_LENGTH = 8000;
 export const COAUTHOR_SYSTEM_PROMPT_MAX_LENGTH = 12000;
 
 /**
+ * Лимиты хода ИИ — настройка чата. Модель знает их числами (протокол в системном промпте) и видит остаток
+ * в результатах инструментов, поэтому при исчерпании заканчивает ход сама и говорит, что осталось.
+ * - rounds — вызовов модели за один запуск хода (ответ на вопросы ИИ запускает ход заново); последний —
+ *   без инструментов, поэтому минимум 2: с одним вызовом модель не смогла бы ничего поправить;
+ * - edits — правок блоков за сообщение пользователя (каждый изменённый блок, неудачные попытки не в счёт);
+ * - questions — пауз на вопросы ИИ за сообщение пользователя.
+ */
+export const COAUTHOR_LIMITS = {
+  rounds: { min: 2, max: 20, default: 8 },
+  edits: { min: 1, max: 50, default: 24 },
+  questions: { min: 1, max: 5, default: 2 },
+} as const;
+
+/** Лимиты хода чата (см. COAUTHOR_LIMITS). */
+export interface CoauthorTurnLimits {
+  maxRounds: number;
+  maxEdits: number;
+  maxQuestions: number;
+}
+
+/**
  * Стандартная редактируемая часть системного промпта — только правила поведения соавтора. Протокол
  * инструментов (edit_block, get_cards, формат карточек) сервер дописывает сам, поэтому правка промпта
  * пользователем не может сломать механику правок. В чате хранится пустая строка, пока промпт не меняли:
@@ -109,6 +130,9 @@ export interface CoauthorChat {
   useWebSearch: boolean;
   /** Картинки-референсы карточек уходят модели (если модель пресета их видит). */
   useImages: boolean;
+  maxRounds: number;
+  maxEdits: number;
+  maxQuestions: number;
   feed: CoauthorFeedItem[];
   proposals: CoauthorProposal[];
   /** Идёт ход ИИ — после обновления страницы клиент опрашивает чат, пока флаг не снимется. */
@@ -129,7 +153,7 @@ export interface CoauthorChatListItem {
 }
 
 /** Тело создания и правки настроек чата (POST /coauthor, PUT /coauthor/:id). */
-export interface CoauthorChatInput {
+export interface CoauthorChatInput extends CoauthorTurnLimits {
   name: string;
   cardIds: number[];
   presetId: number | null;

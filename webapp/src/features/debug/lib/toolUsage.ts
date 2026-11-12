@@ -56,10 +56,13 @@ export function describeToolUsage(record: Pick<LlmDebugRecord, "request" | "resp
   const nameByCallId = new Map<string, string>();
   const resultsInHistory: string[] = [];
   for (const item of input) {
-    if (item?.type === "function_call" && typeof item.call_id === "string" && typeof item.name === "string") {
+    // custom_tool_call (apply_patch соавтора) — та же пара «вызов → результат», другие имена типов.
+    const isCall = item?.type === "function_call" || item?.type === "custom_tool_call";
+    const isOutput = item?.type === "function_call_output" || item?.type === "custom_tool_call_output";
+    if (isCall && typeof item.call_id === "string" && typeof item.name === "string") {
       nameByCallId.set(item.call_id, item.name);
     }
-    if (item?.type === "function_call_output" && typeof item.call_id === "string") {
+    if (isOutput && typeof item.call_id === "string") {
       const name = nameByCallId.get(item.call_id);
       if (name) resultsInHistory.push(name);
     }

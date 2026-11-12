@@ -1,6 +1,7 @@
 import type { CoauthorStep } from "@tg-rp-bot/shared";
 import { WEB_SEARCH_TOOL_NAME } from "../../web-search/web-search-tool.js";
-import { EDIT_BLOCK_TOOL_NAME, GET_CARDS_TOOL_NAME } from "./tools.js";
+import { parseBlockPath, parsePatch, streamedPatchPaths } from "./apply-patch/index.js";
+import { APPLY_PATCH_TOOL_NAME, EDIT_BLOCK_TOOL_NAME, GET_CARDS_TOOL_NAME } from "./tools.js";
 
 // Аргументы читаем регулярками, а не JSON.parse: шаг нужен, пока аргументы ещё стримятся и JSON неполон
 // (весь текст блока идёт следом, это десятки секунд). Кавычки внутри content экранированы, поэтому
@@ -47,4 +48,31 @@ export function callStep(call: { id: string; name: string; arguments: string }, 
     return cardId === undefined || blockId === undefined ? undefined : { id: call.id, status, kind: "edit", cardId: Number(cardId), blockId };
   }
   return undefined;
+}
+
+/**
+ * Шаги одного вызова. У apply_patch — по шагу на каждый блок патча (id `<вызов>:<карточка>:<блок>`):
+ * пока патч стримится, блоки появляются по мере законченных строк `*** Update File:`; итог — по
+ * разобранному патчу. Остальные инструменты — не больше одного шага (callStep).
+ */
+export function callSteps(call: { id: string; name: string; arguments: string }, result?: string): CoauthorStep[] {
+  if (call.name !== APPLY_PATCH_TOOL_NAME) {
+    const step = callStep(call, result);
+    return step ? [step] : [];
+  }
+  const status = result === undefined ? "running" : hasError(result) ? "failed" : "done";
+  const parsed = result === undefined ? undefined : parsePatch(call.arguments);
+  // Пока патч пишется, последняя строка может быть недописана — её не берём; у законченного (даже
+  // битого) патча последняя строка полная.
+  const paths = parsed?.ok
+    ? parsed.sections.map((s) => s.path)
+    : streamedPatchPaths(result === undefined ? call.arguments : `${call.arguments}\n`);
+  const steps: CoauthorStep[] = [];
+  for (const path of paths) {
+    const ids = parseBlockPath(path);
+    if (!ids) continue;
+    const id = `${call.id}:${ids.cardId}:${ids.blockId}`;
+    if (!steps.some((s) => s.id === id)) steps.push({ id, status, kind: "edit", cardId: ids.cardId, blockId: ids.blockId });
+  }
+  return steps;
 }

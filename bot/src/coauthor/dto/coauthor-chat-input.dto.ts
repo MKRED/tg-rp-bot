@@ -1,10 +1,11 @@
 import {
+  COAUTHOR_LIMITS,
   COAUTHOR_SYSTEM_PROMPT_MAX_LENGTH,
   MAX_COAUTHOR_CARDS,
   type CoauthorChatInput,
 } from "@tg-rp-bot/shared";
 import { Transform } from "class-transformer";
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength } from "class-validator";
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
 import { IsFlag, IsPromptText } from "../../cards/dto/card-input.dto.js";
 
 /**
@@ -41,4 +42,20 @@ export class CoauthorChatInputDto implements CoauthorChatInput {
 
   @IsFlag()
   useImages = false;
+
+  // Лимиты хода — границы и дефолты из общего контракта (COAUTHOR_LIMITS), webapp ограничивает так же.
+  @IsInt({ message: "maxRounds must be an integer" })
+  @Min(COAUTHOR_LIMITS.rounds.min)
+  @Max(COAUTHOR_LIMITS.rounds.max)
+  maxRounds: number = COAUTHOR_LIMITS.rounds.default;
+
+  @IsInt({ message: "maxEdits must be an integer" })
+  @Min(COAUTHOR_LIMITS.edits.min)
+  @Max(COAUTHOR_LIMITS.edits.max)
+  maxEdits: number = COAUTHOR_LIMITS.edits.default;
+
+  @IsInt({ message: "maxQuestions must be an integer" })
+  @Min(COAUTHOR_LIMITS.questions.min)
+  @Max(COAUTHOR_LIMITS.questions.max)
+  maxQuestions: number = COAUTHOR_LIMITS.questions.default;
 }

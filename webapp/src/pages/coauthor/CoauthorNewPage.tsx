@@ -2,7 +2,7 @@ import { Button } from "@mantine/core";
 import { useState } from "react";
 import { coauthorViewPath } from "../../app/routes";
 import { useTransitionNavigate } from "../../app/useTransitionNavigate";
-import { CoauthorChatForm, coauthorErrorMessage, createCoauthorChat, type CoauthorChatInput } from "../../features/coauthor";
+import { COAUTHOR_LIMITS, CoauthorChatForm, coauthorErrorMessage, createCoauthorChat, type CoauthorChatInput } from "../../features/coauthor";
 import { AppPage } from "../../shared/components/AppPage";
 import { useToast } from "../../shared/toast";
 import { useCoauthorFormOptions } from "./useCoauthorFormOptions";
@@ -15,6 +15,9 @@ const EMPTY: CoauthorChatInput = {
   useAskUser: true,
   useWebSearch: false,
   useImages: true,
+  maxRounds: COAUTHOR_LIMITS.rounds.default,
+  maxEdits: COAUTHOR_LIMITS.edits.default,
+  maxQuestions: COAUTHOR_LIMITS.questions.default,
 };
 
 /** Создание чата соавтора: карточки, пресет, промпт. Пустое название — имена карточек через «и». */

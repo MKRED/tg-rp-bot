@@ -28,6 +28,18 @@ describe("buildResponsesBody", () => {
     expect(body.input).not.toBe(input);
   });
 
+  it("custom-инструмент уходит как есть, рядом с плоскими функциями", () => {
+    const body = buildResponsesBody(
+      { userId: "u", input: [], tools: [tool, { type: "custom", name: "apply_patch", description: "patch" }] },
+      false,
+      provider,
+    );
+    expect(body.tools).toEqual([
+      { type: "function", name: "get_card", description: "d", parameters: { type: "object" } },
+      { type: "custom", name: "apply_patch", description: "patch" },
+    ]);
+  });
+
   it("мышление выключено — effort none (thinking: disabled Responses игнорирует)", () => {
     expect(buildResponsesBody({ userId: "u", input: [] }, false, provider).reasoning).toEqual({ effort: "none" });
     expect(buildResponsesBody({ userId: "u", input: [], requestReasoning: true, reasoningEffort: "max" }, false, provider).reasoning)

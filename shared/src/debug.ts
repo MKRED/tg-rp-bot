@@ -4,10 +4,14 @@
 /** Ярлык типа вызова — чтобы в списке было видно, что за запрос. */
 export type LlmCallLabel = "rp" | "impersonate" | "narrator" | "translate" | "compact" | "cards" | "coauthor" | "other";
 
-/** Вызов инструмента в ответе модели (формат OpenAI-совместимого API, function calling). */
+/**
+ * Вызов инструмента в ответе модели (формат OpenAI-совместимого API, function calling). type "custom" —
+ * свободный ввод вместо JSON-аргументов (Responses API, apply_patch соавтора): ввод лежит в
+ * function.arguments, чтобы весь код вокруг вызовов работал с одной формой.
+ */
 export interface LlmToolCall {
   id: string;
-  type: "function";
+  type: "function" | "custom";
   function: { name: string; arguments: string };
 }
 

@@ -81,6 +81,9 @@ export class CoauthorRepository {
         useAskUser: input.useAskUser,
         useWebSearch: input.useWebSearch,
         useImages: input.useImages,
+        maxRounds: input.maxRounds,
+        maxEdits: input.maxEdits,
+        maxQuestions: input.maxQuestions,
       })
       .returning();
     const created = rows[0]!;
@@ -107,6 +110,9 @@ export class CoauthorRepository {
         useAskUser: input.useAskUser,
         useWebSearch: input.useWebSearch,
         useImages: input.useImages,
+        maxRounds: input.maxRounds,
+        maxEdits: input.maxEdits,
+        maxQuestions: input.maxQuestions,
         ...(state && { state: encryptField(serializeCoauthorState(state), key) }),
       })
       .where(and(eq(schema.coauthorChats.id, id), eq(schema.coauthorChats.userId, userId)))

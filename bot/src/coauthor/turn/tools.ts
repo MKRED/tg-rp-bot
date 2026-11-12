@@ -1,8 +1,10 @@
+import type { ResponsesCustomTool } from "../../llm/responses/types.js";
 import type { ToolDefinition } from "../../llm/types.js";
 import { ASK_USER_MAX_QUESTIONS, ASK_USER_TOOL_NAME } from "../../cards/generation/ask-user-tool.js";
 
 export const GET_CARDS_TOOL_NAME = "get_cards";
 export const EDIT_BLOCK_TOOL_NAME = "edit_block";
+export const APPLY_PATCH_TOOL_NAME = "apply_patch";
 export { ASK_USER_TOOL_NAME };
 
 export const GET_CARDS_TOOL: ToolDefinition = {
@@ -19,8 +21,8 @@ export const EDIT_BLOCK_TOOL: ToolDefinition = {
   function: {
     name: EDIT_BLOCK_TOOL_NAME,
     description:
-      "Proposes new content for one block of one card. content replaces the whole block. The user reviews " +
-      "the proposal; call it once per block you change, for every card that needs the change.",
+      "Proposes new content for one block of one card. content replaces the whole block. Use it to fill an " +
+      "empty block or to rewrite most of a block; for targeted changes use apply_patch. The user reviews the proposal.",
     parameters: {
       type: "object",
       properties: {
@@ -31,6 +33,21 @@ export const EDIT_BLOCK_TOOL: ToolDefinition = {
       required: ["card_id", "block_id", "content"],
     },
   },
+};
+
+/**
+ * apply_patch — custom-инструмент Responses API (формат патча Codex, модель на нём обучена). Блок — «файл»
+ * по пути из get_cards (apply-patch/path.ts). Удобнее edit_block для точечных правок: модель пишет только
+ * изменённые строки и может за один вызов поправить несколько блоков и карточек.
+ */
+export const APPLY_PATCH_TOOL: ResponsesCustomTool = {
+  type: "custom",
+  name: APPLY_PATCH_TOOL_NAME,
+  description:
+    "Targeted edits of card blocks. Each block is a file at its `path` from get_cards " +
+    "(cards/<card_id>/<block_id>.md). The patch applies to the block's pending_proposal if it has one, " +
+    "otherwise to its content. One patch may change several blocks and cards; each changed block becomes a " +
+    "proposal for the user to review. Blocks cannot be created, deleted or renamed.",
 };
 
 /**

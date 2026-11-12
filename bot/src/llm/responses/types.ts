@@ -1,4 +1,4 @@
-import type { ChatCompletionOptions, ChatCompletionResult, OnToolCallDelta } from "../types.js";
+import type { ChatCompletionOptions, ChatCompletionResult, OnToolCallDelta, ToolDefinition } from "../types.js";
 
 /**
  * Типы DeepSeek Responses API (`POST /v1/responses`). Только то, что нам нужно, и только в той форме,
@@ -24,14 +24,33 @@ export type ResponsesInputItem =
   | { type: "reasoning"; summary: []; content: Array<{ type: "reasoning_text"; text: string }> }
   | { type: "function_call"; call_id: string; name: string; arguments: string }
   /** Результат вызова; парный function_call обязан стоять раньше, иначе 400 "No tool output found". */
-  | { type: "function_call_output"; call_id: string; output: string | ResponsesContentPart[] };
+  | { type: "function_call_output"; call_id: string; output: string | ResponsesContentPart[] }
+  /** Вызов custom-инструмента: свободный текст в input вместо JSON-аргументов. */
+  | { type: "custom_tool_call"; call_id: string; name: string; input: string }
+  /** Результат custom-вызова — тип обязан совпадать с типом вызова (DeepSeek проверяет пару). */
+  | { type: "custom_tool_call_output"; call_id: string; output: string | ResponsesContentPart[] };
+
+/**
+ * Custom-инструмент: модель пишет свободный текст, а не JSON. DeepSeek принимает только имя
+ * `apply_patch` (совместимость с Codex, формат патча Codex — `*** Begin Patch …`); другие имена — 400.
+ * description принимается — им объясняем модели наше соглашение о путях.
+ */
+export interface ResponsesCustomTool {
+  type: "custom";
+  name: "apply_patch";
+  description?: string;
+}
+
+/** Инструмент запроса: обычная функция (общий chat-формат) или custom. */
+export type ResponsesTool = ToolDefinition | ResponsesCustomTool;
 
 /**
  * Параметры запроса. Сэмплинг, reasoning, tools (в chat-формате, переводятся в request.ts) — те же,
  * что у Chat Completions: пресет и описания инструментов общие для обоих протоколов.
  */
-export interface ResponsesRequestOptions extends Omit<ChatCompletionOptions, "messages"> {
+export interface ResponsesRequestOptions extends Omit<ChatCompletionOptions, "messages" | "tools"> {
   input: ResponsesInputItem[];
+  tools?: ResponsesTool[];
 }
 
 /** Элемент `output` ответа — только читаемые нами поля. */
@@ -43,6 +62,8 @@ export interface RawOutputItem {
   call_id?: string;
   name?: string;
   arguments?: string;
+  /** custom_tool_call: свободный ввод. */
+  input?: string;
 }
 
 /** Объект ответа (non-stream тело и `response` в финальном событии стрима). */

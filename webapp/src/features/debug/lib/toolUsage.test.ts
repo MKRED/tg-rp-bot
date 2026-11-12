@@ -17,13 +17,15 @@ describe("describeToolUsage", () => {
             { role: "user", content: "q" },
             { type: "function_call", call_id: "g0", name: "get_cards", arguments: "{}" },
             { type: "function_call_output", call_id: "g0", output: "{}" },
+            { type: "custom_tool_call", call_id: "p0", name: "apply_patch", input: "*** Begin Patch" },
+            { type: "custom_tool_call_output", call_id: "p0", output: "{}" },
           ],
           tools: [{ type: "function", name: "get_cards" }, { type: "function", name: "edit_block" }],
         },
         [call("e1", "edit_block")],
       ),
     );
-    expect(usage).toEqual({ offered: ["get_cards", "edit_block"], called: ["edit_block"], resultsInHistory: ["get_cards"] });
+    expect(usage).toEqual({ offered: ["get_cards", "edit_block"], called: ["edit_block"], resultsInHistory: ["get_cards", "apply_patch"] });
   });
 
   it("модель вызвала ask_user — это не веб-поиск", () => {

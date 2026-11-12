@@ -20,9 +20,14 @@ function joinText(items: RawOutputItem[], itemType: string, partType: string): s
  * тем же лимитом, а так вызывающий вернёт модели ошибку и она перепишет короче (см. coauthor turn-loop).
  */
 function toolCalls(raw: RawResponse): ToolCall[] | undefined {
-  const calls = raw.output
-    .filter((i) => i.type === "function_call" && i.call_id && i.name)
-    .map((i) => ({ id: i.call_id!, type: "function" as const, function: { name: i.name!, arguments: i.arguments ?? "" } }));
+  // custom_tool_call (apply_patch) — в той же форме, ввод в arguments; порядок вызовов сохраняется.
+  const calls: ToolCall[] = raw.output
+    .filter((i) => (i.type === "function_call" || i.type === "custom_tool_call") && i.call_id && i.name)
+    .map((i) =>
+      i.type === "custom_tool_call"
+        ? { id: i.call_id!, type: "custom" as const, function: { name: i.name!, arguments: i.input ?? "" } }
+        : { id: i.call_id!, type: "function" as const, function: { name: i.name!, arguments: i.arguments ?? "" } },
+    );
   return calls.length > 0 ? calls : undefined;
 }
 

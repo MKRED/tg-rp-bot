@@ -14,6 +14,7 @@ export type {
   CoauthorStreamError,
 } from "@tg-rp-bot/shared";
 export {
+  COAUTHOR_LIMITS,
   COAUTHOR_MESSAGE_MAX_LENGTH,
   DEFAULT_COAUTHOR_SYSTEM_PROMPT,
   MAX_COAUTHOR_CARDS,

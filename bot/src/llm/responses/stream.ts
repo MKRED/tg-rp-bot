@@ -7,7 +7,7 @@ interface StreamEvent {
   type: string;
   output_index?: number;
   delta?: string;
-  item?: { type?: string; call_id?: string; name?: string; arguments?: string };
+  item?: { type?: string; call_id?: string; name?: string; arguments?: string; input?: string };
   response?: RawResponse;
   message?: string;
   code?: string;
@@ -37,7 +37,7 @@ export function parseSseData(line: string): StreamEvent | undefined {
  * накопленное по дельтам не может разойтись с результатом.
  *
  * Вызовы различаются по output_index: `output_item.added` приносит call_id и имя, дельты аргументов
- * ссылаются на тот же индекс.
+ * (у custom-инструмента — дельты ввода, `custom_tool_call_input.delta`) ссылаются на тот же индекс.
  */
 export class ResponsesStreamParser {
   private readonly calls = new Map<number, { id: string; name: string; arguments: string }>();
@@ -56,13 +56,17 @@ export class ResponsesStreamParser {
         if (event.delta) this.onText(event.delta);
         return;
       case "response.output_item.added":
-        if (event.item?.type === "function_call" && event.output_index !== undefined && event.item.call_id && event.item.name) {
-          const call = { id: event.item.call_id, name: event.item.name, arguments: event.item.arguments ?? "" };
+        if (
+          (event.item?.type === "function_call" || event.item?.type === "custom_tool_call") &&
+          event.output_index !== undefined && event.item.call_id && event.item.name
+        ) {
+          const call = { id: event.item.call_id, name: event.item.name, arguments: event.item.arguments ?? event.item.input ?? "" };
           this.calls.set(event.output_index, call);
           this.onToolCall({ ...call });
         }
         return;
-      case "response.function_call_arguments.delta": {
+      case "response.function_call_arguments.delta":
+      case "response.custom_tool_call_input.delta": {
         const call = event.output_index !== undefined ? this.calls.get(event.output_index) : undefined;
         if (call && event.delta) {
           call.arguments += event.delta;

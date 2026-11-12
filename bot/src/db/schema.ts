@@ -309,6 +309,11 @@ export const coauthorChats = pgTable("coauthor_chats", {
   useWebSearch: boolean("use_web_search").notNull().default(false),
   // Картинки-референсы карточек уходят модели (только модели со зрением, см. turn/prompt.ts).
   useImages: boolean("use_images").notNull().default(true),
+  // Лимиты хода ИИ (COAUTHOR_LIMITS в @tg-rp-bot/shared): вызовов модели за запуск, правок блоков и пауз на
+  // вопросы за сообщение пользователя. Дефолты совпадают с COAUTHOR_LIMITS.*.default.
+  maxRounds: integer("max_rounds").notNull().default(8),
+  maxEdits: integer("max_edits").notNull().default(24),
+  maxQuestions: integer("max_questions").notNull().default(2),
   state: text("state").notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })

@@ -38,6 +38,15 @@ describe("ResponsesStreamParser", () => {
     expect(parser.result()).toBe(final);
   });
 
+  it("custom-вызов: ввод по дельтам custom_tool_call_input", () => {
+    const { parser, calls } = setup();
+    parser.push({ type: "response.output_item.added", output_index: 1, item: { type: "custom_tool_call", call_id: "p1", name: "apply_patch", input: "" } });
+    parser.push({ type: "response.custom_tool_call_input.delta", output_index: 1, delta: "*** Begin" });
+    parser.push({ type: "response.custom_tool_call_input.delta", output_index: 1, delta: " Patch" });
+    expect(calls.map((c) => c.arguments)).toEqual(["", "*** Begin", "*** Begin Patch"]);
+    expect(calls[0]).toMatchObject({ id: "p1", name: "apply_patch" });
+  });
+
   it("response.incomplete тоже финал", () => {
     const { parser } = setup();
     parser.push({ type: "response.incomplete", response: { model: "m", status: "incomplete", output: [] } });

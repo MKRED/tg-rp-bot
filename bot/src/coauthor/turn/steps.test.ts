@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { callStep } from "./steps.js";
+import { callStep, callSteps } from "./steps.js";
 
 const edit = (args: string) => ({ id: "c1", name: "edit_block", arguments: args });
 
@@ -41,5 +41,30 @@ describe("callStep", () => {
   it("get_cards — сразу, ask_user — без шага", () => {
     expect(callStep({ id: "g", name: "get_cards", arguments: "" })).toMatchObject({ kind: "cards", status: "running" });
     expect(callStep({ id: "a", name: "ask_user", arguments: "{}" })).toBeUndefined();
+  });
+});
+
+describe("callSteps — apply_patch", () => {
+  const patch = (args: string) => ({ id: "p1", name: "apply_patch", arguments: args });
+  const two = "*** Begin Patch\n*** Update File: cards/3/look.md\n@@\n-a\n+b\n*** Update File: cards/4/look.md\n@@\n-c\n+d\n*** End Patch";
+
+  it("по шагу на блок; пока стримится — только законченные строки путей", () => {
+    expect(callSteps(patch("*** Begin Patch\n*** Update File: cards/3/look.md\n@@\n-a\n*** Update File: cards/4/lo"))).toEqual([
+      { id: "p1:3:look", status: "running", kind: "edit", cardId: 3, blockId: "look" },
+    ]);
+    expect(callSteps(patch(two), '{"ok":true,"proposals":[]}').map((s) => [s.id, s.status])).toEqual([
+      ["p1:3:look", "done"],
+      ["p1:4:look", "done"],
+    ]);
+  });
+
+  it("ошибка патча — все его шаги failed; чужие пути пропускаются", () => {
+    expect(callSteps(patch(two), '{"error":"x"}').map((s) => s.status)).toEqual(["failed", "failed"]);
+    expect(callSteps(patch("*** Begin Patch\n*** Update File: notes.txt\n-a\n+b"), '{"ok":true}')).toEqual([]);
+  });
+
+  it("остальные инструменты — как callStep", () => {
+    expect(callSteps({ id: "g", name: "get_cards", arguments: "" })).toHaveLength(1);
+    expect(callSteps({ id: "a", name: "ask_user", arguments: "{}" })).toEqual([]);
   });
 });

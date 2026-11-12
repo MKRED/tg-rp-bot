@@ -1,10 +1,18 @@
 import { mapEffort, type LlmProvider } from "../providers.js";
-import type { ChatCompletionOptions, ToolDefinition } from "../types.js";
-import type { ResponsesRequestOptions } from "./types.js";
+import type { ChatCompletionOptions } from "../types.js";
+import type { ResponsesRequestOptions, ResponsesTool } from "./types.js";
 
-/** Описание инструмента в формате Responses: поля функции лежат плоско, без обёртки `function`. */
-export function toResponsesTool(tool: ToolDefinition): Record<string, unknown> {
-  return { type: "function", ...tool.function };
+/**
+ * Описание инструмента в формате Responses: поля функции лежат плоско, без обёртки `function`;
+ * custom-инструмент уходит как есть.
+ */
+export function toResponsesTool(tool: ResponsesTool): Record<string, unknown> {
+  return tool.type === "custom" ? { ...tool } : { type: "function", ...tool.function };
+}
+
+/** Имя инструмента независимо от вида — для списков «что предложено». */
+export function responsesToolName(tool: ResponsesTool): string {
+  return tool.type === "custom" ? tool.name : tool.function.name;
 }
 
 /** tool_choice в формате Responses: принудительный вызов — `{ type, name }`, тоже без обёртки. */

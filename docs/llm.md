@@ -46,6 +46,9 @@
 - рассуждение (`reasoning`-элемент) обратно передавать **не обязательно** — соавтор возвращает только живое
   внутри хода, заглушка для сохранённых ходов не нужна;
 - инструменты и принудительный выбор — плоские (`{ type: "function", name, … }`, без обёртки `function`);
+- **custom-инструменты** (`{ type: "custom", name: "apply_patch" }`, только это имя — иначе 400): модель пишет
+  свободный текст (`custom_tool_call.input`, дельты `response.custom_tool_call_input.delta`), результат —
+  `custom_tool_call_output`. В нашем `ToolCall` такой вызов — `type: "custom"`, ввод в `function.arguments`;
 - стрим — типизированные события (`response.output_text.delta`, `response.function_call_arguments.delta`
   по `output_index`, финал `response.completed`/`incomplete`), без `[DONE]`; итог берётся из финального события.
 

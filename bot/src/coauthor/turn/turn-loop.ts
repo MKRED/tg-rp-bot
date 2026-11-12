@@ -1,33 +1,20 @@
-import type { CoauthorStep, WebSearchRecord } from "@tg-rp-bot/shared";
+import type { CoauthorStep, CoauthorTurnLimits, WebSearchRecord } from "@tg-rp-bot/shared";
 import { parseAskUserArguments } from "../../cards/generation/ask-user-tool.js";
 import { runWebSearchCall } from "../../cards/generation/tool-loop.js";
-import type { ResponsesCompleter, ResponsesRequestOptions } from "../../llm/responses/types.js";
+import { responsesToolName } from "../../llm/responses/request.js";
+import type { ResponsesCompleter, ResponsesRequestOptions, ResponsesTool } from "../../llm/responses/types.js";
 import type { ToolCall } from "../../llm/types.js";
 import logger from "../../logger.js";
 import type { WebSearcher } from "../../web-search/web-search.types.js";
 import { WEB_SEARCH_TOOL_NAME, webSearchTool } from "../../web-search/web-search-tool.js";
+import { callsInTurn, editsInTurn, withBudget } from "./budget.js";
 import { buildCoauthorInput } from "./input.js";
-import { STALE_CARDS_RESULT, type CoauthorCardData } from "./prompt.js";
-import { proposeEdit } from "./proposals.js";
-import type { CoauthorState, StoredMessage } from "./state.js";
-import { callStep } from "./steps.js";
-import {
-  ASK_USER_TOOL_NAME,
-  COAUTHOR_ASK_USER_TOOL,
-  EDIT_BLOCK_TOOL,
-  EDIT_BLOCK_TOOL_NAME,
-  GET_CARDS_TOOL,
-  GET_CARDS_TOOL_NAME,
-  parseEditBlockArguments,
-} from "./tools.js";
+import { runLocalTool } from "./local-tools.js";
+import type { CoauthorCardData } from "./prompt.js";
+import type { CoauthorState } from "./state.js";
+import { callSteps } from "./steps.js";
+import { APPLY_PATCH_TOOL, ASK_USER_TOOL_NAME, COAUTHOR_ASK_USER_TOOL, EDIT_BLOCK_TOOL, GET_CARDS_TOOL } from "./tools.js";
 import { COAUTHOR_HISTORY_TOKEN_BUDGET } from "./trim.js";
-
-/** Вызовов модели за один запуск цикла; последний идёт без инструментов — ход гарантированно кончается. */
-export const COAUTHOR_MAX_LLM_ROUNDS = 8;
-/** Пауз на ask_user за одно сообщение пользователя — чтобы модель не затянула его в цепочку уточнений. */
-export const COAUTHOR_MAX_ASK_PER_TURN = 2;
-/** Вызовов edit_block за одно сообщение пользователя. */
-export const COAUTHOR_MAX_EDITS_PER_TURN = 24;
 
 export interface CoauthorTurnParams {
   /** Responses API: картинки разрешены и в результатах инструментов, не только в user-сообщениях. */
@@ -37,6 +24,8 @@ export interface CoauthorTurnParams {
   cards: CoauthorCardData[];
   /** Меняется на месте: сюда дописываются сообщения хода, правки и пауза. */
   state: CoauthorState;
+  /** Лимиты хода из настроек чата. */
+  limits: CoauthorTurnLimits;
   webSearch: WebSearcher | null;
   maxSearchRounds: number;
   askUserEnabled: boolean;
@@ -53,61 +42,47 @@ export interface CoauthorTurnParams {
 
 export type CoauthorTurnOutcome = "done" | "questions";
 
-/** Сообщения текущего хода — после последнего сообщения пользователя. */
-function currentTurn(messages: StoredMessage[]): StoredMessage[] {
-  let start = messages.length;
-  while (start > 0 && messages[start - 1]!.role !== "user") start--;
-  return messages.slice(start);
-}
-
-/** Сколько раз в текущем ходе вызывался инструмент — бюджеты считаются по самой истории. */
-function callsInTurn(messages: StoredMessage[], name: string): number {
-  let count = 0;
-  for (const m of currentTurn(messages)) {
-    if ("toolCalls" in m) count += m.toolCalls.filter((c) => c.function.name === name).length;
-  }
-  return count;
-}
-
 /**
- * Ход соавтора с function calling: get_cards, edit_block (правка = предложение, см. proposals.ts),
- * ask_user (пауза до ответа пользователя), web_search. tool_choice везде "auto": принудительный
- * выбор DeepSeek в thinking-режиме отклоняет.
+ * Ход соавтора с function calling: get_cards, edit_block и apply_patch (правка = предложение, см.
+ * proposals.ts, patch-proposals.ts), ask_user (пауза до ответа пользователя), web_search. tool_choice
+ * везде "auto": принудительный выбор DeepSeek в thinking-режиме отклоняет.
  *
  * Пауза на ask_user возвращает "questions" и оставляет state.pending; продолжение — тот же вызов
  * после resolvePendingQuestions (questions.ts). Это возможно потому, что историю протокола хранит
  * сам чат, — в отличие от генерации карточек, где вопросы реплеятся синтетически.
  *
- * Конечность: не больше COAUTHOR_MAX_LLM_ROUNDS вызовов модели, последний — без инструментов;
- * паузы ограничены COAUTHOR_MAX_ASK_PER_TURN на сообщение пользователя.
+ * Лимиты (limits, настройка чата): не больше maxRounds вызовов модели за запуск цикла, последний — без
+ * инструментов, поэтому ход гарантированно кончается. Правки и вопросы при исчерпании не прячутся, а
+ * отвечают модели ошибкой с объяснением — она заканчивает ход сама и говорит пользователю, что осталось.
+ * Остаток бюджета дописывается в каждый результат инструмента (budget.ts).
  *
  * Модель всегда стримится: edit_block несёт весь текст блока, и шаг виден, пока он пишется, а не после.
  */
 export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<CoauthorTurnOutcome> {
-  const { llm, baseOptions, customPrompt, cards, state, webSearch, maxSearchRounds, askUserEnabled, withImages } = params;
+  const { llm, baseOptions, customPrompt, cards, state, limits, webSearch, maxSearchRounds, askUserEnabled, withImages } = params;
   const { userId } = baseOptions;
   const t0 = Date.now();
 
-  // Шаг показывается один раз, как только его можно назвать; дальше аргументы только дописываются.
-  const announced = new Set<string>();
+  // Шаг показывается один раз, как только его можно назвать; дальше аргументы только дописываются. У
+  // apply_patch шагов несколько (по блоку), они появляются по мере того, как пишется патч.
+  const announced = new Map<string, CoauthorStep>();
   const announce = (call: { id: string; name: string; arguments: string }) => {
-    if (announced.has(call.id)) return;
-    const step = callStep(call);
-    if (!step) return;
-    announced.add(call.id);
-    params.onStep?.(step);
+    for (const step of callSteps(call)) {
+      if (announced.has(step.id)) continue;
+      announced.set(step.id, step);
+      params.onStep?.(step);
+    }
   };
 
   for (let round = 1; ; round++) {
     const searchesUsed = callsInTurn(state.messages, WEB_SEARCH_TOOL_NAME);
-    const tools =
-      round < COAUTHOR_MAX_LLM_ROUNDS
+    const tools: ResponsesTool[] =
+      round < limits.maxRounds
         ? [
             GET_CARDS_TOOL,
-            ...(callsInTurn(state.messages, EDIT_BLOCK_TOOL_NAME) < COAUTHOR_MAX_EDITS_PER_TURN ? [EDIT_BLOCK_TOOL] : []),
-            ...(askUserEnabled && callsInTurn(state.messages, ASK_USER_TOOL_NAME) < COAUTHOR_MAX_ASK_PER_TURN
-              ? [COAUTHOR_ASK_USER_TOOL]
-              : []),
+            EDIT_BLOCK_TOOL,
+            APPLY_PATCH_TOOL,
+            ...(askUserEnabled ? [COAUTHOR_ASK_USER_TOOL] : []),
             ...(webSearch && searchesUsed < maxSearchRounds ? [webSearchTool(maxSearchRounds - searchesUsed)] : []),
           ]
         : [];
@@ -115,7 +90,16 @@ export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<Coaut
     const result = await llm.respond(
       {
         ...baseOptions,
-        input: buildCoauthorInput(customPrompt, cards, state.proposals, state.messages, COAUTHOR_HISTORY_TOKEN_BUDGET, withImages),
+        input: buildCoauthorInput({
+          customPrompt,
+          cards,
+          proposals: state.proposals,
+          history: state.messages,
+          historyTokenBudget: COAUTHOR_HISTORY_TOKEN_BUDGET,
+          // Вопросы выключены — в протоколе о них ни слова (ask_user и так не предлагается).
+          limits: askUserEnabled ? limits : { ...limits, maxQuestions: 0 },
+          withImages,
+        }),
         ...(tools.length > 0 && { tools, toolChoice: "auto" as const }),
       },
       (text) => params.onToken?.(text),
@@ -127,7 +111,7 @@ export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<Coaut
     );
 
     logger.debug(
-      { userId, round, offered: tools.map((t) => t.function.name), called: result.toolCalls?.map((c) => c.function.name) ?? [] },
+      { userId, round, offered: tools.map(responsesToolName), called: result.toolCalls?.map((c) => c.function.name) ?? [] },
       "Coauthor turn: раунд",
     );
 
@@ -137,6 +121,9 @@ export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<Coaut
       return "done";
     }
 
+    // Бюджеты — по истории до вызовов этого раунда (они сейчас лягут в историю).
+    let editsUsed = editsInTurn(state.messages);
+    const questionsUsed = callsInTurn(state.messages, ASK_USER_TOOL_NAME);
     state.messages.push({
       role: "assistant",
       content: result.content || null,
@@ -144,7 +131,7 @@ export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<Coaut
       ...(result.reasoningContent && { reasoning: result.reasoningContent }),
     });
 
-    const offered = new Set(tools.map((t) => t.function.name));
+    const offered = new Set(tools.map(responsesToolName));
     const results: Record<string, string> = {};
     let pause: { toolCallId: string; questions: NonNullable<ReturnType<typeof parseAskUserArguments>> } | undefined;
     let searchesLeft = maxSearchRounds - searchesUsed;
@@ -157,6 +144,12 @@ export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<Coaut
         return;
       }
       if (call.function.name === ASK_USER_TOOL_NAME) {
+        if (questionsUsed >= limits.maxQuestions) {
+          results[call.id] = JSON.stringify({
+            error: `the ask_user limit for this turn is used up (${limits.maxQuestions}) — decide yourself, or ask in your final message`,
+          });
+          return;
+        }
         const questions = pause ? undefined : parseAskUserArguments(call.function.arguments);
         if (questions) pause = { toolCallId: call.id, questions };
         else results[call.id] = JSON.stringify({ error: pause ? "only one ask_user call per turn" : "invalid arguments" });
@@ -174,7 +167,9 @@ export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<Coaut
         if (outcome.authFailed) searchesLeft = 0;
         return;
       }
-      results[call.id] = runLocalTool(call, state, cards);
+      const outcome = runLocalTool(call, state, cards, limits.maxEdits - editsUsed, limits.maxEdits);
+      editsUsed += outcome.edits;
+      results[call.id] = outcome.content;
     };
 
     const truncatedCallId = result.incompleteReason ? result.toolCalls.at(-1)!.id : undefined;
@@ -190,9 +185,12 @@ export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<Coaut
       } else {
         await runCall(call);
       }
-      const finished = callStep(raw, results[call.id] ?? "{}");
-      if (finished) params.onStep?.(finished);
+      finishSteps(raw, results[call.id] ?? "{}", announced, params.onStep);
     }
+
+    // Остаток бюджета — в каждый результат раунда; rounds_left — сколько ещё вызовов модели с инструментами.
+    const budget = { edits_left: Math.max(0, limits.maxEdits - editsUsed), rounds_left: Math.max(0, limits.maxRounds - 1 - round) };
+    for (const id of Object.keys(results)) results[id] = withBudget(results[id]!, budget);
 
     if (pause) {
       state.pending = { toolCallId: pause.toolCallId, questions: pause.questions, results };
@@ -205,17 +203,21 @@ export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<Coaut
   }
 }
 
-/** get_cards и edit_block — без внешних вызовов. */
-function runLocalTool(call: ToolCall, state: CoauthorState, cards: CoauthorCardData[]): string {
-  if (call.function.name === GET_CARDS_TOOL_NAME) {
-    // Снимок в начале промпта пересобирается на каждый запрос (см. buildCoauthorInput) и уже
-    // актуален — копии в истории только раздували бы её.
-    return STALE_CARDS_RESULT;
+/**
+ * Итоговые статусы шагов вызова. Шаг, объявленный по ходу стрима, но пропавший из итога (патч оказался
+ * битым и путь не разобрался), закрывается как failed — иначе он висел бы «в работе» до конца хода.
+ */
+function finishSteps(
+  call: { id: string; name: string; arguments: string },
+  result: string,
+  announced: Map<string, CoauthorStep>,
+  onStep: ((step: CoauthorStep) => void) | undefined,
+): void {
+  const finished = callSteps(call, result);
+  for (const step of finished) onStep?.(step);
+  const finishedIds = new Set(finished.map((s) => s.id));
+  for (const [id, step] of announced) {
+    const ofThisCall = id === call.id || id.startsWith(`${call.id}:`);
+    if (ofThisCall && !finishedIds.has(id) && step.status === "running") onStep?.({ ...step, status: "failed" });
   }
-  const args = parseEditBlockArguments(call.function.arguments);
-  if (!args) {
-    logger.warn({ rawLength: call.function.arguments.length }, "Coauthor turn: битые аргументы edit_block");
-    return JSON.stringify({ error: "invalid arguments: expected {card_id, block_id, content}" });
-  }
-  return proposeEdit(state, cards, args).content;
 }

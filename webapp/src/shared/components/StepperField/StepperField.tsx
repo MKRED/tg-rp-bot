@@ -8,7 +8,9 @@ interface StepperFieldProps {
   description?: string;
   value: number;
   min: number;
-  /** Новое целое значение ≥ min — на ±, blur или Enter. */
+  /** Верхняя граница (необязательна): «+» гаснет на ней, ручной ввод больше — прижимается к ней. */
+  max?: number;
+  /** Новое целое значение в [min, max] — на ±, blur или Enter. */
   onCommit: (value: number) => void;
 }
 
@@ -17,7 +19,7 @@ interface StepperFieldProps {
  * ввод коммитится на blur/Enter, а не на каждый символ (иначе правка дёргала бы API). Пустой или
  * некорректный ввод откатывается к последнему валидному значению.
  */
-export function StepperField({ label, description, value, min, onCommit }: StepperFieldProps) {
+export function StepperField({ label, description, value, min, max = Infinity, onCommit }: StepperFieldProps) {
   const id = useId();
   const [text, setText] = useState(String(value));
   useEffect(() => setText(String(value)), [value]);
@@ -27,13 +29,15 @@ export function StepperField({ label, description, value, min, onCommit }: Stepp
     // Значение не менялось — не коммитим: тап по ± из фокуса в поле сначала даёт blur, и без этой
     // проверки ушло бы два сохранения подряд.
     if (text.trim() !== "" && Number.isFinite(n) && n >= min) {
-      if (Math.floor(n) !== value) onCommit(Math.floor(n));
+      const next = Math.min(max, Math.floor(n));
+      setText(String(next));
+      if (next !== value) onCommit(next);
     } else setText(String(value));
   };
 
   const step = (delta: number) => {
     const base = Number.isFinite(Number(text)) ? Math.floor(Number(text)) : value;
-    const next = Math.max(min, base + delta);
+    const next = Math.min(max, Math.max(min, base + delta));
     setText(String(next));
     onCommit(next);
   };
@@ -73,7 +77,14 @@ export function StepperField({ label, description, value, min, onCommit }: Stepp
             if (e.key === "Enter") e.currentTarget.blur();
           }}
         />
-        <ActionIcon variant="subtle" color="gray" size="xl" aria-label={`${label}: больше`} onClick={() => step(1)}>
+        <ActionIcon
+          variant="subtle"
+          color="gray"
+          size="xl"
+          aria-label={`${label}: больше`}
+          disabled={Number(text) >= max}
+          onClick={() => step(1)}
+        >
           <Plus size={18} />
         </ActionIcon>
       </div>

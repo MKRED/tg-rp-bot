@@ -1,8 +1,8 @@
 import type { CoauthorFeedItem, CoauthorStep } from "@tg-rp-bot/shared";
 import { ASK_USER_DECLINED_ANSWER, parseAskUserArguments } from "../../cards/generation/ask-user-tool.js";
 import type { CoauthorState } from "./state.js";
-import { callStep } from "./steps.js";
-import { ASK_USER_TOOL_NAME, EDIT_BLOCK_TOOL_NAME } from "./tools.js";
+import { callSteps } from "./steps.js";
+import { APPLY_PATCH_TOOL_NAME, ASK_USER_TOOL_NAME, EDIT_BLOCK_TOOL_NAME } from "./tools.js";
 
 function parseJson(raw: string | undefined): Record<string, unknown> | undefined {
   if (!raw) return undefined;
@@ -48,8 +48,7 @@ export function buildFeed(state: CoauthorState): CoauthorFeedItem[] {
     }
     const steps = m.toolCalls.flatMap((call) => {
       const raw = { id: call.id, name: call.function.name, arguments: call.function.arguments };
-      const step = callStep(raw, results.get(call.id) ?? "{}");
-      return step && step.status !== "failed" ? [step] : [];
+      return callSteps(raw, results.get(call.id) ?? "{}").filter((step) => step.status !== "failed");
     });
     if (steps.length > 0) {
       if (!turnSteps) {
@@ -65,6 +64,14 @@ export function buildFeed(state: CoauthorState): CoauthorFeedItem[] {
       if (call.function.name === EDIT_BLOCK_TOOL_NAME) {
         const id = parseJson(results.get(call.id))?.proposal_id;
         if (typeof id === "string") edits.push(id);
+        continue;
+      }
+      if (call.function.name === APPLY_PATCH_TOOL_NAME) {
+        const proposals = parseJson(results.get(call.id))?.proposals;
+        if (!Array.isArray(proposals)) continue;
+        for (const p of proposals as Array<{ proposal_id?: unknown }>) {
+          if (typeof p.proposal_id === "string") edits.push(p.proposal_id);
+        }
         continue;
       }
       if (call.function.name !== ASK_USER_TOOL_NAME) continue;

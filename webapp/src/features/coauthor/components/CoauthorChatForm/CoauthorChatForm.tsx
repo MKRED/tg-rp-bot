@@ -9,6 +9,7 @@ import {
   type CoauthorPresetOption,
 } from "../../types/coauthor";
 import { CardsChecklist } from "./CardsChecklist";
+import { TurnLimitsCard } from "./TurnLimitsCard";
 
 interface CoauthorChatFormProps {
   value: CoauthorChatInput;
@@ -112,6 +113,8 @@ export function CoauthorChatForm({
           onChange={(e) => onChange({ useImages: e.currentTarget.checked })}
         />
       </SettingsCard>
+
+      <TurnLimitsCard value={value} onChange={onChange} />
     </>
   );
 }

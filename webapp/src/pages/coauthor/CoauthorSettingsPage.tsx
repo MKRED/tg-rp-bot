@@ -58,6 +58,9 @@ export function CoauthorSettingsPage() {
       useAskUser: chat.useAskUser,
       useWebSearch: chat.useWebSearch,
       useImages: chat.useImages,
+      maxRounds: chat.maxRounds,
+      maxEdits: chat.maxEdits,
+      maxQuestions: chat.maxQuestions,
     });
   }, [chat]);
 

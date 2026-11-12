@@ -28,7 +28,7 @@ describe("buildCoauthorInput", () => {
       { role: "tool", toolCallId: "c1", content: "{\"ok\":true}" },
       { role: "assistant", content: "Proposed." },
     ];
-    const input = buildCoauthorInput("", cards, [], history, 10_000);
+    const input = buildCoauthorInput({ customPrompt: "", cards, proposals: [], history, historyTokenBudget: 10_000, limits: { maxRounds: 8, maxEdits: 24, maxQuestions: 2 } });
     expect(input.map(kind)).toEqual([
       "system", "user", "function_call", "function_call_output", "assistant",
       "user", "function_call", "function_call_output", "assistant",
@@ -57,7 +57,7 @@ describe("buildCoauthorInput", () => {
       { role: "assistant", content: null, toolCalls: [{ id: "c", type: "function", function: { name: "get_cards", arguments: "{}" } }] },
       { role: "tool", toolCallId: "c", content: "{}" },
     ];
-    const tail = buildCoauthorInput("", cards, [], history, 10_000).slice(6);
+    const tail = buildCoauthorInput({ customPrompt: "", cards, proposals: [], history, historyTokenBudget: 10_000, limits: { maxRounds: 8, maxEdits: 24, maxQuestions: 2 } }).slice(6);
     expect(tail.map(kind)).toEqual([
       "reasoning", "assistant", "function_call", "function_call", "function_call_output", "function_call_output",
       "function_call", "function_call_output",
@@ -74,7 +74,7 @@ describe("картинки-референсы", () => {
   ];
 
   it("уходят в первое user-сообщение с подписью карточки, image_url — строкой", () => {
-    const opening = buildCoauthorInput("", withRefs, [], [], 1000, true)[1]!;
+    const opening = buildCoauthorInput({ customPrompt: "", cards: withRefs, proposals: [], history: [], historyTokenBudget: 1000, limits: { maxRounds: 8, maxEdits: 24, maxQuestions: 2 }, withImages: true })[1]!;
     expect(opening).toMatchObject({ role: "user" });
     const parts = (opening as { content: Array<{ type: string; text?: string; image_url?: string }> }).content;
     expect(parts.map((p) => p.type)).toEqual(["input_text", "input_text", "input_image"]);
@@ -83,6 +83,31 @@ describe("картинки-референсы", () => {
   });
 
   it("выключены — обычное текстовое сообщение", () => {
-    expect(typeof (buildCoauthorInput("", withRefs, [], [], 1000, false)[1] as { content: unknown }).content).toBe("string");
+    expect(typeof (buildCoauthorInput({ customPrompt: "", cards: withRefs, proposals: [], history: [], historyTokenBudget: 1000, limits: { maxRounds: 8, maxEdits: 24, maxQuestions: 2 } })[1] as { content: unknown }).content).toBe("string");
+  });
+});
+
+describe("custom-вызов после паузы на вопросах", () => {
+  it("результат apply_patch, дописанный при ответе на вопросы, уходит как custom_tool_call_output", async () => {
+    const { resolvePendingQuestions } = await import("./questions.js");
+    const { emptyCoauthorState } = await import("./state.js");
+    const state = emptyCoauthorState();
+    state.messages.push(
+      { role: "user", content: "Go" },
+      {
+        role: "assistant",
+        content: null,
+        toolCalls: [
+          { id: "a1", type: "function", function: { name: "ask_user", arguments: '{"questions":[{"question":"Tone?"}]}' } },
+          { id: "p1", type: "custom", function: { name: "apply_patch", arguments: "*** Begin Patch" } },
+        ],
+      },
+    );
+    state.pending = { toolCallId: "a1", questions: [{ question: "Tone?" }], results: { p1: '{"ok":true,"proposals":[]}' } };
+    resolvePendingQuestions(state, '{"answers":[]}');
+    const input = buildCoauthorInput({ customPrompt: "", cards, proposals: [], history: state.messages, historyTokenBudget: 10_000, limits: { maxRounds: 8, maxEdits: 24, maxQuestions: 2 } });
+    expect(input.slice(-4).map(kind)).toEqual(["function_call", "custom_tool_call", "function_call_output", "custom_tool_call_output"]);
+    expect(input.at(-1)).toMatchObject({ call_id: "p1", output: '{"ok":true,"proposals":[]}' });
+    expectPaired(input);
   });
 });

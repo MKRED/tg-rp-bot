@@ -41,6 +41,21 @@ describe("toResponsesResult", () => {
     expect(result.toolCalls).toBeUndefined();
   });
 
+  it("custom_tool_call (apply_patch) — вызов типа custom с вводом в arguments, порядок сохранён", () => {
+    const raw: RawResponse = {
+      model: "m",
+      status: "completed",
+      output: [
+        { type: "custom_tool_call", status: "completed", call_id: "p1", name: "apply_patch", input: "*** Begin Patch" },
+        call("c1", "{}"),
+      ],
+    };
+    expect(toResponsesResult("deepseek", raw).toolCalls).toEqual([
+      { id: "p1", type: "custom", function: { name: "apply_patch", arguments: "*** Begin Patch" } },
+      { id: "c1", type: "function", function: { name: "edit_block", arguments: "{}" } },
+    ]);
+  });
+
   it("status failed — ResponseFailedError", () => {
     expect(() => toResponsesResult("deepseek", { model: "m", status: "failed", output: [], error: { message: "boom" } }))
       .toThrow(ResponseFailedError);
