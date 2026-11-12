@@ -28,3 +28,6 @@ coverage/
 
 # Скриншоты/снапшоты Playwright MCP (браузер Claude)
 .playwright-mcp/
+
+# Временные скриншоты UI-проверок
+tmp-screens/

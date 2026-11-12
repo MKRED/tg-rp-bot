@@ -1,0 +1,21 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "webapp",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": [
+        "dev:web"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "bot",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": [
+        "dev"
+      ],
+      "port": 3001
+    }
+  ]
+}
