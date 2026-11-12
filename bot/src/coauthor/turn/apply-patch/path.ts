@@ -1,6 +1,6 @@
 /**
  * Путь блока для apply_patch: `cards/<card_id>/<block_id>.md`. Блоки — не файлы, но модель обучена
- * патчить файлы, поэтому каждому блоку даём путь (поле path в get_cards).
+ * патчить файлы, поэтому каждому блоку даём путь (поле path в get_card).
  */
 export function blockPath(cardId: number, blockId: string): string {
   return `cards/${cardId}/${blockId}.md`;

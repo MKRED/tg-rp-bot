@@ -2,17 +2,35 @@ import type { ResponsesCustomTool } from "../../llm/responses/types.js";
 import type { ToolDefinition } from "../../llm/types.js";
 import { ASK_USER_MAX_QUESTIONS, ASK_USER_TOOL_NAME } from "../../cards/generation/ask-user-tool.js";
 
-export const GET_CARDS_TOOL_NAME = "get_cards";
+/** Инструмент старых чатов: в их истории ещё есть его вызовы (лента, реплей), модели он больше не предлагается. */
+export const LEGACY_GET_CARDS_TOOL_NAME = "get_cards";
+export const LIST_CARDS_TOOL_NAME = "list_cards";
+export const GET_CARD_TOOL_NAME = "get_card";
 export const EDIT_BLOCK_TOOL_NAME = "edit_block";
 export const APPLY_PATCH_TOOL_NAME = "apply_patch";
 export { ASK_USER_TOOL_NAME };
 
-export const GET_CARDS_TOOL: ToolDefinition = {
+export const LIST_CARDS_TOOL: ToolDefinition = {
   type: "function",
   function: {
-    name: GET_CARDS_TOOL_NAME,
-    description: "Returns the current state of every card open in the workshop, including your pending proposals.",
+    name: LIST_CARDS_TOOL_NAME,
+    description: "Lists the cards open in the workshop: card_id, name, blocks (id, title, whether written) and image count.",
     parameters: { type: "object", properties: {} },
+  },
+};
+
+export const GET_CARD_TOOL: ToolDefinition = {
+  type: "function",
+  function: {
+    name: GET_CARD_TOOL_NAME,
+    description:
+      "Reads one card: brief, every block (path, title, format, content, your pending proposal) and its reference " +
+      "images. Read a card before editing it.",
+    parameters: {
+      type: "object",
+      properties: { card_id: { type: "integer", description: "card_id from list_cards" } },
+      required: ["card_id"],
+    },
   },
 };
 
@@ -26,8 +44,8 @@ export const EDIT_BLOCK_TOOL: ToolDefinition = {
     parameters: {
       type: "object",
       properties: {
-        card_id: { type: "integer", description: "card_id from get_cards" },
-        block_id: { type: "string", description: "block_id from get_cards" },
+        card_id: { type: "integer", description: "card_id from list_cards" },
+        block_id: { type: "string", description: "block_id from get_card" },
         content: { type: "string", description: "The full new text of the block" },
       },
       required: ["card_id", "block_id", "content"],
@@ -37,14 +55,14 @@ export const EDIT_BLOCK_TOOL: ToolDefinition = {
 
 /**
  * apply_patch — custom-инструмент Responses API (формат патча Codex, модель на нём обучена). Блок — «файл»
- * по пути из get_cards (apply-patch/path.ts). Удобнее edit_block для точечных правок: модель пишет только
+ * по пути из get_card (apply-patch/path.ts). Удобнее edit_block для точечных правок: модель пишет только
  * изменённые строки и может за один вызов поправить несколько блоков и карточек.
  */
 export const APPLY_PATCH_TOOL: ResponsesCustomTool = {
   type: "custom",
   name: APPLY_PATCH_TOOL_NAME,
   description:
-    "Targeted edits of card blocks. Each block is a file at its `path` from get_cards " +
+    "Targeted edits of card blocks. Each block is a file at its `path` from get_card " +
     "(cards/<card_id>/<block_id>.md). The patch applies to the block's pending_proposal if it has one, " +
     "otherwise to its content. One patch may change several blocks and cards; each changed block becomes a " +
     "proposal for the user to review. Blocks cannot be created, deleted or renamed.",

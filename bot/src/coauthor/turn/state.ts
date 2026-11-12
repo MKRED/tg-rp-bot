@@ -6,8 +6,10 @@ import type { ToolCall } from "../../llm/types.js";
  * (OpenAI-совместимая), а не лента для экрана: ленту из неё собирает feed.ts.
  * review у user — решения пользователя по правкам с прошлого сообщения: модели уходит префиксом
  * к тексту, на экране не показывается.
- * reasoning у вызова инструментов живёт только в памяти внутри хода (уходит модели обратно, чтобы
- * она не теряла ход мысли между раундами) и не сохраняется: Responses API его не требует, см. input.ts.
+ * reasoning у вызова инструментов нужен только в текущем ходе: DeepSeek в режиме размышлений отвечает 400,
+ * если у вызова после последнего сообщения пользователя нет рассуждения (проверено пробой), — в том числе
+ * при продолжении хода после ответа на вопросы. Поэтому он сохраняется, но только у текущего хода: у прошлых
+ * ходов он не нужен ни API, ни модели, и при записи выбрасывается (serializeCoauthorState).
  * Формат chat-подобный исторически (чаты писались под Chat Completions) — в элементы Responses его
  * переводит input.ts при сборке запроса, хранимое состояние не мигрируется.
  */
@@ -59,10 +61,11 @@ export function parseCoauthorState(raw: string): CoauthorState {
   };
 }
 
-/** Сериализует состояние для записи; reasoning из памяти хода не сохраняется. */
+/** Сериализует состояние для записи; reasoning остаётся только у текущего хода (после последнего user). */
 export function serializeCoauthorState(state: CoauthorState): string {
-  const messages = state.messages.map((m) => {
-    if (!("toolCalls" in m) || m.reasoning === undefined) return m;
+  const turnStart = state.messages.findLastIndex((m) => m.role === "user");
+  const messages = state.messages.map((m, i) => {
+    if (i > turnStart || !("toolCalls" in m) || m.reasoning === undefined) return m;
     const { reasoning: _reasoning, ...rest } = m;
     return rest;
   });

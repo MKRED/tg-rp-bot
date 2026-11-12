@@ -38,8 +38,11 @@ describe("callStep", () => {
     });
   });
 
-  it("get_cards — сразу, ask_user — без шага", () => {
+  it("list_cards и старый get_cards — сразу, get_card — когда читается card_id, ask_user — без шага", () => {
     expect(callStep({ id: "g", name: "get_cards", arguments: "" })).toMatchObject({ kind: "cards", status: "running" });
+    expect(callStep({ id: "l", name: "list_cards", arguments: "" })).toMatchObject({ kind: "cards" });
+    expect(callStep({ id: "c", name: "get_card", arguments: '{"card_id": 1' })).toBeUndefined();
+    expect(callStep({ id: "c", name: "get_card", arguments: '{"card_id": 12}' }, "{}")).toEqual({ id: "c", status: "done", kind: "card", cardId: 12 });
     expect(callStep({ id: "a", name: "ask_user", arguments: "{}" })).toBeUndefined();
   });
 });

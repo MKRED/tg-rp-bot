@@ -9,11 +9,20 @@ import type { WebSearcher } from "../../web-search/web-search.types.js";
 import { WEB_SEARCH_TOOL_NAME, webSearchTool } from "../../web-search/web-search-tool.js";
 import { callsInTurn, editsInTurn, withBudget } from "./budget.js";
 import { buildCoauthorInput } from "./input.js";
+import { loadedCardIds, openTurnWithCardList, visibleHistory } from "./card-context/index.js";
 import { runLocalTool } from "./local-tools.js";
 import type { CoauthorCardData } from "./prompt.js";
 import type { CoauthorState } from "./state.js";
 import { callSteps } from "./steps.js";
-import { APPLY_PATCH_TOOL, ASK_USER_TOOL_NAME, COAUTHOR_ASK_USER_TOOL, EDIT_BLOCK_TOOL, GET_CARDS_TOOL } from "./tools.js";
+import {
+  APPLY_PATCH_TOOL,
+  ASK_USER_TOOL_NAME,
+  COAUTHOR_ASK_USER_TOOL,
+  EDIT_BLOCK_TOOL,
+  GET_CARD_TOOL,
+  LEGACY_GET_CARDS_TOOL_NAME,
+  LIST_CARDS_TOOL,
+} from "./tools.js";
 import { COAUTHOR_HISTORY_TOKEN_BUDGET } from "./trim.js";
 
 export interface CoauthorTurnParams {
@@ -42,8 +51,8 @@ export interface CoauthorTurnParams {
 export type CoauthorTurnOutcome = "done" | "questions";
 
 /**
- * Ход соавтора с function calling: get_cards, edit_block и apply_patch (правка = предложение, см.
- * proposals.ts, patch-proposals.ts), ask_user (пауза до ответа пользователя), web_search. tool_choice
+ * Ход соавтора с function calling: list_cards и get_card (чтение карточек, card-context/), edit_block и
+ * apply_patch (правка = предложение, см. proposals.ts, patch-proposals.ts; только по прочитанной карточке), ask_user (пауза до ответа пользователя), web_search. tool_choice
  * везде "auto": принудительный выбор DeepSeek в thinking-режиме отклоняет.
  *
  * Пауза на ask_user возвращает "questions" и оставляет state.pending; продолжение — тот же вызов
@@ -73,12 +82,18 @@ export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<Coaut
     }
   };
 
+  openTurnWithCardList(state, cards);
+
   for (let round = 1; ; round++) {
+    // Какие карточки модель видит прочитанными — по той же обрезанной истории, что уйдёт в запрос, и до
+    // вызовов этого раунда: прочитанное сейчас она увидит только в следующем.
+    const loaded = loadedCardIds(visibleHistory(state.messages, cards, state.proposals, COAUTHOR_HISTORY_TOKEN_BUDGET).cardResults);
     const searchesUsed = callsInTurn(state.messages, WEB_SEARCH_TOOL_NAME);
     const tools: ResponsesTool[] =
       round < limits.maxRounds
         ? [
-            GET_CARDS_TOOL,
+            LIST_CARDS_TOOL,
+            GET_CARD_TOOL,
             EDIT_BLOCK_TOOL,
             APPLY_PATCH_TOOL,
             COAUTHOR_ASK_USER_TOOL,
@@ -138,7 +153,8 @@ export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<Coaut
       if (!offered.has(call.function.name)) {
         // Модель подсматривает вызовы в истории и зовёт выключенный или исчерпанный инструмент.
         logger.warn({ userId, tool: call.function.name }, "Coauthor turn: вызван непредложенный инструмент");
-        results[call.id] = JSON.stringify({ error: `tool unavailable: ${call.function.name}` });
+        const hint = call.function.name === LEGACY_GET_CARDS_TOOL_NAME ? " — use list_cards and get_card" : "";
+        results[call.id] = JSON.stringify({ error: `tool unavailable: ${call.function.name}${hint}` });
         return;
       }
       if (call.function.name === ASK_USER_TOOL_NAME) {
@@ -165,7 +181,7 @@ export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<Coaut
         if (outcome.authFailed) searchesLeft = 0;
         return;
       }
-      const outcome = runLocalTool(call, state, cards, limits.maxEdits - editsUsed, limits.maxEdits);
+      const outcome = runLocalTool(call, { state, cards, loaded, editsLeft: limits.maxEdits - editsUsed, maxEdits: limits.maxEdits });
       editsUsed += outcome.edits;
       results[call.id] = outcome.content;
     };

@@ -15,6 +15,11 @@ describe("stepLabel", () => {
     expect(stepLabel({ id: "e", status: "done", kind: "edit", cardId: 9, blockId: "x" }, cards)).toBe("Правка: блок удалён");
   });
 
+  it("чтение карточки называет её", () => {
+    expect(stepLabel({ id: "c", status: "running", kind: "card", cardId: 1 }, cards)).toBe("Читает карточку: Елена");
+    expect(stepLabel({ id: "c", status: "done", kind: "card", cardId: 9 }, cards)).toBe("Прочитана карточка: карточка убрана из чата");
+  });
+
   it("поиск показывает запрос", () => {
     expect(stepLabel({ id: "s", status: "running", kind: "search", query: "канон" }, cards)).toBe("Ищет в интернете: «канон»");
   });

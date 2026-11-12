@@ -1,7 +1,13 @@
 import type { CoauthorStep } from "@tg-rp-bot/shared";
 import { WEB_SEARCH_TOOL_NAME } from "../../web-search/web-search-tool.js";
 import { parseBlockPath, parsePatch, streamedPatchPaths } from "./apply-patch/index.js";
-import { APPLY_PATCH_TOOL_NAME, EDIT_BLOCK_TOOL_NAME, GET_CARDS_TOOL_NAME } from "./tools.js";
+import {
+  APPLY_PATCH_TOOL_NAME,
+  EDIT_BLOCK_TOOL_NAME,
+  GET_CARD_TOOL_NAME,
+  LEGACY_GET_CARDS_TOOL_NAME,
+  LIST_CARDS_TOOL_NAME,
+} from "./tools.js";
 
 // Аргументы читаем регулярками, а не JSON.parse: шаг нужен, пока аргументы ещё стримятся и JSON неполон
 // (весь текст блока идёт следом, это десятки секунд). Кавычки внутри content экранированы, поэтому
@@ -37,7 +43,11 @@ function hasError(result: string): boolean {
  */
 export function callStep(call: { id: string; name: string; arguments: string }, result?: string): CoauthorStep | undefined {
   const status = result === undefined ? "running" : hasError(result) ? "failed" : "done";
-  if (call.name === GET_CARDS_TOOL_NAME) return { id: call.id, status, kind: "cards" };
+  if (call.name === LIST_CARDS_TOOL_NAME || call.name === LEGACY_GET_CARDS_TOOL_NAME) return { id: call.id, status, kind: "cards" };
+  if (call.name === GET_CARD_TOOL_NAME) {
+    const cardId = CARD_ID.exec(call.arguments)?.[1];
+    return cardId === undefined ? undefined : { id: call.id, status, kind: "card", cardId: Number(cardId) };
+  }
   if (call.name === WEB_SEARCH_TOOL_NAME) {
     const query = jsonString(QUERY.exec(call.arguments));
     return query === undefined ? undefined : { id: call.id, status, kind: "search", query };

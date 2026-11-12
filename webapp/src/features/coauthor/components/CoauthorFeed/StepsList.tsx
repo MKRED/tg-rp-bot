@@ -1,10 +1,10 @@
 import { Loader, Text } from "@mantine/core";
-import { BookOpen, PenLine, Search } from "lucide-react";
+import { BookOpen, List, PenLine, Search } from "lucide-react";
 import { stepLabel } from "../../lib/steps";
 import type { CoauthorCard, CoauthorStep } from "../../types/coauthor";
 import styles from "./CoauthorFeed.module.css";
 
-const ICONS = { cards: BookOpen, search: Search, edit: PenLine } as const;
+const ICONS = { cards: List, card: BookOpen, search: Search, edit: PenLine } as const;
 
 interface StepsListProps {
   steps: CoauthorStep[];

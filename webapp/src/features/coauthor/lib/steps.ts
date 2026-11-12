@@ -5,7 +5,11 @@ export function stepLabel(step: CoauthorStep, cards: CoauthorCard[]): string {
   const running = step.status === "running";
   switch (step.kind) {
     case "cards":
-      return running ? "Читает карточки" : "Прочитаны карточки";
+      return running ? "Смотрит список карточек" : "Просмотрен список карточек";
+    case "card": {
+      const name = cards.find((c) => c.id === step.cardId)?.name ?? "карточка убрана из чата";
+      return `${running ? "Читает карточку" : "Прочитана карточка"}: ${name}`;
+    }
     case "search":
       return `${running ? "Ищет в интернете" : "Поиск"}: «${step.query}»`;
     case "edit": {

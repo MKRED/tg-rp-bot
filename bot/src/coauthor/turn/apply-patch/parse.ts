@@ -93,7 +93,7 @@ export function parsePatch(input: string): ParsePatchResult {
       continue;
     }
     if (trimmed.startsWith("*** Add File:")) {
-      return { ok: false, error: "blocks cannot be created — use the paths from get_cards; to fill an empty block use edit_block" };
+      return { ok: false, error: "blocks cannot be created — use the paths from get_card; to fill an empty block use edit_block" };
     }
     if (trimmed.startsWith("*** Delete File:")) return { ok: false, error: "blocks cannot be deleted" };
     if (trimmed.startsWith("*** Move to:")) return { ok: false, error: "blocks cannot be renamed or moved" };

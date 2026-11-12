@@ -19,10 +19,10 @@ const error = (message: string): ProposeOutcome => ({ content: JSON.stringify({ 
  */
 export function proposeEdit(state: CoauthorState, cards: CoauthorCardData[], args: EditBlockArguments): ProposeOutcome {
   const card = cards.find((c) => c.id === args.cardId);
-  if (!card) return error(`unknown card_id ${args.cardId} — use card_id values from get_cards`);
+  if (!card) return error(`unknown card_id ${args.cardId} — use card_id values from list_cards`);
   const block = card.blocks.find((b) => b.id === args.blockId);
   if (!block) {
-    return error(`card ${args.cardId} has no block "${args.blockId}" — blocks cannot be created, use block_id values from get_cards`);
+    return error(`card ${args.cardId} has no block "${args.blockId}" — blocks cannot be created, use block_id values from get_card`);
   }
   if (!args.content) return error("content is empty — blocks cannot be cleared");
   if (args.content === block.content) return error("content is identical to the current block — nothing to propose");

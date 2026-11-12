@@ -1,5 +1,6 @@
 import type { CoauthorFeedItem, CoauthorStep } from "@tg-rp-bot/shared";
 import { ASK_USER_DECLINED_ANSWER, parseAskUserArguments } from "../../cards/generation/ask-user-tool.js";
+import { isAutoListCall } from "./card-context/index.js";
 import type { CoauthorState } from "./state.js";
 import { callSteps } from "./steps.js";
 import { APPLY_PATCH_TOOL_NAME, ASK_USER_TOOL_NAME, EDIT_BLOCK_TOOL_NAME } from "./tools.js";
@@ -47,6 +48,8 @@ export function buildFeed(state: CoauthorState): CoauthorFeedItem[] {
       continue;
     }
     const steps = m.toolCalls.flatMap((call) => {
+      // Синтетический list_cards в начале хода — не действие модели, на экране его нет.
+      if (isAutoListCall(call.id)) return [];
       const raw = { id: call.id, name: call.function.name, arguments: call.function.arguments };
       return callSteps(raw, results.get(call.id) ?? "{}").filter((step) => step.status !== "failed");
     });

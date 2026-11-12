@@ -6,6 +6,9 @@ vi.mock("../../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), in
 
 const { runCoauthorTurn } = await import("./turn-loop.js");
 const { emptyCoauthorState } = await import("./state.js");
+const { renderCard } = await import("./card-context/index.js");
+type CardData = import("./prompt.js").CoauthorCardData;
+type State = import("./state.js").CoauthorState;
 
 const cards = [{ id: 1, name: "Elena", brief: "", images: [], blocks: [{ id: "fears", title: "Fears", format: "", content: "" }] }];
 
@@ -27,13 +30,30 @@ function fakeLlm(replies: ResponsesResult[]) {
   return { llm, requests };
 }
 
-const params = (llm: ResponsesCompleter, state = emptyCoauthorState()) => {
+/** Прошлый ход, в котором модель прочитала карточки: править можно только прочитанное. */
+function readCards(state: State, read: CardData[]) {
+  state.messages.push(
+    { role: "user", content: "Open" },
+    { role: "assistant", content: null, toolCalls: read.map((c) => call(`r${c.id}`, "get_card", { card_id: c.id })) },
+    ...read.map((c) => ({ role: "tool" as const, toolCallId: `r${c.id}`, content: renderCard(c, []) })),
+    { role: "assistant", content: "Read." },
+  );
+}
+
+/** Результат вызова по id: в истории есть и чтение карточек, и синтетический list_cards. */
+const toolResult = (state: State, id: string) =>
+  JSON.parse(state.messages.find((m) => m.role === "tool" && m.toolCallId === id)!.content as string);
+
+const params = (llm: ResponsesCompleter, opts: { state?: State; cards?: CardData[]; read?: boolean } = {}) => {
+  const state = opts.state ?? emptyCoauthorState();
+  const open = opts.cards ?? cards;
+  if (opts.read !== false) readCards(state, open);
   state.messages.push({ role: "user", content: "Fill Elena's fears" });
   return {
     llm,
     baseOptions: { userId: "u" },
     customPrompt: "",
-    cards,
+    cards: open,
     state,
     webSearch: null,
     maxSearchRounds: 0,
@@ -137,9 +157,8 @@ describe("runCoauthorTurn", () => {
     ]);
     const p = params(llm);
     expect(await runCoauthorTurn(p)).toBe("done");
-    const results = p.state.messages.filter((m) => m.role === "tool");
-    expect(JSON.parse(results[0]!.content).ok).toBe(true);
-    expect(JSON.parse(results[1]!.content).error).toContain("token limit");
+    expect(toolResult(p.state, "e1").ok).toBe(true);
+    expect(toolResult(p.state, "e2").error).toContain("token limit");
   });
 
   it("без дельт шаг всё равно появляется, ошибка инструмента — failed", async () => {
@@ -169,12 +188,11 @@ describe("runCoauthorTurn — apply_patch и лимиты", () => {
       { content: "Done.", model: "m" },
     ]);
     const steps: Array<{ id: string; status: string }> = [];
-    const p = { ...params(llm), cards: sisters, onStep: (s: { id: string; status: string }) => steps.push(s) };
+    const p = { ...params(llm, { cards: sisters }), onStep: (s: { id: string; status: string }) => steps.push(s) };
     expect(await runCoauthorTurn(p)).toBe("done");
     expect(p.state.proposals.map((x) => x.content)).toEqual(["- Eyes: grey", "- Eyes: grey too"]);
     expect(steps.map((s) => `${s.id}:${s.status}`)).toEqual(["p1:3:main:running", "p1:4:main:running", "p1:3:main:done", "p1:4:main:done"]);
-    const result = JSON.parse(p.state.messages.find((m) => m.role === "tool")!.content);
-    expect(result).toMatchObject({ ok: true, edits_left: 22, rounds_left: 6 });
+    expect(toolResult(p.state, "p1")).toMatchObject({ ok: true, edits_left: 22, rounds_left: 6 });
     // Результат custom-вызова уходит модели парой custom_tool_call / custom_tool_call_output.
     expect(requests[1]!.input.filter((i) => "type" in i).map((i) => (i as { type: string }).type).slice(-2))
       .toEqual(["custom_tool_call", "custom_tool_call_output"]);
@@ -194,9 +212,8 @@ describe("runCoauthorTurn — apply_patch и лимиты", () => {
     ]);
     const p = { ...params(llm), limits: { maxRounds: 8, maxEdits: 1, maxQuestions: 2 } };
     await runCoauthorTurn(p);
-    const results = p.state.messages.filter((m) => m.role === "tool").map((m) => JSON.parse(m.content));
-    expect(results[0]).toMatchObject({ ok: true, edits_left: 0 });
-    expect(results[1].error).toContain("edit limit");
+    expect(toolResult(p.state, "e1")).toMatchObject({ ok: true, edits_left: 0 });
+    expect(toolResult(p.state, "e2").error).toContain("edit limit");
     expect(p.state.proposals).toHaveLength(1);
   });
 
@@ -222,5 +239,57 @@ describe("runCoauthorTurn — apply_patch и лимиты", () => {
     await runCoauthorTurn({ ...params(llm), limits: { maxRounds: 3, maxEdits: 24, maxQuestions: 2 } });
     expect(requests).toHaveLength(3);
     expect(requests.at(-1)!.tools).toBeUndefined();
+  });
+});
+
+describe("runCoauthorTurn — чтение карточек", () => {
+  const portrait = [{ ...cards[0]!, images: ["data:image/png;base64,AAA"] }];
+
+  it("в начале хода — синтетический list_cards; продолжение после вопросов его не повторяет", async () => {
+    const { llm, requests } = fakeLlm([{ content: "", model: "m", toolCalls: [call("a1", "ask_user", { questions: [{ question: "Tone?" }] })] }]);
+    const p = params(llm, { read: false });
+    expect(await runCoauthorTurn(p)).toBe("questions");
+    const first = requests[0]!.input;
+    // У синтетического вызова есть рассуждение: без него DeepSeek в режиме размышлений отвечает 400.
+    expect(first.slice(1, 5).map((i) => ("role" in i ? i.role : i.type))).toEqual(["user", "reasoning", "function_call", "function_call_output"]);
+    expect(first[3]).toMatchObject({ name: "list_cards" });
+    const { resolvePendingQuestions } = await import("./questions.js");
+    resolvePendingQuestions(p.state, '{"answers":[]}');
+    const resumed = fakeLlm([{ content: "Ok", model: "m" }]);
+    await runCoauthorTurn({ ...p, llm: resumed.llm });
+    const lists = resumed.requests[0]!.input.filter((i) => "name" in i && i.name === "list_cards");
+    expect(lists).toHaveLength(1);
+  });
+
+  it("правка непрочитанной карточки — ошибка с подсказкой; прочитанная в том же раунде тоже не в счёт", async () => {
+    const { llm } = fakeLlm([
+      {
+        content: "",
+        model: "m",
+        toolCalls: [call("g1", "get_card", { card_id: 1 }), call("e1", "edit_block", { card_id: 1, block_id: "fears", content: "Storms" })],
+      },
+      { content: "", model: "m", toolCalls: [call("e2", "edit_block", { card_id: 1, block_id: "fears", content: "Storms" })] },
+      { content: "Ok", model: "m" },
+    ]);
+    const p = params(llm, { read: false });
+    await runCoauthorTurn(p);
+    expect(toolResult(p.state, "e1").error).toContain("get_card(1)");
+    expect(toolResult(p.state, "e2").ok).toBe(true);
+  });
+
+  it("внутри хода запрос раунда — побайтный префикс следующего, картинки — в результате get_card", async () => {
+    const { llm, requests } = fakeLlm([
+      { content: "", model: "m", toolCalls: [call("g1", "get_card", { card_id: 1 })] },
+      { content: "", model: "m", toolCalls: [call("e1", "edit_block", { card_id: 1, block_id: "fears", content: "Storms" })] },
+      { content: "Ok", model: "m" },
+    ]);
+    const p = { ...params(llm, { cards: portrait, read: false }), withImages: true };
+    await runCoauthorTurn(p);
+    for (let i = 1; i < requests.length; i++) {
+      const prev = requests[i - 1]!.input;
+      expect(requests[i]!.input.slice(0, prev.length)).toEqual(prev);
+    }
+    const output = requests[1]!.input.find((i) => "call_id" in i && i.call_id === "g1" && i.type === "function_call_output");
+    expect(output).toMatchObject({ output: expect.arrayContaining([{ type: "input_image", image_url: "data:image/png;base64,AAA" }]) });
   });
 });

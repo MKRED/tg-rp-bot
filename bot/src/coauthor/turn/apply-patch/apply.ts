@@ -40,7 +40,7 @@ export function applyHunks(text: string, hunks: PatchHunk[]): ApplyHunksResult {
       found = countOccurrences(current, from);
     }
     if (found === 0) {
-      return { ok: false, error: `fragment not found: "${excerpt(hunk.old)}" — copy the "-" and context lines exactly from the current text` };
+      return { ok: false, error: `fragment not found: "${excerpt(hunk.old)}" — copy the "-" and context lines exactly from the current text (call get_card to see it)` };
     }
     if (found > 1) {
       return { ok: false, error: `fragment "${excerpt(hunk.old)}" occurs ${found} times — add context lines to pick one` };

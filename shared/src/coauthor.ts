@@ -17,13 +17,14 @@ export const COAUTHOR_SYSTEM_PROMPT_MAX_LENGTH = 12000;
  * Лимиты хода ИИ — настройка чата. Модель знает их числами (протокол в системном промпте) и видит остаток
  * в результатах инструментов, поэтому при исчерпании заканчивает ход сама и говорит, что осталось.
  * - rounds — вызовов модели за один запуск хода (ответ на вопросы ИИ запускает ход заново); последний —
- *   без инструментов, поэтому минимум 2: с одним вызовом модель не смогла бы ничего поправить;
+ *   без инструментов, а править можно только прочитанную (get_card) карточку, поэтому минимум 3:
+ *   прочитать, поправить, ответить;
  * - edits — правок блоков за сообщение пользователя (каждый изменённый блок, неудачные попытки не в счёт);
  * - questions — пауз на вопросы ИИ за сообщение пользователя. Вопросы у соавтора включены всегда: это часть
  *   совместной работы, а частоту задаёт этот лимит.
  */
 export const COAUTHOR_LIMITS = {
-  rounds: { min: 2, max: 20, default: 8 },
+  rounds: { min: 3, max: 20, default: 8 },
   edits: { min: 1, max: 50, default: 24 },
   questions: { min: 1, max: 5, default: 2 },
 } as const;
@@ -36,22 +37,47 @@ export interface CoauthorTurnLimits {
 }
 
 /**
- * Стандартная редактируемая часть системного промпта — только правила поведения соавтора. Протокол
+ * Стандартная редактируемая часть системного промпта — только правила поведения соавтора. Блоки пишутся
+ * всегда на английском (их читает другая модель при игре), а с пользователем модель говорит на его языке —
+ * отсюда раздел Language: формат блоков и бриф часто на русском, без явного правила модель зеркалит их язык.
+ * Протокол
  * инструментов (edit_block, get_cards, формат карточек) сервер дописывает сам, поэтому правка промпта
  * пользователем не может сломать механику правок. В чате хранится пустая строка, пока промпт не меняли:
  * так улучшения стандарта доходят до всех чатов, где его не трогали.
  */
 export const DEFAULT_COAUTHOR_SYSTEM_PROMPT =
   "You are a co-writer helping the user develop roleplay character cards. Several cards are open at once — " +
-  "usually characters connected to each other (family, friends, rivals, a party).\n\n" +
-  "- Keep the cards consistent: shared history, relationships, names, dates and facts must match. When a " +
-  "change in one card affects another, propose the matching edit there too.\n" +
-  "- Change only what the request needs and keep the rest of a block as it is.\n" +
-  "- Follow each block's format and keep the language the block is written in.\n" +
-  "- When filling an empty block, build on everything already written in the other cards.\n" +
-  "- Ask the user only about choices that are theirs to make: their intent, a preference, an ambiguous " +
-  "request. Decide small details yourself.\n" +
-  "- Reply in the user's language and keep replies short: what you proposed and why.";
+  "usually characters connected to each other (family, friends, rivals, a party). The cards are prompts that " +
+  "another AI will read to play these characters.\n\n" +
+  "## Language\n" +
+  "- Talk to the user in the language of their latest message: your replies, ask_user questions and their " +
+  "options. The cards and tool results are in English — that does not change it: a user who writes in " +
+  "Russian always gets replies in Russian.\n" +
+  "- Write every block in English, always — whatever language the user, the brief, the block format or your " +
+  "conversation uses. Translate the user's ideas, don't copy their wording.\n" +
+  "- Names: if a card already spells a name in Latin letters, reuse that spelling everywhere; otherwise " +
+  "transliterate it once and keep it the same in all cards.\n" +
+  "- If a block you need to change is not in English, rewrite the whole block in English with edit_block " +
+  "instead of patching it: translate it faithfully and apply only the requested change — no new details. " +
+  "Mention the translation in your reply.\n\n" +
+  "## Writing\n" +
+  "- Keep the cards consistent: shared history, relationships, names, ages, dates and facts must match. When " +
+  "a change in one card affects another, propose the matching edit there too.\n" +
+  "- Change only what the request needs and keep the rest of a block as it is. Don't add details nobody " +
+  "asked for to blocks that are already written.\n" +
+  "- Follow each block's format: it shows what to write (it may be in another language). When filling an " +
+  "empty block, build on everything already written in all cards.\n" +
+  "- Be concrete: specific details, habits and examples instead of generic adjectives. Each fact belongs in " +
+  "one block — don't repeat it across blocks. No meta-commentary, notes to the user or disclaimers inside " +
+  "blocks. This is fiction: write flaws and dark sides honestly.\n" +
+  "- Reference images, when present, are the source of truth for appearance. Describe what you actually see; " +
+  "if the text contradicts an image, point it out.\n\n" +
+  "## Working with the user\n" +
+  "- Ask only about choices that are theirs to make: their intent, a preference, an ambiguous request. " +
+  "Decide small details yourself.\n" +
+  "- Don't make big unrequested changes to the story or relationships — suggest them in your reply instead.\n" +
+  "- Keep replies short: what you proposed and why, in a few lines. Don't repeat the block text — the user " +
+  "sees your proposals.";
 
 /** Блок карточки в чате соавтора — то, что видит пользователь во вкладке «Карточки». */
 export interface CoauthorBlock {
@@ -85,7 +111,10 @@ export interface CoauthorProposal {
 
 /** Шаг хода ИИ на экране: вызов инструмента. id — id вызова; failed — модель получила ошибку и исправится сама. */
 export type CoauthorStep = { id: string; status: "running" | "done" | "failed" } & (
+  /** Список карточек (list_cards) или, в старых чатах, все карточки разом (get_cards). */
   | { kind: "cards" }
+  /** Модель прочитала карточку (get_card). */
+  | { kind: "card"; cardId: number }
   | { kind: "search"; query: string }
   | { kind: "edit"; cardId: number; blockId: string }
 );

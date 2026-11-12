@@ -1,5 +1,6 @@
 import { BadRequestException, HttpException, Injectable, type MessageEvent } from "@nestjs/common";
 import {
+  COAUTHOR_LIMITS,
   modelSupportsImages,
   SSE_EVENTS,
   type CoauthorAnswerInput,
@@ -151,7 +152,13 @@ export class CoauthorTurnService {
         state,
         webSearch: chat.useWebSearch ? { search: (query) => this.webSearch.search(apiKey, query) } : null,
         maxSearchRounds,
-        limits: { maxRounds: chat.maxRounds, maxEdits: chat.maxEdits, maxQuestions: chat.maxQuestions },
+        // Минимум раундов поднимали (чтение карточки стало отдельным раундом) — старое значение не должно
+        // оставить модели ход без возможности что-то поправить.
+        limits: {
+          maxRounds: Math.max(chat.maxRounds, COAUTHOR_LIMITS.rounds.min),
+          maxEdits: chat.maxEdits,
+          maxQuestions: chat.maxQuestions,
+        },
         // Модель без зрения не падает, а молча выкидывает картинки — просто их не шлём (чат полезен и без них).
         withImages: chat.useImages && modelSupportsImages(preset.model),
         onStep: (step: CoauthorStep) => {

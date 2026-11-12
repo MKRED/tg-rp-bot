@@ -44,7 +44,7 @@ export function proposePatch(
     const card = ids && cards.find((c) => c.id === ids.cardId);
     const block = ids && card?.blocks.find((b) => b.id === ids.blockId);
     if (!ids || !card || !block) {
-      errors.push(`${section.path}: no such block — use the \`path\` values from get_cards`);
+      errors.push(`${section.path}: no such block — use the \`path\` values from get_card`);
       continue;
     }
     const key = `${card.id}:${block.id}`;
