@@ -1,5 +1,19 @@
-import type { LlmProvider } from "./providers.js";
-import type { ChatCompletionOptions } from "./types.js";
+import { mapEffort, type LlmProvider } from "../providers.js";
+import type { ChatCompletionOptions } from "../types.js";
+
+/**
+ * Поля thinking-режима DeepSeek в Chat Completions. У v4-моделей thinking включён по умолчанию —
+ * выключаем явно. (В Responses API это поле игнорируется, там свой `reasoning.effort`.)
+ */
+export function thinkingBody(opts: ChatCompletionOptions): Record<string, unknown> {
+  if (!opts.requestReasoning) {
+    return { thinking: { type: "disabled" } };
+  }
+  return {
+    thinking: { type: "enabled" },
+    reasoning_effort: mapEffort(opts.reasoningEffort),
+  };
+}
 
 /** Собирает RAW-тело запроса к провайдеру: передаём только заданные параметры (undefined → дефолт). */
 export function buildBody(
@@ -21,15 +35,6 @@ export function buildBody(
     ...(options.topP !== undefined && { top_p: options.topP }),
     ...(options.tools !== undefined && { tools: options.tools }),
     ...(options.toolChoice !== undefined && { tool_choice: options.toolChoice }),
-    // Reasoning подключается провайдеро-специфично (для DeepSeek — thinking-режим).
-    ...provider.reasoningBody(options),
-  };
-}
-
-/** Заголовки запроса: авторизация провайдера + Content-Type. */
-export function makeHeaders(provider: LlmProvider): Record<string, string> {
-  return {
-    Authorization: `Bearer ${provider.apiKey}`,
-    "Content-Type": "application/json",
+    ...thinkingBody(options),
   };
 }

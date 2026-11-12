@@ -1,12 +1,12 @@
 import { Injectable, type OnApplicationBootstrap } from "@nestjs/common";
 import type { LlmDebugSettings, LlmDebugSettingsPatch, LlmDebugView } from "@tg-rp-bot/shared";
-import { cacheDebugSettings, clearDebugRecords, getDebugRecords, primeDebugSettings } from "../llm/debugCapture.js";
+import { cacheDebugSettings, clearDebugRecords, getDebugRecords, primeDebugSettings } from "../llm/debug/debugCapture.js";
 import logger from "../logger.js";
 import { DebugRepository } from "./debug.repository.js";
 
 /**
  * Экран отладки LLM: настройки перехвата (БД — источник истины) и записи из in-memory кольца
- * llm/debugCapture.ts. Каждое чтение/запись настроек синхронизирует кэш горячего пути перехвата.
+ * llm/debug/debugCapture.ts. Каждое чтение/запись настроек синхронизирует кэш горячего пути перехвата.
  */
 @Injectable()
 export class DebugService implements OnApplicationBootstrap {

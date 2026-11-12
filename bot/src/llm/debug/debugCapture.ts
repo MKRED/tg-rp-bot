@@ -1,4 +1,4 @@
-import logger from "../logger.js";
+import logger from "../../logger.js";
 import type { LlmDebugRecord } from "./debug.types.js";
 import {
   clampMaxRequests,
@@ -6,13 +6,13 @@ import {
   type LlmDebugSettings,
 } from "./debugSettings.js";
 
-// Типы перехвата живут в debug.types.ts; реэкспорт сохраняет прежнюю точку импорта (client.ts).
+// Типы перехвата живут в debug.types.ts; реэкспорт — одна точка импорта для клиентов обоих протоколов.
 export type { LlmCallLabel, LlmDebugRecord, LlmDebugResponse } from "./debug.types.js";
 
 /**
  * In-memory перехват RAW-запросов к LLM для отладочного экрана Mini App.
  *
- * Единственная точка вызова — `requestChatCompletion` (client.ts), поэтому сюда попадают ВСЕ пути:
+ * Точки вызова — клиенты обоих протоколов (chat-completions/client.ts, responses/client.ts), поэтому сюда попадают ВСЕ пути:
  * RP-генерация, impersonate, нарратор, перевод. Сами записи живут в памяти процесса (один
  * контейнер на проде) и сбрасываются при рестарте — это осознанно: там расшифрованные
  * сообщения, копить их на диске/в БД не хочется, а смотрят их «вживую».

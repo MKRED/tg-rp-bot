@@ -19,33 +19,4 @@ describe("buildDeepSeekProvider", () => {
     expect(p.apiKey).toBe("ds-key");
     expect(p.defaultModel).toBe("deepseek-flash");
   });
-
-  it("выключенное мышление → thinking disabled", () => {
-    const body = buildDeepSeekProvider("k", "m").reasoningBody({
-      messages: [],
-      userId: 1,
-      requestReasoning: false,
-    });
-    expect(body).toEqual({ thinking: { type: "disabled" } });
-  });
-
-  it("включённое мышление → thinking enabled + смаппленный effort", () => {
-    const body = buildDeepSeekProvider("k", "m").reasoningBody({
-      messages: [],
-      userId: 1,
-      requestReasoning: true,
-      reasoningEffort: "max",
-    });
-    expect(body).toEqual({ thinking: { type: "enabled" }, reasoning_effort: "max" });
-  });
-
-  it("включённое мышление без уровня → high", () => {
-    const body = buildDeepSeekProvider("k", "m").reasoningBody({
-      messages: [],
-      userId: 1,
-      requestReasoning: true,
-    });
-    expect(body).toEqual({ thinking: { type: "enabled" }, reasoning_effort: "high" });
-  });
 });
-

@@ -85,7 +85,7 @@ export const userSessions = pgTable("user_sessions", {
  *
  * llmDebugEnabled — писать ли RAW-лог запросов к LLM (тумблер на экране отладки). Дефолт true —
  *   осознанный выбор: перехват это escape-hatch, экран не должен быть пустым на момент бага
- *   (записи живут только в памяти процесса, на диск/в БД не пишутся, см. llm/debugCapture.ts).
+ *   (записи живут только в памяти процесса, на диск/в БД не пишутся, см. llm/debug/debugCapture.ts).
  * llmDebugMaxRequests — сколько последних запросов держать в кольце перехвата.
  * llmDebugHeadMessages / llmDebugTailMessages — сколько сообщений messages[] показывать с краёв
  *   (усечение середины — только на клиенте). В БД, а не в localStorage, чтобы значения были

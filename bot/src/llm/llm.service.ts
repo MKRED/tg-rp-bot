@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { LlmSettingsRepository } from "../settings/llm/llm-settings.repository.js";
-import { requestChatCompletion } from "./client.js";
+import { requestChatCompletion } from "./chat-completions/client.js";
 import { DEFAULT_DEEPSEEK_MODEL } from "./constants.js";
 import { MissingApiKeyError } from "./errors.js";
 import { buildDeepSeekProvider, type LlmProvider } from "./providers.js";
@@ -14,7 +14,7 @@ import type { ChatCompleter, ChatCompletionOptions, ChatCompletionResult, OnTool
  * настройках действует сразу, а MissingApiKeyError вылетает там же, где и раньше (обработчики сжатия,
  * ретрая перевода и SSE-ошибки на это рассчитывают).
  *
- * Два протокола: complete — Chat Completions (client.ts), respond — Responses API (responses/client.ts,
+ * Два протокола: complete — Chat Completions (chat-completions/client.ts), respond — Responses API (responses/client.ts,
  * сейчас только соавтор: ему нужны картинки в результатах инструментов).
  */
 @Injectable()

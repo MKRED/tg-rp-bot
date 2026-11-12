@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import type { DeepSeekBalance, LlmSettingsPatch, LlmSettingsStatus, VerifyDeepSeekKeyResult } from "@tg-rp-bot/shared";
-import { getDeepSeekBalance } from "../../llm/deepseekBalance.js";
-import { listDeepSeekModels } from "../../llm/deepseekModels.js";
+import { getDeepSeekBalance } from "../../llm/account/deepseekBalance.js";
+import { listDeepSeekModels } from "../../llm/account/deepseekModels.js";
 import { LlmHttpError } from "../../llm/errors.js";
 import { assertValidKeyFormat } from "../key-format.js";
 import { LlmSettingsRepository } from "./llm-settings.repository.js";

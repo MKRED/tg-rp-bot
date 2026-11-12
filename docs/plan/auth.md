@@ -109,7 +109,7 @@
 - `userId: number` → `string` (~95 файлов bot + `shared/src/debug.ts`). tsc поймает большую часть; руками
   проверить то, что он не ловит:
   - ключи блокировок в шаблонных строках, `Map`/`Set` по userId;
-  - фильтр «только мои запросы» в `llm/debugCapture.ts`;
+  - фильтр «только мои запросы» в `llm/debug/debugCapture.ts`;
   - логи с `userId` (просто тип — без изменений смысла).
 - `UsersService.ensureTelegramUser` → upsert `ON CONFLICT (telegram_id)`, возвращает uuid; кэш
   `telegramId → uuid` на процесс. Guard кладёт в запрос uuid.

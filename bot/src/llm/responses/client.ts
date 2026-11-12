@@ -2,11 +2,10 @@ import logger from "../../logger.js";
 import { retry } from "../../utils/index.js";
 import { isUnusableCompletion } from "../completionGuard.js";
 import { RESPONSES_PATH } from "../constants.js";
-import { type LlmDebugResponse, recordLlmCall } from "../debugCapture.js";
+import { type LlmDebugResponse, recordLlmCall } from "../debug/debugCapture.js";
 import { EmptyCompletionError, isRetryableLlmError, LlmHttpError } from "../errors.js";
-import type { LlmProvider } from "../providers.js";
-import { redactImageUrls } from "../redact-images.js";
-import { makeHeaders } from "../request.js";
+import { makeHeaders, type LlmProvider } from "../providers.js";
+import { redactImageUrls } from "../debug/redact-images.js";
 import type { OnToolCallDelta } from "../types.js";
 import { buildResponsesBody } from "./request.js";
 import { parseResponseBody, toResponsesResult } from "./result.js";
@@ -15,7 +14,7 @@ import type { ResponsesRequestOptions, ResponsesResult } from "./types.js";
 
 /**
  * Запрос к DeepSeek Responses API — для путей, которым нужны картинки в результатах инструментов
- * (сейчас только соавтор). Поведение то же, что у requestChatCompletion (client.ts): retry на 5xx/429,
+ * (сейчас только соавтор). Поведение то же, что у requestChatCompletion (chat-completions/client.ts): retry на 5xx/429,
  * сеть и непригодный ответ; onReset перед повтором, если что-то уже показано; запись в отладку на
  * каждый вызов. Обычный fetch — без Telegram-прокси.
  */

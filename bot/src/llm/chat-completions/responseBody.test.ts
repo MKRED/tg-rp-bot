@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MalformedCompletionError } from "./errors.js";
+import { MalformedCompletionError } from "../errors.js";
 import { parseCompletionBody } from "./responseBody.js";
 
 describe("parseCompletionBody", () => {

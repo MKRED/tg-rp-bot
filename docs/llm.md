@@ -24,7 +24,7 @@
 ## Резолв провайдера
 Вызов LLM — `LlmService.complete()` (`bot/src/llm/llm.service.ts`, модуль `LlmModule`): на **каждый**
 запрос читает ключ пользователя из `LlmSettingsRepository` и передаёт провайдера чистому клиенту
-`requestChatCompletion()` (`bot/src/llm/client.ts`, общий OpenAI-совместимый: стриминг, ретраи, перехват
+`requestChatCompletion()` (`bot/src/llm/chat-completions/client.ts`, OpenAI-совместимый: стриминг, ретраи, перехват
 для экрана отладки). Модель приходит в `options.model` из пресета (`presetToCompletionOptions`, перевод в
 чате/истории и сжатие берут модель пресета чата/истории). Без сохранённого ключа бросается `MissingApiKeyError` (`bot/src/llm/errors.ts`) —
 **без фоллбэка** на общий/env-ключ. Nest-сервисы инжектят `LlmService`; чистые функции (`streamCompletion`,
@@ -52,7 +52,7 @@
 ## Reasoning (thinking-режим DeepSeek)
 DeepSeek — единственный поддерживаемый провайдер, других путей нет. «Мышление» из пресета (поля
 `requestReasoning`/`reasoningEffort`) превращается в `thinking`-поля тела запроса
-(`deepSeekReasoningBody`, `providers.ts`). Уровни — ровно DeepSeek-овские `low|high|max`
+(`thinkingBody`, `chat-completions/request.ts`; у Responses — `reasoning.effort`, см. ниже). Уровни — ровно DeepSeek-овские `low|high|max`
 (`REASONING_EFFORTS`); `mapEffort` лишь страхует от неизвестной строки (→ `high`, иначе 422).
 
 ## Сэмплинг
@@ -78,7 +78,7 @@ https. Проверено запросами: `deepseek-v4-pro` отвечает
 «[Unsupported Image]» — HTTP-ошибки нет, поэтому модель проверяется заранее (генерация карточки с
 референсами при такой модели — 400 `images_unsupported`). Цена картинки растёт с размером (~400 токенов
 за 386×1051, ~900 за 1000×1333), поэтому webapp ужимает референсы до `REFERENCE_IMAGE_MAX_SIDE`.
-На экран отладки data URL картинок не попадают — `llm/redact-images.ts` заменяет их описанием.
+На экран отладки data URL картинок не попадают — `llm/debug/redact-images.ts` заменяет их описанием.
 
 Сейчас картинки шлёт одна фича — референсы внешности карточки «Мастерской» (`cards.reference_images`, до
 `MAX_CARD_REFERENCE_IMAGES`): прикрепляются к первому user-сообщению каждой генерации блока

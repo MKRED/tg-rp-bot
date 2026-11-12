@@ -1,4 +1,4 @@
-import { MalformedCompletionError } from "./errors.js";
+import { MalformedCompletionError } from "../errors.js";
 import type { LlmResponse } from "./types.js";
 
 /** Сколько символов тела попадает в ошибку — для лога хватает, а целиком тело может быть огромным. */

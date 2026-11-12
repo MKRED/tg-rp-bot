@@ -8,7 +8,7 @@ const capture = {
   getDebugRecords: vi.fn().mockReturnValue([{ id: 1 }]),
   primeDebugSettings: vi.fn(),
 };
-vi.mock("../llm/debugCapture.js", () => capture);
+vi.mock("../llm/debug/debugCapture.js", () => capture);
 
 const { DebugService } = await import("./debug.service.js");
 const logger = (await import("../logger.js")).default;

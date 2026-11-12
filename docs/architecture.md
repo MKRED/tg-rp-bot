@@ -64,7 +64,7 @@ bot/src/
                   WebSearchSettingsRepository (генерация карточек) и
                   TranslateSettingsRepository (перевод)
   debug/        — /api/debug/llm: настройки перехвата LLM (repository — колонки user_settings) + записи из
-                  in-memory кольца llm/debugCapture; DebugService праймит кэш настроек на старте
+                  in-memory кольца llm/debug/debugCapture; DebugService праймит кэш настроек на старте
                   (OnApplicationBootstrap)
   avatars/      — POST /api/avatars/batch: батч-резолв картинок персонажей/персон для AvatarStack
                   (см. ниже) — controller / service (лимит батча) / repository / dto/ (некорректные
@@ -122,12 +122,16 @@ bot/src/
   logger.ts     — pino logger (daily rolling, pino-pretty in TTY)
   db/           — drizzle: schema.ts (+ schema.types.ts — id-типы/порядок промптов) + index.ts
                   (клиент — только через DatabaseService; репозитории доменных модулей берут schema)
-  llm/          — LlmModule: LlmService.complete (ключ пользователя из settings/llm на каждый
-                  вызов, модель — из пресета; без ключа — MissingApiKeyError) + чистый клиент (client/request/
-                  errors/types/constants/completionGuard/providers/deepseekModels) — серверно;
-                  единственный провайдер — DeepSeek;
-                  debugCapture (+debug.types, debugSettings — кламп настроек) — in-memory перехват RAW-запросов
-                  к LLM для экрана отладки (горячий путь каждого вызова; настройки — в debug/)
+  llm/          — LlmModule: LlmService (ключ пользователя из settings/llm на каждый вызов, модель —
+                  из пресета; без ключа — MissingApiKeyError); единственный провайдер — DeepSeek. В корне —
+                  общее для обоих протоколов: types, errors, constants, completionGuard, providers (провайдер,
+                  заголовки, mapEffort).
+                  chat-completions/ — complete(): client, request (тело + thinking), responseBody,
+                    stream-accumulator, сырые типы ответа — все пути, кроме соавтора;
+                  responses/ — respond(): Responses API (картинки в результатах инструментов) — соавтор;
+                  debug/ — debugCapture (+debug.types, debugSettings — кламп, redact-images) — in-memory
+                    перехват RAW-запросов к LLM для экрана отладки (горячий путь; настройки — в debug/ модуль);
+                  account/ — deepseekBalance, deepseekModels (экран настроек ИИ: баланс, список моделей)
   web-search/   — WebSearchModule: WebSearchService (POST https://api.deepseek.com/v1/tools/search для
                   web_search генерации карточек; ключ DeepSeek пользователя параметром вызова, обычный fetch
                   без прокси); search-request (чистые: тело запроса с обрезкой query до 128 символов,

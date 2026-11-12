@@ -1,4 +1,5 @@
-import type { LlmStreamToolCallDelta, ToolCall } from "./types.js";
+import type { ToolCall } from "../types.js";
+import type { LlmStreamToolCallDelta } from "./types.js";
 
 /** Вызов инструмента, собранный из дельт на текущий момент: аргументы могут быть ещё неполными. */
 export interface PartialToolCall {

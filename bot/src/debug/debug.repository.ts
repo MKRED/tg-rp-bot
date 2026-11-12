@@ -3,7 +3,7 @@ import type { LlmDebugSettings, LlmDebugSettingsPatch } from "@tg-rp-bot/shared"
 import { eq } from "drizzle-orm";
 import { DatabaseService } from "../database/database.service.js";
 import { schema } from "../db/index.js";
-import { clampEdgeMessages, clampMaxRequests, DEFAULT_DEBUG_SETTINGS } from "../llm/debugSettings.js";
+import { clampEdgeMessages, clampMaxRequests, DEFAULT_DEBUG_SETTINGS } from "../llm/debug/debugSettings.js";
 import logger from "../logger.js";
 
 /** Колонки настроек отладки в select (функция, а не константа: схема не трогается при импорте модуля). */
@@ -26,7 +26,7 @@ function clampSettings(row: LlmDebugSettings): LlmDebugSettings {
 
 /**
  * Колонки user_settings с настройками отладочного перехвата LLM — источник истины. In-memory кэш
- * для горячего пути перехвата живёт отдельно, в llm/debugCapture.ts.
+ * для горячего пути перехвата живёт отдельно, в llm/debug/debugCapture.ts.
  */
 @Injectable()
 export class DebugRepository {

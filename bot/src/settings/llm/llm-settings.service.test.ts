@@ -4,9 +4,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("../../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
 vi.mock("../../db/index.js", () => ({ db: {}, schema: {} }));
 const listDeepSeekModels = vi.fn();
-vi.mock("../../llm/deepseekModels.js", () => ({ listDeepSeekModels }));
+vi.mock("../../llm/account/deepseekModels.js", () => ({ listDeepSeekModels }));
 const getDeepSeekBalance = vi.fn();
-vi.mock("../../llm/deepseekBalance.js", () => ({ getDeepSeekBalance }));
+vi.mock("../../llm/account/deepseekBalance.js", () => ({ getDeepSeekBalance }));
 
 const { LlmSettingsService } = await import("./llm-settings.service.js");
 const { LlmHttpError } = await import("../../llm/errors.js");

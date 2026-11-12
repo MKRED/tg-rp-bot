@@ -1,21 +1,16 @@
-import logger from "../logger.js";
-import { retry } from "../utils/index.js";
-import { isUnusableCompletion } from "./completionGuard.js";
-import { CHAT_COMPLETIONS_PATH } from "./constants.js";
-import { type LlmDebugResponse, recordLlmCall } from "./debugCapture.js";
-import { redactImageUrls } from "./redact-images.js";
-import { EmptyCompletionError, LlmHttpError } from "./errors.js";
+import logger from "../../logger.js";
+import { retry } from "../../utils/index.js";
+import { isUnusableCompletion } from "../completionGuard.js";
+import { CHAT_COMPLETIONS_PATH } from "../constants.js";
+import { type LlmDebugResponse, recordLlmCall } from "../debug/debugCapture.js";
+import { redactImageUrls } from "../debug/redact-images.js";
+import { EmptyCompletionError, LlmHttpError } from "../errors.js";
+import { makeHeaders, type LlmProvider } from "../providers.js";
+import type { ChatCompletionOptions, ChatCompletionResult, OnToolCallDelta } from "../types.js";
+import { buildBody } from "./request.js";
 import { parseCompletionBody } from "./responseBody.js";
-import type { LlmProvider } from "./providers.js";
-import { buildBody, makeHeaders } from "./request.js";
 import { ToolCallAccumulator } from "./stream-accumulator.js";
-import type {
-  ChatCompletionOptions,
-  ChatCompletionResult,
-  LlmResponse,
-  LlmStreamDelta,
-  OnToolCallDelta,
-} from "./types.js";
+import type { LlmResponse, LlmStreamDelta } from "./types.js";
 
 /**
  * Chat completion у заданного провайдера (ключ/модель пользователя резолвит LlmService — BYOK).

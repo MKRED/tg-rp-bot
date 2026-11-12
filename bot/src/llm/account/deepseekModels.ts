@@ -1,6 +1,6 @@
-import logger from "../logger.js";
-import { retry } from "../utils/index.js";
-import { LlmHttpError } from "./errors.js";
+import logger from "../../logger.js";
+import { retry } from "../../utils/index.js";
+import { LlmHttpError } from "../errors.js";
 
 /** Ответ DeepSeek GET /models (OpenAI-совместимый формат): { object: "list", data: [{ id, ... }] }. */
 interface DeepSeekModelsResponse {

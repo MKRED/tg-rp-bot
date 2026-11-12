@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
 vi.mock("../settings/llm/llm-settings.repository.js", () => ({ LlmSettingsRepository: class {} }));
 const requestChatCompletion = vi.hoisted(() => vi.fn());
-vi.mock("./client.js", () => ({ requestChatCompletion }));
+vi.mock("./chat-completions/client.js", () => ({ requestChatCompletion }));
 
 const { LlmService } = await import("./llm.service.js");
 const { MissingApiKeyError } = await import("./errors.js");
