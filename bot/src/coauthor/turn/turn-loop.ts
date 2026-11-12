@@ -1,11 +1,13 @@
 import type { CoauthorStep, WebSearchRecord } from "@tg-rp-bot/shared";
 import { parseAskUserArguments } from "../../cards/generation/ask-user-tool.js";
 import { runWebSearchCall } from "../../cards/generation/tool-loop.js";
-import type { ChatCompleter, ChatCompletionOptions, ToolCall } from "../../llm/types.js";
+import type { ResponsesCompleter, ResponsesRequestOptions } from "../../llm/responses/types.js";
+import type { ToolCall } from "../../llm/types.js";
 import logger from "../../logger.js";
 import type { WebSearcher } from "../../web-search/web-search.types.js";
 import { WEB_SEARCH_TOOL_NAME, webSearchTool } from "../../web-search/web-search-tool.js";
-import { buildCoauthorMessages, STALE_CARDS_RESULT, type CoauthorCardData } from "./prompt.js";
+import { buildCoauthorInput } from "./input.js";
+import { STALE_CARDS_RESULT, type CoauthorCardData } from "./prompt.js";
 import { proposeEdit } from "./proposals.js";
 import type { CoauthorState, StoredMessage } from "./state.js";
 import { callStep } from "./steps.js";
@@ -28,8 +30,9 @@ export const COAUTHOR_MAX_ASK_PER_TURN = 2;
 export const COAUTHOR_MAX_EDITS_PER_TURN = 24;
 
 export interface CoauthorTurnParams {
-  llm: ChatCompleter;
-  baseOptions: Omit<ChatCompletionOptions, "messages" | "tools" | "toolChoice">;
+  /** Responses API: картинки разрешены и в результатах инструментов, не только в user-сообщениях. */
+  llm: ResponsesCompleter;
+  baseOptions: Omit<ResponsesRequestOptions, "input" | "tools" | "toolChoice">;
   customPrompt: string;
   cards: CoauthorCardData[];
   /** Меняется на месте: сюда дописываются сообщения хода, правки и пауза. */
@@ -109,10 +112,10 @@ export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<Coaut
           ]
         : [];
 
-    const result = await llm.complete(
+    const result = await llm.respond(
       {
         ...baseOptions,
-        messages: buildCoauthorMessages(customPrompt, cards, state.proposals, state.messages, COAUTHOR_HISTORY_TOKEN_BUDGET, withImages),
+        input: buildCoauthorInput(customPrompt, cards, state.proposals, state.messages, COAUTHOR_HISTORY_TOKEN_BUDGET, withImages),
         ...(tools.length > 0 && { tools, toolChoice: "auto" as const }),
       },
       (text) => params.onToken?.(text),
@@ -174,11 +177,19 @@ export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<Coaut
       results[call.id] = runLocalTool(call, state, cards);
     };
 
+    const truncatedCallId = result.incompleteReason ? result.toolCalls.at(-1)!.id : undefined;
     for (const call of result.toolCalls) {
       const raw = { id: call.id, name: call.function.name, arguments: call.function.arguments };
       // Без стрима или без дельт шаг ещё не показан, а поиск идёт секунды — объявляем до запуска.
       announce(raw);
-      await runCall(call);
+      if (call.id === truncatedCallId) {
+        // Ответ оборван лимитом токенов на этом вызове — аргументы неполны. Не выполняем, а объясняем
+        // модели причину: просто «invalid arguments» она повторила бы тем же длинным текстом.
+        logger.warn({ userId, tool: call.function.name, reason: result.incompleteReason }, "Coauthor turn: вызов обрезан лимитом");
+        results[call.id] = JSON.stringify({ error: "your output was cut off by the token limit; make this call again with shorter content" });
+      } else {
+        await runCall(call);
+      }
       const finished = callStep(raw, results[call.id] ?? "{}");
       if (finished) params.onStep?.(finished);
     }
@@ -197,7 +208,7 @@ export async function runCoauthorTurn(params: CoauthorTurnParams): Promise<Coaut
 /** get_cards и edit_block — без внешних вызовов. */
 function runLocalTool(call: ToolCall, state: CoauthorState, cards: CoauthorCardData[]): string {
   if (call.function.name === GET_CARDS_TOOL_NAME) {
-    // Снимок в начале промпта пересобирается на каждый запрос (см. buildCoauthorMessages) и уже
+    // Снимок в начале промпта пересобирается на каждый запрос (см. buildCoauthorInput) и уже
     // актуален — копии в истории только раздували бы её.
     return STALE_CARDS_RESULT;
   }

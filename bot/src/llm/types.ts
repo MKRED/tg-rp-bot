@@ -102,6 +102,10 @@ export interface ChatCompletionResult {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
+    /** Входные токены из кэша провайдера (Responses API отдаёт всегда, Chat Completions — не разбираем). */
+    cachedTokens?: number;
+    /** Токены рассуждения внутри completionTokens (Responses API). */
+    reasoningTokens?: number;
   };
   /** Заполнено, только если модель запросила инструмент(ы) вместо текстового ответа. */
   toolCalls?: ToolCall[];

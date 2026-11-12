@@ -36,6 +36,28 @@ export class MalformedCompletionError extends Error {
 }
 
 /**
+ * Responses API: генерация провалилась на стороне провайдера (status "failed", событие стрима
+ * `response.failed`/`error`) или стрим закрылся без финального события. Ретраибл, как 5xx.
+ */
+export class ResponseFailedError extends Error {
+  constructor(
+    readonly provider: string,
+    detail: string,
+  ) {
+    super(`${provider} response failed: ${detail}`);
+    this.name = "ResponseFailedError";
+  }
+}
+
+/**
+ * Ретраить ли ошибку вызова LLM: всё, кроме 4xx от провайдера (кроме 429), — сеть, 5xx, пустой ответ,
+ * битое тело, провал генерации. 4xx — ошибка запроса или ключа, повтор её не исправит.
+ */
+export function isRetryableLlmError(err: unknown): boolean {
+  return err instanceof LlmHttpError ? err.status >= 500 || err.status === 429 : true;
+}
+
+/**
  * У пользователя не задан персональный ключ LLM-провайдера (BYOK — общего ключа из env больше нет).
  * Штатное состояние, не авария: сообщение готово для показа пользователю как есть.
  */

@@ -15,8 +15,10 @@ export interface ToolUsage {
   resultsInHistory: string[];
 }
 
-type RawToolCall = { id?: unknown; function?: { name?: unknown } };
+type RawToolCall = { id?: unknown; name?: unknown; function?: { name?: unknown } };
 type RawMessage = { role?: unknown; tool_calls?: unknown; tool_call_id?: unknown };
+/** Элемент input Responses API: вызов инструмента и его результат — отдельные элементы, связанные call_id. */
+type RawInputItem = { type?: unknown; call_id?: unknown; name?: unknown };
 
 /** Человекочитаемые подписи известных инструментов; неизвестное имя показываем как есть. */
 const TOOL_LABELS: Record<string, string> = {
@@ -30,8 +32,10 @@ function unique(names: string[]): string[] {
   return [...new Set(names)];
 }
 
+/** Имя функции: в Chat Completions — в обёртке `function`, в Responses (tools соавтора) — плоско. */
 function functionName(raw: unknown): string | undefined {
-  const name = (raw as RawToolCall | null)?.function?.name;
+  const call = raw as RawToolCall | null;
+  const name = call?.function?.name ?? call?.name;
   return typeof name === "string" && name ? name : undefined;
 }
 
@@ -47,9 +51,19 @@ function names(list: unknown): string[] {
  */
 export function describeToolUsage(record: Pick<LlmDebugRecord, "request" | "response">): ToolUsage {
   const messages = Array.isArray(record.request.messages) ? (record.request.messages as RawMessage[]) : [];
+  const input = Array.isArray(record.request.input) ? (record.request.input as RawInputItem[]) : [];
 
   const nameByCallId = new Map<string, string>();
   const resultsInHistory: string[] = [];
+  for (const item of input) {
+    if (item?.type === "function_call" && typeof item.call_id === "string" && typeof item.name === "string") {
+      nameByCallId.set(item.call_id, item.name);
+    }
+    if (item?.type === "function_call_output" && typeof item.call_id === "string") {
+      const name = nameByCallId.get(item.call_id);
+      if (name) resultsInHistory.push(name);
+    }
+  }
   for (const message of messages) {
     if (message?.role === "assistant" && Array.isArray(message.tool_calls)) {
       for (const call of message.tool_calls as RawToolCall[]) {

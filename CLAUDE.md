@@ -260,7 +260,7 @@ vitest in both packages, pool `forks`. Details and "why" — [docs/testing.md](d
 | Service | Used for | Key |
 |---|---|---|
 | Telegram | Bot API (via HTTP proxy) | `BOT_TOKEN`, `TELEGRAM_PROXY_URL` |
-| DeepSeek | LLM chat completion — the **only provider** — and web search (`POST /v1/tools/search`, card generation); server-side, per-user (BYOK), direct (no proxy) | in DB, not env |
+| DeepSeek | LLM chat completion — the **only provider** (coauthor uses the **Responses API**, `llm/responses/`, for images in tool results) — and web search (`POST /v1/tools/search`, card generation); server-side, per-user (BYOK), direct (no proxy) | in DB, not env |
 | Google / Yandex Translate | Machine translation — **unofficial keyless** endpoints, server-side, direct (no proxy); rate-limited per server IP | none |
 | ComfyUI | Image generation — runs on the **user's PC**, no key; the server reaches it only through a PowerShell agent doing HTTPS long-poll (direct, no proxy) — [docs/comfy-agent.md](docs/comfy-agent.md) | per-user agent token (SHA-256 in DB) |
 | Postgres | DB (drizzle) | `DATABASE_URL` |

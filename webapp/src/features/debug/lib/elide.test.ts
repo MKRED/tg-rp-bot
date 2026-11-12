@@ -36,6 +36,15 @@ describe("elideRequest", () => {
   });
 });
 
+describe("elideRequest — Responses API", () => {
+  it("усекает input[] так же, как messages[]", () => {
+    const out = elideRequest({ input: msgs(10) }, 2, 2);
+    const items = out.input as unknown[];
+    expect(items).toHaveLength(5);
+    expect(isElidedMarker(items[2])).toBe(true);
+  });
+});
+
 describe("unescapeNewlines", () => {
   it("превращает экранированные \\n в настоящие переводы строк", () => {
     expect(unescapeNewlines('"строка1\\nстрока2"')).toBe('"строка1\nстрока2"');

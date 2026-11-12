@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ChatCompleter, ChatCompletionOptions, ChatCompletionResult, ToolCall } from "../../llm/types.js";
+import type { ResponsesCompleter, ResponsesRequestOptions, ResponsesResult } from "../../llm/responses/types.js";
+import type { ToolCall } from "../../llm/types.js";
 
 vi.mock("../../logger.js", () => ({ default: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
 
@@ -15,10 +16,10 @@ const call = (id: string, name: string, args: unknown): ToolCall => ({
 });
 
 /** Фейковая модель: отдаёт ответы по очереди и запоминает запросы. */
-function fakeLlm(replies: ChatCompletionResult[]) {
-  const requests: ChatCompletionOptions[] = [];
-  const llm: ChatCompleter = {
-    complete: async (options) => {
+function fakeLlm(replies: ResponsesResult[]) {
+  const requests: ResponsesRequestOptions[] = [];
+  const llm: ResponsesCompleter = {
+    respond: async (options) => {
       requests.push(options);
       return replies.shift() ?? { content: "fallback", model: "m" };
     },
@@ -26,7 +27,7 @@ function fakeLlm(replies: ChatCompletionResult[]) {
   return { llm, requests };
 }
 
-const params = (llm: ChatCompleter, state = emptyCoauthorState()) => {
+const params = (llm: ResponsesCompleter, state = emptyCoauthorState()) => {
   state.messages.push({ role: "user", content: "Fill Elena's fears" });
   return {
     llm,
@@ -51,8 +52,11 @@ describe("runCoauthorTurn", () => {
     expect(await runCoauthorTurn(p)).toBe("done");
     expect(p.state.proposals).toHaveLength(1);
     expect(p.state.messages.at(-1)).toEqual({ role: "assistant", content: "Proposed." });
-    // Живой reasoning уходит обратно во втором запросе хода.
-    expect(requests[1]!.messages.some((m) => "reasoning_content" in m && m.reasoning_content === "think")).toBe(true);
+    // Живой reasoning уходит обратно во втором запросе хода — элементом перед вызовом.
+    const input = requests[1]!.input;
+    const reasoningAt = input.findIndex((i) => "type" in i && i.type === "reasoning" && i.content[0]!.text === "think");
+    expect(reasoningAt).toBeGreaterThan(0);
+    expect(input[reasoningAt + 1]).toMatchObject({ type: "function_call", call_id: "e1" });
   });
 
   it("ask_user вместе с edit_block — пауза, результат правки отложен", async () => {
@@ -100,12 +104,12 @@ describe("runCoauthorTurn", () => {
   it("шаг объявляется по дельтам один раз и завершается итоговым статусом", async () => {
     const args = JSON.stringify({ card_id: 1, block_id: "fears", content: "Storms" });
     const steps: unknown[] = [];
-    const replies: ChatCompletionResult[] = [
+    const replies: ResponsesResult[] = [
       { content: "", model: "m", toolCalls: [call("e1", "edit_block", { card_id: 1, block_id: "fears", content: "Storms" })] },
       { content: "Ok", model: "m" },
     ];
-    const llm: ChatCompleter = {
-      complete: async (_options, _onChunk, _onReset, onToolCall) => {
+    const llm: ResponsesCompleter = {
+      respond: async (_options, _onChunk, _onReset, onToolCall) => {
         // Две дельты после того, как id уже читаются: шаг не должен задвоиться.
         onToolCall?.({ id: "e1", name: "edit_block", arguments: args.slice(0, -5) });
         onToolCall?.({ id: "e1", name: "edit_block", arguments: args });
@@ -127,6 +131,26 @@ describe("runCoauthorTurn", () => {
     ]);
     // Клиент берёт снимок правок в момент шага done — правка уже должна быть там.
     expect(proposalsAtDone).toBe(1);
+  });
+
+  it("ответ оборван лимитом — последний вызов не выполняется, модель узнаёт причину", async () => {
+    const { llm } = fakeLlm([
+      {
+        content: "",
+        model: "m",
+        incompleteReason: "max_output_tokens",
+        toolCalls: [
+          call("e1", "edit_block", { card_id: 1, block_id: "fears", content: "Storms" }),
+          { id: "e2", type: "function", function: { name: "edit_block", arguments: '{"card_id": 1, "block_id": "fears", "content": "Sto' } },
+        ],
+      },
+      { content: "Ok", model: "m" },
+    ]);
+    const p = params(llm);
+    expect(await runCoauthorTurn(p)).toBe("done");
+    const results = p.state.messages.filter((m) => m.role === "tool");
+    expect(JSON.parse(results[0]!.content).ok).toBe(true);
+    expect(JSON.parse(results[1]!.content).error).toContain("token limit");
   });
 
   it("без дельт шаг всё равно появляется, ошибка инструмента — failed", async () => {

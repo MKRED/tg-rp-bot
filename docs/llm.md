@@ -30,6 +30,25 @@
 **без фоллбэка** на общий/env-ключ. Nest-сервисы инжектят `LlmService`; чистые функции (`streamCompletion`,
 `aiTranslate`, цикл инструментов карточек) получают его параметром как `ChatCompleter`.
 
+### Responses API (соавтор)
+Соавтор ходит не в Chat Completions, а в **Responses API** DeepSeek (`POST /v1/responses`):
+`LlmService.respond()` → `requestResponse()` (`bot/src/llm/responses/`, интерфейс `ResponsesCompleter`).
+Причина — картинки: Chat Completions принимает их только в user-сообщениях, а Responses — ещё и в
+результате инструмента (`function_call_output.output` с частями `input_image`). Ретраи, гвард пустого
+ответа, `onReset` и перехват для экрана отладки — те же, что у `client.ts`. Отличия, проверенные на
+живом API:
+- `input_image.image_url` — строкой (data URL или http(s)); объект `{ url }` даёт 400;
+- мышление выключается только `reasoning: { effort: "none" }` — `thinking: { type: "disabled" }`
+  Responses молча игнорирует; принудительный `tool_choice` в режиме мышления — 400, как и в Chat Completions;
+- `max_output_tokens` включает reasoning; обрыв по лимиту — `status: "incomplete"` (`incompleteReason` в
+  результате). Последний `function_call` тогда может быть недописан — клиент его не выбрасывает (иначе
+  пустой ответ ушёл бы в повторы с тем же лимитом), а цикл соавтора отвечает модели ошибкой «обрезано лимитом»;
+- рассуждение (`reasoning`-элемент) обратно передавать **не обязательно** — соавтор возвращает только живое
+  внутри хода, заглушка для сохранённых ходов не нужна;
+- инструменты и принудительный выбор — плоские (`{ type: "function", name, … }`, без обёртки `function`);
+- стрим — типизированные события (`response.output_text.delta`, `response.function_call_arguments.delta`
+  по `output_index`, финал `response.completed`/`incomplete`), без `[DONE]`; итог берётся из финального события.
+
 ## Reasoning (thinking-режим DeepSeek)
 DeepSeek — единственный поддерживаемый провайдер, других путей нет. «Мышление» из пресета (поля
 `requestReasoning`/`reasoningEffort`) превращается в `thinking`-поля тела запроса

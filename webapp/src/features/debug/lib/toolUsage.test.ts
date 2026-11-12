@@ -9,6 +9,23 @@ const record = (request: Record<string, unknown>, toolCalls?: ReturnType<typeof 
 });
 
 describe("describeToolUsage", () => {
+  it("Responses API: плоские tools, вызовы и результаты — элементы input по call_id", () => {
+    const usage = describeToolUsage(
+      record(
+        {
+          input: [
+            { role: "user", content: "q" },
+            { type: "function_call", call_id: "g0", name: "get_cards", arguments: "{}" },
+            { type: "function_call_output", call_id: "g0", output: "{}" },
+          ],
+          tools: [{ type: "function", name: "get_cards" }, { type: "function", name: "edit_block" }],
+        },
+        [call("e1", "edit_block")],
+      ),
+    );
+    expect(usage).toEqual({ offered: ["get_cards", "edit_block"], called: ["edit_block"], resultsInHistory: ["get_cards"] });
+  });
+
   it("модель вызвала ask_user — это не веб-поиск", () => {
     const usage = describeToolUsage(
       record({ messages: [{ role: "user", content: "q" }], tools: [tool("web_search"), tool("ask_user")] }, [
