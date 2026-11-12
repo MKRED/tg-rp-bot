@@ -305,9 +305,6 @@ export const coauthorChats = pgTable("coauthor_chats", {
   cardIds: jsonb("card_ids").$type<number[]>().notNull().default(sql`'[]'::jsonb`),
   presetId: bigint("preset_id", { mode: "number" }).references(() => generationPresets.id),
   systemPrompt: text("system_prompt").notNull().default(""),
-  // НЕ ИСПОЛЬЗУЕТСЯ: ask_user у соавтора теперь включён всегда (частота — лимит max_questions). Колонку
-  // удалить отдельной миграцией через деплой (разрушающая — не руками), код её уже не читает и не пишет.
-  useAskUser: boolean("use_ask_user").notNull().default(true),
   useWebSearch: boolean("use_web_search").notNull().default(false),
   // Картинки-референсы карточек уходят модели (только модели со зрением, см. turn/prompt.ts).
   useImages: boolean("use_images").notNull().default(true),

@@ -1,0 +1,1 @@
+ALTER TABLE "coauthor_chats" DROP COLUMN "use_ask_user";
