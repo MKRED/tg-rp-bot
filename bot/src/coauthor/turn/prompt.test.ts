@@ -11,6 +11,10 @@ describe("buildSystemPrompt", () => {
     expect(custom.startsWith("Write in Russian.")).toBe(true);
     expect(custom).toContain("apply_patch");
     expect(custom).toContain("get_card(card_id)");
+    // Механика и лимиты — всегда; правила поведения — только в редактируемой части, пользователь их меняет.
+    expect(custom).toContain("a ceiling, not a target");
+    expect(custom).not.toContain("explicitly allowed");
+    expect(buildSystemPrompt("", limits)).toContain("Write only what the user explicitly allowed");
     expect(custom).toContain("up to 5 block edits");
   });
 });

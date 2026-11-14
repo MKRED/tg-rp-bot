@@ -12,8 +12,9 @@ export interface CoauthorCardData {
 }
 
 /**
- * Неизменяемая часть системного промпта: протокол инструментов. Пользователь правит только
- * поведенческую часть (DEFAULT_COAUTHOR_SYSTEM_PROMPT), поэтому механика правок от неё не зависит.
+ * Неизменяемая часть системного промпта: протокол инструментов — только механика (как читать и править
+ * карточки, что значат поля). Всё о поведении — язык, что и когда писать, о чём спрашивать — живёт в
+ * редактируемой части (DEFAULT_COAUTHOR_SYSTEM_PROMPT): пользователь должен иметь возможность это поменять.
  */
 const PROTOCOL_PROMPT =
   "## How the workshop works\n" +
@@ -38,8 +39,7 @@ const PROTOCOL_PROMPT =
   "- `format` shows the expected structure of a block: follow it, never copy its placeholder text. " +
   "`brief` is what the user wrote about the character.\n" +
   "- A user message may start with [Review: …] — the user's decisions on your proposals.\n" +
-  "- After your tool calls, end with a short message to the user about what you proposed, written in the " +
-  "language of their latest message.";
+  "- After your tool calls, end with a short message to the user about what you proposed.";
 
 /**
  * Лимиты хода числами: модель планирует под них (сколько блоков успеет за сообщение) и знает, что делать
@@ -52,8 +52,10 @@ function limitsPrompt(limits: CoauthorTurnLimits): string {
     `apply_patch counts) and up to ${limits.maxQuestions} ask_user pauses.\n` +
     `- One run allows ${limits.maxRounds} model calls; the last one has no tools, so finish your edits before it. ` +
     "Reading cards takes a call too: read every card you need in one call.\n" +
-    "- Tool results show edits_left and rounds_left. If a request needs more edits than are left, do the most " +
-    "important ones and tell the user what is left — they can ask you to continue."
+    "- The edit limit is a ceiling, not a target: how much to write is decided by what the user allowed, " +
+    "never by edits_left.\n" +
+    "- Tool results show edits_left and rounds_left. If an allowed request needs more edits than are left, do " +
+    "the most important ones and tell the user what is left — they can ask you to continue."
   );
 }
 
