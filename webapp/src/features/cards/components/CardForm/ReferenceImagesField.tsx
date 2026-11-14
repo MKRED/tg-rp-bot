@@ -3,7 +3,7 @@ import { REFERENCE_IMAGE_MAX_SIDE } from "@tg-rp-bot/shared";
 import { AnimatePresence } from "framer-motion";
 import { ImagePlus, X } from "lucide-react";
 import { useRef, useState } from "react";
-import { ImageLightbox } from "../../../../shared/components/ImageLightbox";
+import { ImageGallery } from "../../../../shared/components/ImageGallery";
 import { buildScaledImage } from "../../../../shared/image";
 import { useToast } from "../../../../shared/toast";
 import { MAX_CARD_REFERENCE_IMAGES } from "../../types/card";
@@ -30,14 +30,16 @@ async function prepareImages(files: File[], freeSlots: number): Promise<string[]
 }
 
 /**
- * Картинки-референсы внешности карточки: ряд миниатюр (тап — просмотр целиком, крестик — убрать) и
+ * Картинки-референсы внешности карточки: ряд миниатюр (тап — галерея с листанием всех референсов,
+ * крестик — убрать) и
  * плитка «добавить», пока не набран лимит. Можно выбрать сразу несколько файлов — лишние сверх лимита
  * отбрасываются с подсказкой. Кропа нет: модель должна видеть картинку целиком.
  */
 export function ReferenceImagesField({ images, onChange }: ReferenceImagesFieldProps) {
   const { showToast } = useToast();
   const [busy, setBusy] = useState(false);
-  const [viewing, setViewing] = useState<string | null>(null);
+  // Какой референс открыт в галерее; null — галерея закрыта.
+  const [viewing, setViewing] = useState<number | null>(null);
   const resetFileRef = useRef<() => void>(null);
   const freeSlots = MAX_CARD_REFERENCE_IMAGES - images.length;
 
@@ -69,7 +71,7 @@ export function ReferenceImagesField({ images, onChange }: ReferenceImagesFieldP
       <div className={styles.grid}>
         {images.map((image, index) => (
           <div key={index} className={styles.tile}>
-            <UnstyledButton className={styles.preview} onClick={() => setViewing(image)} aria-label="Открыть референс">
+            <UnstyledButton className={styles.preview} onClick={() => setViewing(index)} aria-label="Открыть референс">
               <img src={image} alt={`Референс ${index + 1}`} className={styles.image} />
             </UnstyledButton>
             <ActionIcon
@@ -97,7 +99,15 @@ export function ReferenceImagesField({ images, onChange }: ReferenceImagesFieldP
         )}
       </div>
       <AnimatePresence>
-        {viewing && <ImageLightbox src={viewing} onClose={() => setViewing(null)} />}
+        {viewing !== null && (
+          <ImageGallery
+            // Ключ — позиция: пока галерея открыта, список не меняется, а одинаковые картинки возможны.
+            items={images.map((image, i) => ({ key: String(i), src: image, caption: `Референс ${i + 1}` }))}
+            index={viewing}
+            onIndexChange={setViewing}
+            onClose={() => setViewing(null)}
+          />
+        )}
       </AnimatePresence>
     </Input.Wrapper>
   );
