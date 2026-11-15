@@ -20,7 +20,7 @@ export {
   generateCardBlock,
   answerCardBlockQuestions,
 } from "./api/cards-api";
-export { assembleExportPrompt } from "./lib/assembleExportPrompt";
+export { assembleExportPrompt, type ExportMarkup } from "./lib/assembleExportPrompt";
 export type { Card, CardCategory, CardInput, CardListItem, CardPresetOption } from "./types/card";
 export {
   DEFAULT_CARD_CATEGORIES,

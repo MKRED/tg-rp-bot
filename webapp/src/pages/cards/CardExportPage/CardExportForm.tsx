@@ -1,8 +1,8 @@
-import { Button, Stack, Switch, TextInput } from "@mantine/core";
+import { Button, Input, SegmentedControl, Stack, TextInput } from "@mantine/core";
 import { useState } from "react";
 import { ROUTES } from "../../../app/routes";
 import { useTransitionNavigate } from "../../../app/useTransitionNavigate";
-import { assembleExportPrompt, type Card } from "../../../features/cards";
+import { assembleExportPrompt, type Card, type ExportMarkup } from "../../../features/cards";
 import { CharacterAvatar, useCharacters } from "../../../features/characters";
 import { PersonaAvatar, usePersonas } from "../../../features/personas";
 import { PromptEditorField } from "../../../shared/components/PromptEditorField";
@@ -11,6 +11,20 @@ import { confirmAction } from "../../../shared/telegram/confirm";
 import { useToast } from "../../../shared/toast";
 import { exportCard, type ExportTargetMode } from "./exportCard";
 import { ExportTargetSection } from "./ExportTargetSection";
+
+// Подписи короткие: на телефоне сегмент ~100 px, длиннее не влезает. Как выглядит разметка — в подсказке.
+const MARKUP_OPTIONS = [
+  { value: "headers", label: "Заголовки" },
+  { value: "tags", label: "Теги" },
+  { value: "plain", label: "Нет" },
+];
+
+// Подсказка под переключателем — что получится в промпте; смена разметки пересобирает промпт.
+const MARKUP_HINTS: Record<ExportMarkup, string> = {
+  headers: "Каждый блок начинается со строки «# Название блока». Смена разметки пересобирает промпт.",
+  tags: "Каждый блок обёрнут в теги <название_блока>…</название_блока>. Смена разметки пересобирает промпт.",
+  plain: "Только текст блоков подряд, через пустую строку. Смена разметки пересобирает промпт.",
+};
 
 interface CardExportFormProps {
   card: Card;
@@ -26,8 +40,8 @@ export function CardExportForm({ card }: CardExportFormProps) {
 
   const [name, setName] = useState(card.name);
   const [footnote, setFootnote] = useState("");
-  const [includeHeaders, setIncludeHeaders] = useState(true);
-  const [prompt, setPrompt] = useState(() => assembleExportPrompt(card.categories, true));
+  const [markup, setMarkup] = useState<ExportMarkup>("headers");
+  const [prompt, setPrompt] = useState(() => assembleExportPrompt(card.categories, "headers"));
   const [toCharacter, setToCharacter] = useState(true);
   const [characterMode, setCharacterMode] = useState<ExportTargetMode>("create");
   const [characterTargetId, setCharacterTargetId] = useState<number | null>(null);
@@ -52,11 +66,12 @@ export function CardExportForm({ card }: CardExportFormProps) {
     personaReady &&
     !submitting;
 
-  // Переключатель меняет способ сборки промпта — пересобирает поле заново (как выбор формата
-  // перед правкой), а не живёт рядом с уже готовым текстом.
-  const handleIncludeHeaders = (checked: boolean) => {
-    setIncludeHeaders(checked);
-    setPrompt(assembleExportPrompt(card.categories, checked));
+  // Разметка меняет способ сборки промпта — пересобирает поле заново (как выбор формата перед
+  // правкой), а не живёт рядом с уже готовым текстом.
+  const handleMarkup = (value: string) => {
+    const next = value as ExportMarkup;
+    setMarkup(next);
+    setPrompt(assembleExportPrompt(card.categories, next));
   };
 
   const handleSubmit = async () => {
@@ -143,12 +158,13 @@ export function CardExportForm({ card }: CardExportFormProps) {
       </SettingsCard>
 
       <SettingsCard title="Промпт" description="Собран из включённых категорий карточки.">
-        <Switch
-          label="Заголовки категорий"
-          description="Каждый блок начинается со строки «# Название категории» — иначе только текст блоков подряд. Переключение пересобирает промпт."
-          checked={includeHeaders}
-          onChange={(e) => handleIncludeHeaders(e.currentTarget.checked)}
-        />
+        <Input.Wrapper
+          label="Разметка блоков"
+          description={MARKUP_HINTS[markup]}
+        >
+          {/* size="sm": с «Заголовки» на md на узком телефоне (360 px) текст вылезает за сегмент. */}
+          <SegmentedControl fullWidth size="sm" mt={6} data={MARKUP_OPTIONS} value={markup} onChange={handleMarkup} />
+        </Input.Wrapper>
         <PromptEditorField
           header="Финальный промпт"
           hint="Можно отредактировать перед выгрузкой."
