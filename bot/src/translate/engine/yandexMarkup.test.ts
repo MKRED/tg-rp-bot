@@ -3,7 +3,13 @@ import { fromYandexHtml, toYandexHtml } from "./yandexMarkup.js";
 
 describe("toYandexHtml", () => {
   it("действия *…* → <i>…</i>, в т.ч. в начале текста и после переноса", () => {
-    expect(toYandexHtml("*Марта кивает.* «Да.»\n\n*Дождь.*")).toBe("<i>Марта кивает.</i> «Да.»\n\n<i>Дождь.</i>");
+    expect(toYandexHtml("*Марта кивает.*\n\n*Дождь.*")).toBe("<i>Марта кивает.</i>\n\n<i>Дождь.</i>");
+  });
+
+  it('"речь" и «мысли» → <q>/<cite>, в т.ч. внутри действия', () => {
+    expect(toYandexHtml('*Кивает.* "Да." «Зачем?» *шепчет "стой"*')).toBe(
+      "<i>Кивает.</i> <q>Да.</q> <cite>Зачем?</cite> <i>шепчет <q>стой</q></i>",
+    );
   });
 
   it("свои & < > экранируются — не становятся разметкой", () => {
@@ -31,8 +37,14 @@ describe("fromYandexHtml", () => {
     expect(fromYandexHtml("5 &lt; 7 &amp; &quot;q&quot; &#39;a&#39; &amp;lt;")).toBe(`5 < 7 & "q" 'a' &lt;`);
   });
 
+  it("теги кавычек → кавычки; свой текст &lt;q&gt; тегом не становится", () => {
+    expect(fromYandexHtml("<q>- Я устал,</q> - сказал он. <cite>Странно.</cite> &lt;q&gt;")).toBe(
+      '"Я устал," - сказал он. «Странно.» <q>',
+    );
+  });
+
   it("туда-обратно без изменений", () => {
-    const text = "*Марта кивает.* «Второй этаж.»\n\nЦена 5 < 7 & **важно** * одна\nстрока";
+    const text = '*Марта кивает.* «Второй этаж.» "Идём."\n\nЦена 5 < 7 & **важно** * одна\nстрока';
     expect(fromYandexHtml(toYandexHtml(text))).toBe(text);
   });
 });

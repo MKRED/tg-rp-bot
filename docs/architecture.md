@@ -107,7 +107,8 @@ bot/src/
                   (machineTranslate → googleTranslate / yandexTranslate — неофициальные API без
                   ключа; translatorRetry: повтор только 429/5xx/сети/капчи с нарастающей паузой или по
                   Retry-After, в батче абзацы по одному; у Яндекса format=html, *действия* уходят тегами
-                  <i> (yandexMarkup), иначе он портит звёздочки; aiTranslate, resolveTranslationReasoning,
+                  <i> (yandexMarkup), иначе он портит звёздочки; у обоих "речь" и «мысли» уходят тегами
+                  <q>/<cite> (rpQuoteMarkup), иначе кавычки меняются на типографику языка или тире; aiTranslate, resolveTranslationReasoning,
                   чанкинг блока, разбивка на абзацы, константы), общий с переводом в rp-chat/ и narrator/
   prompt/       — сборка промптов без Nest: promptBuilder (RP-чат, impersonate, сэмплинг пресета) +
                   storyPromptBuilder (narrator) + общий budget, compactionPlan, keywordMatch,
